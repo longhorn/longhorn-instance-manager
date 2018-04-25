@@ -112,6 +112,17 @@ func (l *Launcher) GetSocketPath() string {
 }
 
 func (l *Launcher) startFrontend() error {
+	socketFound := false
+	for i := 0; i < WaitCount; i++ {
+		if _, err := os.Stat(l.GetSocketPath()); err == nil {
+			socketFound = true
+			break
+		}
+		time.Sleep(WaitInterval)
+	}
+	if !socketFound {
+		return fmt.Errorf("cannot find socket %v", l.GetSocketPath())
+	}
 	if l.scsiDevice == nil {
 		bsOpts := fmt.Sprintf("size=%v", l.size)
 		scsiDev, err := iscsi.NewScsiDevice(l.volumeName, l.GetSocketPath(), "longhorn", bsOpts)
