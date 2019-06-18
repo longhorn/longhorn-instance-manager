@@ -2,9 +2,12 @@ package util
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"sync"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/pkg/errors"
 )
 
 type Bitmap struct {
@@ -82,5 +85,25 @@ func (b *Bitmap) ReleaseRange(start, end int32) error {
 		return fmt.Errorf("exceed range: %v-%v (%v-%v)", start, end, bStart, bEnd)
 	}
 	b.data.AddRange(uint64(bStart), uint64(bEnd)+1)
+	return nil
+}
+
+func CopyFile(src, dst string) error {
+	cmd := exec.Command("cp", src, dst)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "fail to copy file %v to %v", src, dst)
+	}
+	return nil
+}
+
+func RemoveFile(f string) error {
+	if _, err := os.Stat(f); err != nil {
+		// file doesn't exist
+		return nil
+	}
+	cmd := exec.Command("rm", f)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "fail to remove file %v", f)
+	}
 	return nil
 }

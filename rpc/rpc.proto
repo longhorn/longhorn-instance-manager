@@ -1,16 +1,18 @@
 syntax="proto3";
 
+import "google/protobuf/empty.proto";
+
 service LonghornEngineService {
 	rpc EngineCreate(EngineCreateRequest) returns (EngineResponse) {}
-	rpc EngineDelete(EngineRequest) returns (Empty) {}
+	rpc EngineDelete(EngineRequest) returns (google.protobuf.Empty) {}
 	rpc EngineGet(EngineRequest) returns (EngineResponse) {}
-	rpc EngineUpgrade(EngineUpgradeRequest) returns (Empty) {}
+	rpc EngineUpgrade(EngineUpgradeRequest) returns (google.protobuf.Empty) {}
 
-	rpc FrontendStartCallback(EngineRequest) returns (Empty) {}
-	rpc FrontendShutdownCallback(EngineRequest) returns (Empty) {}
+	rpc FrontendStartCallback(EngineRequest) returns (google.protobuf.Empty) {}
+	rpc FrontendShutdownCallback(EngineRequest) returns (google.protobuf.Empty) {}
 
-	rpc FrontendStart(FrontendStartRequest) returns (Empty) {}
-	rpc FrontendShutdown(FrontendShutdownRequest) returns (Empty) {}
+	rpc FrontendStart(FrontendStartRequest) returns (google.protobuf.Empty) {}
+	rpc FrontendShutdown(FrontendShutdownRequest) returns (google.protobuf.Empty) {}
 }
 
 message EngineSpec {
@@ -53,9 +55,6 @@ message FrontendStartRequest {
 
 message FrontendShutdownRequest {
 	string name = 1;
-}
-
-message Empty {
 }
 
 service LonghornProcessLauncherService {
