@@ -99,8 +99,8 @@ func main() {
 	}
 	a.Commands = []cli.Command{
 		StartLauncherCmd(),
-		ProcessCmd(),
 		EngineCmd(),
+		ProcessCmd(),
 	}
 	if err := a.Run(os.Args); err != nil {
 		logrus.Fatal("Error when executing command: ", err)

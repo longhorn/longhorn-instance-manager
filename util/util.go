@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -105,5 +106,15 @@ func RemoveFile(f string) error {
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "fail to remove file %v", f)
 	}
+	return nil
+}
+
+func PrintJSON(obj interface{}) error {
+	output, err := json.MarshalIndent(obj, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(output))
 	return nil
 }
