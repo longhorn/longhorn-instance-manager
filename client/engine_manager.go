@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -35,6 +36,14 @@ func RPCToEngine(obj *rpc.EngineResponse) *api.Engine {
 
 		Endpoint: obj.Status.Endpoint,
 	}
+}
+
+func RPCToEngineList(obj *rpc.EngineListResponse) map[string]*api.Engine {
+	ret := map[string]*api.Engine{}
+	for name, e := range obj.Engines {
+		ret[name] = RPCToEngine(e)
+	}
+	return ret
 }
 
 func (cli *EngineManagerClient) EngineCreate(size int64, name, volumeName, binary, listen, listenAddr, frontend string, backends, replicas []string) (*api.Engine, error) {
@@ -103,6 +112,24 @@ func (cli *EngineManagerClient) EngineGet(name string) (*api.Engine, error) {
 		return nil, fmt.Errorf("failed to get engine for engine %v: %v", name, err)
 	}
 	return RPCToEngine(e), nil
+}
+
+func (cli *EngineManagerClient) EngineList() (map[string]*api.Engine, error) {
+	conn, err := grpc.Dial(cli.Address, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("cannot connect to EngineManager Service %v: %v", cli.Address, err)
+	}
+	defer conn.Close()
+	client := rpc.NewLonghornEngineServiceClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), types.GRPCServiceTimeout)
+	defer cancel()
+
+	es, err := client.EngineList(ctx, &empty.Empty{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list engines: %v", err)
+	}
+	return RPCToEngineList(es), nil
 }
 
 func (cli *EngineManagerClient) EngineUpgrade(size int64, name, binary string, replicas []string) error {

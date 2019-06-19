@@ -17,6 +17,7 @@ func EngineCmd() cli.Command {
 		Subcommands: []cli.Command{
 			EngineCreateCmd(),
 			EngineGetCmd(),
+			EngineListCmd(),
 			EngineUpgradeCmd(),
 			EngineDeleteCmd(),
 			FrontendStartCmd(),
@@ -123,6 +124,27 @@ func getEngine(c *cli.Context) error {
 		return err
 	}
 	return util.PrintJSON(engine)
+}
+
+func EngineListCmd() cli.Command {
+	return cli.Command{
+		Name: "ls",
+		Action: func(c *cli.Context) {
+			if err := listEngine(c); err != nil {
+				logrus.Fatalf("Error running engine list command: %v.", err)
+			}
+		},
+	}
+}
+
+func listEngine(c *cli.Context) error {
+	url := c.GlobalString("url")
+	cli := client.NewEngineManagerClient(url)
+	engines, err := cli.EngineList()
+	if err != nil {
+		return err
+	}
+	return util.PrintJSON(engines)
 }
 
 func EngineUpgradeCmd() cli.Command {

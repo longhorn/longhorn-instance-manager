@@ -203,6 +203,21 @@ func (s *Service) EngineGet(ctx context.Context, req *rpc.EngineRequest) (ret *r
 	return e.RPCResponse(), nil
 }
 
+func (s *Service) EngineList(ctx context.Context, req *empty.Empty) (ret *rpc.EngineListResponse, err error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	ret = &rpc.EngineListResponse{
+		Engines: map[string]*rpc.EngineResponse{},
+	}
+
+	for name := range s.engines {
+		ret.Engines[name] = s.engines[name].RPCResponse()
+	}
+
+	return ret, nil
+}
+
 func (s *Service) EngineUpgrade(ctx context.Context, req *rpc.EngineUpgradeRequest) (ret *empty.Empty, err error) {
 	s.lock.Lock()
 
