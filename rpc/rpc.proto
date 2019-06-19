@@ -6,18 +6,20 @@ service LonghornEngineService {
 	rpc EngineCreate(EngineCreateRequest) returns (EngineResponse) {}
 	rpc EngineDelete(EngineRequest) returns (google.protobuf.Empty) {}
 	rpc EngineGet(EngineRequest) returns (EngineResponse) {}
+	rpc EngineList(google.protobuf.Empty) returns (EngineListResponse) {}
 	rpc EngineUpgrade(EngineUpgradeRequest) returns (google.protobuf.Empty) {}
+
+	rpc FrontendStart(FrontendStartRequest) returns (google.protobuf.Empty) {}
+	rpc FrontendShutdown(FrontendShutdownRequest) returns (google.protobuf.Empty) {}
 
 	rpc FrontendStartCallback(EngineRequest) returns (google.protobuf.Empty) {}
 	rpc FrontendShutdownCallback(EngineRequest) returns (google.protobuf.Empty) {}
 
-	rpc FrontendStart(FrontendStartRequest) returns (google.protobuf.Empty) {}
-	rpc FrontendShutdown(FrontendShutdownRequest) returns (google.protobuf.Empty) {}
 }
 
 message EngineSpec {
 	string name = 1;
-	string volumeName = 2;
+	string volume_name = 2;
 	string binary = 3;
 	string listen = 4;
 	string listen_addr = 5;
@@ -46,6 +48,10 @@ message EngineRequest {
 
 message EngineUpgradeRequest {
 	EngineSpec spec = 1;
+}
+
+message EngineListResponse {
+	map<string, EngineResponse> engines = 1;
 }
 
 message FrontendStartRequest {
