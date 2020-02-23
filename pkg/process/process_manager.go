@@ -15,10 +15,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/longhorn/longhorn-instance-manager/pkg/instance-manager/rpc"
-	"github.com/longhorn/longhorn-instance-manager/pkg/instance-manager/types"
-	"github.com/longhorn/longhorn-instance-manager/pkg/instance-manager/util"
-	"github.com/longhorn/longhorn-instance-manager/pkg/instance-manager/util/broadcaster"
+	"github.com/longhorn/longhorn-instance-manager/pkg/rpc"
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
+	"github.com/longhorn/longhorn-instance-manager/pkg/util"
+	"github.com/longhorn/longhorn-instance-manager/pkg/util/broadcaster"
 )
 
 /* Lock order
