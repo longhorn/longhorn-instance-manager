@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/longhorn/longhorn-instance-manager/app/instance-manager/cmd"
+	"github.com/longhorn/longhorn-instance-manager/app/cmd"
 )
 
 func main() {
