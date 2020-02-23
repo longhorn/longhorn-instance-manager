@@ -46,16 +46,10 @@ func NewLonghornWriter(name string, logsDir string) (*LonghornWriter, error) {
 }
 
 func SetUpLogger(logsDir string) error {
-	_, err := os.Stat(logsDir)
-	if err != nil && !os.IsNotExist(err) {
+	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return err
 	}
-	if os.IsNotExist(err) {
-		if err := os.Mkdir(logsDir, 0755); err != nil {
-			return err
-		}
-	}
-	logsDir, err = filepath.Abs(logsDir)
+	logsDir, err := filepath.Abs(logsDir)
 	if err != nil {
 		return err
 	}
@@ -99,9 +93,6 @@ func (l LonghornFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 func (l LonghornWriter) Close() error {
 	if err := l.file.Close(); err != nil {
-		return err
-	}
-	if err := os.Remove(l.path); err != nil {
 		return err
 	}
 	return nil

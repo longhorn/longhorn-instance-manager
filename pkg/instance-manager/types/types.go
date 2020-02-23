@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	GRPCServiceTimeout = 1 * time.Minute
+	GRPCServiceTimeout = 3 * time.Minute
 
 	ProcessStateRunning  = "running"
 	ProcessStateStarting = "starting"
@@ -17,4 +17,9 @@ const (
 var (
 	WaitInterval = 100 * time.Millisecond
 	WaitCount    = 600
+)
+
+const (
+	RetryInterval = 3 * time.Second
+	RetryCounts   = 3
 )
