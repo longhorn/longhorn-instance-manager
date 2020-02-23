@@ -2,6 +2,7 @@ package process
 
 import (
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -53,8 +54,10 @@ func (p *Process) Start() error {
 	p.cmd = cmd
 	p.lock.Unlock()
 
+	probeStopCh := make(chan struct{})
 	go func() {
 		if err := cmd.Run(); err != nil {
+			close(probeStopCh)
 			p.lock.Lock()
 			p.State = StateError
 			p.ErrorMsg = err.Error()
@@ -64,6 +67,7 @@ func (p *Process) Start() error {
 			p.UpdateCh <- p
 			return
 		}
+		close(probeStopCh)
 		p.lock.Lock()
 		p.State = StateStopped
 		logrus.Infof("Process Manager: process %v stopped", p.Name)
@@ -75,7 +79,7 @@ func (p *Process) Start() error {
 	go func() {
 		if p.PortStart != 0 {
 			address := util.GetURL("localhost", int(p.PortStart))
-			if p.healthChecker.WaitForRunning(address, p.Name) {
+			if p.healthChecker.WaitForRunning(address, p.Name, probeStopCh) {
 				p.lock.Lock()
 				p.State = StateRunning
 				p.lock.Unlock()
@@ -124,6 +128,10 @@ func (p *Process) RPCResponse() *rpc.ProcessResponse {
 }
 
 func (p *Process) Stop() {
+	p.StopWithSignal(syscall.SIGINT)
+}
+
+func (p *Process) StopWithSignal(signal syscall.Signal) {
 	needStop := false
 	p.lock.Lock()
 	if p.State != StateStopping && p.State != StateStopped && p.State != StateError {
@@ -155,7 +163,7 @@ func (p *Process) Stop() {
 
 		// no need for lock
 		logrus.Debugf("Process Manager: trying to stop process %v", p.Name)
-		cmd.Stop()
+		cmd.StopWithSignal(signal)
 		for i := 0; i < types.WaitCount; i++ {
 			if p.IsStopped() {
 				return
