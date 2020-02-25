@@ -16,6 +16,23 @@ steps:
   volumes:
   - name: socket
     path: /var/run/docker.sock
+    
+- name: publish-master-image
+  image: plugins/docker
+  settings:
+    custom_dns: 1.1.1.1
+    dockerfile: package/Dockerfile
+    password:
+      from_secret: docker_password
+    repo: longhornio/longhorn-instance-manager
+    tag: master
+    username:
+      from_secret: docker_username
+  when:
+    branch:
+    - master
+    event:
+    - push
 
 volumes:
 - name: socket
