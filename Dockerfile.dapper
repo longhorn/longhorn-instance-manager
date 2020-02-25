@@ -38,6 +38,22 @@ ENV DOCKER_URL_amd64=https://download.docker.com/linux/ubuntu/dists/bionic/pool/
 
 RUN wget ${!DOCKER_URL} -O docker_ce_${ARCH} && dpkg -i docker_ce_${ARCH}
 
+# Build liblonghorn
+RUN cd /usr/src && \
+    git clone https://github.com/rancher/liblonghorn.git && \
+    cd liblonghorn && \
+    git checkout 6592b9967d1b5acbb51a5596abfe0a0d7bad16dc && \
+    make deb && \
+    dpkg -i ./pkg/liblonghorn_*.deb
+
+# Build TGT
+RUN cd /usr/src && \
+    git clone https://github.com/rancher/tgt.git && \
+    cd tgt && \
+    git checkout e042fdd3616ca90619637b5826695a3de9b5dd8e && \
+    ./scripts/build-pkg.sh deb && \
+    dpkg -i ./pkg/tgt_*.deb
+
 VOLUME /tmp
 ENV TMPDIR /tmp
 ENTRYPOINT ["./scripts/entry"]
