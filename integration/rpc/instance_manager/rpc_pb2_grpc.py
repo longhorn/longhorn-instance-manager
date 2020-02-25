@@ -50,6 +50,11 @@ class ProcessManagerServiceStub(object):
         request_serializer=rpc__pb2.ProcessReplaceRequest.SerializeToString,
         response_deserializer=rpc__pb2.ProcessResponse.FromString,
         )
+    self.VersionGet = channel.unary_unary(
+        '/ProcessManagerService/VersionGet',
+        request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+        response_deserializer=rpc__pb2.VersionResponse.FromString,
+        )
 
 
 class ProcessManagerServiceServicer(object):
@@ -105,6 +110,13 @@ class ProcessManagerServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def VersionGet(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_ProcessManagerServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -142,6 +154,11 @@ def add_ProcessManagerServiceServicer_to_server(servicer, server):
           servicer.ProcessReplace,
           request_deserializer=rpc__pb2.ProcessReplaceRequest.FromString,
           response_serializer=rpc__pb2.ProcessResponse.SerializeToString,
+      ),
+      'VersionGet': grpc.unary_unary_rpc_method_handler(
+          servicer.VersionGet,
+          request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+          response_serializer=rpc__pb2.VersionResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
