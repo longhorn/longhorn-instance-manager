@@ -7,13 +7,14 @@ cd $(dirname $0)/..
 
 PROJECT=`basename "$PWD"`
 
-TAG=${TAG:-${VERSION}}
-REPO=${REPO:-longhornio}
-IMAGE=${REPO}/${PROJECT}:${TAG}
-
 if [ ! -x ./bin/longhorn ]; then
     ./scripts/build
 fi
+
+APIVERSION=`./bin/longhorn-instance-manager version --client-only|jq ".clientVersion.instanceManagerAPIVersion"`
+TAG="v${APIVERSION}_`date -u +%Y%m%d`"
+REPO=${REPO:-longhornio}
+IMAGE=${REPO}/${PROJECT}:${TAG}
 
 cp /usr/src/tgt/pkg/tgt_*.deb ./bin/
 
