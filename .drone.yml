@@ -16,7 +16,7 @@ steps:
   volumes:
   - name: socket
     path: /var/run/docker.sock
-    
+
 - name: publish-master-image
   image: plugins/docker
   settings:
@@ -33,6 +33,23 @@ steps:
     - master
     event:
     - push
+
+- name: slack_notify
+  image: plugins/slack
+  settings:
+    template: "Build {{build.link}} failed.\n"
+    username: Drone_Publish
+    webhook:
+      from_secret: slack_webhook
+  when:
+    event:
+      exclude:
+      - pull_request
+    instance:
+      include:
+      - drone-publish.rancher.io
+    status:
+      - failure
 
 volumes:
 - name: socket
