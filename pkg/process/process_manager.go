@@ -167,7 +167,7 @@ func (pm *Manager) ProcessDelete(ctx context.Context, req *rpc.ProcessDeleteRequ
 	resp := p.RPCResponse()
 	resp.Deleted = true
 
-	go pm.unregisterProcess(p)
+	go pm.unregisterProcess(p.Name)
 
 	logrus.Debugf("Process Manager: deleted process %v", req.Name)
 	return resp, nil
@@ -192,32 +192,45 @@ func (pm *Manager) registerProcess(p *Process) error {
 	return nil
 }
 
-func (pm *Manager) unregisterProcess(p *Process) {
-	pm.lock.RLock()
-	_, exists := pm.processes[p.Name]
-	if !exists {
-		pm.lock.RUnlock()
-		return
-	}
-	pm.lock.RUnlock()
+func (pm *Manager) unregisterProcess(processName string) {
+	var p *Process
+	unregistered := false
+	unregistrationExecuted := false
 
 	for i := 0; i < types.WaitCount; i++ {
-		if p.IsStopped() {
+		var exists bool
+		pm.lock.Lock()
+		p, exists = pm.processes[processName]
+		if exists {
+			if p.IsStopped() {
+				pm.releaseProcessPorts(p)
+				delete(pm.processes, processName)
+				unregistered = true
+				unregistrationExecuted = true
+			}
+		} else {
+			unregistered = true
+		}
+		pm.lock.Unlock()
+
+		if unregistered {
 			break
 		}
-		logrus.Debugf("Process Manager: wait for process %v to shutdown before unregistering process", p.Name)
+
+		logrus.Debugf("Process Manager: wait for process %v to shutdown before unregistering process", processName)
 		time.Sleep(types.WaitInterval)
 	}
 
-	if p.IsStopped() {
-		pm.releaseProcessPorts(p)
-		pm.lock.Lock()
-		delete(pm.processes, p.Name)
-		pm.lock.Unlock()
-		logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
-		p.UpdateCh <- p
+	if unregistered {
+		if unregistrationExecuted {
+			logrus.Infof("Process Manager: successfully unregistered process %v", processName)
+			p.UpdateCh <- p
+		} else {
+			logrus.Infof("Process Manager: already unregistered process %v", processName)
+		}
 	} else {
-		logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", p.Name, p.State)
+		logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", processName, p.State)
+
 	}
 
 	return
