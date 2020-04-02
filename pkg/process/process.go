@@ -29,6 +29,7 @@ type Process struct {
 	PortCount int32
 	PortArgs  []string
 
+	UUID      string
 	State     State
 	ErrorMsg  string
 	PortStart int32

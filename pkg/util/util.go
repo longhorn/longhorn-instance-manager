@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -87,4 +88,12 @@ func GRPCServiceReadinessProbe(address string) bool {
 		return false
 	}
 	return true
+}
+
+func Now() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}
+
+func UUID() string {
+	return uuid.NewV4().String()
 }
