@@ -196,6 +196,7 @@ func (s *TestSuite) TestProcessDeletion(c *C) {
 			}
 			wgDeletion.Wait()
 
+			wgDeletion.Wait()
 			deleted := false
 			for j := 0; j < RetryCount; j++ {
 				listResp, err := s.pm.ProcessList(nil, &rpc.ProcessListRequest{})

@@ -131,6 +131,8 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
 
+		UUID: util.UUID(),
+
 		State: StateStarting,
 
 		lock: &sync.RWMutex{},
@@ -167,7 +169,7 @@ func (pm *Manager) ProcessDelete(ctx context.Context, req *rpc.ProcessDeleteRequ
 	resp := p.RPCResponse()
 	resp.Deleted = true
 
-	go pm.unregisterProcess(p)
+	pm.unregisterProcess(p)
 
 	logrus.Debugf("Process Manager: deleted process %v", req.Name)
 	return resp, nil
@@ -193,32 +195,47 @@ func (pm *Manager) registerProcess(p *Process) error {
 }
 
 func (pm *Manager) unregisterProcess(p *Process) {
-	pm.lock.RLock()
-	_, exists := pm.processes[p.Name]
+	pm.lock.Lock()
+	defer pm.lock.Unlock()
+
+	newP, exists := pm.processes[p.Name]
 	if !exists {
-		pm.lock.RUnlock()
 		return
 	}
-	pm.lock.RUnlock()
+	// ProcessReplace call may change the process, need to ensure we're dealing with the right process
+	if newP.UUID != p.UUID {
+		return
+	}
 
-	for i := 0; i < types.WaitCount; i++ {
-		if p.IsStopped() {
-			break
+	go func() {
+		for i := 0; i < types.WaitCount; i++ {
+			if p.IsStopped() {
+				break
+			}
+			logrus.Debugf("Process Manager: wait for process %v to shutdown before unregistering process", p.Name)
+			time.Sleep(types.WaitInterval)
 		}
-		logrus.Debugf("Process Manager: wait for process %v to shutdown before unregistering process", p.Name)
-		time.Sleep(types.WaitInterval)
-	}
 
-	if p.IsStopped() {
-		pm.releaseProcessPorts(p)
-		pm.lock.Lock()
-		delete(pm.processes, p.Name)
-		pm.lock.Unlock()
-		logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
-		p.UpdateCh <- p
-	} else {
-		logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", p.Name, p.State)
-	}
+		if p.IsStopped() {
+			pm.lock.Lock()
+			newP, exists := pm.processes[p.Name]
+			if !exists {
+				pm.lock.Unlock()
+				return
+			}
+			if newP.UUID != p.UUID {
+				pm.lock.Unlock()
+				return
+			}
+			delete(pm.processes, p.Name)
+			pm.releaseProcessPorts(p)
+			pm.lock.Unlock()
+			logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
+			p.UpdateCh <- p
+		} else {
+			logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", p.Name, p.State)
+		}
+	}()
 
 	return
 }
@@ -376,6 +393,7 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
 
+		UUID:  util.UUID(),
 		State: StateStarting,
 
 		lock: &sync.RWMutex{},
