@@ -45,15 +45,26 @@ type Process struct {
 	healthChecker HealthChecker
 }
 
-func (p *Process) Start() error {
+func (p *Process) Start() (err error) {
 	p.lock.Lock()
+	defer func() {
+		if err != nil {
+			p.State = StateError
+			p.ErrorMsg = err.Error()
+			logrus.Warnf("Process Manager: failed to init process %v, error msg: %v", p.Name, p.ErrorMsg)
+			p.lock.Unlock()
+			p.UpdateCh <- p
+			return
+		}
+		p.lock.Unlock()
+	}()
+
 	cmd, err := p.executor.NewCommand(p.Binary, p.Args...)
 	if err != nil {
 		return err
 	}
 	cmd.SetOutput(p.logger)
 	p.cmd = cmd
-	p.lock.Unlock()
 
 	probeStopCh := make(chan struct{})
 	go func() {
