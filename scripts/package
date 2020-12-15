@@ -30,7 +30,7 @@ IMAGE=${REPO}/${PROJECT}:${TAG}
 
 cp /usr/src/tgt/pkg/tgt_*.deb ./bin/
 
-docker build --build-arg ARCH=${ARCH} -t ${IMAGE} -f package/Dockerfile .
+docker build --build-arg ARCH=${ARCH} --no-cache -t ${IMAGE} -f package/Dockerfile .
 
 echo Built ${IMAGE}
 
