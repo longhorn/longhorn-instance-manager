@@ -92,10 +92,16 @@ func (bc *BinaryCommand) Kill() {
 	}
 }
 
-type MockExecutor struct{}
+type MockExecutor struct {
+	CreationHook func(cmd *MockCommand) (*MockCommand, error)
+}
 
 func (me *MockExecutor) NewCommand(name string, arg ...string) (Command, error) {
-	return NewMockCommand(name, arg...)
+	cmd := NewMockCommand(name, arg...)
+	if me.CreationHook == nil {
+		return cmd, nil
+	}
+	return me.CreationHook(NewMockCommand(name, arg...))
 }
 
 type MockCommand struct {
@@ -110,7 +116,7 @@ type MockCommand struct {
 	stopped bool
 }
 
-func NewMockCommand(name string, arg ...string) (*MockCommand, error) {
+func NewMockCommand(name string, arg ...string) *MockCommand {
 	return &MockCommand{
 		RWMutex: &sync.RWMutex{},
 
@@ -121,7 +127,7 @@ func NewMockCommand(name string, arg ...string) (*MockCommand, error) {
 
 		started: false,
 		stopped: false,
-	}, nil
+	}
 }
 
 func (mc *MockCommand) Run() error {
