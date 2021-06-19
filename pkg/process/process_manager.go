@@ -404,7 +404,8 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		healthChecker: pm.HealthChecker,
 	}
 
-	if err := pm.initProcessReplace(p); err != nil {
+	existingProcess, err := pm.initProcessReplace(p)
+	if err != nil {
 		return nil, err
 	}
 
@@ -436,12 +437,20 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		return nil, fmt.Errorf("Failed to start replacement process %v", p.Name)
 	}
 	pm.lock.Lock()
-
-	oldProcess := pm.processes[p.Name]
-	oldProcess.StopWithSignal(terminateSignal)
-	//TODO wait for the old process to stop
-	pm.releaseProcessPorts(oldProcess)
-	logrus.Infof("Process Manager: successfully unregistered old process %v", p.Name)
+	if processToReplace, exists := pm.processes[p.Name]; exists {
+		if existingProcess.UUID == processToReplace.UUID {
+			existingProcess.StopWithSignal(terminateSignal)
+			//TODO wait for the old process to stop
+			pm.releaseProcessPorts(existingProcess)
+			logrus.Infof("Process Manager: successfully unregistered old process %v", p.Name)
+		} else {
+			logrus.Warnf("Process Manager: replace process %v the existing process with UUID %v must have already been unregistered found process with UUID %v",
+				p.Name, existingProcess.UUID, processToReplace.UUID)
+		}
+	} else {
+		logrus.Warnf("Process Manager: replace process %v the existing process with UUID %v no longer exists",
+			p.Name, existingProcess.UUID)
+	}
 
 	pm.processes[p.Name] = p
 	logrus.Infof("Process Manager: successfully registered new process %v", p.Name)
@@ -453,21 +462,21 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 	return p.RPCResponse(), nil
 }
 
-func (pm *Manager) initProcessReplace(p *Process) error {
+func (pm *Manager) initProcessReplace(p *Process) (*Process, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 
-	_, exists := pm.processes[p.Name]
+	oldProcess, exists := pm.processes[p.Name]
 	if !exists {
-		return status.Errorf(codes.AlreadyExists, "process %v doesn't exists", p.Name)
+		return nil, status.Errorf(codes.AlreadyExists, "process %v doesn't exists", p.Name)
 	}
 
 	if err := pm.allocateProcessPorts(p); err != nil {
-		return err
+		return nil, err
 	}
 
 	p.UpdateCh = pm.processUpdateCh
-	return nil
+	return oldProcess, nil
 }
 
 func (pm *Manager) allocateProcessPorts(p *Process) error {
