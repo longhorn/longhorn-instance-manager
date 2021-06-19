@@ -443,7 +443,6 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 	pm.releaseProcessPorts(oldProcess)
 	logrus.Infof("Process Manager: successfully unregistered old process %v", p.Name)
 
-	p.UpdateCh = pm.processUpdateCh
 	pm.processes[p.Name] = p
 	logrus.Infof("Process Manager: successfully registered new process %v", p.Name)
 
@@ -463,7 +462,12 @@ func (pm *Manager) initProcessReplace(p *Process) error {
 		return status.Errorf(codes.AlreadyExists, "process %v doesn't exists", p.Name)
 	}
 
-	return pm.allocateProcessPorts(p)
+	if err := pm.allocateProcessPorts(p); err != nil {
+		return err
+	}
+
+	p.UpdateCh = pm.processUpdateCh
+	return nil
 }
 
 func (pm *Manager) allocateProcessPorts(p *Process) error {
