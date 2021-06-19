@@ -4,6 +4,10 @@
 *.so
 *.dylib
 
+# Editors
+.idea
+.vscode
+
 # Test binary, build with `go test -c`
 *.test
 
