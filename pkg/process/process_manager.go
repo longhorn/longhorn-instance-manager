@@ -468,7 +468,7 @@ func (pm *Manager) initProcessReplace(p *Process) (*Process, error) {
 
 	oldProcess, exists := pm.processes[p.Name]
 	if !exists {
-		return nil, status.Errorf(codes.AlreadyExists, "process %v doesn't exists", p.Name)
+		return nil, status.Errorf(codes.NotFound, "existing process %v doesn't exists", p.Name)
 	}
 
 	if err := pm.allocateProcessPorts(p); err != nil {
