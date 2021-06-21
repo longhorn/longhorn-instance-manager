@@ -148,9 +148,15 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 	}
 
 	p.UpdateCh <- p
-	p.Start()
+	if err := p.Start(); err != nil {
+		// initializing failed so we sent event about the failed state, but still return the process rpc below
+		// this is to be consistent with the prior implementation
+		logrus.Errorf("Process Manager: failed to init new process %v error %v", req.Spec.Name, err)
+		p.UpdateCh <- p
+	} else {
+		logrus.Infof("Process Manager: created process %v", req.Spec.Name)
+	}
 
-	logrus.Infof("Process Manager: created process %v", req.Spec.Name)
 	return p.RPCResponse(), nil
 }
 
@@ -409,9 +415,12 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		return nil, err
 	}
 
-	p.Start()
-
-	logrus.Infof("Process Manager: started replace process %v", req.Spec.Name)
+	if err := p.Start(); err != nil {
+		// initializing failed replacement process cleanup happens below
+		logrus.Errorf("Process Manager: failed to init replacement process %v error %v", req.Spec.Name, err)
+	} else {
+		logrus.Infof("Process Manager: started replace process %v", req.Spec.Name)
+	}
 
 	replacementRunning := false
 	for i := 0; i < 30; i++ {
