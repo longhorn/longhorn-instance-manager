@@ -410,60 +410,64 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		healthChecker: pm.HealthChecker,
 	}
 
-	existingProcess, err := pm.initProcessReplace(p)
+	processToReplace, err := pm.initProcessReplace(p)
 	if err != nil {
 		return nil, err
+	}
+
+	cleanupReplacementProcess := func() {
+		// TODO process ports should be tied to process UUID's right now only the port ranges is used
+		//  so if one is not careful with allocation/release it's possible that different processes nuke each
+		//  others ports
+		p.Stop()
+		pm.releaseProcessPorts(p)
+		logrus.Errorf("Process Manager: cleaned up the replacement process %v with UUID %v", req.Spec.Name, p.UUID)
 	}
 
 	if err := p.Start(); err != nil {
 		// initializing failed replacement process cleanup happens below
 		logrus.Errorf("Process Manager: failed to init replacement process %v error %v", req.Spec.Name, err)
-	} else {
-		logrus.Infof("Process Manager: started replace process %v", req.Spec.Name)
+		cleanupReplacementProcess()
+		return nil, fmt.Errorf("failed to init replacement process %v", p.Name)
 	}
 
-	replacementRunning := false
+	logrus.Infof("Process Manager: initiated replacement process %v with UUID %v", req.Spec.Name, p.UUID)
 	for i := 0; i < 30; i++ {
 		resp := p.RPCResponse()
 		if resp.Status.State == types.ProcessStateRunning {
 			logrus.Infof("Process Manager: replacement process for %v started running", req.Spec.Name)
-			replacementRunning = true
 			break
 		} else if resp.Status.State != types.ProcessStateStarting {
 			logrus.Errorf("Process Manager: replacement process for %v failed to start, now in state %v", req.Spec.Name, resp.Status.State)
-			break
+			cleanupReplacementProcess()
+			return nil, fmt.Errorf("failed to start replacement process %v", p.Name)
 		}
 		logrus.Debugf("Process Manager: waiting for the replace process %v to start", req.Spec.Name)
 		time.Sleep(1 * time.Second)
 	}
-	if !replacementRunning {
-		p.Stop()
 
-		// TODO Wait for the process to exit before releasing the port
-		pm.releaseProcessPorts(p)
-		logrus.Errorf("Process Manager: cleaned up the replacement process for %v", req.Spec.Name)
+	// cleanup the process to replace this should always be safe to call outside of a lock
+	processToReplace.StopWithSignal(terminateSignal)
 
-		return nil, fmt.Errorf("Failed to start replacement process %v", p.Name)
-	}
+	// we need to lock the evaluation & assignment
+	// to be able to handle concurrent replace process calls for the same process
 	pm.lock.Lock()
-	if processToReplace, exists := pm.processes[p.Name]; exists {
-		if existingProcess.UUID == processToReplace.UUID {
-			existingProcess.StopWithSignal(terminateSignal)
-			//TODO wait for the old process to stop
-			pm.releaseProcessPorts(existingProcess)
-			logrus.Infof("Process Manager: successfully unregistered old process %v", p.Name)
-		} else {
-			logrus.Warnf("Process Manager: replace process %v the existing process with UUID %v must have already been unregistered found process with UUID %v",
-				p.Name, existingProcess.UUID, processToReplace.UUID)
-		}
+	if existingProcess, exists := pm.processes[p.Name]; !exists {
+		logrus.Warnf("Process Manager: process %v with UUID %v no longer exists for replacement",
+			p.Name, processToReplace.UUID)
+	} else if existingProcess.UUID == processToReplace.UUID {
+		pm.releaseProcessPorts(processToReplace)
+		logrus.Infof("Process Manager: successfully unregistered old process %v", p.Name)
 	} else {
-		logrus.Warnf("Process Manager: replace process %v the existing process with UUID %v no longer exists",
-			p.Name, existingProcess.UUID)
+		pm.lock.Unlock()
+		logrus.Warnf("Process Manager: replace process %v the process to replace with UUID %v must have already been replaced found process with UUID %v cleanign up replacement process with UUID %v",
+			p.Name, processToReplace.UUID, existingProcess.UUID, p.UUID)
+		cleanupReplacementProcess()
+		return nil, status.Errorf(codes.AlreadyExists, "process %v to replace has changed in the meantime", p.Name)
 	}
 
 	pm.processes[p.Name] = p
-	logrus.Infof("Process Manager: successfully registered new process %v", p.Name)
-
+	logrus.Infof("Process Manager: process %v successfully registered replacement with UUID %v", p.Name, p.UUID)
 	pm.lock.Unlock()
 
 	p.UpdateCh <- p
