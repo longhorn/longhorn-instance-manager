@@ -204,12 +204,8 @@ func (pm *Manager) unregisterProcess(p *Process) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 
-	newP, exists := pm.processes[p.Name]
-	if !exists {
-		return
-	}
 	// ProcessReplace call may change the process, need to ensure we're dealing with the right process
-	if newP.UUID != p.UUID {
+	if existingProcess, exists := pm.processes[p.Name]; !exists || existingProcess.UUID != p.UUID {
 		return
 	}
 
@@ -222,25 +218,24 @@ func (pm *Manager) unregisterProcess(p *Process) {
 			time.Sleep(types.WaitInterval)
 		}
 
-		if p.IsStopped() {
+		if !p.IsStopped() {
+			logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", p.Name, p.State)
+			return
+		}
+
+		func() {
 			pm.lock.Lock()
-			newP, exists := pm.processes[p.Name]
-			if !exists {
-				pm.lock.Unlock()
+			defer pm.lock.Unlock()
+			if existingProcess, exists := pm.processes[p.Name]; !exists || existingProcess.UUID != p.UUID {
 				return
 			}
-			if newP.UUID != p.UUID {
-				pm.lock.Unlock()
-				return
-			}
+
 			delete(pm.processes, p.Name)
 			pm.releaseProcessPorts(p)
-			pm.lock.Unlock()
-			logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
-			p.UpdateCh <- p
-		} else {
-			logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", p.Name, p.State)
-		}
+		}()
+
+		logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
+		p.UpdateCh <- p
 	}()
 
 	return
