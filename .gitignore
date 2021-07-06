@@ -3,6 +3,7 @@
 *.dll
 *.so
 *.dylib
+.dapper
 
 # Editors
 .idea
@@ -14,8 +15,8 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
-.glide/
-
 # vim temp file
 .*.swp
+
+# Misc
+bin/
