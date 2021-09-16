@@ -1,5 +1,4 @@
-FROM ubuntu:18.04
-# FROM arm64=arm64v8/ubuntu:18.04
+FROM ubuntu:20.04
 
 ARG DAPPER_HOST_ARCH=amd64
 ARG http_proxy
@@ -15,10 +14,13 @@ ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-en
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
 WORKDIR ${DAPPER_SOURCE}
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install packages
 RUN apt-get update && \
+	apt-get dist-upgrade -y && \
     apt-get install -y cmake wget curl git less file \
-        libglib2.0-dev libkmod-dev libnl-genl-3-dev linux-libc-dev pkg-config psmisc python-tox qemu-utils fuse python-dev \
+        libglib2.0-dev libkmod-dev libnl-genl-3-dev linux-libc-dev pkg-config psmisc tox qemu-utils fuse python-dev \
         devscripts debhelper bash-completion librdmacm-dev libibverbs-dev xsltproc docbook-xsl \
         libconfig-general-perl libaio-dev libc6-dev iptables libltdl7 libdevmapper-dev iproute2 jq
 
@@ -32,8 +34,8 @@ RUN wget -O - https://storage.googleapis.com/golang/go1.14.1.linux-${!GOLANG_ARC
     go get github.com/rancher/trash && go get -u golang.org/x/lint/golint
 
 # Docker
-ENV DOCKER_URL_amd64=https://download.docker.com/linux/ubuntu/dists/bionic/pool/stable/amd64/docker-ce_18.06.3~ce~3-0~ubuntu_amd64.deb \
-    DOCKER_URL_arm64=https://download.docker.com/linux/ubuntu/dists/bionic/pool/stable/arm64/docker-ce_18.06.3~ce~3-0~ubuntu_arm64.deb \
+ENV DOCKER_URL_amd64=https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/docker-ce-cli_20.10.7~3-0~ubuntu-focal_amd64.deb \
+    DOCKER_URL_arm64=https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/arm64/docker-ce-cli_20.10.7~3-0~ubuntu-focal_arm64.deb \
     DOCKER_URL=DOCKER_URL_${ARCH}
 
 RUN wget ${!DOCKER_URL} -O docker_ce_${ARCH} && dpkg -i docker_ce_${ARCH}
