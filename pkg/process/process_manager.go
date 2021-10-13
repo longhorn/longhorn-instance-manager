@@ -238,7 +238,6 @@ func (pm *Manager) unregisterProcess(p *Process) {
 		p.UpdateCh <- p
 	}()
 
-	return
 }
 
 func (pm *Manager) findProcess(name string) *Process {

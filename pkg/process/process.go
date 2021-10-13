@@ -101,7 +101,6 @@ func (p *Process) Start() error {
 			p.lock.Unlock()
 			p.UpdateCh <- p
 		}
-		return
 	}()
 
 	return nil
