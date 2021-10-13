@@ -19,7 +19,6 @@ type LonghornFormatter struct {
 
 	LogsDir string
 
-	logFiles []*os.File
 }
 
 type LonghornWriter struct {

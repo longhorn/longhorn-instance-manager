@@ -38,9 +38,6 @@ type TestSuite struct {
 
 var _ = Suite(&TestSuite{})
 
-func generateUUID() string {
-	return uuid.NewV4().String()
-}
 
 type ProcessWatcher struct {
 	grpc.ServerStream
