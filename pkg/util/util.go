@@ -47,12 +47,12 @@ func ExecuteWithTimeout(timeout time.Duration, binary string, args ...string) (s
 			}
 
 		}
-		return "", fmt.Errorf("Timeout executing: %v %v, output %s, stderr, %s, error %v",
+		return "", fmt.Errorf("timeout executing: %v %v, output %s, stderr, %s, error %v",
 			binary, args, output.String(), stderr.String(), err)
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Failed to execute: %v %v, output %s, stderr, %s, error %v",
+		return "", fmt.Errorf("failed to execute: %v %v, output %s, stderr, %s, error %v",
 			binary, args, output.String(), stderr.String(), err)
 	}
 	return output.String(), nil

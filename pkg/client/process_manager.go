@@ -180,7 +180,7 @@ func (cli *ProcessManagerClient) ProcessReplace(name, binary string, portCount i
 		return nil, fmt.Errorf("failed to start process: missing required parameter")
 	}
 	if terminateSignal != "SIGHUP" {
-		return nil, fmt.Errorf("Unsupported terminate signal %v", terminateSignal)
+		return nil, fmt.Errorf("unsupported terminate signal %v", terminateSignal)
 	}
 
 	conn, err := grpc.Dial(cli.Address, grpc.WithInsecure())
