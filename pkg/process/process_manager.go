@@ -87,7 +87,6 @@ func (pm *Manager) startMonitoring() {
 		case <-pm.shutdownCh:
 			logrus.Infof("Process Manager is shutting down")
 			done = true
-			break
 		case p := <-pm.processUpdateCh:
 			resp := p.RPCResponse()
 			pm.lock.RLock()

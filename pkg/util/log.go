@@ -19,7 +19,6 @@ type LonghornFormatter struct {
 
 	LogsDir string
 
-	logFiles []*os.File
 }
 
 type LonghornWriter struct {
@@ -34,7 +33,7 @@ func NewLonghornWriter(name string, logsDir string) (*LonghornWriter, error) {
 	if err != nil {
 		return nil, err
 	}
-	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +45,7 @@ func NewLonghornWriter(name string, logsDir string) (*LonghornWriter, error) {
 }
 
 func SetUpLogger(logsDir string) error {
-	if err := os.MkdirAll(logsDir, 0755); err != nil {
+	if err := os.MkdirAll(logsDir, 0750); err != nil {
 		return err
 	}
 	logsDir, err := filepath.Abs(logsDir)
@@ -54,7 +53,7 @@ func SetUpLogger(logsDir string) error {
 		return err
 	}
 	testFile := filepath.Join(logsDir, "test")
-	if _, err := os.OpenFile(testFile, os.O_WRONLY|os.O_CREATE, 0644); os.IsPermission(err) {
+	if _, err := os.OpenFile(testFile, os.O_WRONLY|os.O_CREATE, 0600); os.IsPermission(err) {
 		return err
 	}
 	logrus.Infof("Storing process logs at path: %v", logsDir)
@@ -99,7 +98,7 @@ func (l LonghornWriter) Close() error {
 }
 
 func (l LonghornWriter) StreamLog(done chan struct{}) (chan string, error) {
-	file, err := os.OpenFile(l.path, os.O_RDONLY, 0644)
+	file, err := os.OpenFile(l.path, os.O_RDONLY, 0600)
 	if err != nil {
 		return nil, err
 	}
