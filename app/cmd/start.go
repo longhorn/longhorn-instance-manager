@@ -48,19 +48,19 @@ func StartCmd() cli.Command {
 
 func cleanup(pm *process.Manager) {
 	logrus.Infof("Try to gracefully shut down Instance Manager")
-	pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
+	pmResp, err := pm.ProcessList(context.TODO, &rpc.ProcessListRequest{})
 	if err != nil {
 		logrus.Errorf("Failed to list processes before shutdown")
 		return
 	}
 	for _, p := range pmResp.Processes {
-		pm.ProcessDelete(nil, &rpc.ProcessDeleteRequest{
+		pm.ProcessDelete(context.TODO, &rpc.ProcessDeleteRequest{
 			Name: p.Spec.Name,
 		})
 	}
 
 	for i := 0; i < types.WaitCount; i++ {
-		pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
+		pmResp, err := pm.ProcessList(context.TODO, &rpc.ProcessListRequest{})
 		if err != nil {
 			logrus.Errorf("Failed to list instance processes when shutting down")
 			break
