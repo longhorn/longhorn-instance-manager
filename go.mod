@@ -16,3 +16,5 @@ require (
 	google.golang.org/grpc v1.21.0
 	gopkg.in/check.v1 v1.0.0-20160105164936-4f90aeace3a2
 )
+
+replace golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3
