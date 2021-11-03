@@ -5,8 +5,8 @@ go 1.13
 require (
 	github.com/RoaringBitmap/roaring v0.4.18
 	github.com/golang/protobuf v1.3.3-0.20190920234318-1680a479a2cf
+	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.8.1
-	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.1
 	github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8 // indirect
 	github.com/urfave/cli v1.22.1

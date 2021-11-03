@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -39,7 +39,7 @@ type TestSuite struct {
 var _ = Suite(&TestSuite{})
 
 func generateUUID() string {
-	return uuid.NewV4().String()
+	return uuid.New().String()
 }
 
 type ProcessWatcher struct {
