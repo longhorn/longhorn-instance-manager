@@ -23,9 +23,9 @@ import (
 const (
 	RetryCount        = 50
 	RetryInterval     = 100 * time.Millisecond
-	TestBinary        = "any"
-	TestBinaryMissing = "fail-missing-binary"
-	TestBinaryReplace = "replacement"
+	TestBinary        = "/engine-binaries/test/longhorn"
+	TestBinaryMissing = "/engine-binaries/test-missing/longhorn"
+	TestBinaryReplace = "/engine-binaries/test-replacement/longhorn"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -283,6 +283,62 @@ func (s *TestSuite) TestProcessReplaceDuringDeletion(c *C) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func (s *TestSuite) TestProcessInvalidProcessBinary(c *C) {
+
+	invalidBinaries := []string{
+		"/usr/bin/echo",
+		"/engine-binaries/invalid-binary",
+		"/host/var/lib/longhorn/engine-binaries/invalid-binary",
+		"/host/var/lib/longhorn/../longhorn/engine-binaries//../engine-binaries/valid-image/invalid-binary",
+	}
+	invalidPaths := []string{
+		"longhorn",
+		"/longhorn",
+		"/engine-binaries/invalid/image/longhorn",
+		"/engine-binaries/longhorn", // missing required image folder
+		"/invalid/path/longhorn",
+	}
+	invalidProcess := append(invalidBinaries, invalidPaths...)
+
+	// invalid process creation
+	for i, binary := range invalidProcess {
+		name := "test_invalid_process-" + strconv.Itoa(i)
+		createReq := &rpc.ProcessCreateRequest{
+			Spec: createProcessSpec(name, binary),
+		}
+		createResp, err := s.pm.ProcessCreate(nil, createReq)
+		c.Assert(createResp, IsNil)
+		c.Assert(err, NotNil)
+		c.Assert(status.Code(err), Equals, codes.InvalidArgument)
+	}
+
+	// valid process creation
+	name := "test_valid_process"
+	assertProcessCreation(c, s.pm, name, TestBinary)
+	defer func() {
+		// verify that the original process is not impacted by an invalid process replace call
+		assertProcessDeletion(c, s.pm, name)
+		deleted, err := waitForProcessListState(s.pm, func(processes map[string]*rpc.ProcessResponse) bool {
+			_, exists := processes[name]
+			return !exists
+		})
+		c.Assert(err, IsNil)
+		c.Assert(deleted, Equals, true)
+	}()
+
+	// invalid process replacement
+	for _, binary := range invalidProcess {
+		replaceReq := &rpc.ProcessReplaceRequest{
+			Spec:            createProcessSpec(name, binary),
+			TerminateSignal: "SIGHUP",
+		}
+		rsp, err := s.pm.ProcessReplace(nil, replaceReq)
+		c.Assert(rsp, IsNil)
+		c.Assert(err, NotNil)
+		c.Assert(status.Code(err), Equals, codes.InvalidArgument)
+	}
 }
 
 func assertProcessReplace(c *C, pm *Manager, name, binary string) {
