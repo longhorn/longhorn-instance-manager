@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"crypto/tls"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/longhorn/longhorn-instance-manager/pkg/health"
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/process"
+	"github.com/longhorn/longhorn-instance-manager/pkg/proxy"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
@@ -30,7 +33,7 @@ func StartCmd() cli.Command {
 			cli.StringFlag{
 				Name:  "listen",
 				Value: "tcp://localhost:8500",
-				Usage: "specifies the server endpoint to listen on supported protocols are 'tcp' and 'unix'",
+				Usage: "specifies the server endpoint to listen on supported protocols are 'tcp' and 'unix'. The proxy server will be listening on the next port.",
 			},
 			cli.StringFlag{
 				Name:  "logs-dir",
@@ -78,7 +81,7 @@ func cleanup(pm *process.Manager) {
 	logrus.Errorf("Failed to cleanup all processes for Instance Manager graceful shutdown")
 }
 
-func start(c *cli.Context) error {
+func start(c *cli.Context) (err error) {
 	listen := c.String("listen")
 	logsDir := c.String("logs-dir")
 	portRange := c.String("port-range")
@@ -86,13 +89,6 @@ func start(c *cli.Context) error {
 	if err := util.SetUpLogger(logsDir); err != nil {
 		return err
 	}
-
-	shutdownCh := make(chan error)
-	pm, err := process.NewManager(portRange, logsDir, shutdownCh)
-	if err != nil {
-		return err
-	}
-	hc := health.NewHealthCheckServer(pm)
 
 	// setup tls config
 	var tlsConfig *tls.Config
@@ -109,10 +105,55 @@ func start(c *cli.Context) error {
 	}
 
 	if tlsConfig != nil {
-		logrus.Info("Creating grpc server with mtls auth")
+		logrus.Info("Creating gRPC server with mtls auth")
 	} else {
-		logrus.Info("Creating grpc server with no auth")
+		logrus.Info("Creating gRPC server with no auth")
 	}
+
+	shutdownCh := make(chan error)
+
+	// Start proxy server
+	proxyAddress, err := getProxyAddress(listen)
+	if err != nil {
+		return err
+	}
+
+	// TODO: skip proxy for replica instance manager pod
+	proxy, err := proxy.NewProxy(logsDir, shutdownCh)
+	if err != nil {
+		return err
+	}
+	hcProxy := health.NewProxyHealthCheckServer(proxy)
+
+	rpcProxyService, proxyServer, err := util.NewServer(proxyAddress, tlsConfig,
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             10 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to setup proxy gRPCserver")
+	}
+
+	rpc.RegisterProxyEngineServiceServer(rpcProxyService, proxy)
+	healthpb.RegisterHealthServer(rpcProxyService, hcProxy)
+	reflection.Register(rpcProxyService)
+
+	go func() {
+		if err := rpcProxyService.Serve(proxyServer); err != nil {
+			logrus.Errorf("Stopping due to %v:", err)
+		}
+		// graceful shutdown before exit
+		close(shutdownCh)
+	}()
+	logrus.Infof("Instance Manager proxy gRPC server listening to %v", proxyAddress)
+
+	// Start process server
+	pm, err := process.NewManager(portRange, logsDir, shutdownCh)
+	if err != nil {
+		return err
+	}
+	hc := health.NewHealthCheckServer(pm)
 
 	rpcService, listenAt, err := util.NewServer(listen, tlsConfig,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
@@ -121,7 +162,7 @@ func start(c *cli.Context) error {
 		}),
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to setup grpc server")
+		return errors.Wrap(err, "failed to setup process gRPC server")
 	}
 
 	rpc.RegisterProcessManagerServiceServer(rpcService, pm)
@@ -136,7 +177,7 @@ func start(c *cli.Context) error {
 		cleanup(pm)
 		close(shutdownCh)
 	}()
-	logrus.Infof("Instance Manager listening to %v", listen)
+	logrus.Infof("Instance Manager process gRPC server listening to %v", listen)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -147,4 +188,18 @@ func start(c *cli.Context) error {
 	}()
 
 	return <-shutdownCh
+}
+
+func getProxyAddress(listen string) (string, error) {
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return "", err
+	}
+
+	intPort, err := strconv.Atoi(port)
+	if err != nil {
+		return "", err
+	}
+
+	return net.JoinHostPort(host, strconv.Itoa(intPort+1)), nil
 }

@@ -93,6 +93,7 @@ func (c *ProcessManagerClient) ProcessCreate(name, binary string, portCount int,
 	if err != nil {
 		return nil, fmt.Errorf("failed to start process: %v", err)
 	}
+
 	return api.RPCToProcess(p), nil
 }
 

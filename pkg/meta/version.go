@@ -2,8 +2,8 @@ package meta
 
 const (
 	// InstanceManagerAPIVersion used to communicate with the user e.g. longhorn-manager
-	InstanceManagerAPIVersion    = 1
-	InstanceManagerAPIMinVersion = 1
+	InstanceManagerAPIVersion    = 2
+	InstanceManagerAPIMinVersion = 2
 )
 
 // Following variables are filled in by main.go
