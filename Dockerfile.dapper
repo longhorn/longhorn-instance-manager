@@ -15,13 +15,15 @@ ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
 WORKDIR ${DAPPER_SOURCE}
 
 
-RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+RUN zypper refresh && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:scm/SLE_15_SP3/devel:tools:scm.repo && \
     zypper -n --gpg-auto-import-keys ref
 
 # Install packages
 RUN zypper -n install cmake wget curl git less file \
-        libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config psmisc tox qemu-tools fuse python3-devel git \
+        libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
+        psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
         bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
         perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
         rm -rf /var/cache/zypp/*
@@ -54,6 +56,16 @@ RUN cd /usr/src && \
     git checkout e042fdd3616ca90619637b5826695a3de9b5dd8e && \
     make && \
     make install
+
+# Install libqcow to resolve error:
+#   vendor/github.com/longhorn/longhorn-engine/pkg/qcow/libqcow.go:6:11: fatal error: libqcow.h: No such file or directory
+RUN wget -O - https://s3-us-west-1.amazonaws.com/rancher-longhorn/libqcow-alpha-20181117.tar.gz | tar xvzf - -C /usr/src
+RUN cd /usr/src/libqcow-20181117 && \
+    ./configure
+RUN cd /usr/src/libqcow-20181117 && \
+    make -j$(nproc) && \
+    make install
+RUN ldconfig
 
 VOLUME /tmp
 ENV TMPDIR /tmp
