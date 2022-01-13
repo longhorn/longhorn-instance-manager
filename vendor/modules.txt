@@ -44,6 +44,8 @@ github.com/aws/aws-sdk-go/service/s3
 github.com/aws/aws-sdk-go/service/s3/internal/arn
 github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
+# github.com/c9s/goprocinfo v0.0.0-20190309065803-0b2ad9ac246b
+github.com/c9s/goprocinfo/linux
 # github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2
@@ -60,6 +62,8 @@ github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/snappy
 # github.com/google/uuid v1.3.0
 github.com/google/uuid
+# github.com/gorilla/handlers v1.4.2
+github.com/gorilla/handlers
 # github.com/honestbee/jobq v1.0.2
 github.com/honestbee/jobq
 # github.com/jmespath/go-jmespath v0.3.0
@@ -73,9 +77,13 @@ github.com/longhorn/backupstore/nfs
 github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
+# github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
+github.com/longhorn/go-iscsi-helper/util
 # github.com/longhorn/longhorn-engine v1.3.0-preview1
+github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/meta
 github.com/longhorn/longhorn-engine/pkg/types
+github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/proto/ptypes
 # github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae
 github.com/mschoch/smat
