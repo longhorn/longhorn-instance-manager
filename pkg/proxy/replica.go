@@ -7,6 +7,7 @@ import (
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
@@ -26,13 +27,33 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Listing replicas")
 
-	resp = &rpc.EngineReplicaListProxyResponse{
-		ReplicaList: &eptypes.ReplicaListReply{},
+	c, err := eclient.NewControllerClient(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	recv, err := c.ReplicaList()
+	if err != nil {
+		return nil, err
 	}
 
-	// TODO
+	replicas := []*eptypes.ControllerReplica{}
+	for _, r := range recv {
+		replica := &eptypes.ControllerReplica{
+			Address: &eptypes.ReplicaAddress{
+				Address: r.Address,
+			},
+			Mode: eptypes.ReplicaModeToGRPCReplicaMode(r.Mode),
+		}
+		replicas = append(replicas, replica)
+	}
 
-	return resp, nil
+	return &rpc.EngineReplicaListProxyResponse{
+		ReplicaList: &eptypes.ReplicaListReply{
+			Replicas: replicas,
+		},
+	}, nil
 }
 
 func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {

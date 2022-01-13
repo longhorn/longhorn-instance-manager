@@ -4,7 +4,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
+	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
 func (c *ProxyClient) ReplicaAdd(serviceAddress, replicaAddress string, restore bool) (err error) {
@@ -28,6 +31,21 @@ func (c *ProxyClient) ReplicaList(serviceAddress string) (rInfoList []*etypes.Co
 
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Listing replicas via proxy")
+
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+	resp, err := c.service.ReplicaList(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list replicas %v for volume via proxy %v to %v", serviceAddress, c.ServiceURL, serviceAddress)
+	}
+
+	for _, cr := range resp.ReplicaList.Replicas {
+		rInfoList = append(rInfoList, &etypes.ControllerReplicaInfo{
+			Address: cr.Address.Address,
+			Mode:    eptypes.GRPCReplicaModeToReplicaMode(cr.Mode),
+		})
+	}
 
 	return rInfoList, nil
 }
