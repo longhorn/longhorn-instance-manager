@@ -7,6 +7,7 @@ import (
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
@@ -14,13 +15,30 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Getting volume")
 
-	resp = &rpc.EngineVolumeGetProxyResponse{
-		Volume: &eptypes.Volume{},
+	c, err := eclient.NewControllerClient(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	recv, err := c.VolumeGet()
+	if err != nil {
+		return nil, err
 	}
 
-	// TODO
-
-	return resp, nil
+	return &rpc.EngineVolumeGetProxyResponse{
+		Volume: &eptypes.Volume{
+			Name:                  recv.Name,
+			Size:                  recv.Size,
+			ReplicaCount:          int32(recv.ReplicaCount),
+			Endpoint:              recv.Endpoint,
+			Frontend:              recv.Frontend,
+			FrontendState:         recv.FrontendState,
+			IsExpanding:           recv.IsExpanding,
+			LastExpansionError:    recv.LastExpansionError,
+			LastExpansionFailedAt: recv.LastExpansionFailedAt,
+		},
+	}, nil
 }
 
 func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *empty.Empty, err error) {
