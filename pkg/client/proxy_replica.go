@@ -92,5 +92,16 @@ func (c *ProxyClient) ReplicaRemove(serviceAddress, replicaAddress string) (err 
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Removing replica %v via proxy", replicaAddress)
 
+	req := &rpc.EngineReplicaRemoveRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		ReplicaAddress: replicaAddress,
+	}
+	_, err = c.service.ReplicaRemove(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to remove replicas %v for volume via proxy %v to %v", replicaAddress, c.ServiceURL, serviceAddress)
+	}
+
 	return nil
 }

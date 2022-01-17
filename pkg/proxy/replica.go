@@ -96,7 +96,15 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debug("Removing replica")
 
-	// TODO
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	if err = c.ReplicaDelete(req.ReplicaAddress); err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }
