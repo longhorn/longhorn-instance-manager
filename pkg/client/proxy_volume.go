@@ -92,5 +92,13 @@ func (c *ProxyClient) VolumeFrontendShutdown(serviceAddress string) (err error) 
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Shutting down volume frontend via proxy")
 
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+	_, err = c.service.VolumeFrontendShutdown(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to shutdown volume frontend via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
 	return nil
 }
