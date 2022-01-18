@@ -104,7 +104,15 @@ func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplica
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Verifying replica %v rebuild", req.ReplicaAddress)
 
-	// TODO
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	err = task.VerifyRebuildReplica(req.ReplicaAddress)
+	if err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }

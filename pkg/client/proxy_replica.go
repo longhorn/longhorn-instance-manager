@@ -99,6 +99,17 @@ func (c *ProxyClient) ReplicaVerifyRebuild(serviceAddress, replicaAddress string
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Verifying replica rebuild via proxy")
 
+	req := &rpc.EngineReplicaVerifyRebuildRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		ReplicaAddress: replicaAddress,
+	}
+	_, err = c.service.ReplicaVerifyRebuild(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to verify replica %v rebuild via proxy %v to %v", replicaAddress, c.ServiceURL, serviceAddress)
+	}
+
 	return nil
 }
 
