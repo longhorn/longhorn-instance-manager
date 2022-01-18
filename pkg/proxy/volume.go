@@ -63,7 +63,16 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Starting volume frontend %v", req.FrontendStart.Frontend)
 
-	// TODO
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	err = c.VolumeFrontendStart(req.FrontendStart.Frontend)
+	if err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }

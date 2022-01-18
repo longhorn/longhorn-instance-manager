@@ -69,6 +69,19 @@ func (c *ProxyClient) VolumeFrontendStart(serviceAddress, frontendName string) (
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Starting volume frontend %v via proxy", frontendName)
 
+	req := &rpc.EngineVolumeFrontendStartRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		FrontendStart: &eptypes.VolumeFrontendStartRequest{
+			Frontend: frontendName,
+		},
+	}
+	_, err = c.service.VolumeFrontendStart(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to start volume frontend %v via proxy %v to %v", frontendName, c.ServiceURL, serviceAddress)
+	}
+
 	return nil
 }
 
