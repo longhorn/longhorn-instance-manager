@@ -70,6 +70,24 @@ func (c *ProxyClient) ReplicaRebuildingStatus(serviceAddress string) (status map
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Getting replica rebuilding status via proxy")
 
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+	recv, err := c.service.ReplicaRebuildingStatus(c.ctx, req)
+	if err != nil {
+		return status, errors.Wrapf(err, "failed to get replicas rebuilding status via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
+	status = make(map[string]*ReplicaRebuildStatus)
+	for k, v := range recv.Status {
+		status[k] = &ReplicaRebuildStatus{
+			Error:              v.Error,
+			IsRebuilding:       v.IsRebuilding,
+			Progress:           int(v.Progress),
+			State:              v.State,
+			FromReplicaAddress: v.FromReplicaAddress,
+		}
+	}
 	return status, nil
 }
 

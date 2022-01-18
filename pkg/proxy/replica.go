@@ -74,11 +74,28 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Getting replica rebuilding status")
 
+	task, err := esync.NewTask(ctx, req.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := task.RebuildStatus()
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &rpc.EngineReplicaRebuildStatusProxyResponse{
 		Status: make(map[string]*eptypes.ReplicaRebuildStatusResponse),
 	}
-
-	// TODO
+	for k, v := range recv {
+		resp.Status[k] = &eptypes.ReplicaRebuildStatusResponse{
+			Error:              v.Error,
+			IsRebuilding:       v.IsRebuilding,
+			Progress:           int32(v.Progress),
+			State:              v.State,
+			FromReplicaAddress: v.FromReplicaAddress,
+		}
+	}
 
 	return resp, nil
 }
