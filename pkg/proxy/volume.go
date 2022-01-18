@@ -45,7 +45,16 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debug("Expanding volume")
 
-	// TODO
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	err = c.VolumeExpand(req.Expand.Size)
+	if err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }

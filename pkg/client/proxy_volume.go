@@ -7,6 +7,7 @@ import (
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
+	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
 func (c *ProxyClient) VolumeGet(serviceAddress string) (info *etypes.VolumeInfo, err error) {
@@ -44,6 +45,19 @@ func (c *ProxyClient) VolumeExpand(serviceAddress string, size int64) (err error
 	}
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Expanding volume via proxy")
+
+	req := &rpc.EngineVolumeExpandRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		Expand: &eptypes.VolumeExpandRequest{
+			Size: size,
+		},
+	}
+	_, err = c.service.VolumeExpand(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to expand volume via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
 
 	return nil
 }
