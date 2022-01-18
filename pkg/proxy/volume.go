@@ -81,7 +81,16 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Shutting down volume frontend")
 
-	// TODO
+	c, err := eclient.NewControllerClient(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	err = c.VolumeFrontendShutdown()
+	if err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }
