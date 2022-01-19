@@ -8,6 +8,7 @@ import (
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
+	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
@@ -18,7 +19,20 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 	})
 	log.Debugf("Adding replica %v", req.ReplicaAddress)
 
-	// TODO
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Restore {
+		if err := task.AddRestoreReplica(req.ReplicaAddress); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := task.AddReplica(req.ReplicaAddress); err != nil {
+			return nil, err
+		}
+	}
 
 	return &empty.Empty{}, nil
 }
