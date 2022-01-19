@@ -53,6 +53,7 @@ github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e/go.mod h1
 github.com/longhorn/longhorn-engine v1.3.0-preview1 h1:aleV7rxaIE4/ZvtKNJxFjx2bDHMByqfxuOreDjxOtkU=
 github.com/longhorn/longhorn-engine v1.3.0-preview1/go.mod h1:SPYBeRnysbA3sYd3Ln5mFHADmqG6kXGlwi2Ba6JqcQU=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
+github.com/longhorn/sparse-tools v0.0.0-20220323120706-0bd9b4129826 h1:8IeuJT9y0xFGSfSl9dOG/L6dJOGtIrS3nYqgo3eYzao=
 github.com/longhorn/sparse-tools v0.0.0-20220323120706-0bd9b4129826/go.mod h1:BWM7yTPb1DulG18EE/Jy20LVIySzIYoZpiOYFtAGwZo=
 github.com/mattn/go-colorable v0.1.4/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=
 github.com/mattn/go-isatty v0.0.8/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hdxcsrc5s=
@@ -68,6 +69,7 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pkg/sftp v1.10.1/go.mod h1:lYOWFsE0bwd1+KfKJaKeuokY15vzFx25BLbzYYoAxZI=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47 h1:JSipdfqjzjD9EMzehVJaS48FXXfC8Bec4japPmWE5pM=
 github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47/go.mod h1:aLaSmp4RuKnOBJO5jFdPH+qkSfLByIGGZVczecL9okc=
 github.com/rancher/go-rancher v0.1.1-0.20190307222549-9756097e5e4c/go.mod h1:7oQvGNiJsGvrUgB+7AH8bmdzuR0uhULfwKb43Ht0hUk=
 github.com/russross/blackfriday/v2 v2.0.1 h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0RK8m9o+Q=

@@ -21,6 +21,18 @@ func (c *ProxyClient) ReplicaAdd(serviceAddress, replicaAddress string, restore 
 	})
 	log.Debugf("Adding replica %v via proxy", replicaAddress)
 
+	req := &rpc.EngineReplicaAddRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		ReplicaAddress: replicaAddress,
+		Restore:        restore,
+	}
+	_, err = c.service.ReplicaAdd(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to add replica %v for volume via proxy %v to %v", replicaAddress, c.ServiceURL, serviceAddress)
+	}
+
 	return nil
 }
 

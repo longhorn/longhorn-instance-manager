@@ -80,17 +80,26 @@ github.com/longhorn/backupstore/vfs
 # github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
 github.com/longhorn/go-iscsi-helper/util
 # github.com/longhorn/longhorn-engine v1.3.0-preview1
+github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/meta
+github.com/longhorn/longhorn-engine/pkg/qcow
+github.com/longhorn/longhorn-engine/pkg/replica
+github.com/longhorn/longhorn-engine/pkg/replica/client
+github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/proto/ptypes
+# github.com/longhorn/sparse-tools v0.0.0-20220323120706-0bd9b4129826
+github.com/longhorn/sparse-tools/sparse
 # github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae
 github.com/mschoch/smat
 # github.com/philhofer/fwd v1.0.0
 github.com/philhofer/fwd
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
+# github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47
+github.com/rancher/go-fibmap
 # github.com/russross/blackfriday/v2 v2.0.1
 github.com/russross/blackfriday/v2
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
