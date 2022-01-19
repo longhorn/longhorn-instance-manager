@@ -7,6 +7,7 @@ import (
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
@@ -51,11 +52,28 @@ func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineReques
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Getting server version")
 
-	resp = &rpc.EngineVersionProxyResponse{
-		Version: &eptypes.VersionOutput{},
+	c, err := eclient.NewControllerClient(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	recv, err := c.VersionDetailGet()
+	if err != nil {
+		return nil, err
 	}
 
-	// TODO
-
-	return resp, nil
+	return &rpc.EngineVersionProxyResponse{
+		Version: &eptypes.VersionOutput{
+			Version:                 recv.Version,
+			GitCommit:               recv.GitCommit,
+			BuildDate:               recv.BuildDate,
+			CliAPIVersion:           int64(recv.CLIAPIVersion),
+			CliAPIMinVersion:        int64(recv.CLIAPIMinVersion),
+			ControllerAPIVersion:    int64(recv.ControllerAPIVersion),
+			ControllerAPIMinVersion: int64(recv.ControllerAPIMinVersion),
+			DataFormatVersion:       int64(recv.DataFormatVersion),
+			DataFormatMinVersion:    int64(recv.DataFormatMinVersion),
+		},
+	}, nil
 }

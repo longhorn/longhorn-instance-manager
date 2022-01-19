@@ -87,10 +87,30 @@ func (c *ProxyClient) ServerVersionGet(serviceAddress string) (version *emeta.Ve
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Getting server version via proxy")
 
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+	resp, err := c.service.ServerVersionGet(c.ctx, req)
+	if err != nil {
+		return version, errors.Wrapf(err, "failed to get server version via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
+	serverVersion := resp.Version
+	version = &emeta.VersionOutput{
+		Version:                 serverVersion.Version,
+		GitCommit:               serverVersion.GitCommit,
+		BuildDate:               serverVersion.BuildDate,
+		CLIAPIVersion:           int(serverVersion.CliAPIVersion),
+		CLIAPIMinVersion:        int(serverVersion.CliAPIMinVersion),
+		ControllerAPIVersion:    int(serverVersion.ControllerAPIVersion),
+		ControllerAPIMinVersion: int(serverVersion.ControllerAPIMinVersion),
+		DataFormatVersion:       int(serverVersion.DataFormatVersion),
+		DataFormatMinVersion:    int(serverVersion.DataFormatMinVersion),
+	}
 	return version, nil
 }
 
 func (c *ProxyClient) ClientVersionGet() (version emeta.VersionOutput) {
 	logrus.Debug("Getting client version on proxy")
-	return version
+	return emeta.GetVersion()
 }
