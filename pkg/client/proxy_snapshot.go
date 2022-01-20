@@ -4,7 +4,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
+	eutil "github.com/longhorn/longhorn-engine/pkg/util"
+	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
 func (c *ProxyClient) VolumeSnapshot(serviceAddress, volumeName string, labels map[string]string) (snapshotName string, err error) {
@@ -15,7 +19,33 @@ func (c *ProxyClient) VolumeSnapshot(serviceAddress, volumeName string, labels m
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Snapshotting volume via proxy")
 
-	return snapshotName, nil
+	for key, value := range labels {
+		if errList := eutil.IsQualifiedName(key); len(errList) > 0 {
+			return "", errors.Errorf("invalid key %v for label: %v", key, errList[0])
+		}
+
+		// We don't need to validate the Label value since we're allowing for any form of data to be stored, similar
+		// to Kubernetes Annotations. Of course, we should make sure it isn't empty.
+		if value == "" {
+			return "", errors.Errorf("invalid empty value for label with key %v", key)
+		}
+	}
+
+	req := &rpc.EngineVolumeSnapshotRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		SnapshotVolume: &eptypes.VolumeSnapshotRequest{
+			Name:   volumeName,
+			Labels: labels,
+		},
+	}
+	recv, err := c.service.VolumeSnapshot(c.ctx, req)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to snapshot volume via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
+	return recv.Snapshot.Name, nil
 }
 
 func (c *ProxyClient) SnapshotList(serviceAddress string) (snapshotDiskInfo map[string]*etypes.DiskInfo, err error) {

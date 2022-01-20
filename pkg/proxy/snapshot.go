@@ -7,6 +7,7 @@ import (
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
@@ -14,13 +15,22 @@ func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapsho
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Snapshotting volume %v", req.SnapshotVolume.Name)
 
-	resp = &rpc.EngineVolumeSnapshotProxyResponse{
-		Snapshot: &eptypes.VolumeSnapshotReply{},
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	recv, err := c.VolumeSnapshot(req.SnapshotVolume.Name, req.SnapshotVolume.Labels)
+	if err != nil {
+		return nil, err
 	}
 
-	// TODO
-
-	return resp, nil
+	return &rpc.EngineVolumeSnapshotProxyResponse{
+		Snapshot: &eptypes.VolumeSnapshotReply{
+			Name: recv,
+		},
+	}, nil
 }
 
 func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
