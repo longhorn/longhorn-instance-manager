@@ -56,6 +56,33 @@ func (c *ProxyClient) SnapshotList(serviceAddress string) (snapshotDiskInfo map[
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Listing snapshots via proxy")
 
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+	resp, err := c.service.SnapshotList(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list replicas for volume via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
+	snapshotDiskInfo = map[string]*etypes.DiskInfo{}
+	for k, v := range resp.Disks {
+		if v.Children == nil {
+			v.Children = map[string]bool{}
+		}
+		if v.Labels == nil {
+			v.Labels = map[string]string{}
+		}
+		snapshotDiskInfo[k] = &etypes.DiskInfo{
+			Name:        v.Name,
+			Parent:      v.Parent,
+			Children:    v.Children,
+			Removed:     v.Removed,
+			UserCreated: v.UserCreated,
+			Created:     v.Created,
+			Size:        v.Size,
+			Labels:      v.Labels,
+		}
+	}
 	return snapshotDiskInfo, nil
 }
 
