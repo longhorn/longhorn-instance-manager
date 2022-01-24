@@ -8,6 +8,7 @@ import (
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
+	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
@@ -37,11 +38,37 @@ func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Listing snapshots")
 
+	c, err := eclient.NewControllerClient(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	recv, err := c.ReplicaList()
+	if err != nil {
+		return nil, err
+	}
+
+	snapshotsDiskInfo, err := esync.GetSnapshotsInfo(recv)
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &rpc.EngineSnapshotListProxyResponse{
 		Disks: map[string]*rpc.EngineSnapshotDiskInfo{},
 	}
-
-	// TODO
+	for k, v := range snapshotsDiskInfo {
+		resp.Disks[k] = &rpc.EngineSnapshotDiskInfo{
+			Name:        v.Name,
+			Parent:      v.Parent,
+			Children:    v.Children,
+			Removed:     v.Removed,
+			UserCreated: v.UserCreated,
+			Created:     v.Created,
+			Size:        v.Size,
+			Labels:      v.Labels,
+		}
+	}
 
 	return resp, nil
 }
