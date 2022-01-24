@@ -130,7 +130,18 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Removing snapshots %v", req.Names)
 
-	// TODO
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
 
-	return &empty.Empty{}, err
+	var lastErr error
+	for _, name := range req.Names {
+		if err := task.DeleteSnapshot(name); err != nil {
+			lastErr = err
+			logrus.WithError(err).Warnf("Failed to delete %s", name)
+		}
+	}
+
+	return &empty.Empty{}, lastErr
 }
