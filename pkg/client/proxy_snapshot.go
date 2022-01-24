@@ -149,5 +149,16 @@ func (c *ProxyClient) SnapshotRemove(serviceAddress string, names []string) (err
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Removing snapshot %v via proxy", names)
 
+	req := &rpc.EngineSnapshotRemoveRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		Names: names,
+	}
+	_, err = c.service.SnapshotRemove(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to remove snapshot %v via proxy %v to %v", names, c.ServiceURL, serviceAddress)
+	}
+
 	return nil
 }
