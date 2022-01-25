@@ -99,7 +99,15 @@ func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Reverting snapshot %v", req.Name)
 
-	// TODO
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	if err := c.VolumeRevert(req.Name); err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }
