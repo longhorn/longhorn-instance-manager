@@ -146,6 +146,17 @@ func (c *ProxyClient) SnapshotPurge(serviceAddress string, skipIfInProgress bool
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Purging snapshots via proxy")
 
+	req := &rpc.EngineSnapshotPurgeRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		SkipIfInProgress: skipIfInProgress,
+	}
+	_, err = c.service.SnapshotPurge(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to purge snapshots via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
 	return nil
 }
 

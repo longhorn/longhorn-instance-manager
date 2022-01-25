@@ -116,7 +116,14 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debug("Purging snapshots")
 
-	//TODO
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := task.PurgeSnapshots(req.SkipIfInProgress); err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }
