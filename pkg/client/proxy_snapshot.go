@@ -11,6 +11,10 @@ import (
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
+const (
+	VolumeHeadName = "volume-head"
+)
+
 func (c *ProxyClient) VolumeSnapshot(serviceAddress, volumeName string, labels map[string]string) (snapshotName string, err error) {
 	if serviceAddress == "" {
 		return "", errors.Wrapf(ErrParameter, "failed to snapshot volume")
@@ -113,8 +117,23 @@ func (c *ProxyClient) SnapshotRevert(serviceAddress string, name string) (err er
 		return errors.Wrapf(ErrParameter, "failed to revert volume to snapshot %v", name)
 	}
 
+	if name == VolumeHeadName {
+		return errors.Errorf("invalid operation: cannot revert to %v", VolumeHeadName)
+	}
+
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Reverting snapshot %v via proxy", name)
+
+	req := &rpc.EngineSnapshotRevertRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		Name: name,
+	}
+	_, err = c.service.SnapshotRevert(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to revert volume to snapshot %v via proxy %v to %v", name, c.ServiceURL, serviceAddress)
+	}
 
 	return nil
 }
