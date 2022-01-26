@@ -168,6 +168,24 @@ func (c *ProxyClient) SnapshotPurgeStatus(serviceAddress string) (status map[str
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Getting snapshot purge status via proxy")
 
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+
+	recv, err := c.service.SnapshotPurgeStatus(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get snapshot purge status via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
+	status = make(map[string]*SnapshotPurgeStatus)
+	for k, v := range recv.Status {
+		status[k] = &SnapshotPurgeStatus{
+			Error:     v.Error,
+			IsPurging: v.IsPurging,
+			Progress:  int(v.Progress),
+			State:     v.State,
+		}
+	}
 	return status, nil
 }
 

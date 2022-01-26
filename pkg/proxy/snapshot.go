@@ -132,11 +132,27 @@ func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Get snapshot purge status")
 
+	task, err := esync.NewTask(ctx, req.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := task.PurgeSnapshotStatus()
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &rpc.EngineSnapshotPurgeStatusProxyResponse{
 		Status: map[string]*eptypes.SnapshotPurgeStatusResponse{},
 	}
-
-	// TODO
+	for k, v := range recv {
+		resp.Status[k] = &eptypes.SnapshotPurgeStatusResponse{
+			IsPurging: v.IsPurging,
+			Error:     v.Error,
+			Progress:  int32(v.Progress),
+			State:     v.State,
+		}
+	}
 
 	return resp, nil
 }
