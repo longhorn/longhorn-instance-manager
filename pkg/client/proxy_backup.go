@@ -48,6 +48,26 @@ func (c *ProxyClient) SnapshotBackupStatus(serviceAddress, backupName, replicaAd
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Getting %v backup status via proxy", backupName)
 
+	req := &rpc.EngineSnapshotBackupStatusRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		BackupName:     backupName,
+		ReplicaAddress: replicaAddress,
+	}
+	recv, err := c.service.SnapshotBackupStatus(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get %v backup status via proxy %v to %v", backupName, c.ServiceURL, serviceAddress)
+	}
+
+	status = &SnapshotBackupStatus{
+		Progress:       int(recv.Progress),
+		BackupURL:      recv.BackupUrl,
+		Error:          recv.Error,
+		SnapshotName:   recv.SnapshotName,
+		State:          recv.State,
+		ReplicaAddress: recv.ReplicaAddress,
+	}
 	return status, nil
 }
 
