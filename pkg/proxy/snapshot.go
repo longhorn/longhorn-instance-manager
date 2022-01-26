@@ -101,11 +101,30 @@ func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Getting snapshot clone status")
 
+	c, err := eclient.NewControllerClient(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	recv, err := esync.CloneStatus(c)
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &rpc.EngineSnapshotCloneStatusProxyResponse{
 		Status: map[string]*eptypes.SnapshotCloneStatusResponse{},
 	}
-
-	// TODO
+	for k, v := range recv {
+		resp.Status[k] = &eptypes.SnapshotCloneStatusResponse{
+			IsCloning:          v.IsCloning,
+			Error:              v.Error,
+			Progress:           int32(v.Progress),
+			State:              v.State,
+			FromReplicaAddress: v.FromReplicaAddress,
+			SnapshotName:       v.SnapshotName,
+		}
+	}
 
 	return resp, nil
 }

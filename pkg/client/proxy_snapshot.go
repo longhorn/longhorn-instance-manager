@@ -122,7 +122,26 @@ func (c *ProxyClient) SnapshotCloneStatus(serviceAddress string) (status map[str
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Getting snapshot clone status via proxy")
 
-	return status, err
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+	recv, err := c.service.SnapshotCloneStatus(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get snapshot clone status via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
+	status = map[string]*SnapshotCloneStatus{}
+	for k, v := range recv.Status {
+		status[k] = &SnapshotCloneStatus{
+			IsCloning:          v.IsCloning,
+			Error:              v.Error,
+			Progress:           int(v.Progress),
+			State:              v.State,
+			FromReplicaAddress: v.FromReplicaAddress,
+			SnapshotName:       v.SnapshotName,
+		}
+	}
+	return status, nil
 }
 
 func (c *ProxyClient) SnapshotRevert(serviceAddress string, name string) (err error) {
