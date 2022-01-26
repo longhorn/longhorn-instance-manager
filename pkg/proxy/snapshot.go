@@ -77,7 +77,22 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Cloning snapshot from %v to %v", req.FromController, req.ProxyEngineRequest.Address)
 
-	// TODO
+	cFrom, err := eclient.NewControllerClient(req.FromController)
+	if err != nil {
+		return nil, err
+	}
+	defer cFrom.Close()
+
+	cTo, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer cTo.Close()
+
+	err = esync.CloneSnapshot(cTo, cFrom, req.SnapshotName, req.ExportBackingImageIfExist)
+	if err != nil {
+		return nil, err
+	}
 
 	return &empty.Empty{}, nil
 }
