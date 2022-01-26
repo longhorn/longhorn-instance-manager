@@ -6,13 +6,18 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
+	rclient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
+	etypes "github.com/longhorn/longhorn-engine/pkg/types"
 	eutil "github.com/longhorn/longhorn-engine/pkg/util"
+	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
 func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
@@ -69,11 +74,55 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
 
-	resp = &rpc.EngineSnapshotBackupStatusProxyResponse{}
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
 
-	// TODO
+	replicas, err := p.ReplicaList(ctx, req.ProxyEngineRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, nil
+	status := &esync.BackupStatusInfo{}
+	replicaAddress := req.ReplicaAddress
+	if replicaAddress == "" {
+		// find a replica which has the corresponding backup
+		for _, r := range replicas.ReplicaList.Replicas {
+			mode := eptypes.GRPCReplicaModeToReplicaMode(r.Mode)
+			if mode != etypes.RW {
+				continue
+			}
+
+			cReplica, err := rclient.NewReplicaClient(r.Address.Address)
+			if err != nil {
+				logrus.Debugf("Failed to create replica client with %v", r.Address.Address)
+				continue
+			}
+
+			fetched, err := esync.FetchBackupStatus(cReplica, req.BackupName, r.Address.Address)
+			cReplica.Close()
+			if err == nil {
+				replicaAddress = r.Address.Address
+				status = fetched
+				break
+			}
+		}
+	}
+
+	if replicaAddress == "" {
+		return nil, errors.Errorf("failed to find a replica with backup %s", req.BackupName)
+	}
+
+	return &rpc.EngineSnapshotBackupStatusProxyResponse{
+		BackupUrl:      status.BackupURL,
+		Error:          status.Error,
+		Progress:       int32(status.Progress),
+		SnapshotName:   status.SnapshotName,
+		State:          status.State,
+		ReplicaAddress: replicaAddress,
+	}, nil
 }
 
 func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
