@@ -5,6 +5,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/backupstore"
+
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 func (c *ProxyClient) SnapshotBackup(serviceAddress,
@@ -18,7 +20,24 @@ func (c *ProxyClient) SnapshotBackup(serviceAddress,
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Backing up snapshot %v to %v via proxy", snapshotName, backupName)
 
-	return backupID, replicaAddress, nil
+	req := &rpc.EngineSnapshotBackupRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		Envs:                 envs,
+		BackupName:           backupName,
+		SnapshotName:         snapshotName,
+		BackupTarget:         backupTarget,
+		BackingImageName:     backingImageName,
+		BackingImageChecksum: backingImageChecksum,
+		Labels:               labels,
+	}
+	recv, err := c.service.SnapshotBackup(c.ctx, req)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to backup snapshot %v to %v via proxy %v to %v", snapshotName, backupName, c.ServiceURL, serviceAddress)
+	}
+
+	return recv.BackupId, recv.Replica, nil
 }
 
 func (c *ProxyClient) SnapshotBackupStatus(serviceAddress, backupName, replicaAddress string) (status *SnapshotBackupStatus, err error) {

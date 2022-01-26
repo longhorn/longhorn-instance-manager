@@ -1,26 +1,68 @@
 package proxy
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+
+	esync "github.com/longhorn/longhorn-engine/pkg/sync"
+	eutil "github.com/longhorn/longhorn-engine/pkg/util"
 )
 
 func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Backing up snapshots %v to backup %v", req.SnapshotName, req.BackupName)
 
-	resp = &rpc.EngineSnapshotBackupProxyResponse{
-		BackupId:      "",
-		Replica:       "",
-		IsIncremental: false,
+	for _, env := range req.Envs {
+		part := strings.SplitN(env, "=", 2)
+		if len(part) < 2 {
+			continue
+		}
+
+		if err := os.Setenv(part[0], part[1]); err != nil {
+			return nil, err
+		}
 	}
 
-	// TODO
+	credential, err := eutil.GetBackupCredential(req.BackupTarget)
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, nil
+	labels := []string{}
+	for k, v := range req.Labels {
+		labels = append(labels, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := task.CreateBackup(
+		req.BackupName,
+		req.SnapshotName,
+		req.BackupTarget,
+		req.BackingImageName,
+		req.BackingImageChecksum,
+		labels,
+		credential,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rpc.EngineSnapshotBackupProxyResponse{
+		BackupId:      recv.BackupID,
+		Replica:       recv.ReplicaAddress,
+		IsIncremental: recv.IsIncremental,
+	}, nil
 }
 
 func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
