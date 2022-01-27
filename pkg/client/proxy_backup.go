@@ -1,6 +1,8 @@
 package client
 
 import (
+	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -71,15 +73,38 @@ func (c *ProxyClient) SnapshotBackupStatus(serviceAddress, backupName, replicaAd
 	return status, nil
 }
 
-func (c *ProxyClient) BackupRestore(serviceAddress, url, target, volumeName string, envs []string) (taskError []byte, err error) {
+func (c *ProxyClient) BackupRestore(serviceAddress, url, target, volumeName string, envs []string) error {
 	if serviceAddress == "" || url == "" || target == "" || volumeName == "" {
-		return nil, errors.Wrapf(ErrParameter, "failed to restore backup to volume")
+		return errors.Wrapf(ErrParameter, "failed to restore backup to volume")
 	}
 
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Restoring %v backup to %v via proxy", url, volumeName)
 
-	return taskError, nil
+	req := &rpc.EngineBackupRestoreRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address: serviceAddress,
+		},
+		Envs:       envs,
+		Url:        url,
+		Target:     target,
+		VolumeName: volumeName,
+	}
+	recv, err := c.service.BackupRestore(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to restore backup %v to %v via proxy %v to %v", url, volumeName, c.ServiceURL, serviceAddress)
+	}
+
+	if recv.TaskError != nil {
+		var taskErr TaskError
+		if jsonErr := json.Unmarshal(recv.TaskError, &taskErr); jsonErr != nil {
+			return errors.Wrapf(jsonErr, "Cannot unmarshal the restore error, maybe it's not caused by the replica restore failure")
+		}
+
+		return taskErr
+	}
+
+	return nil
 }
 
 func (c *ProxyClient) BackupRestoreStatus(serviceAddress string) (status map[string]*BackupRestoreStatus, err error) {
