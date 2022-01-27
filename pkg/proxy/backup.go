@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -129,9 +130,40 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Debugf("Restoring backup %v to %v", req.Url, req.VolumeName)
 
-	resp = &rpc.EngineBackupRestoreProxyResponse{}
+	for _, env := range req.Envs {
+		part := strings.SplitN(env, "=", 2)
+		if len(part) < 2 {
+			continue
+		}
 
-	// TODO
+		if err := os.Setenv(part[0], part[1]); err != nil {
+			return nil, err
+		}
+	}
+
+	credential, err := eutil.GetBackupCredential(req.Target)
+	if err != nil {
+		return nil, err
+	}
+
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	err = task.RestoreBackup(req.Url, credential)
+	if err != nil {
+		errInfo, jsonErr := json.Marshal(err)
+		if jsonErr != nil {
+			log.Debugf("Cannot marshal err [%v] to json: %v", err, jsonErr)
+		}
+		// If the error is not `TaskError`, the marshaled result is an empty json string.
+		if string(errInfo) != "{}" {
+			resp.TaskError = errInfo
+		} else {
+			resp.TaskError = []byte(err.Error())
+		}
+	}
 
 	return resp, nil
 }
