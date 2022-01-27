@@ -172,11 +172,31 @@ func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Debug("Getting backup restore status")
 
+	task, err := esync.NewTask(ctx, req.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := task.RestoreStatus()
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &rpc.EngineBackupRestoreStatusProxyResponse{
 		Status: map[string]*rpc.EngineBackupRestoreStatus{},
 	}
-
-	// TODO
+	for k, v := range recv {
+		resp.Status[k] = &rpc.EngineBackupRestoreStatus{
+			IsRestoring:            v.IsRestoring,
+			LastRestored:           v.LastRestored,
+			CurrentRestoringBackup: v.CurrentRestoringBackup,
+			Progress:               int32(v.Progress),
+			Error:                  v.Error,
+			Filename:               v.Filename,
+			State:                  v.State,
+			BackupUrl:              v.BackupURL,
+		}
+	}
 
 	return resp, nil
 }
