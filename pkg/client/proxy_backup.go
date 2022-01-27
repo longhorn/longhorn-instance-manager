@@ -115,6 +115,27 @@ func (c *ProxyClient) BackupRestoreStatus(serviceAddress string) (status map[str
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debug("Getting backup restore status via proxy")
 
+	req := &rpc.ProxyEngineRequest{
+		Address: serviceAddress,
+	}
+	recv, err := c.service.BackupRestoreStatus(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get backup restore status via proxy %v to %v", c.ServiceURL, serviceAddress)
+	}
+
+	status = map[string]*BackupRestoreStatus{}
+	for k, v := range recv.Status {
+		status[k] = &BackupRestoreStatus{
+			IsRestoring:            v.IsRestoring,
+			LastRestored:           v.LastRestored,
+			CurrentRestoringBackup: v.CurrentRestoringBackup,
+			Progress:               int(v.Progress),
+			Error:                  v.Error,
+			Filename:               v.Filename,
+			State:                  v.State,
+			BackupURL:              v.BackupUrl,
+		}
+	}
 	return status, nil
 }
 
