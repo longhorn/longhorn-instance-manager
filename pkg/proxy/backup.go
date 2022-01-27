@@ -19,6 +19,8 @@ import (
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
 	eutil "github.com/longhorn/longhorn-engine/pkg/util"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+
+	"github.com/longhorn/backupstore"
 )
 
 func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
@@ -231,13 +233,76 @@ func (p *Proxy) BackupVolumeList(ctx context.Context, req *rpc.EngineBackupVolum
 	log := logrus.WithFields(logrus.Fields{"destURL": req.DestUrl})
 	log.Debug("Listing backup volumes")
 
+	for _, env := range req.Envs {
+		part := strings.SplitN(env, "=", 2)
+		if len(part) < 2 {
+			continue
+		}
+
+		if err := os.Setenv(part[0], part[1]); err != nil {
+			return nil, err
+		}
+	}
+
+	recv, err := backupstore.List(req.VolumeName, req.DestUrl, req.VolumeOnly)
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &rpc.EngineBackupVolumeListProxyResponse{
 		Volumes: map[string]*rpc.EngineBackupVolumeInfo{},
 	}
-
-	// TODO
+	for k, v := range recv {
+		resp.Volumes[k] = &rpc.EngineBackupVolumeInfo{
+			Name:                 v.Name,
+			Size:                 v.Size,
+			Labels:               v.Labels,
+			Created:              v.Created,
+			LastBackupName:       v.LastBackupName,
+			LastBackupAt:         v.LastBackupAt,
+			DataStored:           v.DataStored,
+			Messages:             parseMessages(v.Messages),
+			Backups:              parseBackups(v.Backups),
+			BackingImageName:     v.BackingImageName,
+			BackingImageChecksum: v.BackingImageChecksum,
+		}
+	}
 
 	return resp, nil
+}
+
+func parseBackups(in map[string]*backupstore.BackupInfo) (out map[string]*rpc.EngineBackupInfo) {
+	out = map[string]*rpc.EngineBackupInfo{}
+	for k, v := range in {
+		out[k] = parseBackup(v)
+	}
+	return out
+}
+
+func parseBackup(in *backupstore.BackupInfo) (out *rpc.EngineBackupInfo) {
+	return &rpc.EngineBackupInfo{
+		Name:                   in.Name,
+		Url:                    in.URL,
+		SnapshotName:           in.SnapshotName,
+		SnapshotCreated:        in.SnapshotCreated,
+		Created:                in.Created,
+		Size:                   in.Size,
+		Labels:                 in.Labels,
+		IsIncremental:          in.IsIncremental,
+		VolumeName:             in.VolumeName,
+		VolumeSize:             in.VolumeSize,
+		VolumeCreated:          in.VolumeCreated,
+		VolumeBackingImageName: in.VolumeBackingImageName,
+		Messages:               parseMessages(in.Messages),
+	}
+}
+
+func parseMessages(in map[backupstore.MessageType]string) (out map[string]string) {
+	out = map[string]string{}
+	for k, v := range in {
+		out[string(k)] = v
+	}
+	return out
 }
 
 func (p *Proxy) BackupConfigMetaGet(ctx context.Context, req *rpc.EngineBackupConfigMetaGetRequest) (resp *rpc.EngineBackupConfigMetaGetProxyResponse, err error) {

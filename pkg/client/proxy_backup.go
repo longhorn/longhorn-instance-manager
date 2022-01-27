@@ -172,7 +172,60 @@ func (c *ProxyClient) BackupVolumeList(destURL, volumeName string, volumeOnly bo
 	}
 	log.Debugf("Listing %v backup volumes via proxy", destURL)
 
+	req := &rpc.EngineBackupVolumeListRequest{
+		Envs:       envs,
+		DestUrl:    destURL,
+		VolumeName: volumeName,
+		VolumeOnly: volumeOnly,
+	}
+	recv, err := c.service.BackupVolumeList(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list %v backup volumes via proxy %v", destURL, c.ServiceURL)
+	}
+
+	info = map[string]*EngineBackupVolumeInfo{}
+	for k, v := range recv.Volumes {
+		info[k] = &EngineBackupVolumeInfo{
+			Name:                 v.Name,
+			Size:                 v.Size,
+			Labels:               v.Labels,
+			Created:              v.Created,
+			LastBackupName:       v.LastBackupName,
+			LastBackupAt:         v.LastBackupAt,
+			DataStored:           v.DataStored,
+			Messages:             v.Messages,
+			Backups:              parseBackups(v.Backups),
+			BackingImageName:     v.BackingImageName,
+			BackingImageChecksum: v.BackingImageChecksum,
+		}
+	}
 	return info, nil
+}
+
+func parseBackups(in map[string]*rpc.EngineBackupInfo) (out map[string]*EngineBackupInfo) {
+	out = map[string]*EngineBackupInfo{}
+	for k, v := range in {
+		out[k] = parseBackup(v)
+	}
+	return out
+}
+
+func parseBackup(in *rpc.EngineBackupInfo) (out *EngineBackupInfo) {
+	return &EngineBackupInfo{
+		Name:                   in.Name,
+		URL:                    in.Url,
+		SnapshotName:           in.SnapshotName,
+		SnapshotCreated:        in.SnapshotCreated,
+		Created:                in.Created,
+		Size:                   in.Size,
+		Labels:                 in.Labels,
+		IsIncremental:          in.IsIncremental,
+		VolumeName:             in.VolumeName,
+		VolumeSize:             in.VolumeSize,
+		VolumeCreated:          in.VolumeCreated,
+		VolumeBackingImageName: in.VolumeBackingImageName,
+		Messages:               in.Messages,
+	}
 }
 
 func (c *ProxyClient) BackupConfigMetaGet(destURL string, envs []string) (meta *backupstore.ConfigMetadata, err error) {
