@@ -21,6 +21,7 @@ import (
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 
 	"github.com/longhorn/backupstore"
+	bsutil "github.com/longhorn/backupstore/util"
 )
 
 func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
@@ -323,7 +324,29 @@ func (p *Proxy) BackupRemove(ctx context.Context, req *rpc.EngineBackupRemoveReq
 	}
 	log.Debug("Removing backups")
 
-	// TODO
+	for _, env := range req.Envs {
+		part := strings.SplitN(env, "=", 2)
+		if len(part) < 2 {
+			continue
+		}
+
+		if err := os.Setenv(part[0], part[1]); err != nil {
+			return nil, err
+		}
+	}
+
+	if req.VolumeName == "" {
+		if err := backupstore.DeleteDeltaBlockBackup(req.DestUrl); err != nil {
+			return nil, err
+		}
+	} else {
+		if !bsutil.ValidateName(req.VolumeName) {
+			return nil, errors.Errorf("invalid backup volume name %v", req.VolumeName)
+		}
+		if err := backupstore.DeleteBackupVolume(req.VolumeName, req.DestUrl); err != nil {
+			return nil, err
+		}
+	}
 
 	return &empty.Empty{}, nil
 }

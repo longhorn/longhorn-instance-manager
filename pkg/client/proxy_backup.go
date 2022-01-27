@@ -250,5 +250,15 @@ func (c *ProxyClient) BackupRemove(destURL, volumeName string, envs []string) (e
 	}
 	log.Debugf("Removing %v backup via proxy", destURL)
 
+	req := &rpc.EngineBackupRemoveRequest{
+		Envs:       envs,
+		DestUrl:    destURL,
+		VolumeName: volumeName,
+	}
+	_, err = c.service.BackupRemove(c.ctx, req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to remove %v backup via proxy %v", destURL, c.ServiceURL)
+	}
+
 	return nil
 }
