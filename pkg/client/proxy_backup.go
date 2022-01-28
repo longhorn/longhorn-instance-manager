@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -267,7 +268,23 @@ func (c *ProxyClient) BackupConfigMetaGet(destURL string, envs []string) (meta *
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Getting %v backup config metadata via proxy", destURL)
 
-	return nil, nil
+	req := &rpc.EngineBackupConfigMetaGetRequest{
+		Envs:    envs,
+		DestUrl: destURL,
+	}
+	recv, err := c.service.BackupConfigMetaGet(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get %v backup config metadata via proxy %v", destURL, c.ServiceURL)
+	}
+
+	ts, err := ptypes.Timestamp(recv.ModificationTime)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed convert protobuf timestamp %v", recv.ModificationTime)
+	}
+
+	return &backupstore.ConfigMetadata{
+		ModificationTime: ts,
+	}, nil
 }
 
 func (c *ProxyClient) BackupRemove(destURL, volumeName string, envs []string) (err error) {
