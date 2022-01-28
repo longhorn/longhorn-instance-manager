@@ -158,6 +158,28 @@ func (c *ProxyClient) BackupVolumeGet(destURL string, envs []string) (info *Engi
 	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
 	log.Debugf("Getting %v backup volume via proxy", destURL)
 
+	req := &rpc.EngineBackupVolumeGetRequest{
+		Envs:    envs,
+		DestUrl: destURL,
+	}
+	recv, err := c.service.BackupVolumeGet(c.ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get %v backup volume via proxy %v", destURL, c.ServiceURL)
+	}
+
+	info = &EngineBackupVolumeInfo{
+		Name:                 recv.Volume.Name,
+		Size:                 recv.Volume.Size,
+		Labels:               recv.Volume.Labels,
+		Created:              recv.Volume.Created,
+		LastBackupName:       recv.Volume.LastBackupName,
+		LastBackupAt:         recv.Volume.LastBackupAt,
+		DataStored:           recv.Volume.DataStored,
+		Messages:             recv.Volume.Messages,
+		Backups:              parseBackups(recv.Volume.Backups),
+		BackingImageName:     recv.Volume.BackingImageName,
+		BackingImageChecksum: recv.Volume.BackingImageChecksum,
+	}
 	return info, nil
 }
 
