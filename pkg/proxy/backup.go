@@ -221,13 +221,37 @@ func (p *Proxy) BackupVolumeGet(ctx context.Context, req *rpc.EngineBackupVolume
 	log := logrus.WithFields(logrus.Fields{"destURL": req.DestUrl})
 	log.Debug("Getting backup volume")
 
-	resp = &rpc.EngineBackupVolumeGetProxyResponse{
-		Volume: &rpc.EngineBackupVolumeInfo{},
+	for _, env := range req.Envs {
+		part := strings.SplitN(env, "=", 2)
+		if len(part) < 2 {
+			continue
+		}
+
+		if err := os.Setenv(part[0], part[1]); err != nil {
+			return nil, err
+		}
 	}
 
-	// TODO
+	recv, err := backupstore.InspectVolume(req.DestUrl)
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, nil
+	return &rpc.EngineBackupVolumeGetProxyResponse{
+		Volume: &rpc.EngineBackupVolumeInfo{
+			Name:                 recv.Name,
+			Size:                 recv.Size,
+			Labels:               recv.Labels,
+			Created:              recv.Created,
+			LastBackupName:       recv.LastBackupName,
+			LastBackupAt:         recv.LastBackupAt,
+			DataStored:           recv.DataStored,
+			Messages:             parseMessages(recv.Messages),
+			Backups:              parseBackups(recv.Backups),
+			BackingImageName:     recv.BackingImageName,
+			BackingImageChecksum: recv.BackingImageChecksum,
+		},
+	}, nil
 }
 
 func (p *Proxy) BackupVolumeList(ctx context.Context, req *rpc.EngineBackupVolumeListRequest) (resp *rpc.EngineBackupVolumeListProxyResponse, err error) {
