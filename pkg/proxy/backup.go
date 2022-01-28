@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -346,9 +347,27 @@ func (p *Proxy) BackupConfigMetaGet(ctx context.Context, req *rpc.EngineBackupCo
 	log := logrus.WithFields(logrus.Fields{"destURL": req.DestUrl})
 	log.Debug("Getting backup config metadata")
 
-	resp = &rpc.EngineBackupConfigMetaGetProxyResponse{}
+	for _, env := range req.Envs {
+		part := strings.SplitN(env, "=", 2)
+		if len(part) < 2 {
+			continue
+		}
 
-	// TODO
+		if err := os.Setenv(part[0], part[1]); err != nil {
+			return nil, err
+		}
+	}
+
+	ts, err := backupstore.GetConfigMetadata(req.DestUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &rpc.EngineBackupConfigMetaGetProxyResponse{}
+	resp.ModificationTime, err = ptypes.TimestampProto(ts.ModificationTime)
+	if err != nil {
+		return nil, err
+	}
 
 	return resp, nil
 }
