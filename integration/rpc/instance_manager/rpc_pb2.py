@@ -18,10 +18,10 @@ from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='rpc.proto',
-  package='',
+  package='longhorn.instancemanager.pkg.rpc',
   syntax='proto3',
-  serialized_options=None,
-  serialized_pb=_b('\n\trpc.proto\x1a\x1bgoogle/protobuf/empty.proto\"`\n\x0bProcessSpec\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x03 \x03(\t\x12\x12\n\nport_count\x18\x04 \x01(\x05\x12\x11\n\tport_args\x18\x05 \x03(\t\"W\n\rProcessStatus\x12\r\n\x05state\x18\x01 \x01(\t\x12\x11\n\terror_msg\x18\x02 \x01(\t\x12\x12\n\nport_start\x18\x03 \x01(\x05\x12\x10\n\x08port_end\x18\x04 \x01(\x05\"2\n\x14ProcessCreateRequest\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\"$\n\x14ProcessDeleteRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"!\n\x11ProcessGetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"^\n\x0fProcessResponse\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\x12\x1e\n\x06status\x18\x02 \x01(\x0b\x32\x0e.ProcessStatus\x12\x0f\n\x07\x64\x65leted\x18\x03 \x01(\x08\"\x14\n\x12ProcessListRequest\"\x91\x01\n\x13ProcessListResponse\x12\x36\n\tprocesses\x18\x01 \x03(\x0b\x32#.ProcessListResponse.ProcessesEntry\x1a\x42\n\x0eProcessesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1f\n\x05value\x18\x02 \x01(\x0b\x32\x10.ProcessResponse:\x02\x38\x01\"\x1a\n\nLogRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x1b\n\x0bLogResponse\x12\x0c\n\x04line\x18\x02 \x01(\t\"M\n\x15ProcessReplaceRequest\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\x12\x18\n\x10terminate_signal\x18\x02 \x01(\t\"\x91\x01\n\x0fVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x11\n\tgitCommit\x18\x02 \x01(\t\x12\x11\n\tbuildDate\x18\x03 \x01(\t\x12!\n\x19instanceManagerAPIVersion\x18\x04 \x01(\x03\x12$\n\x1cinstanceManagerAPIMinVersion\x18\x05 \x01(\x03\x32\xe2\x03\n\x15ProcessManagerService\x12:\n\rProcessCreate\x12\x15.ProcessCreateRequest\x1a\x10.ProcessResponse\"\x00\x12:\n\rProcessDelete\x12\x15.ProcessDeleteRequest\x1a\x10.ProcessResponse\"\x00\x12\x34\n\nProcessGet\x12\x12.ProcessGetRequest\x1a\x10.ProcessResponse\"\x00\x12:\n\x0bProcessList\x12\x13.ProcessListRequest\x1a\x14.ProcessListResponse\"\x00\x12+\n\nProcessLog\x12\x0b.LogRequest\x1a\x0c.LogResponse\"\x00\x30\x01\x12<\n\x0cProcessWatch\x12\x16.google.protobuf.Empty\x1a\x10.ProcessResponse\"\x00\x30\x01\x12<\n\x0eProcessReplace\x12\x16.ProcessReplaceRequest\x1a\x10.ProcessResponse\"\x00\x12\x36\n\nVersionGet\x12\x16.google.protobuf.Empty\x1a\x10.VersionResponseb\x06proto3')
+  serialized_options=_b('Z\003rpc'),
+  serialized_pb=_b('\n\trpc.proto\x12 longhorn.instancemanager.pkg.rpc\x1a\x1bgoogle/protobuf/empty.proto\"`\n\x0bProcessSpec\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x03 \x03(\t\x12\x12\n\nport_count\x18\x04 \x01(\x05\x12\x11\n\tport_args\x18\x05 \x03(\t\"W\n\rProcessStatus\x12\r\n\x05state\x18\x01 \x01(\t\x12\x11\n\terror_msg\x18\x02 \x01(\t\x12\x12\n\nport_start\x18\x03 \x01(\x05\x12\x10\n\x08port_end\x18\x04 \x01(\x05\"S\n\x14ProcessCreateRequest\x12;\n\x04spec\x18\x01 \x01(\x0b\x32-.longhorn.instancemanager.pkg.rpc.ProcessSpec\"$\n\x14ProcessDeleteRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"!\n\x11ProcessGetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"\xa0\x01\n\x0fProcessResponse\x12;\n\x04spec\x18\x01 \x01(\x0b\x32-.longhorn.instancemanager.pkg.rpc.ProcessSpec\x12?\n\x06status\x18\x02 \x01(\x0b\x32/.longhorn.instancemanager.pkg.rpc.ProcessStatus\x12\x0f\n\x07\x64\x65leted\x18\x03 \x01(\x08\"\x14\n\x12ProcessListRequest\"\xd3\x01\n\x13ProcessListResponse\x12W\n\tprocesses\x18\x01 \x03(\x0b\x32\x44.longhorn.instancemanager.pkg.rpc.ProcessListResponse.ProcessesEntry\x1a\x63\n\x0eProcessesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12@\n\x05value\x18\x02 \x01(\x0b\x32\x31.longhorn.instancemanager.pkg.rpc.ProcessResponse:\x02\x38\x01\"\x1a\n\nLogRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x1b\n\x0bLogResponse\x12\x0c\n\x04line\x18\x02 \x01(\t\"n\n\x15ProcessReplaceRequest\x12;\n\x04spec\x18\x01 \x01(\x0b\x32-.longhorn.instancemanager.pkg.rpc.ProcessSpec\x12\x18\n\x10terminate_signal\x18\x02 \x01(\t\"\x91\x01\n\x0fVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x11\n\tgitCommit\x18\x02 \x01(\t\x12\x11\n\tbuildDate\x18\x03 \x01(\t\x12!\n\x19instanceManagerAPIVersion\x18\x04 \x01(\x03\x12$\n\x1cinstanceManagerAPIMinVersion\x18\x05 \x01(\x03\x32\xb0\x07\n\x15ProcessManagerService\x12|\n\rProcessCreate\x12\x36.longhorn.instancemanager.pkg.rpc.ProcessCreateRequest\x1a\x31.longhorn.instancemanager.pkg.rpc.ProcessResponse\"\x00\x12|\n\rProcessDelete\x12\x36.longhorn.instancemanager.pkg.rpc.ProcessDeleteRequest\x1a\x31.longhorn.instancemanager.pkg.rpc.ProcessResponse\"\x00\x12v\n\nProcessGet\x12\x33.longhorn.instancemanager.pkg.rpc.ProcessGetRequest\x1a\x31.longhorn.instancemanager.pkg.rpc.ProcessResponse\"\x00\x12|\n\x0bProcessList\x12\x34.longhorn.instancemanager.pkg.rpc.ProcessListRequest\x1a\x35.longhorn.instancemanager.pkg.rpc.ProcessListResponse\"\x00\x12m\n\nProcessLog\x12,.longhorn.instancemanager.pkg.rpc.LogRequest\x1a-.longhorn.instancemanager.pkg.rpc.LogResponse\"\x00\x30\x01\x12]\n\x0cProcessWatch\x12\x16.google.protobuf.Empty\x1a\x31.longhorn.instancemanager.pkg.rpc.ProcessResponse\"\x00\x30\x01\x12~\n\x0eProcessReplace\x12\x37.longhorn.instancemanager.pkg.rpc.ProcessReplaceRequest\x1a\x31.longhorn.instancemanager.pkg.rpc.ProcessResponse\"\x00\x12W\n\nVersionGet\x12\x16.google.protobuf.Empty\x1a\x31.longhorn.instancemanager.pkg.rpc.VersionResponseB\x05Z\x03rpcb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
@@ -30,41 +30,41 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 
 _PROCESSSPEC = _descriptor.Descriptor(
   name='ProcessSpec',
-  full_name='ProcessSpec',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessSpec',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='ProcessSpec.name', index=0,
+      name='name', full_name='longhorn.instancemanager.pkg.rpc.ProcessSpec.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='binary', full_name='ProcessSpec.binary', index=1,
+      name='binary', full_name='longhorn.instancemanager.pkg.rpc.ProcessSpec.binary', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='args', full_name='ProcessSpec.args', index=2,
+      name='args', full_name='longhorn.instancemanager.pkg.rpc.ProcessSpec.args', index=2,
       number=3, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='port_count', full_name='ProcessSpec.port_count', index=3,
+      name='port_count', full_name='longhorn.instancemanager.pkg.rpc.ProcessSpec.port_count', index=3,
       number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='port_args', full_name='ProcessSpec.port_args', index=4,
+      name='port_args', full_name='longhorn.instancemanager.pkg.rpc.ProcessSpec.port_args', index=4,
       number=5, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -82,41 +82,41 @@ _PROCESSSPEC = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=42,
-  serialized_end=138,
+  serialized_start=76,
+  serialized_end=172,
 )
 
 
 _PROCESSSTATUS = _descriptor.Descriptor(
   name='ProcessStatus',
-  full_name='ProcessStatus',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessStatus',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='state', full_name='ProcessStatus.state', index=0,
+      name='state', full_name='longhorn.instancemanager.pkg.rpc.ProcessStatus.state', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='error_msg', full_name='ProcessStatus.error_msg', index=1,
+      name='error_msg', full_name='longhorn.instancemanager.pkg.rpc.ProcessStatus.error_msg', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='port_start', full_name='ProcessStatus.port_start', index=2,
+      name='port_start', full_name='longhorn.instancemanager.pkg.rpc.ProcessStatus.port_start', index=2,
       number=3, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='port_end', full_name='ProcessStatus.port_end', index=3,
+      name='port_end', full_name='longhorn.instancemanager.pkg.rpc.ProcessStatus.port_end', index=3,
       number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -134,20 +134,20 @@ _PROCESSSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=140,
-  serialized_end=227,
+  serialized_start=174,
+  serialized_end=261,
 )
 
 
 _PROCESSCREATEREQUEST = _descriptor.Descriptor(
   name='ProcessCreateRequest',
-  full_name='ProcessCreateRequest',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessCreateRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='spec', full_name='ProcessCreateRequest.spec', index=0,
+      name='spec', full_name='longhorn.instancemanager.pkg.rpc.ProcessCreateRequest.spec', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -165,20 +165,20 @@ _PROCESSCREATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=229,
-  serialized_end=279,
+  serialized_start=263,
+  serialized_end=346,
 )
 
 
 _PROCESSDELETEREQUEST = _descriptor.Descriptor(
   name='ProcessDeleteRequest',
-  full_name='ProcessDeleteRequest',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessDeleteRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='ProcessDeleteRequest.name', index=0,
+      name='name', full_name='longhorn.instancemanager.pkg.rpc.ProcessDeleteRequest.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -196,20 +196,20 @@ _PROCESSDELETEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=281,
-  serialized_end=317,
+  serialized_start=348,
+  serialized_end=384,
 )
 
 
 _PROCESSGETREQUEST = _descriptor.Descriptor(
   name='ProcessGetRequest',
-  full_name='ProcessGetRequest',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessGetRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='ProcessGetRequest.name', index=0,
+      name='name', full_name='longhorn.instancemanager.pkg.rpc.ProcessGetRequest.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -227,34 +227,34 @@ _PROCESSGETREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=319,
-  serialized_end=352,
+  serialized_start=386,
+  serialized_end=419,
 )
 
 
 _PROCESSRESPONSE = _descriptor.Descriptor(
   name='ProcessResponse',
-  full_name='ProcessResponse',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='spec', full_name='ProcessResponse.spec', index=0,
+      name='spec', full_name='longhorn.instancemanager.pkg.rpc.ProcessResponse.spec', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='status', full_name='ProcessResponse.status', index=1,
+      name='status', full_name='longhorn.instancemanager.pkg.rpc.ProcessResponse.status', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='deleted', full_name='ProcessResponse.deleted', index=2,
+      name='deleted', full_name='longhorn.instancemanager.pkg.rpc.ProcessResponse.deleted', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -272,14 +272,14 @@ _PROCESSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=354,
-  serialized_end=448,
+  serialized_start=422,
+  serialized_end=582,
 )
 
 
 _PROCESSLISTREQUEST = _descriptor.Descriptor(
   name='ProcessListRequest',
-  full_name='ProcessListRequest',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessListRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -296,27 +296,27 @@ _PROCESSLISTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=450,
-  serialized_end=470,
+  serialized_start=584,
+  serialized_end=604,
 )
 
 
 _PROCESSLISTRESPONSE_PROCESSESENTRY = _descriptor.Descriptor(
   name='ProcessesEntry',
-  full_name='ProcessListResponse.ProcessesEntry',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessListResponse.ProcessesEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ProcessListResponse.ProcessesEntry.key', index=0,
+      name='key', full_name='longhorn.instancemanager.pkg.rpc.ProcessListResponse.ProcessesEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ProcessListResponse.ProcessesEntry.value', index=1,
+      name='value', full_name='longhorn.instancemanager.pkg.rpc.ProcessListResponse.ProcessesEntry.value', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -334,19 +334,19 @@ _PROCESSLISTRESPONSE_PROCESSESENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=552,
-  serialized_end=618,
+  serialized_start=719,
+  serialized_end=818,
 )
 
 _PROCESSLISTRESPONSE = _descriptor.Descriptor(
   name='ProcessListResponse',
-  full_name='ProcessListResponse',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessListResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='processes', full_name='ProcessListResponse.processes', index=0,
+      name='processes', full_name='longhorn.instancemanager.pkg.rpc.ProcessListResponse.processes', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -364,20 +364,20 @@ _PROCESSLISTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=473,
-  serialized_end=618,
+  serialized_start=607,
+  serialized_end=818,
 )
 
 
 _LOGREQUEST = _descriptor.Descriptor(
   name='LogRequest',
-  full_name='LogRequest',
+  full_name='longhorn.instancemanager.pkg.rpc.LogRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='LogRequest.name', index=0,
+      name='name', full_name='longhorn.instancemanager.pkg.rpc.LogRequest.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -395,20 +395,20 @@ _LOGREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=620,
-  serialized_end=646,
+  serialized_start=820,
+  serialized_end=846,
 )
 
 
 _LOGRESPONSE = _descriptor.Descriptor(
   name='LogResponse',
-  full_name='LogResponse',
+  full_name='longhorn.instancemanager.pkg.rpc.LogResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='line', full_name='LogResponse.line', index=0,
+      name='line', full_name='longhorn.instancemanager.pkg.rpc.LogResponse.line', index=0,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -426,27 +426,27 @@ _LOGRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=648,
-  serialized_end=675,
+  serialized_start=848,
+  serialized_end=875,
 )
 
 
 _PROCESSREPLACEREQUEST = _descriptor.Descriptor(
   name='ProcessReplaceRequest',
-  full_name='ProcessReplaceRequest',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessReplaceRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='spec', full_name='ProcessReplaceRequest.spec', index=0,
+      name='spec', full_name='longhorn.instancemanager.pkg.rpc.ProcessReplaceRequest.spec', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='terminate_signal', full_name='ProcessReplaceRequest.terminate_signal', index=1,
+      name='terminate_signal', full_name='longhorn.instancemanager.pkg.rpc.ProcessReplaceRequest.terminate_signal', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -464,48 +464,48 @@ _PROCESSREPLACEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=677,
-  serialized_end=754,
+  serialized_start=877,
+  serialized_end=987,
 )
 
 
 _VERSIONRESPONSE = _descriptor.Descriptor(
   name='VersionResponse',
-  full_name='VersionResponse',
+  full_name='longhorn.instancemanager.pkg.rpc.VersionResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='version', full_name='VersionResponse.version', index=0,
+      name='version', full_name='longhorn.instancemanager.pkg.rpc.VersionResponse.version', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='gitCommit', full_name='VersionResponse.gitCommit', index=1,
+      name='gitCommit', full_name='longhorn.instancemanager.pkg.rpc.VersionResponse.gitCommit', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='buildDate', full_name='VersionResponse.buildDate', index=2,
+      name='buildDate', full_name='longhorn.instancemanager.pkg.rpc.VersionResponse.buildDate', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='instanceManagerAPIVersion', full_name='VersionResponse.instanceManagerAPIVersion', index=3,
+      name='instanceManagerAPIVersion', full_name='longhorn.instancemanager.pkg.rpc.VersionResponse.instanceManagerAPIVersion', index=3,
       number=4, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='instanceManagerAPIMinVersion', full_name='VersionResponse.instanceManagerAPIMinVersion', index=4,
+      name='instanceManagerAPIMinVersion', full_name='longhorn.instancemanager.pkg.rpc.VersionResponse.instanceManagerAPIMinVersion', index=4,
       number=5, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -523,8 +523,8 @@ _VERSIONRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=757,
-  serialized_end=902,
+  serialized_start=990,
+  serialized_end=1135,
 )
 
 _PROCESSCREATEREQUEST.fields_by_name['spec'].message_type = _PROCESSSPEC
@@ -551,49 +551,49 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 ProcessSpec = _reflection.GeneratedProtocolMessageType('ProcessSpec', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSSPEC,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessSpec)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessSpec)
   })
 _sym_db.RegisterMessage(ProcessSpec)
 
 ProcessStatus = _reflection.GeneratedProtocolMessageType('ProcessStatus', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSSTATUS,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessStatus)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessStatus)
   })
 _sym_db.RegisterMessage(ProcessStatus)
 
 ProcessCreateRequest = _reflection.GeneratedProtocolMessageType('ProcessCreateRequest', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSCREATEREQUEST,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessCreateRequest)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessCreateRequest)
   })
 _sym_db.RegisterMessage(ProcessCreateRequest)
 
 ProcessDeleteRequest = _reflection.GeneratedProtocolMessageType('ProcessDeleteRequest', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSDELETEREQUEST,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessDeleteRequest)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessDeleteRequest)
   })
 _sym_db.RegisterMessage(ProcessDeleteRequest)
 
 ProcessGetRequest = _reflection.GeneratedProtocolMessageType('ProcessGetRequest', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSGETREQUEST,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessGetRequest)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessGetRequest)
   })
 _sym_db.RegisterMessage(ProcessGetRequest)
 
 ProcessResponse = _reflection.GeneratedProtocolMessageType('ProcessResponse', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSRESPONSE,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessResponse)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessResponse)
   })
 _sym_db.RegisterMessage(ProcessResponse)
 
 ProcessListRequest = _reflection.GeneratedProtocolMessageType('ProcessListRequest', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSLISTREQUEST,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessListRequest)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessListRequest)
   })
 _sym_db.RegisterMessage(ProcessListRequest)
 
@@ -602,12 +602,12 @@ ProcessListResponse = _reflection.GeneratedProtocolMessageType('ProcessListRespo
   'ProcessesEntry' : _reflection.GeneratedProtocolMessageType('ProcessesEntry', (_message.Message,), {
     'DESCRIPTOR' : _PROCESSLISTRESPONSE_PROCESSESENTRY,
     '__module__' : 'rpc_pb2'
-    # @@protoc_insertion_point(class_scope:ProcessListResponse.ProcessesEntry)
+    # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessListResponse.ProcessesEntry)
     })
   ,
   'DESCRIPTOR' : _PROCESSLISTRESPONSE,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessListResponse)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessListResponse)
   })
 _sym_db.RegisterMessage(ProcessListResponse)
 _sym_db.RegisterMessage(ProcessListResponse.ProcessesEntry)
@@ -615,46 +615,47 @@ _sym_db.RegisterMessage(ProcessListResponse.ProcessesEntry)
 LogRequest = _reflection.GeneratedProtocolMessageType('LogRequest', (_message.Message,), {
   'DESCRIPTOR' : _LOGREQUEST,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:LogRequest)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.LogRequest)
   })
 _sym_db.RegisterMessage(LogRequest)
 
 LogResponse = _reflection.GeneratedProtocolMessageType('LogResponse', (_message.Message,), {
   'DESCRIPTOR' : _LOGRESPONSE,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:LogResponse)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.LogResponse)
   })
 _sym_db.RegisterMessage(LogResponse)
 
 ProcessReplaceRequest = _reflection.GeneratedProtocolMessageType('ProcessReplaceRequest', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSREPLACEREQUEST,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:ProcessReplaceRequest)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.ProcessReplaceRequest)
   })
 _sym_db.RegisterMessage(ProcessReplaceRequest)
 
 VersionResponse = _reflection.GeneratedProtocolMessageType('VersionResponse', (_message.Message,), {
   'DESCRIPTOR' : _VERSIONRESPONSE,
   '__module__' : 'rpc_pb2'
-  # @@protoc_insertion_point(class_scope:VersionResponse)
+  # @@protoc_insertion_point(class_scope:longhorn.instancemanager.pkg.rpc.VersionResponse)
   })
 _sym_db.RegisterMessage(VersionResponse)
 
 
+DESCRIPTOR._options = None
 _PROCESSLISTRESPONSE_PROCESSESENTRY._options = None
 
 _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   name='ProcessManagerService',
-  full_name='ProcessManagerService',
+  full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService',
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=905,
-  serialized_end=1387,
+  serialized_start=1138,
+  serialized_end=2082,
   methods=[
   _descriptor.MethodDescriptor(
     name='ProcessCreate',
-    full_name='ProcessManagerService.ProcessCreate',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.ProcessCreate',
     index=0,
     containing_service=None,
     input_type=_PROCESSCREATEREQUEST,
@@ -663,7 +664,7 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ProcessDelete',
-    full_name='ProcessManagerService.ProcessDelete',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.ProcessDelete',
     index=1,
     containing_service=None,
     input_type=_PROCESSDELETEREQUEST,
@@ -672,7 +673,7 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ProcessGet',
-    full_name='ProcessManagerService.ProcessGet',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.ProcessGet',
     index=2,
     containing_service=None,
     input_type=_PROCESSGETREQUEST,
@@ -681,7 +682,7 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ProcessList',
-    full_name='ProcessManagerService.ProcessList',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.ProcessList',
     index=3,
     containing_service=None,
     input_type=_PROCESSLISTREQUEST,
@@ -690,7 +691,7 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ProcessLog',
-    full_name='ProcessManagerService.ProcessLog',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.ProcessLog',
     index=4,
     containing_service=None,
     input_type=_LOGREQUEST,
@@ -699,7 +700,7 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ProcessWatch',
-    full_name='ProcessManagerService.ProcessWatch',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.ProcessWatch',
     index=5,
     containing_service=None,
     input_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -708,7 +709,7 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ProcessReplace',
-    full_name='ProcessManagerService.ProcessReplace',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.ProcessReplace',
     index=6,
     containing_service=None,
     input_type=_PROCESSREPLACEREQUEST,
@@ -717,7 +718,7 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='VersionGet',
-    full_name='ProcessManagerService.VersionGet',
+    full_name='longhorn.instancemanager.pkg.rpc.ProcessManagerService.VersionGet',
     index=7,
     containing_service=None,
     input_type=google_dot_protobuf_dot_empty__pb2._EMPTY,

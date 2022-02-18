@@ -16,42 +16,42 @@ class ProcessManagerServiceStub(object):
       channel: A grpc.Channel.
     """
     self.ProcessCreate = channel.unary_unary(
-        '/ProcessManagerService/ProcessCreate',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/ProcessCreate',
         request_serializer=rpc__pb2.ProcessCreateRequest.SerializeToString,
         response_deserializer=rpc__pb2.ProcessResponse.FromString,
         )
     self.ProcessDelete = channel.unary_unary(
-        '/ProcessManagerService/ProcessDelete',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/ProcessDelete',
         request_serializer=rpc__pb2.ProcessDeleteRequest.SerializeToString,
         response_deserializer=rpc__pb2.ProcessResponse.FromString,
         )
     self.ProcessGet = channel.unary_unary(
-        '/ProcessManagerService/ProcessGet',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/ProcessGet',
         request_serializer=rpc__pb2.ProcessGetRequest.SerializeToString,
         response_deserializer=rpc__pb2.ProcessResponse.FromString,
         )
     self.ProcessList = channel.unary_unary(
-        '/ProcessManagerService/ProcessList',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/ProcessList',
         request_serializer=rpc__pb2.ProcessListRequest.SerializeToString,
         response_deserializer=rpc__pb2.ProcessListResponse.FromString,
         )
     self.ProcessLog = channel.unary_stream(
-        '/ProcessManagerService/ProcessLog',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/ProcessLog',
         request_serializer=rpc__pb2.LogRequest.SerializeToString,
         response_deserializer=rpc__pb2.LogResponse.FromString,
         )
     self.ProcessWatch = channel.unary_stream(
-        '/ProcessManagerService/ProcessWatch',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/ProcessWatch',
         request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
         response_deserializer=rpc__pb2.ProcessResponse.FromString,
         )
     self.ProcessReplace = channel.unary_unary(
-        '/ProcessManagerService/ProcessReplace',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/ProcessReplace',
         request_serializer=rpc__pb2.ProcessReplaceRequest.SerializeToString,
         response_deserializer=rpc__pb2.ProcessResponse.FromString,
         )
     self.VersionGet = channel.unary_unary(
-        '/ProcessManagerService/VersionGet',
+        '/longhorn.instancemanager.pkg.rpc.ProcessManagerService/VersionGet',
         request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
         response_deserializer=rpc__pb2.VersionResponse.FromString,
         )
@@ -162,5 +162,5 @@ def add_ProcessManagerServiceServicer_to_server(servicer, server):
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
-      'ProcessManagerService', rpc_method_handlers)
+      'longhorn.instancemanager.pkg.rpc.ProcessManagerService', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))

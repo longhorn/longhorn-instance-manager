@@ -1,6 +1,10 @@
 syntax="proto3";
 
+package longhorn.instancemanager.pkg.rpc;
+
 import "google/protobuf/empty.proto";
+
+option go_package = "rpc";
 
 service ProcessManagerService {
 	rpc ProcessCreate(ProcessCreateRequest) returns (ProcessResponse) {}
