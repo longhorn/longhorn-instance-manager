@@ -39,6 +39,12 @@ func main() {
 		cli.BoolFlag{
 			Name: "debug",
 		},
+		cli.StringFlag{
+			Name:     "tls-dir",
+			Usage:    "when present will look for `tls.crt` and `tls.key` and `ca.crt` file in the specified directory",
+			EnvVar:   "TLS_DIR",
+			Required: false,
+		},
 	}
 	a.Commands = []cli.Command{
 		cmd.StartCmd(),

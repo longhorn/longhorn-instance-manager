@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -50,9 +51,12 @@ func ProcessCreateCmd() cli.Command {
 }
 
 func createProcess(c *cli.Context) error {
-	url := c.GlobalString("url")
+	cli, err := getProcessManagerClient(c)
+	if err != nil {
+		return fmt.Errorf("failed to initialize client: %v", err)
+	}
+	defer cli.Close()
 
-	cli := client.NewProcessManagerClient(url)
 	process, err := cli.ProcessCreate(c.String("name"), c.String("binary"),
 		c.Int("port-count"), c.Args(), c.StringSlice("port-args"))
 	if err != nil {
@@ -78,9 +82,12 @@ func ProcessDeleteCmd() cli.Command {
 }
 
 func deleteProcess(c *cli.Context) error {
-	url := c.GlobalString("url")
+	cli, err := getProcessManagerClient(c)
+	if err != nil {
+		return fmt.Errorf("failed to initialize client: %v", err)
+	}
+	defer cli.Close()
 
-	cli := client.NewProcessManagerClient(url)
 	process, err := cli.ProcessDelete(c.String("name"))
 	if err != nil {
 		return fmt.Errorf("failed to delete process: %v", err)
@@ -105,9 +112,12 @@ func ProcessGetCmd() cli.Command {
 }
 
 func getProcess(c *cli.Context) error {
-	url := c.GlobalString("url")
+	cli, err := getProcessManagerClient(c)
+	if err != nil {
+		return fmt.Errorf("failed to initialize client: %v", err)
+	}
+	defer cli.Close()
 
-	cli := client.NewProcessManagerClient(url)
 	process, err := cli.ProcessGet(c.String("name"))
 	if err != nil {
 		return fmt.Errorf("failed to delete process: %v", err)
@@ -128,9 +138,12 @@ func ProcessListCmd() cli.Command {
 }
 
 func listProcess(c *cli.Context) error {
-	url := c.GlobalString("url")
+	cli, err := getProcessManagerClient(c)
+	if err != nil {
+		return fmt.Errorf("failed to initialize client: %v", err)
+	}
+	defer cli.Close()
 
-	cli := client.NewProcessManagerClient(url)
 	processes, err := cli.ProcessList()
 	if err != nil {
 		return fmt.Errorf("failed to list processes: %v", err)
@@ -170,13 +183,31 @@ func ProcessReplaceCmd() cli.Command {
 }
 
 func replaceProcess(c *cli.Context) error {
-	url := c.GlobalString("url")
+	cli, err := getProcessManagerClient(c)
+	if err != nil {
+		return fmt.Errorf("failed to initialize client: %v", err)
+	}
+	defer cli.Close()
 
-	cli := client.NewProcessManagerClient(url)
 	process, err := cli.ProcessReplace(c.String("name"), c.String("binary"),
 		c.Int("port-count"), c.Args(), c.StringSlice("port-args"), c.String("terminate-signal"))
 	if err != nil {
 		return fmt.Errorf("failed to replace processes: %v", err)
 	}
 	return util.PrintJSON(process)
+}
+
+func getProcessManagerClient(c *cli.Context) (*client.ProcessManagerClient, error) {
+	url := c.GlobalString("url")
+	tlsDir := c.GlobalString("tls-dir")
+
+	if tlsDir != "" {
+		return client.NewProcessManagerClientWithTLS(url,
+			filepath.Join(tlsDir, "ca.crt"),
+			filepath.Join(tlsDir, "tls.crt"),
+			filepath.Join(tlsDir, "tls.key"),
+			"longhorn-backend.longhorn-system")
+	}
+
+	return client.NewProcessManagerClient(url, nil)
 }

@@ -1,16 +1,16 @@
 package cmd
 
 import (
-	"net"
+	"crypto/tls"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
@@ -91,12 +91,31 @@ func start(c *cli.Context) error {
 	}
 	hc := health.NewHealthCheckServer(pm)
 
-	listenAt, err := net.Listen("tcp", listen)
-	if err != nil {
-		return errors.Wrap(err, "Failed to listen")
+	// setup tls config
+	var tlsConfig *tls.Config
+	tlsDir := c.GlobalString("tls-dir")
+	if tlsDir != "" {
+		tlsConfig, err = util.LoadServerTLS(
+			filepath.Join(tlsDir, "ca.crt"),
+			filepath.Join(tlsDir, "tls.crt"),
+			filepath.Join(tlsDir, "tls.key"),
+			"longhorn-backend.longhorn-system")
+		if err != nil {
+			return errors.Wrap(err, "failed to load tls key pair from file")
+		}
 	}
 
-	rpcService := grpc.NewServer()
+	if tlsConfig != nil {
+		logrus.Info("creating grpc server with mtls auth")
+	} else {
+		logrus.Info("creating grpc server with no auth")
+	}
+
+	rpcService, listenAt, err := util.NewServer("tcp://"+listen, tlsConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to setup grpc server")
+	}
+
 	rpc.RegisterProcessManagerServiceServer(rpcService, pm)
 	healthpb.RegisterHealthServer(rpcService, hc)
 	reflection.Register(rpcService)
