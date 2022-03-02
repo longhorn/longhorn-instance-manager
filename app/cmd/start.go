@@ -11,7 +11,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/health"
@@ -111,7 +113,12 @@ func start(c *cli.Context) error {
 		logrus.Info("creating grpc server with no auth")
 	}
 
-	rpcService, listenAt, err := util.NewServer("tcp://"+listen, tlsConfig)
+	rpcService, listenAt, err := util.NewServer("tcp://"+listen, tlsConfig,
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             10 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup grpc server")
 	}

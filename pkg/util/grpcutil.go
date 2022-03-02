@@ -43,7 +43,7 @@ func Connect(endpoint string, tlsConfig *tls.Config, dialOptions ...grpc.DialOpt
 	// when using Unix domain sockets. It ensures that gRPC detects a dead connection
 	// in a timely manner.
 	// Code lifted from https://github.com/kubernetes-csi/csi-test/commit/6b8830bf5959a1c51c6e98fe514b22818b51eeeb
-	dialOptions = append(dialOptions, grpc.WithKeepaliveParams(keepalive.ClientParameters{PermitWithoutStream: true}))
+	dialOptions = append(dialOptions, grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: 30 * time.Second, PermitWithoutStream: true}))
 
 	return grpc.Dial(address, dialOptions...)
 }
