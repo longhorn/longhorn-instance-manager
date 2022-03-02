@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/longhorn/longhorn-instance-manager/pkg/client"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 )
 
@@ -37,8 +36,11 @@ func version(c *cli.Context) error {
 	v := VersionOutput{ClientVersion: &clientVersion}
 
 	if !c.Bool("client-only") {
-		url := c.GlobalString("url")
-		cli := client.NewProcessManagerClient(url)
+		cli, err := getProcessManagerClient(c)
+		if err != nil {
+			return fmt.Errorf("failed to initialize client: %v", err)
+		}
+
 		version, err := cli.VersionGet()
 		if err != nil {
 			return err
