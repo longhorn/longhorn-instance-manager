@@ -43,7 +43,7 @@ func main() {
 	a.Commands = []cli.Command{
 		cmd.StartCmd(),
 		cmd.ProcessCmd(),
-		VersionCmd(),
+		cmd.VersionCmd(),
 	}
 	if err := a.Run(os.Args); err != nil {
 		logrus.Fatal("Error when executing command: ", err)
