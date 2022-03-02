@@ -40,6 +40,7 @@ func version(c *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to initialize client: %v", err)
 		}
+		defer cli.Close()
 
 		version, err := cli.VersionGet()
 		if err != nil {
