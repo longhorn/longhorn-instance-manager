@@ -28,8 +28,6 @@ TAG="v${APIVERSION}_`date -u +%Y%m%d`"
 REPO=${REPO:-longhornio}
 IMAGE=${REPO}/${PROJECT}:${TAG}
 
-cp /usr/src/tgt/pkg/tgt_*.deb ./bin/
-
 # update base image to get latest changes
 BASE_IMAGE=`grep FROM package/Dockerfile  | awk '{print $2}'`
 docker pull ${BASE_IMAGE}

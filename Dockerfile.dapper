@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM registry.suse.com/bci/bci-base:15.3
 
 ARG DAPPER_HOST_ARCH=amd64
 ARG http_proxy
@@ -14,15 +14,17 @@ ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-en
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
 WORKDIR ${DAPPER_SOURCE}
 
-ENV DEBIAN_FRONTEND=noninteractive
+
+RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:scm/SLE_15_SP3/devel:tools:scm.repo && \
+    zypper -n --gpg-auto-import-keys ref
 
 # Install packages
-RUN apt-get update && \
-	apt-get dist-upgrade -y && \
-    apt-get install -y cmake wget curl git less file \
-        libglib2.0-dev libkmod-dev libnl-genl-3-dev linux-libc-dev pkg-config psmisc tox qemu-utils fuse python-dev \
-        devscripts debhelper bash-completion librdmacm-dev libibverbs-dev xsltproc docbook-xsl \
-        libconfig-general-perl libaio-dev libc6-dev iptables libltdl7 libdevmapper-dev iproute2 jq
+RUN zypper -n install cmake wget curl git less file \
+        libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config psmisc tox qemu-tools fuse python3-devel git \
+        bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
+        perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
+        rm -rf /var/cache/zypp/*
 
 # needed for ${!var} substitution
 RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
@@ -30,31 +32,24 @@ RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
 # Install Go & tools
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
-RUN wget -O - https://storage.googleapis.com/golang/go1.14.1.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
+RUN wget -O - https://storage.googleapis.com/golang/go1.14.15.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
     go get github.com/rancher/trash && go get -u golang.org/x/lint/golint
-
-# Docker
-ENV DOCKER_URL_amd64=https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/docker-ce-cli_20.10.7~3-0~ubuntu-focal_amd64.deb \
-    DOCKER_URL_arm64=https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/arm64/docker-ce-cli_20.10.7~3-0~ubuntu-focal_arm64.deb \
-    DOCKER_URL=DOCKER_URL_${ARCH}
-
-RUN wget ${!DOCKER_URL} -O docker_ce_${ARCH} && dpkg -i docker_ce_${ARCH}
 
 # Build liblonghorn
 RUN cd /usr/src && \
     git clone https://github.com/rancher/liblonghorn.git && \
     cd liblonghorn && \
     git checkout 09956ed9329d51f41a85d6e06113948c947976a8 && \
-    make deb && \
-    dpkg -i ./pkg/liblonghorn_*.deb
+    make && \
+    make install
 
 # Build TGT
 RUN cd /usr/src && \
     git clone https://github.com/rancher/tgt.git && \
     cd tgt && \
     git checkout e042fdd3616ca90619637b5826695a3de9b5dd8e && \
-    ./scripts/build-pkg.sh deb && \
-    dpkg -i ./pkg/tgt_*.deb
+    make && \
+    make install
 
 VOLUME /tmp
 ENV TMPDIR /tmp
