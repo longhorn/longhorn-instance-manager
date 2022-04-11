@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/longhorn/longhorn-instance-manager/pkg/rpc"
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 
 	. "gopkg.in/check.v1"

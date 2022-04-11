@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/health"
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/process"
-	"github.com/longhorn/longhorn-instance-manager/pkg/rpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
