@@ -11,5 +11,5 @@ if [ ! -e ./proto/vendor/protobuf/src/google/protobuf ]; then
 fi
 
 # instance manager
-python3 -m grpc_tools.protoc -I pkg/rpc -I proto/vendor/protobuf/src/ --python_out=integration/rpc/instance_manager --grpc_python_out=integration/rpc/instance_manager pkg/rpc/rpc.proto
-protoc -I pkg/rpc/ -I proto/vendor/protobuf/src/ pkg/rpc/rpc.proto --go_out=plugins=grpc:pkg/rpc
+python3 -m grpc_tools.protoc -I pkg/imrpc -I proto/vendor/protobuf/src/ --python_out=integration/rpc/instance_manager --grpc_python_out=integration/rpc/instance_manager pkg/imrpc/imrpc.proto
+protoc -I pkg/imrpc/ -I proto/vendor/protobuf/src/ pkg/imrpc/imrpc.proto --go_out=plugins=grpc:pkg/imrpc
