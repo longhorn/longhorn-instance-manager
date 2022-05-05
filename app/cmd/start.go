@@ -42,14 +42,14 @@ func StartCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := start(c); err != nil {
-				logrus.Fatalf("Error running start command: %v.", err)
+				logrus.Fatalf("Failed to run start command: %v.", err)
 			}
 		},
 	}
 }
 
 func cleanup(pm *process.Manager) {
-	logrus.Infof("Try to gracefully shut down Instance Manager")
+	logrus.Infof("Trying to gracefully shut down Instance Manager")
 	pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
 	if err != nil {
 		logrus.Errorf("Failed to list processes before shutdown")
@@ -68,7 +68,7 @@ func cleanup(pm *process.Manager) {
 			break
 		}
 		if len(pmResp.Processes) == 0 {
-			logrus.Infof("Instance Manager has shutdown all processes.")
+			logrus.Infof("Shutdown all instance processes successfully")
 			break
 		}
 		time.Sleep(types.WaitInterval)
@@ -103,14 +103,14 @@ func start(c *cli.Context) error {
 			filepath.Join(tlsDir, "tls.key"),
 			"longhorn-backend.longhorn-system")
 		if err != nil {
-			return errors.Wrap(err, "failed to load tls key pair from file")
+			logrus.Warnf("Failed to addd TLS key pair from %v: %v", tlsDir, err)
 		}
 	}
 
 	if tlsConfig != nil {
-		logrus.Info("creating grpc server with mtls auth")
+		logrus.Info("Creating grpc server with mtls auth")
 	} else {
-		logrus.Info("creating grpc server with no auth")
+		logrus.Info("Creating grpc server with no auth")
 	}
 
 	rpcService, listenAt, err := util.NewServer("tcp://"+listen, tlsConfig,
