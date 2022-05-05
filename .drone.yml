@@ -293,6 +293,7 @@ steps:
     platforms:
       - linux/amd64
       - linux/arm64
+      - linux/s390x
     target: "longhornio/longhorn-instance-manager:${DRONE_BRANCH}-head"
     template: "longhornio/longhorn-instance-manager:${DRONE_BRANCH}-head-ARCH"
   when:
