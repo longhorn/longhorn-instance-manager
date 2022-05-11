@@ -202,11 +202,15 @@ func getProcessManagerClient(c *cli.Context) (*client.ProcessManagerClient, erro
 	tlsDir := c.GlobalString("tls-dir")
 
 	if tlsDir != "" {
-		return client.NewProcessManagerClientWithTLS(url,
+		imClient, err := client.NewProcessManagerClientWithTLS(url,
 			filepath.Join(tlsDir, "ca.crt"),
 			filepath.Join(tlsDir, "tls.crt"),
 			filepath.Join(tlsDir, "tls.key"),
 			"longhorn-backend.longhorn-system")
+		if err == nil {
+			return imClient, err
+		}
+		logrus.WithError(err).Info("Falling back to non tls client")
 	}
 
 	return client.NewProcessManagerClient(url, nil)
