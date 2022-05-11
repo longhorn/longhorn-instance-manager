@@ -29,7 +29,8 @@ func StartCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "listen",
-				Value: "localhost:8500",
+				Value: "tcp://localhost:8500",
+				Usage: "specifies the server endpoint to listen on supported protocols are 'tcp' and 'unix'",
 			},
 			cli.StringFlag{
 				Name:  "logs-dir",
@@ -113,7 +114,7 @@ func start(c *cli.Context) error {
 		logrus.Info("Creating grpc server with no auth")
 	}
 
-	rpcService, listenAt, err := util.NewServer("tcp://"+listen, tlsConfig,
+	rpcService, listenAt, err := util.NewServer(listen, tlsConfig,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             10 * time.Second,
 			PermitWithoutStream: true,

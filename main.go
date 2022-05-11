@@ -34,7 +34,8 @@ func main() {
 	a.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "url",
-			Value: "localhost:8500",
+			Value: "tcp://localhost:8500",
+			Usage: "specifies the server endpoint to connect to supported protocols are 'tcp' and 'unix'",
 		},
 		cli.BoolFlag{
 			Name: "debug",
