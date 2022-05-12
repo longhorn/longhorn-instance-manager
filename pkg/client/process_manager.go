@@ -208,6 +208,7 @@ func (c *ProcessManagerClient) VersionGet() (*meta.VersionOutput, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get version: %v", err)
 	}
+
 	return &meta.VersionOutput{
 		Version:   resp.Version,
 		GitCommit: resp.GitCommit,
@@ -215,5 +216,8 @@ func (c *ProcessManagerClient) VersionGet() (*meta.VersionOutput, error) {
 
 		InstanceManagerAPIVersion:    int(resp.InstanceManagerAPIVersion),
 		InstanceManagerAPIMinVersion: int(resp.InstanceManagerAPIMinVersion),
+
+		InstanceManagerProxyAPIVersion:    int(resp.InstanceManagerProxyAPIVersion),
+		InstanceManagerProxyAPIMinVersion: int(resp.InstanceManagerProxyAPIMinVersion),
 	}, nil
 }

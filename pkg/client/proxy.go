@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 
 	emeta "github.com/longhorn/longhorn-engine/pkg/meta"
@@ -39,6 +40,8 @@ func (c *ProxyClient) Close() error {
 type ProxyClient struct {
 	ServiceURL string
 	ServiceContext
+
+	Version int
 }
 
 func NewProxyClient(ctx context.Context, ctxCancel context.CancelFunc, address string, port int) (*ProxyClient, error) {
@@ -65,6 +68,7 @@ func NewProxyClient(ctx context.Context, ctxCancel context.CancelFunc, address s
 	return &ProxyClient{
 		ServiceURL:     serviceURL,
 		ServiceContext: serviceCtx,
+		Version:        meta.InstanceManagerProxyAPIVersion,
 	}, nil
 }
 
