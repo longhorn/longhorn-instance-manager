@@ -17,5 +17,8 @@ func (pm *Manager) VersionGet(ctx context.Context, empty *empty.Empty) (*rpc.Ver
 
 		InstanceManagerAPIVersion:    int64(v.InstanceManagerAPIVersion),
 		InstanceManagerAPIMinVersion: int64(v.InstanceManagerAPIMinVersion),
+
+		InstanceManagerProxyAPIVersion:    int64(v.InstanceManagerProxyAPIVersion),
+		InstanceManagerProxyAPIMinVersion: int64(v.InstanceManagerProxyAPIMinVersion),
 	}, nil
 }
