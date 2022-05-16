@@ -90,7 +90,6 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 		return nil, err
 	}
 
-	status := &esync.BackupStatusInfo{}
 	replicaAddress := req.ReplicaAddress
 	if replicaAddress == "" {
 		// find a replica which has the corresponding backup
@@ -106,11 +105,10 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 				continue
 			}
 
-			fetched, err := esync.FetchBackupStatus(cReplica, req.BackupName, r.Address.Address)
+			_, err = esync.FetchBackupStatus(cReplica, req.BackupName, r.Address.Address)
 			cReplica.Close()
 			if err == nil {
 				replicaAddress = r.Address.Address
-				status = fetched
 				break
 			}
 		}
@@ -118,6 +116,27 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 
 	if replicaAddress == "" {
 		return nil, errors.Errorf("failed to find a replica with backup %s", req.BackupName)
+	}
+
+	for _, r := range replicas.ReplicaList.Replicas {
+		if r.Address.Address != replicaAddress {
+			continue
+		}
+		mode := eptypes.GRPCReplicaModeToReplicaMode(r.Mode)
+		if mode != etypes.RW {
+			return nil, errors.Errorf("failed to get % v backup status on unknown replica %s", req.BackupName, replicaAddress)
+		}
+	}
+
+	cReplica, err := rclient.NewReplicaClient(replicaAddress)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create replica client with %v", replicaAddress)
+	}
+	defer cReplica.Close()
+
+	status, err := esync.FetchBackupStatus(cReplica, req.BackupName, replicaAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	return &rpc.EngineSnapshotBackupStatusProxyResponse{
