@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
@@ -42,10 +41,6 @@ func (p *Proxy) startMonitoring() {
 			break
 		}
 	}
-}
-
-func (p *Proxy) Ping(ctx context.Context, req *empty.Empty) (resp *empty.Empty, err error) {
-	return &empty.Empty{}, nil
 }
 
 func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVersionProxyResponse, err error) {

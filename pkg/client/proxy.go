@@ -3,11 +3,11 @@ package client
 import (
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
@@ -27,6 +27,10 @@ type ServiceContext struct {
 	quit context.CancelFunc
 
 	service rpc.ProxyEngineServiceClient
+}
+
+func (s ServiceContext) GetConnectionState() connectivity.State {
+	return s.cc.GetState()
 }
 
 func (c *ProxyClient) Close() error {
@@ -75,14 +79,6 @@ func NewProxyClient(ctx context.Context, ctxCancel context.CancelFunc, address s
 const (
 	GRPCServiceTimeout = 3 * time.Minute
 )
-
-func (c *ProxyClient) Ping() (err error) {
-	_, err = c.service.Ping(c.ctx, &empty.Empty{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to ping %v proxy server", c.ServiceURL)
-	}
-	return nil
-}
 
 func (c *ProxyClient) ServerVersionGet(serviceAddress string) (version *emeta.VersionOutput, err error) {
 	if serviceAddress == "" {

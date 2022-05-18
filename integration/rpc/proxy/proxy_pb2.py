@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='imrpc',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bproxy.proto\x12\x05imrpc\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x41github.com/longhorn/longhorn-engine/proto/ptypes/controller.proto\x1a@github.com/longhorn/longhorn-engine/proto/ptypes/syncagent.proto\"%\n\x12ProxyEngineRequest\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\"D\n\x1a\x45ngineVersionProxyResponse\x12&\n\x07version\x18\x01 \x01(\x0b\x32\x15.ptypes.VersionOutput\">\n\x1c\x45ngineVolumeGetProxyResponse\x12\x1e\n\x06volume\x18\x01 \x01(\x0b\x32\x0e.ptypes.Volume\"\x81\x01\n\x19\x45ngineVolumeExpandRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12+\n\x06\x65xpand\x18\x02 \x01(\x0b\x32\x1b.ptypes.VolumeExpandRequest\"\x97\x01\n EngineVolumeFrontendStartRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12:\n\x0e\x66rontend_start\x18\x02 \x01(\x0b\x32\".ptypes.VolumeFrontendStartRequest\"\x8e\x01\n\x1b\x45ngineVolumeSnapshotRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x36\n\x0fsnapshot_volume\x18\x02 \x01(\x0b\x32\x1d.ptypes.VolumeSnapshotRequest\"R\n!EngineVolumeSnapshotProxyResponse\x12-\n\x08snapshot\x18\x01 \x01(\x0b\x32\x1b.ptypes.VolumeSnapshotReply\"\xb0\x01\n\x1f\x45ngineSnapshotListProxyResponse\x12@\n\x05\x64isks\x18\x01 \x03(\x0b\x32\x31.imrpc.EngineSnapshotListProxyResponse.DisksEntry\x1aK\n\nDisksEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineSnapshotDiskInfo:\x02\x38\x01\"\xd6\x02\n\x16\x45ngineSnapshotDiskInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06parent\x18\x02 \x01(\t\x12=\n\x08\x63hildren\x18\x03 \x03(\x0b\x32+.imrpc.EngineSnapshotDiskInfo.ChildrenEntry\x12\x0f\n\x07removed\x18\x04 \x01(\x08\x12\x14\n\x0cuser_created\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\t\x12\x0c\n\x04size\x18\x07 \x01(\t\x12\x39\n\x06labels\x18\x08 \x03(\x0b\x32).imrpc.EngineSnapshotDiskInfo.LabelsEntry\x1a/\n\rChildrenEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"d\n\x1b\x45ngineSnapshotRevertRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04name\x18\x02 \x01(\t\"r\n\x1a\x45ngineSnapshotPurgeRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x1b\n\x13skip_if_in_progress\x18\x02 \x01(\x08\"\xc7\x01\n&EngineSnapshotPurgeStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotPurgeStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotPurgeStatusResponse:\x02\x38\x01\"\xac\x01\n\x1a\x45ngineSnapshotCloneRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0f\x66rom_controller\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12%\n\x1d\x65xport_backing_image_if_exist\x18\x04 \x01(\x08\"\xc7\x01\n&EngineSnapshotCloneStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotCloneStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotCloneStatusResponse:\x02\x38\x01\"e\n\x1b\x45ngineSnapshotRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\r\n\x05names\x18\x02 \x03(\t\"\xd2\x02\n\x1b\x45ngineSnapshotBackupRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x08 \x03(\t\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x15\n\rbackup_target\x18\x04 \x01(\t\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\x05 \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x06 \x01(\t\x12>\n\x06labels\x18\x07 \x03(\x0b\x32..imrpc.EngineSnapshotBackupRequest.LabelsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"_\n!EngineSnapshotBackupProxyResponse\x12\x11\n\tbackup_id\x18\x01 \x01(\t\x12\x0f\n\x07replica\x18\x02 \x01(\t\x12\x16\n\x0eis_incremental\x18\x03 \x01(\x08\"\x8a\x01\n!EngineSnapshotBackupStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x17\n\x0freplica_address\x18\x03 \x01(\t\"\x9d\x01\n\'EngineSnapshotBackupStatusProxyResponse\x12\x12\n\nbackup_url\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08progress\x18\x03 \x01(\x05\x12\x15\n\rsnapshot_name\x18\x04 \x01(\t\x12\r\n\x05state\x18\x05 \x01(\t\x12\x17\n\x0freplica_address\x18\x06 \x01(\t\"\x95\x01\n\x1a\x45ngineBackupRestoreRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x13\n\x0bvolume_name\x18\x05 \x01(\t\"5\n EngineBackupRestoreProxyResponse\x12\x11\n\ttaskError\x18\x01 \x01(\x0c\"\xc4\x01\n&EngineBackupRestoreStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineBackupRestoreStatusProxyResponse.StatusEntry\x1aO\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .imrpc.EngineBackupRestoreStatus:\x02\x38\x01\"\xc0\x01\n\x19\x45ngineBackupRestoreStatus\x12\x14\n\x0cis_restoring\x18\x01 \x01(\x08\x12\x15\n\rlast_restored\x18\x02 \x01(\t\x12 \n\x18\x63urrent_restoring_backup\x18\x03 \x01(\t\x12\x10\n\x08progress\x18\x04 \x01(\x05\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x10\n\x08\x66ilename\x18\x06 \x01(\t\x12\r\n\x05state\x18\x07 \x01(\t\x12\x12\n\nbackup_url\x18\x08 \x01(\t\"w\n\x1c\x45ngineBackupVolumeGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"S\n\"EngineBackupVolumeGetProxyResponse\x12-\n\x06volume\x18\x01 \x01(\x0b\x32\x1d.imrpc.EngineBackupVolumeInfo\"q\n\x16\x45ngineBackupGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"G\n\x1c\x45ngineBackupGetProxyResponse\x12\'\n\x06\x62\x61\x63kup\x18\x01 \x01(\x0b\x32\x17.imrpc.EngineBackupInfo\"{\n EngineBackupConfigMetaGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"_\n&EngineBackupConfigMetaGetProxyResponse\x12\x35\n\x11modification_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"i\n\x1d\x45ngineBackupVolumeListRequest\x12\x0c\n\x04\x65nvs\x18\x01 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x02 \x01(\t\x12\x13\n\x0bvolume_name\x18\x03 \x01(\t\x12\x13\n\x0bvolume_only\x18\x04 \x01(\x08\"\xbe\x01\n#EngineBackupVolumeListProxyResponse\x12H\n\x07volumes\x18\x01 \x03(\x0b\x32\x37.imrpc.EngineBackupVolumeListProxyResponse.VolumesEntry\x1aM\n\x0cVolumesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineBackupVolumeInfo:\x02\x38\x01\"\xa7\x04\n\x16\x45ngineBackupVolumeInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04size\x18\x02 \x01(\x03\x12\x39\n\x06labels\x18\x03 \x03(\x0b\x32).imrpc.EngineBackupVolumeInfo.LabelsEntry\x12\x0f\n\x07\x63reated\x18\x04 \x01(\t\x12\x18\n\x10last_backup_name\x18\x05 \x01(\t\x12\x16\n\x0elast_backup_at\x18\x06 \x01(\t\x12\x12\n\nDataStored\x18\x07 \x01(\x03\x12=\n\x08messages\x18\x08 \x03(\x0b\x32+.imrpc.EngineBackupVolumeInfo.MessagesEntry\x12;\n\x07\x62\x61\x63kups\x18\t \x03(\x0b\x32*.imrpc.EngineBackupVolumeInfo.BackupsEntry\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\n \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x0b \x01(\t\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a/\n\rMessagesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1aG\n\x0c\x42\x61\x63kupsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12&\n\x05value\x18\x02 \x01(\x0b\x32\x17.imrpc.EngineBackupInfo:\x02\x38\x01\"\xc8\x03\n\x10\x45ngineBackupInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x18\n\x10snapshot_created\x18\x04 \x01(\t\x12\x0f\n\x07\x63reated\x18\x05 \x01(\t\x12\x0c\n\x04size\x18\x06 \x01(\x03\x12\x33\n\x06labels\x18\x07 \x03(\x0b\x32#.imrpc.EngineBackupInfo.LabelsEntry\x12\x16\n\x0eis_incremental\x18\x08 \x01(\x08\x12\x13\n\x0bvolume_name\x18\t \x01(\t\x12\x13\n\x0bvolume_size\x18\n \x01(\x03\x12\x16\n\x0evolume_created\x18\x0b \x01(\t\x12!\n\x19volume_backing_image_name\x18\x0c \x01(\t\x12\x37\n\x08messages\x18\r \x03(\x0b\x32%.imrpc.EngineBackupInfo.MessagesEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a/\n\rMessagesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"P\n\x19\x45ngineBackupRemoveRequest\x12\x0c\n\x04\x65nvs\x18\x01 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x02 \x01(\t\x12\x13\n\x0bvolume_name\x18\x03 \x01(\t\"|\n\x17\x45ngineReplicaAddRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12\x0f\n\x07restore\x18\x03 \x01(\x08\"P\n\x1e\x45ngineReplicaListProxyResponse\x12.\n\x0creplica_list\x18\x01 \x01(\x0b\x32\x18.ptypes.ReplicaListReply\"u\n!EngineReplicaVerifyRebuildRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\"\xca\x01\n\'EngineReplicaRebuildStatusProxyResponse\x12J\n\x06status\x18\x01 \x03(\x0b\x32:.imrpc.EngineReplicaRebuildStatusProxyResponse.StatusEntry\x1aS\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x33\n\x05value\x18\x02 \x01(\x0b\x32$.ptypes.ReplicaRebuildStatusResponse:\x02\x38\x01\"n\n\x1a\x45ngineReplicaRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t2\x89\x13\n\x12ProxyEngineService\x12\x36\n\x04Ping\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\x12P\n\x10ServerVersionGet\x12\x19.imrpc.ProxyEngineRequest\x1a!.imrpc.EngineVersionProxyResponse\x12K\n\tVolumeGet\x12\x19.imrpc.ProxyEngineRequest\x1a#.imrpc.EngineVolumeGetProxyResponse\x12H\n\x0cVolumeExpand\x12 .imrpc.EngineVolumeExpandRequest\x1a\x16.google.protobuf.Empty\x12V\n\x13VolumeFrontendStart\x12\'.imrpc.EngineVolumeFrontendStartRequest\x1a\x16.google.protobuf.Empty\x12K\n\x16VolumeFrontendShutdown\x12\x19.imrpc.ProxyEngineRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eVolumeSnapshot\x12\".imrpc.EngineVolumeSnapshotRequest\x1a(.imrpc.EngineVolumeSnapshotProxyResponse\x12Q\n\x0cSnapshotList\x12\x19.imrpc.ProxyEngineRequest\x1a&.imrpc.EngineSnapshotListProxyResponse\x12L\n\x0eSnapshotRevert\x12\".imrpc.EngineSnapshotRevertRequest\x1a\x16.google.protobuf.Empty\x12J\n\rSnapshotPurge\x12!.imrpc.EngineSnapshotPurgeRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotPurgeStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotPurgeStatusProxyResponse\x12J\n\rSnapshotClone\x12!.imrpc.EngineSnapshotCloneRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotCloneStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotCloneStatusProxyResponse\x12L\n\x0eSnapshotRemove\x12\".imrpc.EngineSnapshotRemoveRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eSnapshotBackup\x12\".imrpc.EngineSnapshotBackupRequest\x1a(.imrpc.EngineSnapshotBackupProxyResponse\x12p\n\x14SnapshotBackupStatus\x12(.imrpc.EngineSnapshotBackupStatusRequest\x1a..imrpc.EngineSnapshotBackupStatusProxyResponse\x12[\n\rBackupRestore\x12!.imrpc.EngineBackupRestoreRequest\x1a\'.imrpc.EngineBackupRestoreProxyResponse\x12_\n\x13\x42\x61\x63kupRestoreStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineBackupRestoreStatusProxyResponse\x12\x64\n\x10\x42\x61\x63kupVolumeList\x12$.imrpc.EngineBackupVolumeListRequest\x1a*.imrpc.EngineBackupVolumeListProxyResponse\x12\x61\n\x0f\x42\x61\x63kupVolumeGet\x12#.imrpc.EngineBackupVolumeGetRequest\x1a).imrpc.EngineBackupVolumeGetProxyResponse\x12O\n\tBackupGet\x12\x1d.imrpc.EngineBackupGetRequest\x1a#.imrpc.EngineBackupGetProxyResponse\x12m\n\x13\x42\x61\x63kupConfigMetaGet\x12\'.imrpc.EngineBackupConfigMetaGetRequest\x1a-.imrpc.EngineBackupConfigMetaGetProxyResponse\x12H\n\x0c\x42\x61\x63kupRemove\x12 .imrpc.EngineBackupRemoveRequest\x1a\x16.google.protobuf.Empty\x12\x44\n\nReplicaAdd\x12\x1e.imrpc.EngineReplicaAddRequest\x1a\x16.google.protobuf.Empty\x12O\n\x0bReplicaList\x12\x19.imrpc.ProxyEngineRequest\x1a%.imrpc.EngineReplicaListProxyResponse\x12\x64\n\x17ReplicaRebuildingStatus\x12\x19.imrpc.ProxyEngineRequest\x1a..imrpc.EngineReplicaRebuildStatusProxyResponse\x12X\n\x14ReplicaVerifyRebuild\x12(.imrpc.EngineReplicaVerifyRebuildRequest\x1a\x16.google.protobuf.Empty\x12J\n\rReplicaRemove\x12!.imrpc.EngineReplicaRemoveRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
+  serialized_pb=_b('\n\x0bproxy.proto\x12\x05imrpc\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x41github.com/longhorn/longhorn-engine/proto/ptypes/controller.proto\x1a@github.com/longhorn/longhorn-engine/proto/ptypes/syncagent.proto\"%\n\x12ProxyEngineRequest\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\"D\n\x1a\x45ngineVersionProxyResponse\x12&\n\x07version\x18\x01 \x01(\x0b\x32\x15.ptypes.VersionOutput\">\n\x1c\x45ngineVolumeGetProxyResponse\x12\x1e\n\x06volume\x18\x01 \x01(\x0b\x32\x0e.ptypes.Volume\"\x81\x01\n\x19\x45ngineVolumeExpandRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12+\n\x06\x65xpand\x18\x02 \x01(\x0b\x32\x1b.ptypes.VolumeExpandRequest\"\x97\x01\n EngineVolumeFrontendStartRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12:\n\x0e\x66rontend_start\x18\x02 \x01(\x0b\x32\".ptypes.VolumeFrontendStartRequest\"\x8e\x01\n\x1b\x45ngineVolumeSnapshotRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x36\n\x0fsnapshot_volume\x18\x02 \x01(\x0b\x32\x1d.ptypes.VolumeSnapshotRequest\"R\n!EngineVolumeSnapshotProxyResponse\x12-\n\x08snapshot\x18\x01 \x01(\x0b\x32\x1b.ptypes.VolumeSnapshotReply\"\xb0\x01\n\x1f\x45ngineSnapshotListProxyResponse\x12@\n\x05\x64isks\x18\x01 \x03(\x0b\x32\x31.imrpc.EngineSnapshotListProxyResponse.DisksEntry\x1aK\n\nDisksEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineSnapshotDiskInfo:\x02\x38\x01\"\xd6\x02\n\x16\x45ngineSnapshotDiskInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06parent\x18\x02 \x01(\t\x12=\n\x08\x63hildren\x18\x03 \x03(\x0b\x32+.imrpc.EngineSnapshotDiskInfo.ChildrenEntry\x12\x0f\n\x07removed\x18\x04 \x01(\x08\x12\x14\n\x0cuser_created\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\t\x12\x0c\n\x04size\x18\x07 \x01(\t\x12\x39\n\x06labels\x18\x08 \x03(\x0b\x32).imrpc.EngineSnapshotDiskInfo.LabelsEntry\x1a/\n\rChildrenEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"d\n\x1b\x45ngineSnapshotRevertRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04name\x18\x02 \x01(\t\"r\n\x1a\x45ngineSnapshotPurgeRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x1b\n\x13skip_if_in_progress\x18\x02 \x01(\x08\"\xc7\x01\n&EngineSnapshotPurgeStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotPurgeStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotPurgeStatusResponse:\x02\x38\x01\"\xac\x01\n\x1a\x45ngineSnapshotCloneRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0f\x66rom_controller\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12%\n\x1d\x65xport_backing_image_if_exist\x18\x04 \x01(\x08\"\xc7\x01\n&EngineSnapshotCloneStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotCloneStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotCloneStatusResponse:\x02\x38\x01\"e\n\x1b\x45ngineSnapshotRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\r\n\x05names\x18\x02 \x03(\t\"\xd2\x02\n\x1b\x45ngineSnapshotBackupRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x08 \x03(\t\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x15\n\rbackup_target\x18\x04 \x01(\t\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\x05 \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x06 \x01(\t\x12>\n\x06labels\x18\x07 \x03(\x0b\x32..imrpc.EngineSnapshotBackupRequest.LabelsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"_\n!EngineSnapshotBackupProxyResponse\x12\x11\n\tbackup_id\x18\x01 \x01(\t\x12\x0f\n\x07replica\x18\x02 \x01(\t\x12\x16\n\x0eis_incremental\x18\x03 \x01(\x08\"\x8a\x01\n!EngineSnapshotBackupStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x17\n\x0freplica_address\x18\x03 \x01(\t\"\x9d\x01\n\'EngineSnapshotBackupStatusProxyResponse\x12\x12\n\nbackup_url\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08progress\x18\x03 \x01(\x05\x12\x15\n\rsnapshot_name\x18\x04 \x01(\t\x12\r\n\x05state\x18\x05 \x01(\t\x12\x17\n\x0freplica_address\x18\x06 \x01(\t\"\x95\x01\n\x1a\x45ngineBackupRestoreRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x13\n\x0bvolume_name\x18\x05 \x01(\t\"5\n EngineBackupRestoreProxyResponse\x12\x11\n\ttaskError\x18\x01 \x01(\x0c\"\xc4\x01\n&EngineBackupRestoreStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineBackupRestoreStatusProxyResponse.StatusEntry\x1aO\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .imrpc.EngineBackupRestoreStatus:\x02\x38\x01\"\xc0\x01\n\x19\x45ngineBackupRestoreStatus\x12\x14\n\x0cis_restoring\x18\x01 \x01(\x08\x12\x15\n\rlast_restored\x18\x02 \x01(\t\x12 \n\x18\x63urrent_restoring_backup\x18\x03 \x01(\t\x12\x10\n\x08progress\x18\x04 \x01(\x05\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x10\n\x08\x66ilename\x18\x06 \x01(\t\x12\r\n\x05state\x18\x07 \x01(\t\x12\x12\n\nbackup_url\x18\x08 \x01(\t\"w\n\x1c\x45ngineBackupVolumeGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"S\n\"EngineBackupVolumeGetProxyResponse\x12-\n\x06volume\x18\x01 \x01(\x0b\x32\x1d.imrpc.EngineBackupVolumeInfo\"q\n\x16\x45ngineBackupGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"G\n\x1c\x45ngineBackupGetProxyResponse\x12\'\n\x06\x62\x61\x63kup\x18\x01 \x01(\x0b\x32\x17.imrpc.EngineBackupInfo\"{\n EngineBackupConfigMetaGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"_\n&EngineBackupConfigMetaGetProxyResponse\x12\x35\n\x11modification_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"i\n\x1d\x45ngineBackupVolumeListRequest\x12\x0c\n\x04\x65nvs\x18\x01 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x02 \x01(\t\x12\x13\n\x0bvolume_name\x18\x03 \x01(\t\x12\x13\n\x0bvolume_only\x18\x04 \x01(\x08\"\xbe\x01\n#EngineBackupVolumeListProxyResponse\x12H\n\x07volumes\x18\x01 \x03(\x0b\x32\x37.imrpc.EngineBackupVolumeListProxyResponse.VolumesEntry\x1aM\n\x0cVolumesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineBackupVolumeInfo:\x02\x38\x01\"\xa7\x04\n\x16\x45ngineBackupVolumeInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04size\x18\x02 \x01(\x03\x12\x39\n\x06labels\x18\x03 \x03(\x0b\x32).imrpc.EngineBackupVolumeInfo.LabelsEntry\x12\x0f\n\x07\x63reated\x18\x04 \x01(\t\x12\x18\n\x10last_backup_name\x18\x05 \x01(\t\x12\x16\n\x0elast_backup_at\x18\x06 \x01(\t\x12\x12\n\nDataStored\x18\x07 \x01(\x03\x12=\n\x08messages\x18\x08 \x03(\x0b\x32+.imrpc.EngineBackupVolumeInfo.MessagesEntry\x12;\n\x07\x62\x61\x63kups\x18\t \x03(\x0b\x32*.imrpc.EngineBackupVolumeInfo.BackupsEntry\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\n \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x0b \x01(\t\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a/\n\rMessagesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1aG\n\x0c\x42\x61\x63kupsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12&\n\x05value\x18\x02 \x01(\x0b\x32\x17.imrpc.EngineBackupInfo:\x02\x38\x01\"\xc8\x03\n\x10\x45ngineBackupInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x18\n\x10snapshot_created\x18\x04 \x01(\t\x12\x0f\n\x07\x63reated\x18\x05 \x01(\t\x12\x0c\n\x04size\x18\x06 \x01(\x03\x12\x33\n\x06labels\x18\x07 \x03(\x0b\x32#.imrpc.EngineBackupInfo.LabelsEntry\x12\x16\n\x0eis_incremental\x18\x08 \x01(\x08\x12\x13\n\x0bvolume_name\x18\t \x01(\t\x12\x13\n\x0bvolume_size\x18\n \x01(\x03\x12\x16\n\x0evolume_created\x18\x0b \x01(\t\x12!\n\x19volume_backing_image_name\x18\x0c \x01(\t\x12\x37\n\x08messages\x18\r \x03(\x0b\x32%.imrpc.EngineBackupInfo.MessagesEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a/\n\rMessagesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"P\n\x19\x45ngineBackupRemoveRequest\x12\x0c\n\x04\x65nvs\x18\x01 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x02 \x01(\t\x12\x13\n\x0bvolume_name\x18\x03 \x01(\t\"|\n\x17\x45ngineReplicaAddRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12\x0f\n\x07restore\x18\x03 \x01(\x08\"P\n\x1e\x45ngineReplicaListProxyResponse\x12.\n\x0creplica_list\x18\x01 \x01(\x0b\x32\x18.ptypes.ReplicaListReply\"u\n!EngineReplicaVerifyRebuildRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\"\xca\x01\n\'EngineReplicaRebuildStatusProxyResponse\x12J\n\x06status\x18\x01 \x03(\x0b\x32:.imrpc.EngineReplicaRebuildStatusProxyResponse.StatusEntry\x1aS\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x33\n\x05value\x18\x02 \x01(\x0b\x32$.ptypes.ReplicaRebuildStatusResponse:\x02\x38\x01\"n\n\x1a\x45ngineReplicaRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t2\xd1\x12\n\x12ProxyEngineService\x12P\n\x10ServerVersionGet\x12\x19.imrpc.ProxyEngineRequest\x1a!.imrpc.EngineVersionProxyResponse\x12K\n\tVolumeGet\x12\x19.imrpc.ProxyEngineRequest\x1a#.imrpc.EngineVolumeGetProxyResponse\x12H\n\x0cVolumeExpand\x12 .imrpc.EngineVolumeExpandRequest\x1a\x16.google.protobuf.Empty\x12V\n\x13VolumeFrontendStart\x12\'.imrpc.EngineVolumeFrontendStartRequest\x1a\x16.google.protobuf.Empty\x12K\n\x16VolumeFrontendShutdown\x12\x19.imrpc.ProxyEngineRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eVolumeSnapshot\x12\".imrpc.EngineVolumeSnapshotRequest\x1a(.imrpc.EngineVolumeSnapshotProxyResponse\x12Q\n\x0cSnapshotList\x12\x19.imrpc.ProxyEngineRequest\x1a&.imrpc.EngineSnapshotListProxyResponse\x12L\n\x0eSnapshotRevert\x12\".imrpc.EngineSnapshotRevertRequest\x1a\x16.google.protobuf.Empty\x12J\n\rSnapshotPurge\x12!.imrpc.EngineSnapshotPurgeRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotPurgeStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotPurgeStatusProxyResponse\x12J\n\rSnapshotClone\x12!.imrpc.EngineSnapshotCloneRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotCloneStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotCloneStatusProxyResponse\x12L\n\x0eSnapshotRemove\x12\".imrpc.EngineSnapshotRemoveRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eSnapshotBackup\x12\".imrpc.EngineSnapshotBackupRequest\x1a(.imrpc.EngineSnapshotBackupProxyResponse\x12p\n\x14SnapshotBackupStatus\x12(.imrpc.EngineSnapshotBackupStatusRequest\x1a..imrpc.EngineSnapshotBackupStatusProxyResponse\x12[\n\rBackupRestore\x12!.imrpc.EngineBackupRestoreRequest\x1a\'.imrpc.EngineBackupRestoreProxyResponse\x12_\n\x13\x42\x61\x63kupRestoreStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineBackupRestoreStatusProxyResponse\x12\x64\n\x10\x42\x61\x63kupVolumeList\x12$.imrpc.EngineBackupVolumeListRequest\x1a*.imrpc.EngineBackupVolumeListProxyResponse\x12\x61\n\x0f\x42\x61\x63kupVolumeGet\x12#.imrpc.EngineBackupVolumeGetRequest\x1a).imrpc.EngineBackupVolumeGetProxyResponse\x12O\n\tBackupGet\x12\x1d.imrpc.EngineBackupGetRequest\x1a#.imrpc.EngineBackupGetProxyResponse\x12m\n\x13\x42\x61\x63kupConfigMetaGet\x12\'.imrpc.EngineBackupConfigMetaGetRequest\x1a-.imrpc.EngineBackupConfigMetaGetProxyResponse\x12H\n\x0c\x42\x61\x63kupRemove\x12 .imrpc.EngineBackupRemoveRequest\x1a\x16.google.protobuf.Empty\x12\x44\n\nReplicaAdd\x12\x1e.imrpc.EngineReplicaAddRequest\x1a\x16.google.protobuf.Empty\x12O\n\x0bReplicaList\x12\x19.imrpc.ProxyEngineRequest\x1a%.imrpc.EngineReplicaListProxyResponse\x12\x64\n\x17ReplicaRebuildingStatus\x12\x19.imrpc.ProxyEngineRequest\x1a..imrpc.EngineReplicaRebuildStatusProxyResponse\x12X\n\x14ReplicaVerifyRebuild\x12(.imrpc.EngineReplicaVerifyRebuildRequest\x1a\x16.google.protobuf.Empty\x12J\n\rReplicaRemove\x12!.imrpc.EngineReplicaRemoveRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_syncagent__pb2.DESCRIPTOR,])
 
@@ -2827,21 +2827,12 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   serialized_start=6325,
-  serialized_end=8766,
+  serialized_end=8710,
   methods=[
-  _descriptor.MethodDescriptor(
-    name='Ping',
-    full_name='imrpc.ProxyEngineService.Ping',
-    index=0,
-    containing_service=None,
-    input_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
-    output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
-    serialized_options=None,
-  ),
   _descriptor.MethodDescriptor(
     name='ServerVersionGet',
     full_name='imrpc.ProxyEngineService.ServerVersionGet',
-    index=1,
+    index=0,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINEVERSIONPROXYRESPONSE,
@@ -2850,7 +2841,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='VolumeGet',
     full_name='imrpc.ProxyEngineService.VolumeGet',
-    index=2,
+    index=1,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINEVOLUMEGETPROXYRESPONSE,
@@ -2859,7 +2850,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='VolumeExpand',
     full_name='imrpc.ProxyEngineService.VolumeExpand',
-    index=3,
+    index=2,
     containing_service=None,
     input_type=_ENGINEVOLUMEEXPANDREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -2868,7 +2859,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='VolumeFrontendStart',
     full_name='imrpc.ProxyEngineService.VolumeFrontendStart',
-    index=4,
+    index=3,
     containing_service=None,
     input_type=_ENGINEVOLUMEFRONTENDSTARTREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -2877,7 +2868,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='VolumeFrontendShutdown',
     full_name='imrpc.ProxyEngineService.VolumeFrontendShutdown',
-    index=5,
+    index=4,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -2886,7 +2877,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='VolumeSnapshot',
     full_name='imrpc.ProxyEngineService.VolumeSnapshot',
-    index=6,
+    index=5,
     containing_service=None,
     input_type=_ENGINEVOLUMESNAPSHOTREQUEST,
     output_type=_ENGINEVOLUMESNAPSHOTPROXYRESPONSE,
@@ -2895,7 +2886,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotList',
     full_name='imrpc.ProxyEngineService.SnapshotList',
-    index=7,
+    index=6,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINESNAPSHOTLISTPROXYRESPONSE,
@@ -2904,7 +2895,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotRevert',
     full_name='imrpc.ProxyEngineService.SnapshotRevert',
-    index=8,
+    index=7,
     containing_service=None,
     input_type=_ENGINESNAPSHOTREVERTREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -2913,7 +2904,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotPurge',
     full_name='imrpc.ProxyEngineService.SnapshotPurge',
-    index=9,
+    index=8,
     containing_service=None,
     input_type=_ENGINESNAPSHOTPURGEREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -2922,7 +2913,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotPurgeStatus',
     full_name='imrpc.ProxyEngineService.SnapshotPurgeStatus',
-    index=10,
+    index=9,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE,
@@ -2931,7 +2922,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotClone',
     full_name='imrpc.ProxyEngineService.SnapshotClone',
-    index=11,
+    index=10,
     containing_service=None,
     input_type=_ENGINESNAPSHOTCLONEREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -2940,7 +2931,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotCloneStatus',
     full_name='imrpc.ProxyEngineService.SnapshotCloneStatus',
-    index=12,
+    index=11,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE,
@@ -2949,7 +2940,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotRemove',
     full_name='imrpc.ProxyEngineService.SnapshotRemove',
-    index=13,
+    index=12,
     containing_service=None,
     input_type=_ENGINESNAPSHOTREMOVEREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -2958,7 +2949,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotBackup',
     full_name='imrpc.ProxyEngineService.SnapshotBackup',
-    index=14,
+    index=13,
     containing_service=None,
     input_type=_ENGINESNAPSHOTBACKUPREQUEST,
     output_type=_ENGINESNAPSHOTBACKUPPROXYRESPONSE,
@@ -2967,7 +2958,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SnapshotBackupStatus',
     full_name='imrpc.ProxyEngineService.SnapshotBackupStatus',
-    index=15,
+    index=14,
     containing_service=None,
     input_type=_ENGINESNAPSHOTBACKUPSTATUSREQUEST,
     output_type=_ENGINESNAPSHOTBACKUPSTATUSPROXYRESPONSE,
@@ -2976,7 +2967,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='BackupRestore',
     full_name='imrpc.ProxyEngineService.BackupRestore',
-    index=16,
+    index=15,
     containing_service=None,
     input_type=_ENGINEBACKUPRESTOREREQUEST,
     output_type=_ENGINEBACKUPRESTOREPROXYRESPONSE,
@@ -2985,7 +2976,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='BackupRestoreStatus',
     full_name='imrpc.ProxyEngineService.BackupRestoreStatus',
-    index=17,
+    index=16,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINEBACKUPRESTORESTATUSPROXYRESPONSE,
@@ -2994,7 +2985,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='BackupVolumeList',
     full_name='imrpc.ProxyEngineService.BackupVolumeList',
-    index=18,
+    index=17,
     containing_service=None,
     input_type=_ENGINEBACKUPVOLUMELISTREQUEST,
     output_type=_ENGINEBACKUPVOLUMELISTPROXYRESPONSE,
@@ -3003,7 +2994,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='BackupVolumeGet',
     full_name='imrpc.ProxyEngineService.BackupVolumeGet',
-    index=19,
+    index=18,
     containing_service=None,
     input_type=_ENGINEBACKUPVOLUMEGETREQUEST,
     output_type=_ENGINEBACKUPVOLUMEGETPROXYRESPONSE,
@@ -3012,7 +3003,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='BackupGet',
     full_name='imrpc.ProxyEngineService.BackupGet',
-    index=20,
+    index=19,
     containing_service=None,
     input_type=_ENGINEBACKUPGETREQUEST,
     output_type=_ENGINEBACKUPGETPROXYRESPONSE,
@@ -3021,7 +3012,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='BackupConfigMetaGet',
     full_name='imrpc.ProxyEngineService.BackupConfigMetaGet',
-    index=21,
+    index=20,
     containing_service=None,
     input_type=_ENGINEBACKUPCONFIGMETAGETREQUEST,
     output_type=_ENGINEBACKUPCONFIGMETAGETPROXYRESPONSE,
@@ -3030,7 +3021,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='BackupRemove',
     full_name='imrpc.ProxyEngineService.BackupRemove',
-    index=22,
+    index=21,
     containing_service=None,
     input_type=_ENGINEBACKUPREMOVEREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -3039,7 +3030,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaAdd',
     full_name='imrpc.ProxyEngineService.ReplicaAdd',
-    index=23,
+    index=22,
     containing_service=None,
     input_type=_ENGINEREPLICAADDREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -3048,7 +3039,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaList',
     full_name='imrpc.ProxyEngineService.ReplicaList',
-    index=24,
+    index=23,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINEREPLICALISTPROXYRESPONSE,
@@ -3057,7 +3048,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaRebuildingStatus',
     full_name='imrpc.ProxyEngineService.ReplicaRebuildingStatus',
-    index=25,
+    index=24,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE,
@@ -3066,7 +3057,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaVerifyRebuild',
     full_name='imrpc.ProxyEngineService.ReplicaVerifyRebuild',
-    index=26,
+    index=25,
     containing_service=None,
     input_type=_ENGINEREPLICAVERIFYREBUILDREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -3075,7 +3066,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaRemove',
     full_name='imrpc.ProxyEngineService.ReplicaRemove',
-    index=27,
+    index=26,
     containing_service=None,
     input_type=_ENGINEREPLICAREMOVEREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
