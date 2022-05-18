@@ -15,11 +15,6 @@ class ProxyEngineServiceStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.Ping = channel.unary_unary(
-        '/imrpc.ProxyEngineService/Ping',
-        request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-        response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-        )
     self.ServerVersionGet = channel.unary_unary(
         '/imrpc.ProxyEngineService/ServerVersionGet',
         request_serializer=proxy__pb2.ProxyEngineRequest.SerializeToString,
@@ -160,13 +155,6 @@ class ProxyEngineServiceStub(object):
 class ProxyEngineServiceServicer(object):
   # missing associated documentation comment in .proto file
   pass
-
-  def Ping(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
 
   def ServerVersionGet(self, request, context):
     # missing associated documentation comment in .proto file
@@ -360,11 +348,6 @@ class ProxyEngineServiceServicer(object):
 
 def add_ProxyEngineServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'Ping': grpc.unary_unary_rpc_method_handler(
-          servicer.Ping,
-          request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-          response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-      ),
       'ServerVersionGet': grpc.unary_unary_rpc_method_handler(
           servicer.ServerVersionGet,
           request_deserializer=proxy__pb2.ProxyEngineRequest.FromString,
