@@ -174,6 +174,9 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 		return nil, err
 	}
 
+	resp = &rpc.EngineBackupRestoreProxyResponse{
+		TaskError: []byte{},
+	}
 	err = task.RestoreBackup(req.Url, credential)
 	if err != nil {
 		errInfo, jsonErr := json.Marshal(err)
