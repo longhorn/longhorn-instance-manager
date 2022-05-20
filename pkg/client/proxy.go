@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,8 +18,17 @@ import (
 )
 
 var (
-	ErrParameter = errors.Errorf("missing required parameter")
+	ErrParameterFmt = "missing required %v parameter"
 )
+
+func validateProxyMethodParameters(input map[string]string) error {
+	for k, v := range input {
+		if v == "" {
+			return errors.Errorf(ErrParameterFmt, k)
+		}
+	}
+	return nil
+}
 
 type ServiceContext struct {
 	cc *grpc.ClientConn
@@ -36,7 +46,7 @@ func (s ServiceContext) GetConnectionState() connectivity.State {
 func (c *ProxyClient) Close() error {
 	c.quit()
 	if err := c.cc.Close(); err != nil {
-		return errors.Wrapf(err, "error closing proxy gRPC connection")
+		return errors.Wrap(err, "failed to close proxy gRPC connection")
 	}
 	return nil
 }
@@ -80,19 +90,28 @@ const (
 	GRPCServiceTimeout = 3 * time.Minute
 )
 
+func (c *ProxyClient) getProxyErrorPrefix(destination string) string {
+	return fmt.Sprintf("proxyServer=%v destination=%v:", c.ServiceURL, destination)
+}
+
 func (c *ProxyClient) ServerVersionGet(serviceAddress string) (version *emeta.VersionOutput, err error) {
-	if serviceAddress == "" {
-		return version, errors.Wrapf(ErrParameter, "failed to get server version")
+	input := map[string]string{
+		"serviceAddress": serviceAddress,
 	}
-	log := logrus.WithFields(logrus.Fields{"serviceURL": c.ServiceURL})
-	log.Debug("Getting server version via proxy")
+	if err := validateProxyMethodParameters(input); err != nil {
+		return nil, errors.Wrap(err, "failed to get server version")
+	}
+
+	defer func() {
+		err = errors.Wrapf(err, "%v failed to get server version", c.getProxyErrorPrefix(serviceAddress))
+	}()
 
 	req := &rpc.ProxyEngineRequest{
 		Address: serviceAddress,
 	}
 	resp, err := c.service.ServerVersionGet(c.ctx, req)
 	if err != nil {
-		return version, errors.Wrapf(err, "failed to get server version via proxy %v to %v", c.ServiceURL, serviceAddress)
+		return nil, err
 	}
 
 	serverVersion := resp.Version
@@ -111,6 +130,6 @@ func (c *ProxyClient) ServerVersionGet(serviceAddress string) (version *emeta.Ve
 }
 
 func (c *ProxyClient) ClientVersionGet() (version emeta.VersionOutput) {
-	logrus.Debug("Getting client version on proxy")
+	logrus.Debug("Getting client version")
 	return emeta.GetVersion()
 }
