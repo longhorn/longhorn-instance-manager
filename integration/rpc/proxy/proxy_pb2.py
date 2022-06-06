@@ -14,7 +14,6 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 from github.com.longhorn.longhorn_engine.proto.ptypes import controller_pb2 as github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2
 from github.com.longhorn.longhorn_engine.proto.ptypes import syncagent_pb2 as github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_syncagent__pb2
 
@@ -24,9 +23,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='imrpc',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bproxy.proto\x12\x05imrpc\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x41github.com/longhorn/longhorn-engine/proto/ptypes/controller.proto\x1a@github.com/longhorn/longhorn-engine/proto/ptypes/syncagent.proto\"%\n\x12ProxyEngineRequest\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\"D\n\x1a\x45ngineVersionProxyResponse\x12&\n\x07version\x18\x01 \x01(\x0b\x32\x15.ptypes.VersionOutput\">\n\x1c\x45ngineVolumeGetProxyResponse\x12\x1e\n\x06volume\x18\x01 \x01(\x0b\x32\x0e.ptypes.Volume\"\x81\x01\n\x19\x45ngineVolumeExpandRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12+\n\x06\x65xpand\x18\x02 \x01(\x0b\x32\x1b.ptypes.VolumeExpandRequest\"\x97\x01\n EngineVolumeFrontendStartRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12:\n\x0e\x66rontend_start\x18\x02 \x01(\x0b\x32\".ptypes.VolumeFrontendStartRequest\"\x8e\x01\n\x1b\x45ngineVolumeSnapshotRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x36\n\x0fsnapshot_volume\x18\x02 \x01(\x0b\x32\x1d.ptypes.VolumeSnapshotRequest\"R\n!EngineVolumeSnapshotProxyResponse\x12-\n\x08snapshot\x18\x01 \x01(\x0b\x32\x1b.ptypes.VolumeSnapshotReply\"\xb0\x01\n\x1f\x45ngineSnapshotListProxyResponse\x12@\n\x05\x64isks\x18\x01 \x03(\x0b\x32\x31.imrpc.EngineSnapshotListProxyResponse.DisksEntry\x1aK\n\nDisksEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineSnapshotDiskInfo:\x02\x38\x01\"\xd6\x02\n\x16\x45ngineSnapshotDiskInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06parent\x18\x02 \x01(\t\x12=\n\x08\x63hildren\x18\x03 \x03(\x0b\x32+.imrpc.EngineSnapshotDiskInfo.ChildrenEntry\x12\x0f\n\x07removed\x18\x04 \x01(\x08\x12\x14\n\x0cuser_created\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\t\x12\x0c\n\x04size\x18\x07 \x01(\t\x12\x39\n\x06labels\x18\x08 \x03(\x0b\x32).imrpc.EngineSnapshotDiskInfo.LabelsEntry\x1a/\n\rChildrenEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"d\n\x1b\x45ngineSnapshotRevertRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04name\x18\x02 \x01(\t\"r\n\x1a\x45ngineSnapshotPurgeRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x1b\n\x13skip_if_in_progress\x18\x02 \x01(\x08\"\xc7\x01\n&EngineSnapshotPurgeStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotPurgeStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotPurgeStatusResponse:\x02\x38\x01\"\xac\x01\n\x1a\x45ngineSnapshotCloneRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0f\x66rom_controller\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12%\n\x1d\x65xport_backing_image_if_exist\x18\x04 \x01(\x08\"\xc7\x01\n&EngineSnapshotCloneStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotCloneStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotCloneStatusResponse:\x02\x38\x01\"e\n\x1b\x45ngineSnapshotRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\r\n\x05names\x18\x02 \x03(\t\"\xd2\x02\n\x1b\x45ngineSnapshotBackupRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x08 \x03(\t\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x15\n\rbackup_target\x18\x04 \x01(\t\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\x05 \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x06 \x01(\t\x12>\n\x06labels\x18\x07 \x03(\x0b\x32..imrpc.EngineSnapshotBackupRequest.LabelsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"_\n!EngineSnapshotBackupProxyResponse\x12\x11\n\tbackup_id\x18\x01 \x01(\t\x12\x0f\n\x07replica\x18\x02 \x01(\t\x12\x16\n\x0eis_incremental\x18\x03 \x01(\x08\"\x8a\x01\n!EngineSnapshotBackupStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x17\n\x0freplica_address\x18\x03 \x01(\t\"\x9d\x01\n\'EngineSnapshotBackupStatusProxyResponse\x12\x12\n\nbackup_url\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08progress\x18\x03 \x01(\x05\x12\x15\n\rsnapshot_name\x18\x04 \x01(\t\x12\r\n\x05state\x18\x05 \x01(\t\x12\x17\n\x0freplica_address\x18\x06 \x01(\t\"\x95\x01\n\x1a\x45ngineBackupRestoreRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x13\n\x0bvolume_name\x18\x05 \x01(\t\"5\n EngineBackupRestoreProxyResponse\x12\x11\n\ttaskError\x18\x01 \x01(\x0c\"\xc4\x01\n&EngineBackupRestoreStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineBackupRestoreStatusProxyResponse.StatusEntry\x1aO\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .imrpc.EngineBackupRestoreStatus:\x02\x38\x01\"\xc0\x01\n\x19\x45ngineBackupRestoreStatus\x12\x14\n\x0cis_restoring\x18\x01 \x01(\x08\x12\x15\n\rlast_restored\x18\x02 \x01(\t\x12 \n\x18\x63urrent_restoring_backup\x18\x03 \x01(\t\x12\x10\n\x08progress\x18\x04 \x01(\x05\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x10\n\x08\x66ilename\x18\x06 \x01(\t\x12\r\n\x05state\x18\x07 \x01(\t\x12\x12\n\nbackup_url\x18\x08 \x01(\t\"w\n\x1c\x45ngineBackupVolumeGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"S\n\"EngineBackupVolumeGetProxyResponse\x12-\n\x06volume\x18\x01 \x01(\x0b\x32\x1d.imrpc.EngineBackupVolumeInfo\"q\n\x16\x45ngineBackupGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"G\n\x1c\x45ngineBackupGetProxyResponse\x12\'\n\x06\x62\x61\x63kup\x18\x01 \x01(\x0b\x32\x17.imrpc.EngineBackupInfo\"{\n EngineBackupConfigMetaGetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x03 \x01(\t\"_\n&EngineBackupConfigMetaGetProxyResponse\x12\x35\n\x11modification_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"i\n\x1d\x45ngineBackupVolumeListRequest\x12\x0c\n\x04\x65nvs\x18\x01 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x02 \x01(\t\x12\x13\n\x0bvolume_name\x18\x03 \x01(\t\x12\x13\n\x0bvolume_only\x18\x04 \x01(\x08\"\xbe\x01\n#EngineBackupVolumeListProxyResponse\x12H\n\x07volumes\x18\x01 \x03(\x0b\x32\x37.imrpc.EngineBackupVolumeListProxyResponse.VolumesEntry\x1aM\n\x0cVolumesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineBackupVolumeInfo:\x02\x38\x01\"\xa7\x04\n\x16\x45ngineBackupVolumeInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04size\x18\x02 \x01(\x03\x12\x39\n\x06labels\x18\x03 \x03(\x0b\x32).imrpc.EngineBackupVolumeInfo.LabelsEntry\x12\x0f\n\x07\x63reated\x18\x04 \x01(\t\x12\x18\n\x10last_backup_name\x18\x05 \x01(\t\x12\x16\n\x0elast_backup_at\x18\x06 \x01(\t\x12\x12\n\nDataStored\x18\x07 \x01(\x03\x12=\n\x08messages\x18\x08 \x03(\x0b\x32+.imrpc.EngineBackupVolumeInfo.MessagesEntry\x12;\n\x07\x62\x61\x63kups\x18\t \x03(\x0b\x32*.imrpc.EngineBackupVolumeInfo.BackupsEntry\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\n \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x0b \x01(\t\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a/\n\rMessagesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1aG\n\x0c\x42\x61\x63kupsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12&\n\x05value\x18\x02 \x01(\x0b\x32\x17.imrpc.EngineBackupInfo:\x02\x38\x01\"\xc8\x03\n\x10\x45ngineBackupInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x18\n\x10snapshot_created\x18\x04 \x01(\t\x12\x0f\n\x07\x63reated\x18\x05 \x01(\t\x12\x0c\n\x04size\x18\x06 \x01(\x03\x12\x33\n\x06labels\x18\x07 \x03(\x0b\x32#.imrpc.EngineBackupInfo.LabelsEntry\x12\x16\n\x0eis_incremental\x18\x08 \x01(\x08\x12\x13\n\x0bvolume_name\x18\t \x01(\t\x12\x13\n\x0bvolume_size\x18\n \x01(\x03\x12\x16\n\x0evolume_created\x18\x0b \x01(\t\x12!\n\x19volume_backing_image_name\x18\x0c \x01(\t\x12\x37\n\x08messages\x18\r \x03(\x0b\x32%.imrpc.EngineBackupInfo.MessagesEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a/\n\rMessagesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"P\n\x19\x45ngineBackupRemoveRequest\x12\x0c\n\x04\x65nvs\x18\x01 \x03(\t\x12\x10\n\x08\x64\x65st_url\x18\x02 \x01(\t\x12\x13\n\x0bvolume_name\x18\x03 \x01(\t\"|\n\x17\x45ngineReplicaAddRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12\x0f\n\x07restore\x18\x03 \x01(\x08\"P\n\x1e\x45ngineReplicaListProxyResponse\x12.\n\x0creplica_list\x18\x01 \x01(\x0b\x32\x18.ptypes.ReplicaListReply\"u\n!EngineReplicaVerifyRebuildRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\"\xca\x01\n\'EngineReplicaRebuildStatusProxyResponse\x12J\n\x06status\x18\x01 \x03(\x0b\x32:.imrpc.EngineReplicaRebuildStatusProxyResponse.StatusEntry\x1aS\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x33\n\x05value\x18\x02 \x01(\x0b\x32$.ptypes.ReplicaRebuildStatusResponse:\x02\x38\x01\"n\n\x1a\x45ngineReplicaRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t2\xd1\x12\n\x12ProxyEngineService\x12P\n\x10ServerVersionGet\x12\x19.imrpc.ProxyEngineRequest\x1a!.imrpc.EngineVersionProxyResponse\x12K\n\tVolumeGet\x12\x19.imrpc.ProxyEngineRequest\x1a#.imrpc.EngineVolumeGetProxyResponse\x12H\n\x0cVolumeExpand\x12 .imrpc.EngineVolumeExpandRequest\x1a\x16.google.protobuf.Empty\x12V\n\x13VolumeFrontendStart\x12\'.imrpc.EngineVolumeFrontendStartRequest\x1a\x16.google.protobuf.Empty\x12K\n\x16VolumeFrontendShutdown\x12\x19.imrpc.ProxyEngineRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eVolumeSnapshot\x12\".imrpc.EngineVolumeSnapshotRequest\x1a(.imrpc.EngineVolumeSnapshotProxyResponse\x12Q\n\x0cSnapshotList\x12\x19.imrpc.ProxyEngineRequest\x1a&.imrpc.EngineSnapshotListProxyResponse\x12L\n\x0eSnapshotRevert\x12\".imrpc.EngineSnapshotRevertRequest\x1a\x16.google.protobuf.Empty\x12J\n\rSnapshotPurge\x12!.imrpc.EngineSnapshotPurgeRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotPurgeStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotPurgeStatusProxyResponse\x12J\n\rSnapshotClone\x12!.imrpc.EngineSnapshotCloneRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotCloneStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotCloneStatusProxyResponse\x12L\n\x0eSnapshotRemove\x12\".imrpc.EngineSnapshotRemoveRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eSnapshotBackup\x12\".imrpc.EngineSnapshotBackupRequest\x1a(.imrpc.EngineSnapshotBackupProxyResponse\x12p\n\x14SnapshotBackupStatus\x12(.imrpc.EngineSnapshotBackupStatusRequest\x1a..imrpc.EngineSnapshotBackupStatusProxyResponse\x12[\n\rBackupRestore\x12!.imrpc.EngineBackupRestoreRequest\x1a\'.imrpc.EngineBackupRestoreProxyResponse\x12_\n\x13\x42\x61\x63kupRestoreStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineBackupRestoreStatusProxyResponse\x12\x64\n\x10\x42\x61\x63kupVolumeList\x12$.imrpc.EngineBackupVolumeListRequest\x1a*.imrpc.EngineBackupVolumeListProxyResponse\x12\x61\n\x0f\x42\x61\x63kupVolumeGet\x12#.imrpc.EngineBackupVolumeGetRequest\x1a).imrpc.EngineBackupVolumeGetProxyResponse\x12O\n\tBackupGet\x12\x1d.imrpc.EngineBackupGetRequest\x1a#.imrpc.EngineBackupGetProxyResponse\x12m\n\x13\x42\x61\x63kupConfigMetaGet\x12\'.imrpc.EngineBackupConfigMetaGetRequest\x1a-.imrpc.EngineBackupConfigMetaGetProxyResponse\x12H\n\x0c\x42\x61\x63kupRemove\x12 .imrpc.EngineBackupRemoveRequest\x1a\x16.google.protobuf.Empty\x12\x44\n\nReplicaAdd\x12\x1e.imrpc.EngineReplicaAddRequest\x1a\x16.google.protobuf.Empty\x12O\n\x0bReplicaList\x12\x19.imrpc.ProxyEngineRequest\x1a%.imrpc.EngineReplicaListProxyResponse\x12\x64\n\x17ReplicaRebuildingStatus\x12\x19.imrpc.ProxyEngineRequest\x1a..imrpc.EngineReplicaRebuildStatusProxyResponse\x12X\n\x14ReplicaVerifyRebuild\x12(.imrpc.EngineReplicaVerifyRebuildRequest\x1a\x16.google.protobuf.Empty\x12J\n\rReplicaRemove\x12!.imrpc.EngineReplicaRemoveRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
+  serialized_pb=_b('\n\x0bproxy.proto\x12\x05imrpc\x1a\x1bgoogle/protobuf/empty.proto\x1a\x41github.com/longhorn/longhorn-engine/proto/ptypes/controller.proto\x1a@github.com/longhorn/longhorn-engine/proto/ptypes/syncagent.proto\"%\n\x12ProxyEngineRequest\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\"D\n\x1a\x45ngineVersionProxyResponse\x12&\n\x07version\x18\x01 \x01(\x0b\x32\x15.ptypes.VersionOutput\">\n\x1c\x45ngineVolumeGetProxyResponse\x12\x1e\n\x06volume\x18\x01 \x01(\x0b\x32\x0e.ptypes.Volume\"\x81\x01\n\x19\x45ngineVolumeExpandRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12+\n\x06\x65xpand\x18\x02 \x01(\x0b\x32\x1b.ptypes.VolumeExpandRequest\"\x97\x01\n EngineVolumeFrontendStartRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12:\n\x0e\x66rontend_start\x18\x02 \x01(\x0b\x32\".ptypes.VolumeFrontendStartRequest\"\x8e\x01\n\x1b\x45ngineVolumeSnapshotRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x36\n\x0fsnapshot_volume\x18\x02 \x01(\x0b\x32\x1d.ptypes.VolumeSnapshotRequest\"R\n!EngineVolumeSnapshotProxyResponse\x12-\n\x08snapshot\x18\x01 \x01(\x0b\x32\x1b.ptypes.VolumeSnapshotReply\"\xb0\x01\n\x1f\x45ngineSnapshotListProxyResponse\x12@\n\x05\x64isks\x18\x01 \x03(\x0b\x32\x31.imrpc.EngineSnapshotListProxyResponse.DisksEntry\x1aK\n\nDisksEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineSnapshotDiskInfo:\x02\x38\x01\"\xd6\x02\n\x16\x45ngineSnapshotDiskInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06parent\x18\x02 \x01(\t\x12=\n\x08\x63hildren\x18\x03 \x03(\x0b\x32+.imrpc.EngineSnapshotDiskInfo.ChildrenEntry\x12\x0f\n\x07removed\x18\x04 \x01(\x08\x12\x14\n\x0cuser_created\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\t\x12\x0c\n\x04size\x18\x07 \x01(\t\x12\x39\n\x06labels\x18\x08 \x03(\x0b\x32).imrpc.EngineSnapshotDiskInfo.LabelsEntry\x1a/\n\rChildrenEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"d\n\x1b\x45ngineSnapshotRevertRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04name\x18\x02 \x01(\t\"r\n\x1a\x45ngineSnapshotPurgeRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x1b\n\x13skip_if_in_progress\x18\x02 \x01(\x08\"\xc7\x01\n&EngineSnapshotPurgeStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotPurgeStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotPurgeStatusResponse:\x02\x38\x01\"\xac\x01\n\x1a\x45ngineSnapshotCloneRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0f\x66rom_controller\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12%\n\x1d\x65xport_backing_image_if_exist\x18\x04 \x01(\x08\"\xc7\x01\n&EngineSnapshotCloneStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotCloneStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotCloneStatusResponse:\x02\x38\x01\"e\n\x1b\x45ngineSnapshotRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\r\n\x05names\x18\x02 \x03(\t\"\xd2\x02\n\x1b\x45ngineSnapshotBackupRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x08 \x03(\t\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x15\n\rbackup_target\x18\x04 \x01(\t\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\x05 \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x06 \x01(\t\x12>\n\x06labels\x18\x07 \x03(\x0b\x32..imrpc.EngineSnapshotBackupRequest.LabelsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"_\n!EngineSnapshotBackupProxyResponse\x12\x11\n\tbackup_id\x18\x01 \x01(\t\x12\x0f\n\x07replica\x18\x02 \x01(\t\x12\x16\n\x0eis_incremental\x18\x03 \x01(\x08\"\x8a\x01\n!EngineSnapshotBackupStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x17\n\x0freplica_address\x18\x03 \x01(\t\"\x9d\x01\n\'EngineSnapshotBackupStatusProxyResponse\x12\x12\n\nbackup_url\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08progress\x18\x03 \x01(\x05\x12\x15\n\rsnapshot_name\x18\x04 \x01(\t\x12\r\n\x05state\x18\x05 \x01(\t\x12\x17\n\x0freplica_address\x18\x06 \x01(\t\"\x95\x01\n\x1a\x45ngineBackupRestoreRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x13\n\x0bvolume_name\x18\x05 \x01(\t\"5\n EngineBackupRestoreProxyResponse\x12\x11\n\ttaskError\x18\x01 \x01(\x0c\"\xc4\x01\n&EngineBackupRestoreStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineBackupRestoreStatusProxyResponse.StatusEntry\x1aO\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .imrpc.EngineBackupRestoreStatus:\x02\x38\x01\"\xc0\x01\n\x19\x45ngineBackupRestoreStatus\x12\x14\n\x0cis_restoring\x18\x01 \x01(\x08\x12\x15\n\rlast_restored\x18\x02 \x01(\t\x12 \n\x18\x63urrent_restoring_backup\x18\x03 \x01(\t\x12\x10\n\x08progress\x18\x04 \x01(\x05\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x10\n\x08\x66ilename\x18\x06 \x01(\t\x12\r\n\x05state\x18\x07 \x01(\t\x12\x12\n\nbackup_url\x18\x08 \x01(\t\"|\n\x17\x45ngineReplicaAddRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12\x0f\n\x07restore\x18\x03 \x01(\x08\"P\n\x1e\x45ngineReplicaListProxyResponse\x12.\n\x0creplica_list\x18\x01 \x01(\x0b\x32\x18.ptypes.ReplicaListReply\"u\n!EngineReplicaVerifyRebuildRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\"\xca\x01\n\'EngineReplicaRebuildStatusProxyResponse\x12J\n\x06status\x18\x01 \x03(\x0b\x32:.imrpc.EngineReplicaRebuildStatusProxyResponse.StatusEntry\x1aS\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x33\n\x05value\x18\x02 \x01(\x0b\x32$.ptypes.ReplicaRebuildStatusResponse:\x02\x38\x01\"n\n\x1a\x45ngineReplicaRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t2\xfe\x0e\n\x12ProxyEngineService\x12P\n\x10ServerVersionGet\x12\x19.imrpc.ProxyEngineRequest\x1a!.imrpc.EngineVersionProxyResponse\x12K\n\tVolumeGet\x12\x19.imrpc.ProxyEngineRequest\x1a#.imrpc.EngineVolumeGetProxyResponse\x12H\n\x0cVolumeExpand\x12 .imrpc.EngineVolumeExpandRequest\x1a\x16.google.protobuf.Empty\x12V\n\x13VolumeFrontendStart\x12\'.imrpc.EngineVolumeFrontendStartRequest\x1a\x16.google.protobuf.Empty\x12K\n\x16VolumeFrontendShutdown\x12\x19.imrpc.ProxyEngineRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eVolumeSnapshot\x12\".imrpc.EngineVolumeSnapshotRequest\x1a(.imrpc.EngineVolumeSnapshotProxyResponse\x12Q\n\x0cSnapshotList\x12\x19.imrpc.ProxyEngineRequest\x1a&.imrpc.EngineSnapshotListProxyResponse\x12L\n\x0eSnapshotRevert\x12\".imrpc.EngineSnapshotRevertRequest\x1a\x16.google.protobuf.Empty\x12J\n\rSnapshotPurge\x12!.imrpc.EngineSnapshotPurgeRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotPurgeStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotPurgeStatusProxyResponse\x12J\n\rSnapshotClone\x12!.imrpc.EngineSnapshotCloneRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotCloneStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotCloneStatusProxyResponse\x12L\n\x0eSnapshotRemove\x12\".imrpc.EngineSnapshotRemoveRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eSnapshotBackup\x12\".imrpc.EngineSnapshotBackupRequest\x1a(.imrpc.EngineSnapshotBackupProxyResponse\x12p\n\x14SnapshotBackupStatus\x12(.imrpc.EngineSnapshotBackupStatusRequest\x1a..imrpc.EngineSnapshotBackupStatusProxyResponse\x12[\n\rBackupRestore\x12!.imrpc.EngineBackupRestoreRequest\x1a\'.imrpc.EngineBackupRestoreProxyResponse\x12_\n\x13\x42\x61\x63kupRestoreStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineBackupRestoreStatusProxyResponse\x12\x44\n\nReplicaAdd\x12\x1e.imrpc.EngineReplicaAddRequest\x1a\x16.google.protobuf.Empty\x12O\n\x0bReplicaList\x12\x19.imrpc.ProxyEngineRequest\x1a%.imrpc.EngineReplicaListProxyResponse\x12\x64\n\x17ReplicaRebuildingStatus\x12\x19.imrpc.ProxyEngineRequest\x1a..imrpc.EngineReplicaRebuildStatusProxyResponse\x12X\n\x14ReplicaVerifyRebuild\x12(.imrpc.EngineReplicaVerifyRebuildRequest\x1a\x16.google.protobuf.Empty\x12J\n\rReplicaRemove\x12!.imrpc.EngineReplicaRemoveRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
   ,
-  dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_syncagent__pb2.DESCRIPTOR,])
+  dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_syncagent__pb2.DESCRIPTOR,])
 
 
 
@@ -57,8 +56,8 @@ _PROXYENGINEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=217,
-  serialized_end=254,
+  serialized_start=184,
+  serialized_end=221,
 )
 
 
@@ -88,8 +87,8 @@ _ENGINEVERSIONPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=256,
-  serialized_end=324,
+  serialized_start=223,
+  serialized_end=291,
 )
 
 
@@ -119,8 +118,8 @@ _ENGINEVOLUMEGETPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=326,
-  serialized_end=388,
+  serialized_start=293,
+  serialized_end=355,
 )
 
 
@@ -157,8 +156,8 @@ _ENGINEVOLUMEEXPANDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=391,
-  serialized_end=520,
+  serialized_start=358,
+  serialized_end=487,
 )
 
 
@@ -195,8 +194,8 @@ _ENGINEVOLUMEFRONTENDSTARTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=523,
-  serialized_end=674,
+  serialized_start=490,
+  serialized_end=641,
 )
 
 
@@ -233,8 +232,8 @@ _ENGINEVOLUMESNAPSHOTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=677,
-  serialized_end=819,
+  serialized_start=644,
+  serialized_end=786,
 )
 
 
@@ -264,8 +263,8 @@ _ENGINEVOLUMESNAPSHOTPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=821,
-  serialized_end=903,
+  serialized_start=788,
+  serialized_end=870,
 )
 
 
@@ -302,8 +301,8 @@ _ENGINESNAPSHOTLISTPROXYRESPONSE_DISKSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1007,
-  serialized_end=1082,
+  serialized_start=974,
+  serialized_end=1049,
 )
 
 _ENGINESNAPSHOTLISTPROXYRESPONSE = _descriptor.Descriptor(
@@ -332,8 +331,8 @@ _ENGINESNAPSHOTLISTPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=906,
-  serialized_end=1082,
+  serialized_start=873,
+  serialized_end=1049,
 )
 
 
@@ -370,8 +369,8 @@ _ENGINESNAPSHOTDISKINFO_CHILDRENENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1333,
-  serialized_end=1380,
+  serialized_start=1300,
+  serialized_end=1347,
 )
 
 _ENGINESNAPSHOTDISKINFO_LABELSENTRY = _descriptor.Descriptor(
@@ -407,8 +406,8 @@ _ENGINESNAPSHOTDISKINFO_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1382,
-  serialized_end=1427,
+  serialized_start=1349,
+  serialized_end=1394,
 )
 
 _ENGINESNAPSHOTDISKINFO = _descriptor.Descriptor(
@@ -486,8 +485,8 @@ _ENGINESNAPSHOTDISKINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1085,
-  serialized_end=1427,
+  serialized_start=1052,
+  serialized_end=1394,
 )
 
 
@@ -524,8 +523,8 @@ _ENGINESNAPSHOTREVERTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1429,
-  serialized_end=1529,
+  serialized_start=1396,
+  serialized_end=1496,
 )
 
 
@@ -562,8 +561,8 @@ _ENGINESNAPSHOTPURGEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1531,
-  serialized_end=1645,
+  serialized_start=1498,
+  serialized_end=1612,
 )
 
 
@@ -600,8 +599,8 @@ _ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1765,
-  serialized_end=1847,
+  serialized_start=1732,
+  serialized_end=1814,
 )
 
 _ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -630,8 +629,8 @@ _ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1648,
-  serialized_end=1847,
+  serialized_start=1615,
+  serialized_end=1814,
 )
 
 
@@ -682,8 +681,8 @@ _ENGINESNAPSHOTCLONEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1850,
-  serialized_end=2022,
+  serialized_start=1817,
+  serialized_end=1989,
 )
 
 
@@ -720,8 +719,8 @@ _ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2142,
-  serialized_end=2224,
+  serialized_start=2109,
+  serialized_end=2191,
 )
 
 _ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -750,8 +749,8 @@ _ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2025,
-  serialized_end=2224,
+  serialized_start=1992,
+  serialized_end=2191,
 )
 
 
@@ -788,8 +787,8 @@ _ENGINESNAPSHOTREMOVEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2226,
-  serialized_end=2327,
+  serialized_start=2193,
+  serialized_end=2294,
 )
 
 
@@ -826,8 +825,8 @@ _ENGINESNAPSHOTBACKUPREQUEST_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1382,
-  serialized_end=1427,
+  serialized_start=1349,
+  serialized_end=1394,
 )
 
 _ENGINESNAPSHOTBACKUPREQUEST = _descriptor.Descriptor(
@@ -905,8 +904,8 @@ _ENGINESNAPSHOTBACKUPREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2330,
-  serialized_end=2668,
+  serialized_start=2297,
+  serialized_end=2635,
 )
 
 
@@ -950,8 +949,8 @@ _ENGINESNAPSHOTBACKUPPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2670,
-  serialized_end=2765,
+  serialized_start=2637,
+  serialized_end=2732,
 )
 
 
@@ -995,8 +994,8 @@ _ENGINESNAPSHOTBACKUPSTATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2768,
-  serialized_end=2906,
+  serialized_start=2735,
+  serialized_end=2873,
 )
 
 
@@ -1061,8 +1060,8 @@ _ENGINESNAPSHOTBACKUPSTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2909,
-  serialized_end=3066,
+  serialized_start=2876,
+  serialized_end=3033,
 )
 
 
@@ -1120,8 +1119,8 @@ _ENGINEBACKUPRESTOREREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3069,
-  serialized_end=3218,
+  serialized_start=3036,
+  serialized_end=3185,
 )
 
 
@@ -1151,8 +1150,8 @@ _ENGINEBACKUPRESTOREPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3220,
-  serialized_end=3273,
+  serialized_start=3187,
+  serialized_end=3240,
 )
 
 
@@ -1189,8 +1188,8 @@ _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3393,
-  serialized_end=3472,
+  serialized_start=3360,
+  serialized_end=3439,
 )
 
 _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -1219,8 +1218,8 @@ _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3276,
-  serialized_end=3472,
+  serialized_start=3243,
+  serialized_end=3439,
 )
 
 
@@ -1299,802 +1298,8 @@ _ENGINEBACKUPRESTORESTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3475,
-  serialized_end=3667,
-)
-
-
-_ENGINEBACKUPVOLUMEGETREQUEST = _descriptor.Descriptor(
-  name='EngineBackupVolumeGetRequest',
-  full_name='imrpc.EngineBackupVolumeGetRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='proxy_engine_request', full_name='imrpc.EngineBackupVolumeGetRequest.proxy_engine_request', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='envs', full_name='imrpc.EngineBackupVolumeGetRequest.envs', index=1,
-      number=2, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='dest_url', full_name='imrpc.EngineBackupVolumeGetRequest.dest_url', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=3669,
-  serialized_end=3788,
-)
-
-
-_ENGINEBACKUPVOLUMEGETPROXYRESPONSE = _descriptor.Descriptor(
-  name='EngineBackupVolumeGetProxyResponse',
-  full_name='imrpc.EngineBackupVolumeGetProxyResponse',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='volume', full_name='imrpc.EngineBackupVolumeGetProxyResponse.volume', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=3790,
-  serialized_end=3873,
-)
-
-
-_ENGINEBACKUPGETREQUEST = _descriptor.Descriptor(
-  name='EngineBackupGetRequest',
-  full_name='imrpc.EngineBackupGetRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='proxy_engine_request', full_name='imrpc.EngineBackupGetRequest.proxy_engine_request', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='envs', full_name='imrpc.EngineBackupGetRequest.envs', index=1,
-      number=2, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='dest_url', full_name='imrpc.EngineBackupGetRequest.dest_url', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=3875,
-  serialized_end=3988,
-)
-
-
-_ENGINEBACKUPGETPROXYRESPONSE = _descriptor.Descriptor(
-  name='EngineBackupGetProxyResponse',
-  full_name='imrpc.EngineBackupGetProxyResponse',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='backup', full_name='imrpc.EngineBackupGetProxyResponse.backup', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=3990,
-  serialized_end=4061,
-)
-
-
-_ENGINEBACKUPCONFIGMETAGETREQUEST = _descriptor.Descriptor(
-  name='EngineBackupConfigMetaGetRequest',
-  full_name='imrpc.EngineBackupConfigMetaGetRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='proxy_engine_request', full_name='imrpc.EngineBackupConfigMetaGetRequest.proxy_engine_request', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='envs', full_name='imrpc.EngineBackupConfigMetaGetRequest.envs', index=1,
-      number=2, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='dest_url', full_name='imrpc.EngineBackupConfigMetaGetRequest.dest_url', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=4063,
-  serialized_end=4186,
-)
-
-
-_ENGINEBACKUPCONFIGMETAGETPROXYRESPONSE = _descriptor.Descriptor(
-  name='EngineBackupConfigMetaGetProxyResponse',
-  full_name='imrpc.EngineBackupConfigMetaGetProxyResponse',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='modification_time', full_name='imrpc.EngineBackupConfigMetaGetProxyResponse.modification_time', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=4188,
-  serialized_end=4283,
-)
-
-
-_ENGINEBACKUPVOLUMELISTREQUEST = _descriptor.Descriptor(
-  name='EngineBackupVolumeListRequest',
-  full_name='imrpc.EngineBackupVolumeListRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='envs', full_name='imrpc.EngineBackupVolumeListRequest.envs', index=0,
-      number=1, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='dest_url', full_name='imrpc.EngineBackupVolumeListRequest.dest_url', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='volume_name', full_name='imrpc.EngineBackupVolumeListRequest.volume_name', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='volume_only', full_name='imrpc.EngineBackupVolumeListRequest.volume_only', index=3,
-      number=4, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=4285,
-  serialized_end=4390,
-)
-
-
-_ENGINEBACKUPVOLUMELISTPROXYRESPONSE_VOLUMESENTRY = _descriptor.Descriptor(
-  name='VolumesEntry',
-  full_name='imrpc.EngineBackupVolumeListProxyResponse.VolumesEntry',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='imrpc.EngineBackupVolumeListProxyResponse.VolumesEntry.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='imrpc.EngineBackupVolumeListProxyResponse.VolumesEntry.value', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=_b('8\001'),
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=4506,
-  serialized_end=4583,
-)
-
-_ENGINEBACKUPVOLUMELISTPROXYRESPONSE = _descriptor.Descriptor(
-  name='EngineBackupVolumeListProxyResponse',
-  full_name='imrpc.EngineBackupVolumeListProxyResponse',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='volumes', full_name='imrpc.EngineBackupVolumeListProxyResponse.volumes', index=0,
-      number=1, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[_ENGINEBACKUPVOLUMELISTPROXYRESPONSE_VOLUMESENTRY, ],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=4393,
-  serialized_end=4583,
-)
-
-
-_ENGINEBACKUPVOLUMEINFO_LABELSENTRY = _descriptor.Descriptor(
-  name='LabelsEntry',
-  full_name='imrpc.EngineBackupVolumeInfo.LabelsEntry',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='imrpc.EngineBackupVolumeInfo.LabelsEntry.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='imrpc.EngineBackupVolumeInfo.LabelsEntry.value', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=_b('8\001'),
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=1382,
-  serialized_end=1427,
-)
-
-_ENGINEBACKUPVOLUMEINFO_MESSAGESENTRY = _descriptor.Descriptor(
-  name='MessagesEntry',
-  full_name='imrpc.EngineBackupVolumeInfo.MessagesEntry',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='imrpc.EngineBackupVolumeInfo.MessagesEntry.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='imrpc.EngineBackupVolumeInfo.MessagesEntry.value', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=_b('8\001'),
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=5017,
-  serialized_end=5064,
-)
-
-_ENGINEBACKUPVOLUMEINFO_BACKUPSENTRY = _descriptor.Descriptor(
-  name='BackupsEntry',
-  full_name='imrpc.EngineBackupVolumeInfo.BackupsEntry',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='imrpc.EngineBackupVolumeInfo.BackupsEntry.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='imrpc.EngineBackupVolumeInfo.BackupsEntry.value', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=_b('8\001'),
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=5066,
-  serialized_end=5137,
-)
-
-_ENGINEBACKUPVOLUMEINFO = _descriptor.Descriptor(
-  name='EngineBackupVolumeInfo',
-  full_name='imrpc.EngineBackupVolumeInfo',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='imrpc.EngineBackupVolumeInfo.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='size', full_name='imrpc.EngineBackupVolumeInfo.size', index=1,
-      number=2, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='labels', full_name='imrpc.EngineBackupVolumeInfo.labels', index=2,
-      number=3, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='created', full_name='imrpc.EngineBackupVolumeInfo.created', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='last_backup_name', full_name='imrpc.EngineBackupVolumeInfo.last_backup_name', index=4,
-      number=5, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='last_backup_at', full_name='imrpc.EngineBackupVolumeInfo.last_backup_at', index=5,
-      number=6, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='DataStored', full_name='imrpc.EngineBackupVolumeInfo.DataStored', index=6,
-      number=7, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='messages', full_name='imrpc.EngineBackupVolumeInfo.messages', index=7,
-      number=8, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='backups', full_name='imrpc.EngineBackupVolumeInfo.backups', index=8,
-      number=9, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='backing_image_name', full_name='imrpc.EngineBackupVolumeInfo.backing_image_name', index=9,
-      number=10, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='backing_image_checksum', full_name='imrpc.EngineBackupVolumeInfo.backing_image_checksum', index=10,
-      number=11, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[_ENGINEBACKUPVOLUMEINFO_LABELSENTRY, _ENGINEBACKUPVOLUMEINFO_MESSAGESENTRY, _ENGINEBACKUPVOLUMEINFO_BACKUPSENTRY, ],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=4586,
-  serialized_end=5137,
-)
-
-
-_ENGINEBACKUPINFO_LABELSENTRY = _descriptor.Descriptor(
-  name='LabelsEntry',
-  full_name='imrpc.EngineBackupInfo.LabelsEntry',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='imrpc.EngineBackupInfo.LabelsEntry.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='imrpc.EngineBackupInfo.LabelsEntry.value', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=_b('8\001'),
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=1382,
-  serialized_end=1427,
-)
-
-_ENGINEBACKUPINFO_MESSAGESENTRY = _descriptor.Descriptor(
-  name='MessagesEntry',
-  full_name='imrpc.EngineBackupInfo.MessagesEntry',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='imrpc.EngineBackupInfo.MessagesEntry.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='imrpc.EngineBackupInfo.MessagesEntry.value', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=_b('8\001'),
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=5017,
-  serialized_end=5064,
-)
-
-_ENGINEBACKUPINFO = _descriptor.Descriptor(
-  name='EngineBackupInfo',
-  full_name='imrpc.EngineBackupInfo',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='imrpc.EngineBackupInfo.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='url', full_name='imrpc.EngineBackupInfo.url', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='snapshot_name', full_name='imrpc.EngineBackupInfo.snapshot_name', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='snapshot_created', full_name='imrpc.EngineBackupInfo.snapshot_created', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='created', full_name='imrpc.EngineBackupInfo.created', index=4,
-      number=5, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='size', full_name='imrpc.EngineBackupInfo.size', index=5,
-      number=6, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='labels', full_name='imrpc.EngineBackupInfo.labels', index=6,
-      number=7, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='is_incremental', full_name='imrpc.EngineBackupInfo.is_incremental', index=7,
-      number=8, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='volume_name', full_name='imrpc.EngineBackupInfo.volume_name', index=8,
-      number=9, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='volume_size', full_name='imrpc.EngineBackupInfo.volume_size', index=9,
-      number=10, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='volume_created', full_name='imrpc.EngineBackupInfo.volume_created', index=10,
-      number=11, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='volume_backing_image_name', full_name='imrpc.EngineBackupInfo.volume_backing_image_name', index=11,
-      number=12, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='messages', full_name='imrpc.EngineBackupInfo.messages', index=12,
-      number=13, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[_ENGINEBACKUPINFO_LABELSENTRY, _ENGINEBACKUPINFO_MESSAGESENTRY, ],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=5140,
-  serialized_end=5596,
-)
-
-
-_ENGINEBACKUPREMOVEREQUEST = _descriptor.Descriptor(
-  name='EngineBackupRemoveRequest',
-  full_name='imrpc.EngineBackupRemoveRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='envs', full_name='imrpc.EngineBackupRemoveRequest.envs', index=0,
-      number=1, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='dest_url', full_name='imrpc.EngineBackupRemoveRequest.dest_url', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='volume_name', full_name='imrpc.EngineBackupRemoveRequest.volume_name', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=5598,
-  serialized_end=5678,
+  serialized_start=3442,
+  serialized_end=3634,
 )
 
 
@@ -2138,8 +1343,8 @@ _ENGINEREPLICAADDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5680,
-  serialized_end=5804,
+  serialized_start=3636,
+  serialized_end=3760,
 )
 
 
@@ -2169,8 +1374,8 @@ _ENGINEREPLICALISTPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5806,
-  serialized_end=5886,
+  serialized_start=3762,
+  serialized_end=3842,
 )
 
 
@@ -2207,8 +1412,8 @@ _ENGINEREPLICAVERIFYREBUILDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5888,
-  serialized_end=6005,
+  serialized_start=3844,
+  serialized_end=3961,
 )
 
 
@@ -2245,8 +1450,8 @@ _ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6127,
-  serialized_end=6210,
+  serialized_start=4083,
+  serialized_end=4166,
 )
 
 _ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -2275,8 +1480,8 @@ _ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6008,
-  serialized_end=6210,
+  serialized_start=3964,
+  serialized_end=4166,
 )
 
 
@@ -2313,8 +1518,8 @@ _ENGINEREPLICAREMOVEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6212,
-  serialized_end=6322,
+  serialized_start=4168,
+  serialized_end=4278,
 )
 
 _ENGINEVERSIONPROXYRESPONSE.fields_by_name['version'].message_type = github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2._VERSIONOUTPUT
@@ -2351,26 +1556,6 @@ _ENGINEBACKUPRESTOREREQUEST.fields_by_name['proxy_engine_request'].message_type 
 _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE_STATUSENTRY.fields_by_name['value'].message_type = _ENGINEBACKUPRESTORESTATUS
 _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE_STATUSENTRY.containing_type = _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE
 _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE.fields_by_name['status'].message_type = _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE_STATUSENTRY
-_ENGINEBACKUPVOLUMEGETREQUEST.fields_by_name['proxy_engine_request'].message_type = _PROXYENGINEREQUEST
-_ENGINEBACKUPVOLUMEGETPROXYRESPONSE.fields_by_name['volume'].message_type = _ENGINEBACKUPVOLUMEINFO
-_ENGINEBACKUPGETREQUEST.fields_by_name['proxy_engine_request'].message_type = _PROXYENGINEREQUEST
-_ENGINEBACKUPGETPROXYRESPONSE.fields_by_name['backup'].message_type = _ENGINEBACKUPINFO
-_ENGINEBACKUPCONFIGMETAGETREQUEST.fields_by_name['proxy_engine_request'].message_type = _PROXYENGINEREQUEST
-_ENGINEBACKUPCONFIGMETAGETPROXYRESPONSE.fields_by_name['modification_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
-_ENGINEBACKUPVOLUMELISTPROXYRESPONSE_VOLUMESENTRY.fields_by_name['value'].message_type = _ENGINEBACKUPVOLUMEINFO
-_ENGINEBACKUPVOLUMELISTPROXYRESPONSE_VOLUMESENTRY.containing_type = _ENGINEBACKUPVOLUMELISTPROXYRESPONSE
-_ENGINEBACKUPVOLUMELISTPROXYRESPONSE.fields_by_name['volumes'].message_type = _ENGINEBACKUPVOLUMELISTPROXYRESPONSE_VOLUMESENTRY
-_ENGINEBACKUPVOLUMEINFO_LABELSENTRY.containing_type = _ENGINEBACKUPVOLUMEINFO
-_ENGINEBACKUPVOLUMEINFO_MESSAGESENTRY.containing_type = _ENGINEBACKUPVOLUMEINFO
-_ENGINEBACKUPVOLUMEINFO_BACKUPSENTRY.fields_by_name['value'].message_type = _ENGINEBACKUPINFO
-_ENGINEBACKUPVOLUMEINFO_BACKUPSENTRY.containing_type = _ENGINEBACKUPVOLUMEINFO
-_ENGINEBACKUPVOLUMEINFO.fields_by_name['labels'].message_type = _ENGINEBACKUPVOLUMEINFO_LABELSENTRY
-_ENGINEBACKUPVOLUMEINFO.fields_by_name['messages'].message_type = _ENGINEBACKUPVOLUMEINFO_MESSAGESENTRY
-_ENGINEBACKUPVOLUMEINFO.fields_by_name['backups'].message_type = _ENGINEBACKUPVOLUMEINFO_BACKUPSENTRY
-_ENGINEBACKUPINFO_LABELSENTRY.containing_type = _ENGINEBACKUPINFO
-_ENGINEBACKUPINFO_MESSAGESENTRY.containing_type = _ENGINEBACKUPINFO
-_ENGINEBACKUPINFO.fields_by_name['labels'].message_type = _ENGINEBACKUPINFO_LABELSENTRY
-_ENGINEBACKUPINFO.fields_by_name['messages'].message_type = _ENGINEBACKUPINFO_MESSAGESENTRY
 _ENGINEREPLICAADDREQUEST.fields_by_name['proxy_engine_request'].message_type = _PROXYENGINEREQUEST
 _ENGINEREPLICALISTPROXYRESPONSE.fields_by_name['replica_list'].message_type = github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2._REPLICALISTREPLY
 _ENGINEREPLICAVERIFYREBUILDREQUEST.fields_by_name['proxy_engine_request'].message_type = _PROXYENGINEREQUEST
@@ -2401,17 +1586,6 @@ DESCRIPTOR.message_types_by_name['EngineBackupRestoreRequest'] = _ENGINEBACKUPRE
 DESCRIPTOR.message_types_by_name['EngineBackupRestoreProxyResponse'] = _ENGINEBACKUPRESTOREPROXYRESPONSE
 DESCRIPTOR.message_types_by_name['EngineBackupRestoreStatusProxyResponse'] = _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE
 DESCRIPTOR.message_types_by_name['EngineBackupRestoreStatus'] = _ENGINEBACKUPRESTORESTATUS
-DESCRIPTOR.message_types_by_name['EngineBackupVolumeGetRequest'] = _ENGINEBACKUPVOLUMEGETREQUEST
-DESCRIPTOR.message_types_by_name['EngineBackupVolumeGetProxyResponse'] = _ENGINEBACKUPVOLUMEGETPROXYRESPONSE
-DESCRIPTOR.message_types_by_name['EngineBackupGetRequest'] = _ENGINEBACKUPGETREQUEST
-DESCRIPTOR.message_types_by_name['EngineBackupGetProxyResponse'] = _ENGINEBACKUPGETPROXYRESPONSE
-DESCRIPTOR.message_types_by_name['EngineBackupConfigMetaGetRequest'] = _ENGINEBACKUPCONFIGMETAGETREQUEST
-DESCRIPTOR.message_types_by_name['EngineBackupConfigMetaGetProxyResponse'] = _ENGINEBACKUPCONFIGMETAGETPROXYRESPONSE
-DESCRIPTOR.message_types_by_name['EngineBackupVolumeListRequest'] = _ENGINEBACKUPVOLUMELISTREQUEST
-DESCRIPTOR.message_types_by_name['EngineBackupVolumeListProxyResponse'] = _ENGINEBACKUPVOLUMELISTPROXYRESPONSE
-DESCRIPTOR.message_types_by_name['EngineBackupVolumeInfo'] = _ENGINEBACKUPVOLUMEINFO
-DESCRIPTOR.message_types_by_name['EngineBackupInfo'] = _ENGINEBACKUPINFO
-DESCRIPTOR.message_types_by_name['EngineBackupRemoveRequest'] = _ENGINEBACKUPREMOVEREQUEST
 DESCRIPTOR.message_types_by_name['EngineReplicaAddRequest'] = _ENGINEREPLICAADDREQUEST
 DESCRIPTOR.message_types_by_name['EngineReplicaListProxyResponse'] = _ENGINEREPLICALISTPROXYRESPONSE
 DESCRIPTOR.message_types_by_name['EngineReplicaVerifyRebuildRequest'] = _ENGINEREPLICAVERIFYREBUILDREQUEST
@@ -2636,131 +1810,6 @@ EngineBackupRestoreStatus = _reflection.GeneratedProtocolMessageType('EngineBack
   })
 _sym_db.RegisterMessage(EngineBackupRestoreStatus)
 
-EngineBackupVolumeGetRequest = _reflection.GeneratedProtocolMessageType('EngineBackupVolumeGetRequest', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPVOLUMEGETREQUEST,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeGetRequest)
-  })
-_sym_db.RegisterMessage(EngineBackupVolumeGetRequest)
-
-EngineBackupVolumeGetProxyResponse = _reflection.GeneratedProtocolMessageType('EngineBackupVolumeGetProxyResponse', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPVOLUMEGETPROXYRESPONSE,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeGetProxyResponse)
-  })
-_sym_db.RegisterMessage(EngineBackupVolumeGetProxyResponse)
-
-EngineBackupGetRequest = _reflection.GeneratedProtocolMessageType('EngineBackupGetRequest', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPGETREQUEST,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupGetRequest)
-  })
-_sym_db.RegisterMessage(EngineBackupGetRequest)
-
-EngineBackupGetProxyResponse = _reflection.GeneratedProtocolMessageType('EngineBackupGetProxyResponse', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPGETPROXYRESPONSE,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupGetProxyResponse)
-  })
-_sym_db.RegisterMessage(EngineBackupGetProxyResponse)
-
-EngineBackupConfigMetaGetRequest = _reflection.GeneratedProtocolMessageType('EngineBackupConfigMetaGetRequest', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPCONFIGMETAGETREQUEST,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupConfigMetaGetRequest)
-  })
-_sym_db.RegisterMessage(EngineBackupConfigMetaGetRequest)
-
-EngineBackupConfigMetaGetProxyResponse = _reflection.GeneratedProtocolMessageType('EngineBackupConfigMetaGetProxyResponse', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPCONFIGMETAGETPROXYRESPONSE,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupConfigMetaGetProxyResponse)
-  })
-_sym_db.RegisterMessage(EngineBackupConfigMetaGetProxyResponse)
-
-EngineBackupVolumeListRequest = _reflection.GeneratedProtocolMessageType('EngineBackupVolumeListRequest', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPVOLUMELISTREQUEST,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeListRequest)
-  })
-_sym_db.RegisterMessage(EngineBackupVolumeListRequest)
-
-EngineBackupVolumeListProxyResponse = _reflection.GeneratedProtocolMessageType('EngineBackupVolumeListProxyResponse', (_message.Message,), {
-
-  'VolumesEntry' : _reflection.GeneratedProtocolMessageType('VolumesEntry', (_message.Message,), {
-    'DESCRIPTOR' : _ENGINEBACKUPVOLUMELISTPROXYRESPONSE_VOLUMESENTRY,
-    '__module__' : 'proxy_pb2'
-    # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeListProxyResponse.VolumesEntry)
-    })
-  ,
-  'DESCRIPTOR' : _ENGINEBACKUPVOLUMELISTPROXYRESPONSE,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeListProxyResponse)
-  })
-_sym_db.RegisterMessage(EngineBackupVolumeListProxyResponse)
-_sym_db.RegisterMessage(EngineBackupVolumeListProxyResponse.VolumesEntry)
-
-EngineBackupVolumeInfo = _reflection.GeneratedProtocolMessageType('EngineBackupVolumeInfo', (_message.Message,), {
-
-  'LabelsEntry' : _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), {
-    'DESCRIPTOR' : _ENGINEBACKUPVOLUMEINFO_LABELSENTRY,
-    '__module__' : 'proxy_pb2'
-    # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeInfo.LabelsEntry)
-    })
-  ,
-
-  'MessagesEntry' : _reflection.GeneratedProtocolMessageType('MessagesEntry', (_message.Message,), {
-    'DESCRIPTOR' : _ENGINEBACKUPVOLUMEINFO_MESSAGESENTRY,
-    '__module__' : 'proxy_pb2'
-    # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeInfo.MessagesEntry)
-    })
-  ,
-
-  'BackupsEntry' : _reflection.GeneratedProtocolMessageType('BackupsEntry', (_message.Message,), {
-    'DESCRIPTOR' : _ENGINEBACKUPVOLUMEINFO_BACKUPSENTRY,
-    '__module__' : 'proxy_pb2'
-    # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeInfo.BackupsEntry)
-    })
-  ,
-  'DESCRIPTOR' : _ENGINEBACKUPVOLUMEINFO,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupVolumeInfo)
-  })
-_sym_db.RegisterMessage(EngineBackupVolumeInfo)
-_sym_db.RegisterMessage(EngineBackupVolumeInfo.LabelsEntry)
-_sym_db.RegisterMessage(EngineBackupVolumeInfo.MessagesEntry)
-_sym_db.RegisterMessage(EngineBackupVolumeInfo.BackupsEntry)
-
-EngineBackupInfo = _reflection.GeneratedProtocolMessageType('EngineBackupInfo', (_message.Message,), {
-
-  'LabelsEntry' : _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), {
-    'DESCRIPTOR' : _ENGINEBACKUPINFO_LABELSENTRY,
-    '__module__' : 'proxy_pb2'
-    # @@protoc_insertion_point(class_scope:imrpc.EngineBackupInfo.LabelsEntry)
-    })
-  ,
-
-  'MessagesEntry' : _reflection.GeneratedProtocolMessageType('MessagesEntry', (_message.Message,), {
-    'DESCRIPTOR' : _ENGINEBACKUPINFO_MESSAGESENTRY,
-    '__module__' : 'proxy_pb2'
-    # @@protoc_insertion_point(class_scope:imrpc.EngineBackupInfo.MessagesEntry)
-    })
-  ,
-  'DESCRIPTOR' : _ENGINEBACKUPINFO,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupInfo)
-  })
-_sym_db.RegisterMessage(EngineBackupInfo)
-_sym_db.RegisterMessage(EngineBackupInfo.LabelsEntry)
-_sym_db.RegisterMessage(EngineBackupInfo.MessagesEntry)
-
-EngineBackupRemoveRequest = _reflection.GeneratedProtocolMessageType('EngineBackupRemoveRequest', (_message.Message,), {
-  'DESCRIPTOR' : _ENGINEBACKUPREMOVEREQUEST,
-  '__module__' : 'proxy_pb2'
-  # @@protoc_insertion_point(class_scope:imrpc.EngineBackupRemoveRequest)
-  })
-_sym_db.RegisterMessage(EngineBackupRemoveRequest)
-
 EngineReplicaAddRequest = _reflection.GeneratedProtocolMessageType('EngineReplicaAddRequest', (_message.Message,), {
   'DESCRIPTOR' : _ENGINEREPLICAADDREQUEST,
   '__module__' : 'proxy_pb2'
@@ -2812,12 +1861,6 @@ _ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE_STATUSENTRY._options = None
 _ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE_STATUSENTRY._options = None
 _ENGINESNAPSHOTBACKUPREQUEST_LABELSENTRY._options = None
 _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE_STATUSENTRY._options = None
-_ENGINEBACKUPVOLUMELISTPROXYRESPONSE_VOLUMESENTRY._options = None
-_ENGINEBACKUPVOLUMEINFO_LABELSENTRY._options = None
-_ENGINEBACKUPVOLUMEINFO_MESSAGESENTRY._options = None
-_ENGINEBACKUPVOLUMEINFO_BACKUPSENTRY._options = None
-_ENGINEBACKUPINFO_LABELSENTRY._options = None
-_ENGINEBACKUPINFO_MESSAGESENTRY._options = None
 _ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE_STATUSENTRY._options = None
 
 _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
@@ -2826,8 +1869,8 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=6325,
-  serialized_end=8710,
+  serialized_start=4281,
+  serialized_end=6199,
   methods=[
   _descriptor.MethodDescriptor(
     name='ServerVersionGet',
@@ -2983,54 +2026,9 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
     serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
-    name='BackupVolumeList',
-    full_name='imrpc.ProxyEngineService.BackupVolumeList',
-    index=17,
-    containing_service=None,
-    input_type=_ENGINEBACKUPVOLUMELISTREQUEST,
-    output_type=_ENGINEBACKUPVOLUMELISTPROXYRESPONSE,
-    serialized_options=None,
-  ),
-  _descriptor.MethodDescriptor(
-    name='BackupVolumeGet',
-    full_name='imrpc.ProxyEngineService.BackupVolumeGet',
-    index=18,
-    containing_service=None,
-    input_type=_ENGINEBACKUPVOLUMEGETREQUEST,
-    output_type=_ENGINEBACKUPVOLUMEGETPROXYRESPONSE,
-    serialized_options=None,
-  ),
-  _descriptor.MethodDescriptor(
-    name='BackupGet',
-    full_name='imrpc.ProxyEngineService.BackupGet',
-    index=19,
-    containing_service=None,
-    input_type=_ENGINEBACKUPGETREQUEST,
-    output_type=_ENGINEBACKUPGETPROXYRESPONSE,
-    serialized_options=None,
-  ),
-  _descriptor.MethodDescriptor(
-    name='BackupConfigMetaGet',
-    full_name='imrpc.ProxyEngineService.BackupConfigMetaGet',
-    index=20,
-    containing_service=None,
-    input_type=_ENGINEBACKUPCONFIGMETAGETREQUEST,
-    output_type=_ENGINEBACKUPCONFIGMETAGETPROXYRESPONSE,
-    serialized_options=None,
-  ),
-  _descriptor.MethodDescriptor(
-    name='BackupRemove',
-    full_name='imrpc.ProxyEngineService.BackupRemove',
-    index=21,
-    containing_service=None,
-    input_type=_ENGINEBACKUPREMOVEREQUEST,
-    output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
-    serialized_options=None,
-  ),
-  _descriptor.MethodDescriptor(
     name='ReplicaAdd',
     full_name='imrpc.ProxyEngineService.ReplicaAdd',
-    index=22,
+    index=17,
     containing_service=None,
     input_type=_ENGINEREPLICAADDREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -3039,7 +2037,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaList',
     full_name='imrpc.ProxyEngineService.ReplicaList',
-    index=23,
+    index=18,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINEREPLICALISTPROXYRESPONSE,
@@ -3048,7 +2046,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaRebuildingStatus',
     full_name='imrpc.ProxyEngineService.ReplicaRebuildingStatus',
-    index=24,
+    index=19,
     containing_service=None,
     input_type=_PROXYENGINEREQUEST,
     output_type=_ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE,
@@ -3057,7 +2055,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaVerifyRebuild',
     full_name='imrpc.ProxyEngineService.ReplicaVerifyRebuild',
-    index=25,
+    index=20,
     containing_service=None,
     input_type=_ENGINEREPLICAVERIFYREBUILDREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
@@ -3066,7 +2064,7 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ReplicaRemove',
     full_name='imrpc.ProxyEngineService.ReplicaRemove',
-    index=26,
+    index=21,
     containing_service=None,
     input_type=_ENGINEREPLICAREMOVEREQUEST,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,

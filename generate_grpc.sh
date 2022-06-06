@@ -8,7 +8,6 @@ if [ ! -e ./proto/vendor/protobuf/src/google/protobuf ]; then
     DIR="./proto/vendor/protobuf/src/google/protobuf"
     mkdir -p $DIR
     wget https://raw.githubusercontent.com/protocolbuffers/protobuf/v3.9.0/src/google/protobuf/empty.proto -P $DIR
-    wget https://raw.githubusercontent.com/protocolbuffers/protobuf/v3.9.0/src/google/protobuf/timestamp.proto -P $DIR
 fi
 DIR="./proto/vendor/github.com/longhorn/longhorn-engine/proto/ptypes"
 if [ ! -e ${DIR} ]; then

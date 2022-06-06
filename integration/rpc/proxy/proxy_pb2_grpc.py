@@ -100,31 +100,6 @@ class ProxyEngineServiceStub(object):
         request_serializer=proxy__pb2.ProxyEngineRequest.SerializeToString,
         response_deserializer=proxy__pb2.EngineBackupRestoreStatusProxyResponse.FromString,
         )
-    self.BackupVolumeList = channel.unary_unary(
-        '/imrpc.ProxyEngineService/BackupVolumeList',
-        request_serializer=proxy__pb2.EngineBackupVolumeListRequest.SerializeToString,
-        response_deserializer=proxy__pb2.EngineBackupVolumeListProxyResponse.FromString,
-        )
-    self.BackupVolumeGet = channel.unary_unary(
-        '/imrpc.ProxyEngineService/BackupVolumeGet',
-        request_serializer=proxy__pb2.EngineBackupVolumeGetRequest.SerializeToString,
-        response_deserializer=proxy__pb2.EngineBackupVolumeGetProxyResponse.FromString,
-        )
-    self.BackupGet = channel.unary_unary(
-        '/imrpc.ProxyEngineService/BackupGet',
-        request_serializer=proxy__pb2.EngineBackupGetRequest.SerializeToString,
-        response_deserializer=proxy__pb2.EngineBackupGetProxyResponse.FromString,
-        )
-    self.BackupConfigMetaGet = channel.unary_unary(
-        '/imrpc.ProxyEngineService/BackupConfigMetaGet',
-        request_serializer=proxy__pb2.EngineBackupConfigMetaGetRequest.SerializeToString,
-        response_deserializer=proxy__pb2.EngineBackupConfigMetaGetProxyResponse.FromString,
-        )
-    self.BackupRemove = channel.unary_unary(
-        '/imrpc.ProxyEngineService/BackupRemove',
-        request_serializer=proxy__pb2.EngineBackupRemoveRequest.SerializeToString,
-        response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-        )
     self.ReplicaAdd = channel.unary_unary(
         '/imrpc.ProxyEngineService/ReplicaAdd',
         request_serializer=proxy__pb2.EngineReplicaAddRequest.SerializeToString,
@@ -275,41 +250,6 @@ class ProxyEngineServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def BackupVolumeList(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def BackupVolumeGet(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def BackupGet(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def BackupConfigMetaGet(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def BackupRemove(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
   def ReplicaAdd(self, request, context):
     # missing associated documentation comment in .proto file
     pass
@@ -432,31 +372,6 @@ def add_ProxyEngineServiceServicer_to_server(servicer, server):
           servicer.BackupRestoreStatus,
           request_deserializer=proxy__pb2.ProxyEngineRequest.FromString,
           response_serializer=proxy__pb2.EngineBackupRestoreStatusProxyResponse.SerializeToString,
-      ),
-      'BackupVolumeList': grpc.unary_unary_rpc_method_handler(
-          servicer.BackupVolumeList,
-          request_deserializer=proxy__pb2.EngineBackupVolumeListRequest.FromString,
-          response_serializer=proxy__pb2.EngineBackupVolumeListProxyResponse.SerializeToString,
-      ),
-      'BackupVolumeGet': grpc.unary_unary_rpc_method_handler(
-          servicer.BackupVolumeGet,
-          request_deserializer=proxy__pb2.EngineBackupVolumeGetRequest.FromString,
-          response_serializer=proxy__pb2.EngineBackupVolumeGetProxyResponse.SerializeToString,
-      ),
-      'BackupGet': grpc.unary_unary_rpc_method_handler(
-          servicer.BackupGet,
-          request_deserializer=proxy__pb2.EngineBackupGetRequest.FromString,
-          response_serializer=proxy__pb2.EngineBackupGetProxyResponse.SerializeToString,
-      ),
-      'BackupConfigMetaGet': grpc.unary_unary_rpc_method_handler(
-          servicer.BackupConfigMetaGet,
-          request_deserializer=proxy__pb2.EngineBackupConfigMetaGetRequest.FromString,
-          response_serializer=proxy__pb2.EngineBackupConfigMetaGetProxyResponse.SerializeToString,
-      ),
-      'BackupRemove': grpc.unary_unary_rpc_method_handler(
-          servicer.BackupRemove,
-          request_deserializer=proxy__pb2.EngineBackupRemoveRequest.FromString,
-          response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
       ),
       'ReplicaAdd': grpc.unary_unary_rpc_method_handler(
           servicer.ReplicaAdd,
