@@ -17,7 +17,7 @@ WORKDIR ${DAPPER_SOURCE}
 
 RUN zypper refresh && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:scm/SLE_15_SP3/devel:tools:scm.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:scm/15.3/devel:tools:scm.repo && \
     zypper -n --gpg-auto-import-keys ref
 
 # Install packages
