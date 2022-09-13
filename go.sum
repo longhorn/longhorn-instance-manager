@@ -46,8 +46,9 @@ github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
-github.com/longhorn/backupstore v0.0.0-20211109055147-56ddc538b859 h1:Xff8617ecmLI8tYnWvgpY8aI2sZz4v3lTa353IVyijs=
 github.com/longhorn/backupstore v0.0.0-20211109055147-56ddc538b859/go.mod h1:hvIVsrpjPey7KupirAh0WoPMg0ArWnE6fA5bI30X7AI=
+github.com/longhorn/backupstore v0.0.0-20220913112826-5f5c95274f2a h1:f+mLqp3A5M7plw1pBgf8K1nvJxSU7mrGtU7bii+W5Bk=
+github.com/longhorn/backupstore v0.0.0-20220913112826-5f5c95274f2a/go.mod h1:hvIVsrpjPey7KupirAh0WoPMg0ArWnE6fA5bI30X7AI=
 github.com/longhorn/go-iscsi-helper v0.0.0-20220805034259-7b59e22574bb h1:zwAHsMzVfHNEMwAO3Mu2il0dcPGyJsZZuYED7ASbvfc=
 github.com/longhorn/go-iscsi-helper v0.0.0-20220805034259-7b59e22574bb/go.mod h1:9z/y9glKmWEdV50tjlUPxFwi1goQfIrrsoZbnMyIZbY=
 github.com/longhorn/longhorn-engine v1.3.1-0.20220808083255-7310e09cd663 h1:OK5hDS5TQeJDkBGk/Z+OAtrKFwU2QKxB5rAw3097Xew=
