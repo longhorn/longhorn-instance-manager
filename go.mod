@@ -18,3 +18,5 @@ require (
 )
 
 replace golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3
+
+replace github.com/longhorn/longhorn-engine v1.3.1-0.20220919072331-330a008f54ff => github.com/derekbit/longhorn-engine v1.2.1-0.20220927005653-384320ab497b
