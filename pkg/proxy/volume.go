@@ -28,15 +28,16 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 
 	return &rpc.EngineVolumeGetProxyResponse{
 		Volume: &eptypes.Volume{
-			Name:                  recv.Name,
-			Size:                  recv.Size,
-			ReplicaCount:          int32(recv.ReplicaCount),
-			Endpoint:              recv.Endpoint,
-			Frontend:              recv.Frontend,
-			FrontendState:         recv.FrontendState,
-			IsExpanding:           recv.IsExpanding,
-			LastExpansionError:    recv.LastExpansionError,
-			LastExpansionFailedAt: recv.LastExpansionFailedAt,
+			Name:                      recv.Name,
+			Size:                      recv.Size,
+			ReplicaCount:              int32(recv.ReplicaCount),
+			Endpoint:                  recv.Endpoint,
+			Frontend:                  recv.Frontend,
+			FrontendState:             recv.FrontendState,
+			IsExpanding:               recv.IsExpanding,
+			LastExpansionError:        recv.LastExpansionError,
+			LastExpansionFailedAt:     recv.LastExpansionFailedAt,
+			UnmapMarkSnapChainRemoved: recv.UnmapMarkSnapChainRemoved,
 		},
 	}, nil
 }
@@ -88,6 +89,24 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	defer c.Close()
 
 	err = c.VolumeFrontendShutdown()
+	if err != nil {
+		return nil, err
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *empty.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+	log.Debugf("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
+
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	err = c.VolumeUnmapMarkSnapChainRemovedSet(req.UnmapMarkSnap.Enabled)
 	if err != nil {
 		return nil, err
 	}
