@@ -23,5 +23,5 @@ python3 -m grpc_tools.protoc -I pkg/imrpc -I proto/vendor/protobuf/src/ --python
 protoc -I pkg/imrpc/ -I proto/vendor/protobuf/src/ pkg/imrpc/imrpc.proto --go_out=plugins=grpc:pkg/imrpc
 
 # proxy
-python3 -m grpc_tools.protoc -I pkg/imrpc -I proto/vendor/ --python_out=integration/rpc/proxy --grpc_python_out=integration/rpc/proxy pkg/imrpc/proxy.proto
-protoc -I pkg/imrpc/ -I proto/vendor/ pkg/imrpc/proxy.proto --go_out=plugins=grpc:pkg/imrpc/
+python3 -m grpc_tools.protoc -I pkg/imrpc -I proto/vendor/ -I proto/vendor/protobuf/src/ --python_out=integration/rpc/proxy --grpc_python_out=integration/rpc/proxy pkg/imrpc/proxy.proto
+protoc -I pkg/imrpc/ -I proto/vendor/ -I proto/vendor/protobuf/src/ pkg/imrpc/proxy.proto --go_out=plugins=grpc:pkg/imrpc/
