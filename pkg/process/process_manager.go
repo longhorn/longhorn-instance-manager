@@ -383,7 +383,7 @@ func (pm *Manager) allocatePorts(portCount int32) (int32, int32, error) {
 	}
 	start, end, err := pm.availablePorts.AllocateRange(portCount)
 	if err != nil {
-		return 0, 0, errors.Wrapf(err, "fail to allocate %v ports", portCount)
+		return 0, 0, errors.Wrapf(err, "failed to allocate %v ports", portCount)
 	}
 	return int32(start), int32(end), nil
 }
