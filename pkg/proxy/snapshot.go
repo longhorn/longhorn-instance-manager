@@ -164,7 +164,7 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 
 func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Get snapshot purge status")
+	log.Debug("Getting snapshot purge status")
 
 	task, err := esync.NewTask(ctx, req.Address)
 	if err != nil {
@@ -209,4 +209,49 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 	}
 
 	return &empty.Empty{}, lastErr
+}
+
+func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *empty.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+	log.Debug("Hashing snapshot")
+
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := task.HashSnapshot(req.SnapshotName, req.Rehash); err != nil {
+		return nil, err
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (p *Proxy) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
+	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+	log.Debug("Getting snapshot hash status")
+
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := task.HashSnapshotStatus(req.SnapshotName)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &rpc.EngineSnapshotHashStatusProxyResponse{
+		Status: map[string]*eptypes.SnapshotHashStatusResponse{},
+	}
+	for k, v := range recv {
+		resp.Status[k] = &eptypes.SnapshotHashStatusResponse{
+			State:             v.State,
+			Checksum:          v.Checksum,
+			Error:             v.Error,
+			SilentlyCorrupted: v.SilentlyCorrupted,
+		}
+	}
+
+	return resp, nil
 }
