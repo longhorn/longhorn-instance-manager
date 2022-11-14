@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -12,11 +15,13 @@ import (
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/health"
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/process"
-	"github.com/longhorn/longhorn-instance-manager/pkg/rpc"
+	"github.com/longhorn/longhorn-instance-manager/pkg/proxy"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
@@ -27,7 +32,8 @@ func StartCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "listen",
-				Value: "localhost:8500",
+				Value: "tcp://localhost:8500",
+				Usage: "specifies the server endpoint to listen on supported protocols are 'tcp' and 'unix'. The proxy server will be listening on the next port.",
 			},
 			cli.StringFlag{
 				Name:  "logs-dir",
@@ -40,14 +46,14 @@ func StartCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := start(c); err != nil {
-				logrus.Fatalf("Error running start command: %v.", err)
+				logrus.Fatalf("Failed to run start command: %v.", err)
 			}
 		},
 	}
 }
 
 func cleanup(pm *process.Manager) {
-	logrus.Infof("Try to gracefully shut down Instance Manager")
+	logrus.Infof("Trying to gracefully shut down Instance Manager")
 	pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
 	if err != nil {
 		logrus.Errorf("Failed to list processes before shutdown")
@@ -66,7 +72,7 @@ func cleanup(pm *process.Manager) {
 			break
 		}
 		if len(pmResp.Processes) == 0 {
-			logrus.Infof("Instance Manager has shutdown all processes.")
+			logrus.Infof("Shutdown all instance processes successfully")
 			break
 		}
 		time.Sleep(types.WaitInterval)
@@ -75,7 +81,7 @@ func cleanup(pm *process.Manager) {
 	logrus.Errorf("Failed to cleanup all processes for Instance Manager graceful shutdown")
 }
 
-func start(c *cli.Context) error {
+func start(c *cli.Context) (err error) {
 	listen := c.String("listen")
 	logsDir := c.String("logs-dir")
 	portRange := c.String("port-range")
@@ -84,19 +90,81 @@ func start(c *cli.Context) error {
 		return err
 	}
 
+	// setup tls config
+	var tlsConfig *tls.Config
+	tlsDir := c.GlobalString("tls-dir")
+	if tlsDir != "" {
+		tlsConfig, err = util.LoadServerTLS(
+			filepath.Join(tlsDir, "ca.crt"),
+			filepath.Join(tlsDir, "tls.crt"),
+			filepath.Join(tlsDir, "tls.key"),
+			"longhorn-backend.longhorn-system")
+		if err != nil {
+			logrus.Warnf("Failed to addd TLS key pair from %v: %v", tlsDir, err)
+		}
+	}
+
+	if tlsConfig != nil {
+		logrus.Info("Creating gRPC server with mtls auth")
+	} else {
+		logrus.Info("Creating gRPC server with no auth")
+	}
+
 	shutdownCh := make(chan error)
+
+	// Start proxy server
+	proxyAddress, err := getProxyAddress(listen)
+	if err != nil {
+		return err
+	}
+
+	// TODO: skip proxy for replica instance manager pod
+	proxy, err := proxy.NewProxy(logsDir, shutdownCh)
+	if err != nil {
+		return err
+	}
+	hcProxy := health.NewProxyHealthCheckServer(proxy)
+
+	rpcProxyService, proxyServer, err := util.NewServer(proxyAddress, tlsConfig,
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             10 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to setup proxy gRPCserver")
+	}
+
+	rpc.RegisterProxyEngineServiceServer(rpcProxyService, proxy)
+	healthpb.RegisterHealthServer(rpcProxyService, hcProxy)
+	reflection.Register(rpcProxyService)
+
+	go func() {
+		if err := rpcProxyService.Serve(proxyServer); err != nil {
+			logrus.Errorf("Stopping due to %v:", err)
+		}
+		// graceful shutdown before exit
+		close(shutdownCh)
+	}()
+	logrus.Infof("Instance Manager proxy gRPC server listening to %v", proxyAddress)
+
+	// Start process server
 	pm, err := process.NewManager(portRange, logsDir, shutdownCh)
 	if err != nil {
 		return err
 	}
 	hc := health.NewHealthCheckServer(pm)
 
-	listenAt, err := net.Listen("tcp", listen)
+	rpcService, listenAt, err := util.NewServer(listen, tlsConfig,
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             10 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	)
 	if err != nil {
-		return errors.Wrap(err, "Failed to listen")
+		return errors.Wrap(err, "failed to setup process gRPC server")
 	}
 
-	rpcService := grpc.NewServer()
 	rpc.RegisterProcessManagerServiceServer(rpcService, pm)
 	healthpb.RegisterHealthServer(rpcService, hc)
 	reflection.Register(rpcService)
@@ -109,7 +177,7 @@ func start(c *cli.Context) error {
 		cleanup(pm)
 		close(shutdownCh)
 	}()
-	logrus.Infof("Instance Manager listening to %v", listen)
+	logrus.Infof("Instance Manager process gRPC server listening to %v", listen)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -120,4 +188,18 @@ func start(c *cli.Context) error {
 	}()
 
 	return <-shutdownCh
+}
+
+func getProxyAddress(listen string) (string, error) {
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return "", err
+	}
+
+	intPort, err := strconv.Atoi(port)
+	if err != nil {
+		return "", err
+	}
+
+	return net.JoinHostPort(host, strconv.Itoa(intPort+1)), nil
 }

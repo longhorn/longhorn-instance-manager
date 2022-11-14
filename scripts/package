@@ -14,6 +14,9 @@ case $(uname -m) in
   x86_64)
     ARCH=amd64
     ;;
+  s390x)
+    ARCH=s390x
+    ;;
   *)
     echo "$(uname -a): unsupported architecture"
     exit 1
@@ -27,8 +30,6 @@ APIVERSION=`./bin/longhorn-instance-manager version --client-only|jq ".clientVer
 TAG="v${APIVERSION}_`date -u +%Y%m%d`"
 REPO=${REPO:-longhornio}
 IMAGE=${REPO}/${PROJECT}:${TAG}
-
-cp /usr/src/tgt/pkg/tgt_*.deb ./bin/
 
 # update base image to get latest changes
 BASE_IMAGE=`grep FROM package/Dockerfile  | awk '{print $2}'`

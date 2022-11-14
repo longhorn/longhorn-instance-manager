@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM registry.suse.com/bci/bci-base:15.4
 
 ARG DAPPER_HOST_ARCH=amd64
 ARG http_proxy
@@ -9,52 +9,93 @@ ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 ENV PATH /go/bin:$PATH
 ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO
-ENV DAPPER_OUTPUT bin
+ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.venv:exec --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.tox:exec -v /dev:/host/dev -v /proc:/host/proc
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
 WORKDIR ${DAPPER_SOURCE}
 
-ENV DEBIAN_FRONTEND=noninteractive
+
+RUN zypper refresh && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:scm/15.4/devel:tools:scm.repo && \
+    zypper -n --gpg-auto-import-keys ref
 
 # Install packages
-RUN apt-get update && \
-	apt-get dist-upgrade -y && \
-    apt-get install -y cmake wget curl git less file \
-        libglib2.0-dev libkmod-dev libnl-genl-3-dev linux-libc-dev pkg-config psmisc tox qemu-utils fuse python-dev \
-        devscripts debhelper bash-completion librdmacm-dev libibverbs-dev xsltproc docbook-xsl \
-        libconfig-general-perl libaio-dev libc6-dev iptables libltdl7 libdevmapper-dev iproute2 jq
+RUN if [ ${ARCH} == "amd64" ]; then \
+        zypper -n install autoconf libtool libunwind-devel; \
+    fi
+
+RUN zypper -n install cmake wget curl git less file \
+        libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
+        psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
+        bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
+        perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
+        rm -rf /var/cache/zypp/*
 
 # needed for ${!var} substitution
 RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
 
+RUN if [ ${ARCH} == "s390x" ]; then \
+        ln -s /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc;\
+    fi
+
 # Install Go & tools
-ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
+ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
-RUN wget -O - https://storage.googleapis.com/golang/go1.14.1.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
+RUN wget -O - https://storage.googleapis.com/golang/go1.14.15.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
     go get github.com/rancher/trash && go get -u golang.org/x/lint/golint
 
-# Docker
-ENV DOCKER_URL_amd64=https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/docker-ce-cli_20.10.7~3-0~ubuntu-focal_amd64.deb \
-    DOCKER_URL_arm64=https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/arm64/docker-ce-cli_20.10.7~3-0~ubuntu-focal_arm64.deb \
-    DOCKER_URL=DOCKER_URL_${ARCH}
-
-RUN wget ${!DOCKER_URL} -O docker_ce_${ARCH} && dpkg -i docker_ce_${ARCH}
+# Build gperftools
+# 1. Just use tcmalloc lib from gperftools installation
+# 2. tcmalloc also supports arm64 platform, but we only focus on amd64 first currently.
+#    arm64 will be supported after more testing.
+RUN if [ ${ARCH} == "amd64" ]; then \
+        cd /usr/src && \
+        git clone https://github.com/gperftools/gperftools.git&& \
+        cd gperftools && \
+        git checkout db6d94d9893fdd8c74028b5113cd9185be1e3111 && \
+        ./autogen.sh && \
+        ./configure && \
+        make && \
+        make install; \
+        zypper -n remove autoconf libtool libunwind-devel; \
+        rm -rf /usr/src/gperftools; \
+        ldconfig; \
+    fi
 
 # Build liblonghorn
 RUN cd /usr/src && \
     git clone https://github.com/rancher/liblonghorn.git && \
     cd liblonghorn && \
-    git checkout 9eaf16c13dccc7f3bdb111d4e21662ae753bdccf && \
-    make deb && \
-    dpkg -i ./pkg/liblonghorn_*.deb
+    git checkout fe86d7f1c6780904760f2832d8055c7ca7f0d92a && \
+    if [ ${ARCH} == "amd64" ]; then \
+        make EXTRA_LIBS=/usr/local/lib/libtcmalloc.a; \
+    else \
+        make; \
+    fi; \
+    make install
 
 # Build TGT
 RUN cd /usr/src && \
     git clone https://github.com/rancher/tgt.git && \
     cd tgt && \
-    git checkout e042fdd3616ca90619637b5826695a3de9b5dd8e && \
-    ./scripts/build-pkg.sh deb && \
-    dpkg -i ./pkg/tgt_*.deb
+    git checkout 64a3443ad6ab829343167e744a757d8ec044185a && \
+    if [ ${ARCH} == "amd64" ]; then \
+        make EXTRA_LIBS=-ltcmalloc; \
+    else \
+        make; \
+    fi; \
+    make install
+
+# Install libqcow to resolve error:
+#   vendor/github.com/longhorn/longhorn-engine/pkg/qcow/libqcow.go:6:11: fatal error: libqcow.h: No such file or directory
+RUN wget -O - https://s3-us-west-1.amazonaws.com/rancher-longhorn/libqcow-alpha-20181117.tar.gz | tar xvzf - -C /usr/src
+RUN cd /usr/src/libqcow-20181117 && \
+    ./configure
+RUN cd /usr/src/libqcow-20181117 && \
+    make -j$(nproc) && \
+    make install
+RUN ldconfig
 
 VOLUME /tmp
 ENV TMPDIR /tmp

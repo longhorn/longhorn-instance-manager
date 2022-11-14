@@ -1,5 +1,51 @@
 # github.com/RoaringBitmap/roaring v0.4.18
 github.com/RoaringBitmap/roaring
+# github.com/aws/aws-sdk-go v1.34.2
+github.com/aws/aws-sdk-go/aws
+github.com/aws/aws-sdk-go/aws/arn
+github.com/aws/aws-sdk-go/aws/awserr
+github.com/aws/aws-sdk-go/aws/awsutil
+github.com/aws/aws-sdk-go/aws/client
+github.com/aws/aws-sdk-go/aws/client/metadata
+github.com/aws/aws-sdk-go/aws/corehandlers
+github.com/aws/aws-sdk-go/aws/credentials
+github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
+github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
+github.com/aws/aws-sdk-go/aws/credentials/processcreds
+github.com/aws/aws-sdk-go/aws/credentials/stscreds
+github.com/aws/aws-sdk-go/aws/csm
+github.com/aws/aws-sdk-go/aws/defaults
+github.com/aws/aws-sdk-go/aws/ec2metadata
+github.com/aws/aws-sdk-go/aws/endpoints
+github.com/aws/aws-sdk-go/aws/request
+github.com/aws/aws-sdk-go/aws/session
+github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/internal/context
+github.com/aws/aws-sdk-go/internal/ini
+github.com/aws/aws-sdk-go/internal/s3err
+github.com/aws/aws-sdk-go/internal/sdkio
+github.com/aws/aws-sdk-go/internal/sdkmath
+github.com/aws/aws-sdk-go/internal/sdkrand
+github.com/aws/aws-sdk-go/internal/sdkuri
+github.com/aws/aws-sdk-go/internal/shareddefaults
+github.com/aws/aws-sdk-go/internal/strings
+github.com/aws/aws-sdk-go/internal/sync/singleflight
+github.com/aws/aws-sdk-go/private/checksum
+github.com/aws/aws-sdk-go/private/protocol
+github.com/aws/aws-sdk-go/private/protocol/eventstream
+github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
+github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
+github.com/aws/aws-sdk-go/private/protocol/query
+github.com/aws/aws-sdk-go/private/protocol/query/queryutil
+github.com/aws/aws-sdk-go/private/protocol/rest
+github.com/aws/aws-sdk-go/private/protocol/restxml
+github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
+github.com/aws/aws-sdk-go/service/s3
+github.com/aws/aws-sdk-go/service/s3/internal/arn
+github.com/aws/aws-sdk-go/service/sts
+github.com/aws/aws-sdk-go/service/sts/stsiface
+# github.com/c9s/goprocinfo v0.0.0-20190309065803-0b2ad9ac246b
+github.com/c9s/goprocinfo/linux
 # github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2
@@ -16,19 +62,49 @@ github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/snappy
 # github.com/google/uuid v1.3.0
 github.com/google/uuid
-# github.com/konsorten/go-windows-terminal-sequences v1.0.1
-github.com/konsorten/go-windows-terminal-sequences
+# github.com/gorilla/handlers v1.4.2
+github.com/gorilla/handlers
+# github.com/honestbee/jobq v1.0.2
+github.com/honestbee/jobq
+# github.com/jmespath/go-jmespath v0.3.0
+github.com/jmespath/go-jmespath
+# github.com/longhorn/backupstore v0.0.0-20220913112826-5f5c95274f2a
+github.com/longhorn/backupstore
+github.com/longhorn/backupstore/fsops
+github.com/longhorn/backupstore/http
+github.com/longhorn/backupstore/logging
+github.com/longhorn/backupstore/nfs
+github.com/longhorn/backupstore/s3
+github.com/longhorn/backupstore/util
+github.com/longhorn/backupstore/vfs
+# github.com/longhorn/go-iscsi-helper v0.0.0-20220927074943-051bf960608b
+github.com/longhorn/go-iscsi-helper/util
+# github.com/longhorn/longhorn-engine v1.3.2-0.20220929032851-7aac8ae9c8b4
+github.com/longhorn/longhorn-engine/pkg/backingfile
+github.com/longhorn/longhorn-engine/pkg/controller/client
+github.com/longhorn/longhorn-engine/pkg/meta
+github.com/longhorn/longhorn-engine/pkg/qcow
+github.com/longhorn/longhorn-engine/pkg/replica
+github.com/longhorn/longhorn-engine/pkg/replica/client
+github.com/longhorn/longhorn-engine/pkg/sync
+github.com/longhorn/longhorn-engine/pkg/types
+github.com/longhorn/longhorn-engine/pkg/util
+github.com/longhorn/longhorn-engine/proto/ptypes
+# github.com/longhorn/sparse-tools v0.0.0-20220323120706-0bd9b4129826
+github.com/longhorn/sparse-tools/sparse
 # github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae
 github.com/mschoch/smat
 # github.com/philhofer/fwd v1.0.0
 github.com/philhofer/fwd
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
+# github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47
+github.com/rancher/go-fibmap
 # github.com/russross/blackfriday/v2 v2.0.1
 github.com/russross/blackfriday/v2
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
-# github.com/sirupsen/logrus v1.4.1
+# github.com/sirupsen/logrus v1.8.1
 github.com/sirupsen/logrus
 # github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8
 github.com/tinylib/msgp/msgp
@@ -36,7 +112,7 @@ github.com/tinylib/msgp/msgp
 github.com/urfave/cli
 # github.com/willf/bitset v1.1.10
 github.com/willf/bitset
-# golang.org/x/net v0.0.0-20190522155817-f3200d17e092
+# golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -44,9 +120,11 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20190524152521-dbbf3f1254d4
+# golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
-# golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3
+golang.org/x/sys/windows
+# golang.org/x/text v0.3.3
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
