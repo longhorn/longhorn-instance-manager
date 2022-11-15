@@ -25,7 +25,7 @@ type Server struct {
 	sync.RWMutex
 	r                       *Replica
 	dir                     string
-	defaultSectorSize       int64
+	sectorSize              int64
 	backing                 *backingfile.BackingFile
 	revisionCounterDisabled bool
 }
@@ -34,7 +34,7 @@ func NewServer(dir string, backing *backingfile.BackingFile, sectorSize int64, d
 	return &Server{
 		dir:                     dir,
 		backing:                 backing,
-		defaultSectorSize:       sectorSize,
+		sectorSize:              sectorSize,
 		revisionCounterDisabled: disableRevCounter,
 	}
 }
@@ -43,7 +43,7 @@ func (s *Server) getSectorSize() int64 {
 	if s.backing != nil && s.backing.SectorSize > 0 {
 		return s.backing.SectorSize
 	}
-	return s.defaultSectorSize
+	return s.sectorSize
 }
 
 func (s *Server) Create(size int64) error {
@@ -71,7 +71,7 @@ func (s *Server) Open() error {
 	defer s.Unlock()
 
 	if s.r != nil {
-		return fmt.Errorf("Replica is already open")
+		return fmt.Errorf("replica is already open")
 	}
 
 	_, info := s.Status()
@@ -138,7 +138,7 @@ func (s *Server) SetRebuilding(rebuilding bool) error {
 	// Must be Open/Dirty to set true or must be Rebuilding to set false
 	if (rebuilding && state != Open && state != Dirty) ||
 		(!rebuilding && state != Rebuilding) {
-		return fmt.Errorf("Can not set rebuilding=%v from state %s", rebuilding, state)
+		return fmt.Errorf("cannot set rebuilding=%v from state %s", rebuilding, state)
 	}
 
 	return s.r.SetRebuilding(rebuilding)
@@ -280,7 +280,7 @@ func (s *Server) WriteAt(buf []byte, offset int64) (int, error) {
 	defer s.RUnlock()
 
 	if s.r == nil {
-		return 0, fmt.Errorf("Volume no longer exist")
+		return 0, fmt.Errorf("volume no longer exist")
 	}
 	i, err := s.r.WriteAt(buf, offset)
 	return i, err
@@ -291,7 +291,7 @@ func (s *Server) ReadAt(buf []byte, offset int64) (int, error) {
 	defer s.RUnlock()
 
 	if s.r == nil {
-		return 0, fmt.Errorf("Volume no longer exist")
+		return 0, fmt.Errorf("volume no longer exist")
 	}
 	i, err := s.r.ReadAt(buf, offset)
 	return i, err
