@@ -44,7 +44,7 @@ func ProcessCreateCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := createProcess(c); err != nil {
-				logrus.Fatalf("Error running process create command: %v.", err)
+				logrus.WithError(err).Fatal("Error running process create command")
 			}
 		},
 	}
@@ -75,7 +75,7 @@ func ProcessDeleteCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := deleteProcess(c); err != nil {
-				logrus.Fatalf("Error running process delete command: %v.", err)
+				logrus.WithError(err).Fatal("Error running process delete command")
 			}
 		},
 	}
@@ -105,7 +105,7 @@ func ProcessGetCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := getProcess(c); err != nil {
-				logrus.Fatalf("Error running process get command: %v.", err)
+				logrus.WithError(err).Fatal("Error running process get command")
 			}
 		},
 	}
@@ -131,7 +131,7 @@ func ProcessListCmd() cli.Command {
 		ShortName: "ls",
 		Action: func(c *cli.Context) {
 			if err := listProcess(c); err != nil {
-				logrus.Fatalf("Error running engine stop command: %v.", err)
+				logrus.WithError(err).Fatal("Error running engine stop command")
 			}
 		},
 	}
@@ -176,7 +176,7 @@ func ProcessReplaceCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := replaceProcess(c); err != nil {
-				logrus.Fatalf("Error running engine replace command: %v.", err)
+				logrus.WithError(err).Fatal("Error running engine replace command")
 			}
 		},
 	}

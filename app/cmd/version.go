@@ -20,7 +20,7 @@ func VersionCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := version(c); err != nil {
-				logrus.Fatalln("Error running info command:", err)
+				logrus.WithError(err).Fatal("Error running info command")
 			}
 		},
 	}

@@ -46,7 +46,7 @@ func StartCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := start(c); err != nil {
-				logrus.Fatalf("Failed to run start command: %v.", err)
+				logrus.WithError(err).Fatal("Failed to run start command")
 			}
 		},
 	}
