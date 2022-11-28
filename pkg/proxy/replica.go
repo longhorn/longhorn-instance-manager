@@ -18,6 +18,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 		"restore":     req.Restore,
 		"size":        req.Size,
 		"currentSize": req.CurrentSize,
+		"fastSync":    req.FastSync,
 	})
 	log.Debugf("Adding replica %v", req.ReplicaAddress)
 
@@ -31,7 +32,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 			return nil, err
 		}
 	} else {
-		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress); err != nil {
+		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, req.FastSync); err != nil {
 			return nil, err
 		}
 	}
