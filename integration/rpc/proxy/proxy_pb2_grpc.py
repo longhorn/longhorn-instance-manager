@@ -40,6 +40,11 @@ class ProxyEngineServiceStub(object):
         request_serializer=proxy__pb2.ProxyEngineRequest.SerializeToString,
         response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
         )
+    self.VolumeUnmapMarkSnapChainRemovedSet = channel.unary_unary(
+        '/imrpc.ProxyEngineService/VolumeUnmapMarkSnapChainRemovedSet',
+        request_serializer=proxy__pb2.EngineVolumeUnmapMarkSnapChainRemovedSetRequest.SerializeToString,
+        response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+        )
     self.VolumeSnapshot = channel.unary_unary(
         '/imrpc.ProxyEngineService/VolumeSnapshot',
         request_serializer=proxy__pb2.EngineVolumeSnapshotRequest.SerializeToString,
@@ -175,6 +180,13 @@ class ProxyEngineServiceServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def VolumeFrontendShutdown(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def VolumeUnmapMarkSnapChainRemovedSet(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -347,6 +359,11 @@ def add_ProxyEngineServiceServicer_to_server(servicer, server):
       'VolumeFrontendShutdown': grpc.unary_unary_rpc_method_handler(
           servicer.VolumeFrontendShutdown,
           request_deserializer=proxy__pb2.ProxyEngineRequest.FromString,
+          response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+      ),
+      'VolumeUnmapMarkSnapChainRemovedSet': grpc.unary_unary_rpc_method_handler(
+          servicer.VolumeUnmapMarkSnapChainRemovedSet,
+          request_deserializer=proxy__pb2.EngineVolumeUnmapMarkSnapChainRemovedSetRequest.FromString,
           response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
       ),
       'VolumeSnapshot': grpc.unary_unary_rpc_method_handler(
