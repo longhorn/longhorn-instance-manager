@@ -72,7 +72,7 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 
 func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
+	log.Tracef("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -96,7 +96,7 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 
 			cReplica, err := rclient.NewReplicaClient(r.Address.Address)
 			if err != nil {
-				logrus.Debugf("Failed to create replica client with %v", r.Address.Address)
+				logrus.WithError(err).Debugf("Failed to create replica client with %v", r.Address.Address)
 				continue
 			}
 
@@ -119,13 +119,13 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 		}
 		mode := eptypes.GRPCReplicaModeToReplicaMode(r.Mode)
 		if mode != etypes.RW {
-			return nil, errors.Errorf("failed to get % v backup status on unknown replica %s", req.BackupName, replicaAddress)
+			return nil, errors.Errorf("failed to get %v backup status on unknown replica %s", req.BackupName, replicaAddress)
 		}
 	}
 
 	cReplica, err := rclient.NewReplicaClient(replicaAddress)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create replica client with %v", replicaAddress)
+		return nil, errors.Wrapf(err, "failed to create replica client with %v", replicaAddress)
 	}
 	defer cReplica.Close()
 
@@ -176,7 +176,7 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 	if err != nil {
 		errInfo, jsonErr := json.Marshal(err)
 		if jsonErr != nil {
-			log.Debugf("Cannot marshal err [%v] to json: %v", err, jsonErr)
+			log.WithError(jsonErr).Debugf("Cannot marshal err [%v] to json", err)
 		}
 		// If the error is not `TaskError`, the marshaled result is an empty json string.
 		if string(errInfo) != "{}" {
@@ -191,7 +191,7 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 
 func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Getting backup restore status")
+	log.Trace("Getting backup restore status")
 
 	task, err := esync.NewTask(ctx, req.Address)
 	if err != nil {
