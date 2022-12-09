@@ -45,7 +45,7 @@ func (p *Proxy) startMonitoring() {
 
 func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVersionProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Getting server version")
+	log.Trace("Getting server version")
 
 	c, err := eclient.NewControllerClient(req.Address)
 	if err != nil {

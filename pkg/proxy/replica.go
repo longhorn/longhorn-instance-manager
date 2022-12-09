@@ -42,7 +42,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 
 func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Listing replicas")
+	log.Trace("Listing replicas")
 
 	c, err := eclient.NewControllerClient(req.Address)
 	if err != nil {
@@ -75,7 +75,7 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 
 func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Getting replica rebuilding status")
+	log.Trace("Getting replica rebuilding status")
 
 	task, err := esync.NewTask(ctx, req.Address)
 	if err != nil {
