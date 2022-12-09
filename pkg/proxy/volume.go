@@ -13,7 +13,7 @@ import (
 
 func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Getting volume")
+	log.Trace("Getting volume")
 
 	c, err := eclient.NewControllerClient(req.Address)
 	if err != nil {
