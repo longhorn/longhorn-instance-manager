@@ -36,7 +36,7 @@ func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapsho
 
 func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Listing snapshots")
+	log.Trace("Listing snapshots")
 
 	c, err := eclient.NewControllerClient(req.Address)
 	if err != nil {
@@ -99,7 +99,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 
 func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Getting snapshot clone status")
+	log.Trace("Getting snapshot clone status")
 
 	c, err := eclient.NewControllerClient(req.Address)
 	if err != nil {
@@ -164,7 +164,7 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 
 func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Get snapshot purge status")
+	log.Trace("Getting snapshot purge status")
 
 	task, err := esync.NewTask(ctx, req.Address)
 	if err != nil {
