@@ -53,10 +53,10 @@ func StartCmd() cli.Command {
 }
 
 func cleanup(pm *process.Manager) {
-	logrus.Infof("Trying to gracefully shut down Instance Manager")
+	logrus.Info("Trying to gracefully shut down Instance Manager")
 	pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
 	if err != nil {
-		logrus.Errorf("Failed to list processes before shutdown")
+		logrus.WithError(err).Error("Failed to list processes before shutdown")
 		return
 	}
 	for _, p := range pmResp.Processes {
@@ -68,17 +68,17 @@ func cleanup(pm *process.Manager) {
 	for i := 0; i < types.WaitCount; i++ {
 		pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
 		if err != nil {
-			logrus.Errorf("Failed to list instance processes when shutting down")
+			logrus.WithError(err).Error("Failed to list instance processes when shutting down")
 			break
 		}
 		if len(pmResp.Processes) == 0 {
-			logrus.Infof("Shutdown all instance processes successfully")
+			logrus.Info("Shutdown all instance processes successfully")
 			break
 		}
 		time.Sleep(types.WaitInterval)
 	}
 
-	logrus.Errorf("Failed to cleanup all processes for Instance Manager graceful shutdown")
+	logrus.Error("Failed to clean up all processes for Instance Manager graceful shutdown")
 }
 
 func start(c *cli.Context) (err error) {
@@ -100,7 +100,7 @@ func start(c *cli.Context) (err error) {
 			filepath.Join(tlsDir, "tls.key"),
 			"longhorn-backend.longhorn-system")
 		if err != nil {
-			logrus.Warnf("Failed to addd TLS key pair from %v: %v", tlsDir, err)
+			logrus.WithError(err).Warnf("Failed to add TLS key pair from %v", tlsDir)
 		}
 	}
 
@@ -141,7 +141,7 @@ func start(c *cli.Context) (err error) {
 
 	go func() {
 		if err := rpcProxyService.Serve(proxyServer); err != nil {
-			logrus.Errorf("Stopping due to %v:", err)
+			logrus.Errorf("Stopping proxy gRPCserver due to %v", err)
 		}
 		// graceful shutdown before exit
 		close(shutdownCh)
@@ -171,7 +171,7 @@ func start(c *cli.Context) (err error) {
 
 	go func() {
 		if err := rpcService.Serve(listenAt); err != nil {
-			logrus.Errorf("Stopping due to %v:", err)
+			logrus.Errorf("Stopping process gRPC server due to %v", err)
 		}
 		// graceful shutdown before exit
 		cleanup(pm)
