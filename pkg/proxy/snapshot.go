@@ -14,7 +14,7 @@ import (
 
 func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Snapshotting volume %v", req.SnapshotVolume.Name)
+	log.Infof("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -75,7 +75,7 @@ func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (
 
 func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Cloning snapshot from %v to %v", req.FromController, req.ProxyEngineRequest.Address)
+	log.Infof("Cloning snapshot from %v to %v", req.FromController, req.ProxyEngineRequest.Address)
 
 	cFrom, err := eclient.NewControllerClient(req.FromController)
 	if err != nil {
@@ -131,7 +131,7 @@ func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineReq
 
 func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Reverting snapshot %v", req.Name)
+	log.Infof("Reverting snapshot %v", req.Name)
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -148,7 +148,7 @@ func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 
 func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debug("Purging snapshots")
+	log.Info("Purging snapshots")
 
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -193,7 +193,7 @@ func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineReq
 
 func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Removing snapshots %v", req.Names)
+	log.Infof("Removing snapshots %v", req.Names)
 
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -210,3 +210,51 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 
 	return &empty.Empty{}, lastErr
 }
+<<<<<<< HEAD
+=======
+
+func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *empty.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+	log.Infof("Hashing snapshot %v with rehash %v", req.SnapshotName, req.Rehash)
+
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := task.HashSnapshot(req.SnapshotName, req.Rehash); err != nil {
+		return nil, err
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (p *Proxy) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
+	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+	log.Trace("Getting snapshot hash status")
+
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := task.HashSnapshotStatus(req.SnapshotName)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &rpc.EngineSnapshotHashStatusProxyResponse{
+		Status: map[string]*eptypes.SnapshotHashStatusResponse{},
+	}
+	for k, v := range recv {
+		resp.Status[k] = &eptypes.SnapshotHashStatusResponse{
+			State:             v.State,
+			Checksum:          v.Checksum,
+			Error:             v.Error,
+			SilentlyCorrupted: v.SilentlyCorrupted,
+		}
+	}
+
+	return resp, nil
+}
+>>>>>>> 2b6f99d (Change some debug level message to info level)

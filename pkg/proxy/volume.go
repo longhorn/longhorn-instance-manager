@@ -43,7 +43,7 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 
 func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debug("Expanding volume")
+	log.Infof("Expanding volume to size %v", req.Expand.Size)
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -61,7 +61,7 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 
 func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Starting volume frontend %v", req.FrontendStart.Frontend)
+	log.Infof("Starting volume frontend %v", req.FrontendStart.Frontend)
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -79,7 +79,7 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 
 func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
-	log.Debug("Shutting down volume frontend")
+	log.Info("Shutting down volume frontend")
 
 	c, err := eclient.NewControllerClient(req.Address)
 	if err != nil {
@@ -94,3 +94,24 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 
 	return &empty.Empty{}, nil
 }
+<<<<<<< HEAD
+=======
+
+func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *empty.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+	log.Infof("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
+
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	err = c.VolumeUnmapMarkSnapChainRemovedSet(req.UnmapMarkSnap.Enabled)
+	if err != nil {
+		return nil, err
+	}
+
+	return &empty.Empty{}, nil
+}
+>>>>>>> 2b6f99d (Change some debug level message to info level)
