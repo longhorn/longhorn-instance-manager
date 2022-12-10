@@ -19,7 +19,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 		"size":        req.Size,
 		"currentSize": req.CurrentSize,
 	})
-	log.Debugf("Adding replica %v", req.ReplicaAddress)
+	log.Infof("Adding replica %v", req.ReplicaAddress)
 
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -104,7 +104,7 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 
 func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Verifying replica %v rebuild", req.ReplicaAddress)
+	log.Infof("Verifying replica %v rebuild", req.ReplicaAddress)
 
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -121,7 +121,7 @@ func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplica
 
 func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debug("Removing replica")
+	log.Info("Removing replica")
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -135,3 +135,23 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 
 	return &empty.Empty{}, nil
 }
+<<<<<<< HEAD
+=======
+
+func (p *Proxy) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *empty.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+	log.Infof("Updating replica mode to %v", req.Mode)
+
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	if _, err = c.ReplicaUpdate(req.ReplicaAddress, eptypes.GRPCReplicaModeToReplicaMode(req.Mode)); err != nil {
+		return nil, err
+	}
+
+	return &empty.Empty{}, nil
+}
+>>>>>>> 2b6f99d (Change some debug level message to info level)

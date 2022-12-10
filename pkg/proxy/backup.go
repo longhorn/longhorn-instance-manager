@@ -22,7 +22,7 @@ import (
 
 func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Backing up snapshots %v to backup %v", req.SnapshotName, req.BackupName)
+	log.Infof("Backing up snapshot %v to backup %v", req.SnapshotName, req.BackupName)
 
 	for _, env := range req.Envs {
 		part := strings.SplitN(env, "=", 2)
@@ -146,7 +146,7 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 
 func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Restoring backup %v to %v", req.Url, req.VolumeName)
+	log.Infof("Restoring backup %v to %v", req.Url, req.VolumeName)
 
 	for _, env := range req.Envs {
 		part := strings.SplitN(env, "=", 2)
