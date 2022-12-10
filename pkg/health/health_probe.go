@@ -39,17 +39,16 @@ func (hc *CheckServer) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Healt
 			if err := ws.Send(&healthpb.HealthCheckResponse{
 				Status: healthpb.HealthCheckResponse_SERVING,
 			}); err != nil {
-				logrus.Errorf("Failed to send health check result %v for gRPC process management server: %v",
-					healthpb.HealthCheckResponse_SERVING, err)
+				logrus.WithError(err).Errorf("Failed to send health check result %v for gRPC process management server",
+					healthpb.HealthCheckResponse_SERVING)
 			}
 		} else {
 			if err := ws.Send(&healthpb.HealthCheckResponse{
 				Status: healthpb.HealthCheckResponse_NOT_SERVING,
 			}); err != nil {
-				logrus.Errorf("Failed to send health check result %v for gRPC process management server: %v",
-					healthpb.HealthCheckResponse_NOT_SERVING, err)
+				logrus.WithError(err).Errorf("Failed to send health check result %v for gRPC process management server",
+					healthpb.HealthCheckResponse_NOT_SERVING)
 			}
-
 		}
 		time.Sleep(time.Second)
 	}

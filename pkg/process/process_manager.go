@@ -86,7 +86,7 @@ func (pm *Manager) startMonitoring() {
 	for {
 		select {
 		case <-pm.shutdownCh:
-			logrus.Infof("Process Manager is shutting down")
+			logrus.Info("Process Manager is shutting down")
 			done = true
 			break
 		case p := <-pm.processUpdateCh:
@@ -195,7 +195,7 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 	if err := p.Start(); err != nil {
 		// initializing failed so we sent event about the failed state, but still return the process rpc below
 		// this is to be consistent with the prior implementation
-		logrus.Errorf("Process Manager: failed to init new process %v error %v", req.Spec.Name, err)
+		logrus.WithError(err).Errorf("Process Manager: failed to init new process %v", req.Spec.Name)
 		p.UpdateCh <- p
 	} else {
 		logrus.Infof("Process Manager: created process %v", req.Spec.Name)
@@ -354,7 +354,7 @@ func (pm *Manager) ProcessWatch(req *empty.Empty, srv rpc.ProcessManagerService_
 
 	defer func() {
 		if err != nil {
-			logrus.Errorf("process manager update watch errored out: %v", err)
+			logrus.WithError(err).Error("Process manager update watch errored out")
 		} else {
 			logrus.Debugf("process manager update watch ended successfully")
 		}
@@ -397,19 +397,19 @@ func (pm *Manager) releasePorts(start, end int32) error {
 
 func ParsePortRange(portRange string) (int32, int32, error) {
 	if portRange == "" {
-		return 0, 0, fmt.Errorf("Empty port range")
+		return 0, 0, fmt.Errorf("empty port range")
 	}
 	parts := strings.Split(portRange, "-")
 	if len(parts) != 2 {
-		return 0, 0, fmt.Errorf("Invalid format for range: %s", portRange)
+		return 0, 0, fmt.Errorf("invalid format for range: %s", portRange)
 	}
 	portStart, err := strconv.Atoi(strings.TrimSpace(parts[0]))
 	if err != nil {
-		return 0, 0, fmt.Errorf("Invalid start port for range: %s", err)
+		return 0, 0, errors.Wrap(err, "invalid start port for range")
 	}
 	portEnd, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 	if err != nil {
-		return 0, 0, fmt.Errorf("Invalid end port for range: %s", err)
+		return 0, 0, errors.Wrap(err, "invalid end port for range")
 	}
 	return int32(portStart), int32(portEnd), nil
 }
@@ -470,7 +470,7 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 
 	if err := p.Start(); err != nil {
 		// initializing failed replacement process cleanup happens below
-		logrus.Errorf("Process Manager: failed to init replacement process %v error %v", req.Spec.Name, err)
+		logrus.WithError(err).Errorf("Process Manager: failed to init replacement process %v", req.Spec.Name)
 		cleanupReplacementProcess()
 		return nil, fmt.Errorf("failed to init replacement process %v", p.Name)
 	}
@@ -504,7 +504,7 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		logrus.Infof("Process Manager: successfully unregistered old process %v", p.Name)
 	} else {
 		pm.lock.Unlock()
-		logrus.Warnf("Process Manager: replace process %v the process to replace with UUID %v must have already been replaced found process with UUID %v cleanign up replacement process with UUID %v",
+		logrus.Warnf("Process Manager: replace process %v the process to replace with UUID %v must have already been replaced found process with UUID %v cleaning up replacement process with UUID %v",
 			p.Name, processToReplace.UUID, existingProcess.UUID, p.UUID)
 		cleanupReplacementProcess()
 		return nil, status.Errorf(codes.AlreadyExists, "process %v to replace has changed in the meantime", p.Name)
@@ -561,7 +561,7 @@ func (pm *Manager) allocateProcessPorts(p *Process) error {
 
 func (pm *Manager) releaseProcessPorts(p *Process) {
 	if err := pm.releasePorts(p.PortStart, p.PortEnd); err != nil {
-		logrus.Errorf("Process Manager: cannot deallocate %v ports (%v-%v) for %v: %v",
-			p.PortCount, p.PortStart, p.PortEnd, p.Name, err)
+		logrus.WithError(err).Errorf("Process Manager: cannot deallocate %v ports (%v-%v) for %v",
+			p.PortCount, p.PortStart, p.PortEnd, p.Name)
 	}
 }

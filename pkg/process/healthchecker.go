@@ -26,14 +26,14 @@ func (c *GRPCHealthChecker) WaitForRunning(address, name string, stopCh chan str
 	for i := 0; i < types.WaitCount; i++ {
 		select {
 		case <-stopCh:
-			logrus.Infof("stop waiting for gRPC service of process %v to start at %v", name, address)
+			logrus.Infof("Stop waiting for gRPC service of process %v to start at %v", name, address)
 			return false
 		case <-ticker.C:
 			if c.IsRunning(address) {
 				logrus.Infof("Process %v has started at %v", name, address)
 				return true
 			}
-			logrus.Infof("wait for gRPC service of process %v to start at %v", name, address)
+			logrus.Infof("Wait for gRPC service of process %v to start at %v", name, address)
 		}
 	}
 	return false
