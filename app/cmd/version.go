@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -38,7 +39,7 @@ func version(c *cli.Context) error {
 	if !c.Bool("client-only") {
 		cli, err := getProcessManagerClient(c)
 		if err != nil {
-			return fmt.Errorf("failed to initialize client: %v", err)
+			return errors.Wrap(err, "failed to initialize client")
 		}
 		defer cli.Close()
 

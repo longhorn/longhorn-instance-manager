@@ -33,7 +33,7 @@ func (p *Proxy) startMonitoring() {
 	for {
 		select {
 		case <-p.shutdownCh:
-			logrus.Infof("Proxy Server is shutting down")
+			logrus.Info("Proxy Server is shutting down")
 			done = true
 			break
 		}
