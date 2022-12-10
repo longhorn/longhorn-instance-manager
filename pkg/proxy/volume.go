@@ -94,24 +94,3 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 
 	return &empty.Empty{}, nil
 }
-<<<<<<< HEAD
-=======
-
-func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *empty.Empty, err error) {
-	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Infof("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
-
-	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
-	if err != nil {
-		return nil, err
-	}
-	defer c.Close()
-
-	err = c.VolumeUnmapMarkSnapChainRemovedSet(req.UnmapMarkSnap.Enabled)
-	if err != nil {
-		return nil, err
-	}
-
-	return &empty.Empty{}, nil
-}
->>>>>>> 2b6f99d (Change some debug level message to info level)
