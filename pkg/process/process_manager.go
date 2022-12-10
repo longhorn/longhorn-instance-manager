@@ -207,7 +207,7 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 // ProcessDelete will delete the process named by the request.
 // If the process doesn't exist, the deletion will return with ErrorNotFound
 func (pm *Manager) ProcessDelete(ctx context.Context, req *rpc.ProcessDeleteRequest) (ret *rpc.ProcessResponse, err error) {
-	logrus.Debugf("Process Manager: prepare to delete process %v", req.Name)
+	logrus.Infof("Process Manager: prepare to delete process %v", req.Name)
 
 	p := pm.findProcess(req.Name)
 	if p == nil {
@@ -221,7 +221,7 @@ func (pm *Manager) ProcessDelete(ctx context.Context, req *rpc.ProcessDeleteRequ
 
 	pm.unregisterProcess(p)
 
-	logrus.Debugf("Process Manager: deleted process %v", req.Name)
+	logrus.Infof("Process Manager: deleted process %v", req.Name)
 	return resp, nil
 }
 
@@ -281,8 +281,6 @@ func (pm *Manager) unregisterProcess(p *Process) {
 		logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
 		p.UpdateCh <- p
 	}()
-
-	return
 }
 
 func (pm *Manager) findProcess(name string) *Process {
@@ -317,7 +315,7 @@ func (pm *Manager) ProcessList(ctx context.Context, req *rpc.ProcessListRequest)
 }
 
 func (pm *Manager) ProcessLog(req *rpc.LogRequest, srv rpc.ProcessManagerService_ProcessLogServer) error {
-	logrus.Debugf("Process Manager: start getting logs for process %v", req.Name)
+	logrus.Infof("Process Manager: start getting logs for process %v", req.Name)
 	p := pm.findProcess(req.Name)
 	if p == nil {
 		return status.Errorf(codes.NotFound, "cannot find process %v", req.Name)
@@ -334,7 +332,7 @@ func (pm *Manager) ProcessLog(req *rpc.LogRequest, srv rpc.ProcessManagerService
 			return err
 		}
 	}
-	logrus.Debugf("Process Manager: got logs for process %v", req.Name)
+	logrus.Infof("Process Manager: got logs for process %v", req.Name)
 	return nil
 }
 
@@ -356,10 +354,10 @@ func (pm *Manager) ProcessWatch(req *empty.Empty, srv rpc.ProcessManagerService_
 		if err != nil {
 			logrus.WithError(err).Error("Process manager update watch errored out")
 		} else {
-			logrus.Debugf("process manager update watch ended successfully")
+			logrus.Info("Process manager update watch ended successfully")
 		}
 	}()
-	logrus.Debugf("started new process manager update watch")
+	logrus.Info("Started new process manager update watch")
 
 	for resp := range responseChan {
 		r, ok := resp.(*rpc.ProcessResponse)
