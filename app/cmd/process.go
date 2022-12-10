@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"fmt"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -53,14 +53,14 @@ func ProcessCreateCmd() cli.Command {
 func createProcess(c *cli.Context) error {
 	cli, err := getProcessManagerClient(c)
 	if err != nil {
-		return fmt.Errorf("failed to initialize client: %v", err)
+		return errors.Wrap(err, "failed to initialize client")
 	}
 	defer cli.Close()
 
 	process, err := cli.ProcessCreate(c.String("name"), c.String("binary"),
 		c.Int("port-count"), c.Args(), c.StringSlice("port-args"))
 	if err != nil {
-		return fmt.Errorf("failed to create process: %v", err)
+		return errors.Wrap(err, "failed to create process")
 	}
 	return util.PrintJSON(process)
 }
@@ -84,13 +84,13 @@ func ProcessDeleteCmd() cli.Command {
 func deleteProcess(c *cli.Context) error {
 	cli, err := getProcessManagerClient(c)
 	if err != nil {
-		return fmt.Errorf("failed to initialize client: %v", err)
+		return errors.Wrap(err, "failed to initialize client")
 	}
 	defer cli.Close()
 
 	process, err := cli.ProcessDelete(c.String("name"))
 	if err != nil {
-		return fmt.Errorf("failed to delete process: %v", err)
+		return errors.Wrap(err, "failed to delete process")
 	}
 	return util.PrintJSON(process)
 }
@@ -114,13 +114,13 @@ func ProcessGetCmd() cli.Command {
 func getProcess(c *cli.Context) error {
 	cli, err := getProcessManagerClient(c)
 	if err != nil {
-		return fmt.Errorf("failed to initialize client: %v", err)
+		return errors.Wrap(err, "failed to initialize client")
 	}
 	defer cli.Close()
 
 	process, err := cli.ProcessGet(c.String("name"))
 	if err != nil {
-		return fmt.Errorf("failed to delete process: %v", err)
+		return errors.Wrap(err, "failed to delete process")
 	}
 	return util.PrintJSON(process)
 }
@@ -140,13 +140,13 @@ func ProcessListCmd() cli.Command {
 func listProcess(c *cli.Context) error {
 	cli, err := getProcessManagerClient(c)
 	if err != nil {
-		return fmt.Errorf("failed to initialize client: %v", err)
+		return errors.Wrap(err, "failed to initialize client")
 	}
 	defer cli.Close()
 
 	processes, err := cli.ProcessList()
 	if err != nil {
-		return fmt.Errorf("failed to list processes: %v", err)
+		return errors.Wrap(err, "failed to list processes")
 	}
 	return util.PrintJSON(processes)
 }
@@ -185,14 +185,14 @@ func ProcessReplaceCmd() cli.Command {
 func replaceProcess(c *cli.Context) error {
 	cli, err := getProcessManagerClient(c)
 	if err != nil {
-		return fmt.Errorf("failed to initialize client: %v", err)
+		return errors.Wrap(err, "failed to initialize client")
 	}
 	defer cli.Close()
 
 	process, err := cli.ProcessReplace(c.String("name"), c.String("binary"),
 		c.Int("port-count"), c.Args(), c.StringSlice("port-args"), c.String("terminate-signal"))
 	if err != nil {
-		return fmt.Errorf("failed to replace processes: %v", err)
+		return errors.Wrap(err, "failed to replace processes")
 	}
 	return util.PrintJSON(process)
 }
