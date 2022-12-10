@@ -20,7 +20,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 		"currentSize": req.CurrentSize,
 		"fastSync":    req.FastSync,
 	})
-	log.Debugf("Adding replica %v", req.ReplicaAddress)
+	log.Infof("Adding replica %v", req.ReplicaAddress)
 
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -105,7 +105,7 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 
 func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debugf("Verifying replica %v rebuild", req.ReplicaAddress)
+	log.Infof("Verifying replica %v rebuild", req.ReplicaAddress)
 
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -122,7 +122,7 @@ func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplica
 
 func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debug("Removing replica")
+	log.Info("Removing replica")
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {
@@ -139,7 +139,7 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 
 func (p *Proxy) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
-	log.Debug("Updating replica mode")
+	log.Infof("Updating replica mode to %v", req.Mode)
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
 	if err != nil {

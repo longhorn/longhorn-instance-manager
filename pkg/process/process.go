@@ -101,7 +101,6 @@ func (p *Process) Start() error {
 			p.lock.Unlock()
 			p.UpdateCh <- p
 		}
-		return
 	}()
 
 	return nil
@@ -111,7 +110,7 @@ func (p *Process) RPCResponse() *rpc.ProcessResponse {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	if p.ErrorMsg != "" {
-		logrus.Debugf("Process update: %v: state %v: Error: %v", p.Name, p.State, p.ErrorMsg)
+		logrus.Warnf("Process update: %v: state %v: errorMsg: %v", p.Name, p.State, p.ErrorMsg)
 	}
 	return &rpc.ProcessResponse{
 		Spec: &rpc.ProcessSpec{
@@ -156,7 +155,7 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 	go func() {
 		defer func() {
 			if err := p.logger.Close(); err != nil {
-				logrus.Warnf("Process Manager: failed to close process %v 's logger: %v", p.Name, err)
+				logrus.WithError(err).Warnf("Process Manager: failed to close process %v logger", p.Name)
 			}
 		}()
 
@@ -166,7 +165,7 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 		}
 
 		// no need for lock
-		logrus.Debugf("Process Manager: trying to stop process %v", p.Name)
+		logrus.Infof("Process Manager: trying to stop process %v", p.Name)
 		cmd.StopWithSignal(signal)
 		for i := 0; i < types.WaitCount; i++ {
 			if p.IsStopped() {
@@ -175,7 +174,7 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 			logrus.Infof("Wait for process %v to shutdown", p.Name)
 			time.Sleep(types.WaitInterval)
 		}
-		logrus.Debugf("Process Manager: cannot graceful stop process %v in %v seconds, will kill the process", p.Name, types.WaitCount)
+		logrus.Warnf("Process Manager: cannot graceful stop process %v in %v seconds, will kill the process", p.Name, types.WaitCount)
 		cmd.Kill()
 	}()
 }
