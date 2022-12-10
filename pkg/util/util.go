@@ -80,11 +80,7 @@ func RemoveFile(file string) error {
 	}
 
 	if _, err := Execute("rm", file); err != nil {
-<<<<<<< HEAD
-		return fmt.Errorf("fail to remove file %v: %v", file, err)
-=======
 		return errors.Wrapf(err, "failed to remove file %v", file)
->>>>>>> c1b8d3e (Unify the format of log messages)
 	}
 
 	return nil
