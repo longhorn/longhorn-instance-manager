@@ -56,6 +56,7 @@ message FileSendRequest {
   string host = 2;
   int32 port = 3;
   bool fast_sync = 4;
+  int32 file_sync_http_client_timeout = 5;
 }
 
 message FilesSyncRequest {
@@ -63,6 +64,7 @@ message FilesSyncRequest {
   string to_host = 2;
   repeated SyncFileInfo sync_file_info_list = 3;
   bool fast_sync = 4;
+  int32 file_sync_http_client_timeout = 5;
 }
 
 message SnapshotCloneRequest {
@@ -70,6 +72,7 @@ message SnapshotCloneRequest {
     string to_host = 2;
     string snapshot_file_name = 3;
     bool export_backing_image_if_exist = 4;
+    int32 file_sync_http_client_timeout = 5;
 }
 
 message VolumeExportRequest {
@@ -77,6 +80,7 @@ message VolumeExportRequest {
   string host = 2;
   int32 port = 3;
   bool export_backing_image_if_exist = 4;
+  int32 file_sync_http_client_timeout = 5;
 }
 
 message BackupCreateRequest {
