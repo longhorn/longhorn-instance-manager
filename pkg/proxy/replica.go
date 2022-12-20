@@ -32,7 +32,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 			return nil, err
 		}
 	} else {
-		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, req.FastSync); err != nil {
+		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, int(req.FileSyncHttpClientTimeout), req.FastSync); err != nil {
 			return nil, err
 		}
 	}
