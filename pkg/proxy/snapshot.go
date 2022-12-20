@@ -89,7 +89,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	}
 	defer cTo.Close()
 
-	err = esync.CloneSnapshot(cTo, cFrom, req.SnapshotName, req.ExportBackingImageIfExist)
+	err = esync.CloneSnapshot(cTo, cFrom, req.SnapshotName, req.ExportBackingImageIfExist, int(req.FileSyncHttpClientTimeout))
 	if err != nil {
 		return nil, err
 	}
