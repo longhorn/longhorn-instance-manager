@@ -145,6 +145,11 @@ class ProxyEngineServiceStub(object):
         request_serializer=proxy__pb2.EngineReplicaModeUpdateRequest.SerializeToString,
         response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
         )
+    self.MetricsGet = channel.unary_unary(
+        '/imrpc.ProxyEngineService/MetricsGet',
+        request_serializer=proxy__pb2.ProxyEngineRequest.SerializeToString,
+        response_deserializer=proxy__pb2.EngineMetricsGetProxyResponse.FromString,
+        )
 
 
 class ProxyEngineServiceServicer(object):
@@ -333,6 +338,13 @@ class ProxyEngineServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def MetricsGet(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_ProxyEngineServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -465,6 +477,11 @@ def add_ProxyEngineServiceServicer_to_server(servicer, server):
           servicer.ReplicaModeUpdate,
           request_deserializer=proxy__pb2.EngineReplicaModeUpdateRequest.FromString,
           response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+      ),
+      'MetricsGet': grpc.unary_unary_rpc_method_handler(
+          servicer.MetricsGet,
+          request_deserializer=proxy__pb2.ProxyEngineRequest.FromString,
+          response_serializer=proxy__pb2.EngineMetricsGetProxyResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
