@@ -6,8 +6,8 @@ require (
 	github.com/RoaringBitmap/roaring v0.4.18
 	github.com/golang/protobuf v1.3.3-0.20190920234318-1680a479a2cf
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20221114044558-19f4902cd4fd
-	github.com/longhorn/longhorn-engine v1.3.1-0.20221130092917-14415fe1a108
+	github.com/longhorn/backupstore v0.0.0-20221206091653-a8c2a47673e2
+	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221073559-cdebdcafe149
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.1
@@ -26,8 +26,8 @@ require (
 	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/honestbee/jobq v1.0.2 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20221109111031-ebff48f3632a // indirect
-	github.com/longhorn/sparse-tools v0.0.0-20221130075436-f6b8c1f51980 // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20221209140622-1eaf67c743d6 // indirect
+	github.com/longhorn/sparse-tools v0.0.0-20221221020038-f6f1ea623675 // indirect
 	github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47 // indirect

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -171,6 +172,11 @@ func construct(readonly bool, size, sectorSize int64, dir, head string, backingF
 	r.info.Size = size
 	r.info.SectorSize = sectorSize
 	r.volume.sectorSize = diskutil.VolumeSectorSize
+
+	// Try to recover volume metafile if deleted or empty.
+	if err := r.tryRecoverVolumeMetaFile(head); err != nil {
+		return nil, err
+	}
 
 	// Scan all the disks to build the disk map
 	exists, err := r.readMetadata()
@@ -352,14 +358,15 @@ func (r *Replica) hardlinkDisk(target, source string) error {
 	}
 
 	if _, err := os.Stat(r.diskPath(target)); err == nil {
-		logrus.Infof("Old file %s exists, deleting", target)
+		logrus.Infof("Removing old file %s", target)
 		if err := os.Remove(r.diskPath(target)); err != nil {
 			return errors.Wrapf(err, "failed to remove %s", target)
 		}
 	}
 
+	logrus.Infof("Hard linking %v to %v", source, target)
 	if err := os.Link(r.diskPath(source), r.diskPath(target)); err != nil {
-		return fmt.Errorf("failed to link %s to %s", source, target)
+		return fmt.Errorf("failed to hard link %s to %s", source, target)
 	}
 	return nil
 }
@@ -398,7 +405,7 @@ func (r *Replica) ReplaceDisk(target, source string) error {
 	}
 	r.volume.files[index] = newFile
 
-	logrus.Infof("Done replacing %v with %v", target, source)
+	logrus.Infof("Done replacing disk %v with %v", source, target)
 
 	return nil
 }
@@ -757,12 +764,22 @@ func (r *Replica) rmDisk(name string) error {
 		return nil
 	}
 
-	lastErr := os.Remove(r.diskPath(name))
-	if err := os.Remove(r.diskPath(name + diskutil.DiskMetadataSuffix)); err != nil {
-		lastErr = err
+	logrus.Infof("Removing disk %v", name)
+
+	diskPath := r.diskPath(name)
+	lastErr := os.Remove(diskPath)
+	if lastErr != nil {
+		logrus.WithError(lastErr).Errorf("Failed to remove disk file %v", diskPath)
 	}
-	if err := os.RemoveAll(r.diskPath(name + diskutil.DiskChecksumSuffix)); err != nil {
+	diskMetaPath := r.diskPath(name + diskutil.DiskMetadataSuffix)
+	if err := os.Remove(diskMetaPath); err != nil {
 		lastErr = err
+		logrus.WithError(lastErr).Errorf("Failed to remove disk metadata file %v", diskMetaPath)
+	}
+	diskChecksumPath := r.diskPath(name + diskutil.DiskChecksumSuffix)
+	if err := os.RemoveAll(diskChecksumPath); err != nil {
+		lastErr = err
+		logrus.WithError(lastErr).Errorf("Failed to remove disk checksum file %v", diskChecksumPath)
 	}
 	return lastErr
 }
@@ -988,6 +1005,50 @@ func (r *Replica) readMetadata() (bool, error) {
 	return len(r.diskData) > 0, nil
 }
 
+func (r *Replica) tryRecoverVolumeMetaFile(head string) error {
+	valid, err := r.checkValidVolumeMetaData()
+	if err != nil {
+		return err
+	}
+	if valid {
+		return nil
+	}
+
+	if head != "" {
+		r.info.Head = head
+	}
+
+	if r.info.Head == "" {
+		files, err := ioutil.ReadDir(r.dir)
+		if err != nil {
+			return err
+		}
+		for _, file := range files {
+			if strings.Contains(file.Name(), types.VolumeHeadName) {
+				r.info.Head = file.Name()
+				break
+			}
+		}
+	}
+
+	logrus.Warnf("Recovering volume metafile %v, and replica info: %+v", r.diskPath(volumeMetaData), r.info)
+	return r.writeVolumeMetaData(true, r.info.Rebuilding)
+}
+
+func (r *Replica) checkValidVolumeMetaData() (bool, error) {
+	err := r.unmarshalFile(r.diskPath(volumeMetaData), &r.info)
+	if err == nil {
+		return true, nil
+	}
+
+	// recover metadata file that does not exist or is empty
+	if os.IsNotExist(err) || errors.Is(err, io.EOF) {
+		return false, nil
+	}
+
+	return false, err
+}
+
 func (r *Replica) readDiskData(file string) error {
 	var data disk
 	if err := r.unmarshalFile(file, &data); err != nil {
@@ -1075,6 +1136,10 @@ func (r *Replica) SetUnmapMarkDiskChainRemoved(enabled bool) {
 }
 
 func (r *Replica) Expand(size int64) (err error) {
+	if size%diskutil.VolumeSectorSize != 0 {
+		return fmt.Errorf("failed to expend volume replica size %v, because it is not multiple of volume sector size %v", size, diskutil.VolumeSectorSize)
+	}
+
 	r.Lock()
 	defer r.Unlock()
 
