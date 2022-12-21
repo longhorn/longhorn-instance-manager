@@ -95,7 +95,7 @@ github.com/longhorn/backupstore/vfs
 # github.com/longhorn/go-iscsi-helper v0.0.0-20221209140622-1eaf67c743d6
 ## explicit; go 1.13
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221073559-cdebdcafe149
+# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221100445-de0b00d3f819
 ## explicit; go 1.13
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
