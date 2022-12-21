@@ -10,7 +10,7 @@ require (
 	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221061015-35357e3c051d
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
-	github.com/urfave/cli v1.22.1
+	github.com/urfave/cli v1.22.10
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	google.golang.org/grpc v1.21.0
 	gopkg.in/check.v1 v1.0.0-20160105164936-4f90aeace3a2

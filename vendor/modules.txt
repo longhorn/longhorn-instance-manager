@@ -137,7 +137,7 @@ github.com/sirupsen/logrus
 # github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8
 ## explicit
 github.com/tinylib/msgp/msgp
-# github.com/urfave/cli v1.22.1
+# github.com/urfave/cli v1.22.10
 ## explicit; go 1.11
 github.com/urfave/cli
 # github.com/willf/bitset v1.1.10
