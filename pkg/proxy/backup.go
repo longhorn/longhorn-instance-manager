@@ -56,6 +56,8 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 		req.BackupTarget,
 		req.BackingImageName,
 		req.BackingImageChecksum,
+		req.CompressionMethod,
+		int(req.ConcurrentLimit),
 		labels,
 		credential,
 	)
@@ -172,7 +174,7 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 	resp = &rpc.EngineBackupRestoreProxyResponse{
 		TaskError: []byte{},
 	}
-	err = task.RestoreBackup(req.Url, credential)
+	err = task.RestoreBackup(req.Url, credential, int(req.ConcurrentLimit))
 	if err != nil {
 		errInfo, jsonErr := json.Marshal(err)
 		if jsonErr != nil {
