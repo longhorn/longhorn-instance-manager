@@ -50,12 +50,21 @@ github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfV
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/longhorn/backupstore v0.0.0-20221114044558-19f4902cd4fd/go.mod h1:hvIVsrpjPey7KupirAh0WoPMg0ArWnE6fA5bI30X7AI=
+<<<<<<< HEAD
 github.com/longhorn/backupstore v0.0.0-20221206091653-a8c2a47673e2 h1:bkHTz6p9ZMMo1zkx7cv3GopFFmtZl8awp4jRDs4ddfE=
 github.com/longhorn/backupstore v0.0.0-20221206091653-a8c2a47673e2/go.mod h1:hvIVsrpjPey7KupirAh0WoPMg0ArWnE6fA5bI30X7AI=
 github.com/longhorn/go-iscsi-helper v0.0.0-20221209140622-1eaf67c743d6 h1:yCUExj15NOSBiWyg19rI7P5Dz8sDa8iHHfddkTqcs6o=
 github.com/longhorn/go-iscsi-helper v0.0.0-20221209140622-1eaf67c743d6/go.mod h1:9z/y9glKmWEdV50tjlUPxFwi1goQfIrrsoZbnMyIZbY=
 github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221100445-de0b00d3f819 h1:oUAkhlki0AQNlJvottAkkYQ0cXO3MZmcG30+wrRdiKc=
 github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221100445-de0b00d3f819/go.mod h1:+xmfN/1oh5PGu3C/mWegMnZZMSE4f0SOk6TrutKiSz4=
+=======
+github.com/longhorn/backupstore v0.0.0-20230116054423-7eaab31c108a h1:1IJaLgaJ9GUGsairZbGyoFTxyG6w9QNrJ/2BnxjbNrw=
+github.com/longhorn/backupstore v0.0.0-20230116054423-7eaab31c108a/go.mod h1:73zwYfMYt/JacoG4y86p3Ct6MEzIhHtbxo02AAO+TmA=
+github.com/longhorn/go-iscsi-helper v0.0.0-20221219041640-6c94fb0d483a h1:wyL5quo6Z6PiM2XJJ2ZRmd5Yq1dXoyEZQgL5GGMzcoY=
+github.com/longhorn/go-iscsi-helper v0.0.0-20221219041640-6c94fb0d483a/go.mod h1:9z/y9glKmWEdV50tjlUPxFwi1goQfIrrsoZbnMyIZbY=
+github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221061015-35357e3c051d h1:rs3y0+t5SnKJ/N527S+WSQvACGekekdebwTysAcRKsI=
+github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221061015-35357e3c051d/go.mod h1:W77cqbWZFsJ8u3fEZbrJZVB7k9wiNVdcUK0YDhjAigg=
+>>>>>>> d40f231 (vendor: update backupstore)
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20221221020038-f6f1ea623675 h1:ITvyedoxFZyTLtd19BXWzNBSv5JbxWSRgNtYvyox+jo=
 github.com/longhorn/sparse-tools v0.0.0-20221221020038-f6f1ea623675/go.mod h1:PC6PdgrTPkma/TMx14GO/swm4UHC6PVKAI/U4fpTWFE=
@@ -67,6 +76,8 @@ github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae h1:VeRdUYdCw49yizlSbM
 github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae/go.mod h1:qAyveg+e4CE+eKJXWVjKXM4ck2QobLqTDytGJbLLhJg=
 github.com/philhofer/fwd v1.0.0 h1:UbZqGr5Y38ApvM/V/jEljVxwocdweyH+vmYvRPBnbqQ=
 github.com/philhofer/fwd v1.0.0/go.mod h1:gk3iGcWd9+svBvR0sR+KPcfE+RNWozjowpeBVG3ZVNU=
+github.com/pierrec/lz4/v4 v4.1.17 h1:kV4Ip+/hUBC+8T6+2EgburRtkE9ef4nbY3f4dFhGjMc=
+github.com/pierrec/lz4/v4 v4.1.17/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
