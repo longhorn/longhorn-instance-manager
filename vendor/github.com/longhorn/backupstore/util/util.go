@@ -4,17 +4,20 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	lz4 "github.com/pierrec/lz4/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,6 +28,14 @@ const (
 var (
 	cmdTimeout = time.Minute // one minute by default
 )
+
+// NopCloser wraps an io.Witer as io.WriteCloser
+// with noop Close
+type NopCloser struct {
+	io.Writer
+}
+
+func (NopCloser) Close() error { return nil }
 
 func GenerateName(prefix string) string {
 	suffix := strings.Replace(NewUUID(), "-", "", -1)
@@ -41,19 +52,43 @@ func GetChecksum(data []byte) string {
 	return checksum
 }
 
-func CompressData(data []byte) (io.ReadSeeker, error) {
-	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
+func GetFileChecksum(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func CompressData(method string, data []byte) (io.ReadSeeker, error) {
+	if method == "none" {
+		return bytes.NewReader(data), nil
+	}
+
+	var buffer bytes.Buffer
+
+	w, err := newCompressionWriter(method, &buffer)
+	if err != nil {
+		return nil, err
+	}
+
 	if _, err := w.Write(data); err != nil {
 		w.Close()
 		return nil, err
 	}
 	w.Close()
-	return bytes.NewReader(b.Bytes()), nil
+	return bytes.NewReader(buffer.Bytes()), nil
 }
 
-func DecompressAndVerify(src io.Reader, checksum string) (io.Reader, error) {
-	r, err := gzip.NewReader(src)
+func DecompressAndVerify(method string, src io.Reader, checksum string) (io.Reader, error) {
+	r, err := newDecompressionReader(method, src)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +101,30 @@ func DecompressAndVerify(src io.Reader, checksum string) (io.Reader, error) {
 		return nil, fmt.Errorf("checksum verification failed for block")
 	}
 	return bytes.NewReader(block), nil
+}
+
+func newCompressionWriter(method string, buffer io.Writer) (io.WriteCloser, error) {
+	switch method {
+	case "gzip":
+		return gzip.NewWriter(buffer), nil
+	case "lz4":
+		return lz4.NewWriter(buffer), nil
+	default:
+		return nil, fmt.Errorf("unsupported compression method: %v", method)
+	}
+}
+
+func newDecompressionReader(method string, r io.Reader) (io.ReadCloser, error) {
+	switch method {
+	case "none":
+		return ioutil.NopCloser(r), nil
+	case "gzip":
+		return gzip.NewReader(r)
+	case "lz4":
+		return ioutil.NopCloser(lz4.NewReader(r)), nil
+	default:
+		return nil, fmt.Errorf("unsupported decompression method: %v", method)
+	}
 }
 
 func Now() string {
@@ -154,11 +213,11 @@ func execute(ctx context.Context, binary string, args []string) (string, error) 
 	case <-done:
 		break
 	case <-ctx.Done():
-		return "", fmt.Errorf("Timeout executing: %v %v, output %v, error %v", binary, args, string(output), err)
+		return "", fmt.Errorf("timeout executing: %v %v, output %v, error %v", binary, args, string(output), err)
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Failed to execute: %v %v, output %v, error %v", binary, args, string(output), err)
+		return "", fmt.Errorf("failed to execute: %v %v, output %v, error %v", binary, args, string(output), err)
 	}
 
 	return string(output), nil
