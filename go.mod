@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.4.18
 	github.com/golang/protobuf v1.3.3-0.20190920234318-1680a479a2cf
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20221206091653-a8c2a47673e2
+	github.com/longhorn/backupstore v0.0.0-20230125201126-0c2bd550ebc3
 	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221100445-de0b00d3f819
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
@@ -30,6 +30,7 @@ require (
 	github.com/longhorn/sparse-tools v0.0.0-20221221020038-f6f1ea623675 // indirect
 	github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
