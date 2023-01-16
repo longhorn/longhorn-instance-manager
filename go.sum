@@ -46,8 +46,9 @@ github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
-github.com/longhorn/backupstore v0.0.0-20220913112826-5f5c95274f2a h1:f+mLqp3A5M7plw1pBgf8K1nvJxSU7mrGtU7bii+W5Bk=
 github.com/longhorn/backupstore v0.0.0-20220913112826-5f5c95274f2a/go.mod h1:hvIVsrpjPey7KupirAh0WoPMg0ArWnE6fA5bI30X7AI=
+github.com/longhorn/backupstore v0.0.0-20230125201126-0c2bd550ebc3 h1:CDUWRyBlxV62OvuiBIQpMhHytDoqr3M3nvoXbFhhHBE=
+github.com/longhorn/backupstore v0.0.0-20230125201126-0c2bd550ebc3/go.mod h1:73zwYfMYt/JacoG4y86p3Ct6MEzIhHtbxo02AAO+TmA=
 github.com/longhorn/go-iscsi-helper v0.0.0-20220805034259-7b59e22574bb/go.mod h1:9z/y9glKmWEdV50tjlUPxFwi1goQfIrrsoZbnMyIZbY=
 github.com/longhorn/go-iscsi-helper v0.0.0-20220927074943-051bf960608b h1:nGWLOG/u+hT1aQnygRavj31JxPwfig/Ts8EnqUVEW6o=
 github.com/longhorn/go-iscsi-helper v0.0.0-20220927074943-051bf960608b/go.mod h1:9z/y9glKmWEdV50tjlUPxFwi1goQfIrrsoZbnMyIZbY=
@@ -64,6 +65,8 @@ github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae h1:VeRdUYdCw49yizlSbM
 github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae/go.mod h1:qAyveg+e4CE+eKJXWVjKXM4ck2QobLqTDytGJbLLhJg=
 github.com/philhofer/fwd v1.0.0 h1:UbZqGr5Y38ApvM/V/jEljVxwocdweyH+vmYvRPBnbqQ=
 github.com/philhofer/fwd v1.0.0/go.mod h1:gk3iGcWd9+svBvR0sR+KPcfE+RNWozjowpeBVG3ZVNU=
+github.com/pierrec/lz4/v4 v4.1.17 h1:kV4Ip+/hUBC+8T6+2EgburRtkE9ef4nbY3f4dFhGjMc=
+github.com/pierrec/lz4/v4 v4.1.17/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
