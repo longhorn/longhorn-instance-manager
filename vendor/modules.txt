@@ -85,7 +85,7 @@ github.com/honestbee/jobq
 # github.com/jmespath/go-jmespath v0.3.0
 ## explicit; go 1.14
 github.com/jmespath/go-jmespath
-# github.com/longhorn/backupstore v0.0.0-20230116054423-7eaab31c108a
+# github.com/longhorn/backupstore v0.0.0-20230125201126-0c2bd550ebc3
 ## explicit; go 1.13
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/fsops
