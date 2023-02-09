@@ -11,8 +11,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.1
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
-	google.golang.org/grpc v1.51.0
+	golang.org/x/net v0.5.0
+	google.golang.org/grpc v1.53.0
 	gopkg.in/check.v1 v1.0.0-20160105164936-4f90aeace3a2
 )
 
@@ -37,10 +37,10 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8 // indirect
 	github.com/willf/bitset v1.1.10 // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
-	golang.org/x/text v0.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 )
 
 replace golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3
