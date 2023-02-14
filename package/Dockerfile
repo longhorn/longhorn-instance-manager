@@ -9,7 +9,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
 RUN zypper -n install cmake kmod curl nfs-client nfs4-acl-tools fuse git gcc \
     libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils \
     iputils telnet iperf qemu-tools wget iproute2 xsltproc docbook-xsl-stylesheets \
-    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel
+    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel cifs-utils
 
 RUN if [ ${ARCH} == "amd64" ]; then \
         zypper -n install autoconf libtool libunwind-devel gcc-c++; \
