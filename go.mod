@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/longhorn/backupstore v0.0.0-20230215044750-3912081eb7c5
-	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230216042943-89209443ac4e
+	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230216083959-55ce01559281
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.1
@@ -31,7 +31,7 @@ require (
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/longhorn/go-iscsi-helper v0.0.0-20230214085945-21fed2bd6261 // indirect
-	github.com/longhorn/sparse-tools v0.0.0-20230110055233-727da1d6548d // indirect
+	github.com/longhorn/sparse-tools v0.0.0-20230216042534-6e4173e9def4 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
