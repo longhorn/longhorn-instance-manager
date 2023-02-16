@@ -6,12 +6,12 @@ require (
 	github.com/RoaringBitmap/roaring v0.4.18
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20230207155604-8dd232a0f511
-	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230213150021-a26f8576aa9d
+	github.com/longhorn/backupstore v0.0.0-20230215044750-3912081eb7c5
+	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230216042943-89209443ac4e
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.1
-	golang.org/x/net v0.5.0
+	golang.org/x/net v0.6.0
 	google.golang.org/grpc v1.53.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 )
@@ -30,7 +30,7 @@ require (
 	github.com/honestbee/jobq v1.0.2 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20221219041640-6c94fb0d483a // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20230214085945-21fed2bd6261 // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20230110055233-727da1d6548d // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae // indirect
@@ -42,8 +42,8 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8 // indirect
 	github.com/willf/bitset v1.1.10 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	k8s.io/apimachinery v0.26.0 // indirect
