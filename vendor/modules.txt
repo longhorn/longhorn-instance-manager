@@ -110,7 +110,7 @@ github.com/longhorn/backupstore/vfs
 # github.com/longhorn/go-iscsi-helper v0.0.0-20230214085945-21fed2bd6261
 ## explicit; go 1.13
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230216042943-89209443ac4e
+# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230216083959-55ce01559281
 ## explicit; go 1.17
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -123,7 +123,7 @@ github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
 github.com/longhorn/longhorn-engine/proto/ptypes
-# github.com/longhorn/sparse-tools v0.0.0-20230110055233-727da1d6548d
+# github.com/longhorn/sparse-tools v0.0.0-20230216042534-6e4173e9def4
 ## explicit; go 1.13
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
