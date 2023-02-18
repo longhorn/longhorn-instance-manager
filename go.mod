@@ -11,7 +11,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.1
-	golang.org/x/net v0.6.0
+	golang.org/x/net v0.7.0
 	google.golang.org/grpc v1.53.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 )
