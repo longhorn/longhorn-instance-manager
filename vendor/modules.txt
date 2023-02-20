@@ -96,7 +96,7 @@ github.com/jmespath/go-jmespath
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20230215044750-3912081eb7c5
+# github.com/longhorn/backupstore v0.0.0-20230217131543-f53a39cbd697
 ## explicit; go 1.17
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/cifs
@@ -107,10 +107,10 @@ github.com/longhorn/backupstore/nfs
 github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-iscsi-helper v0.0.0-20230214085945-21fed2bd6261
+# github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b
 ## explicit; go 1.13
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230216083959-55ce01559281
+# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230220055333-d73aa1ac5504
 ## explicit; go 1.17
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -159,7 +159,7 @@ github.com/russross/blackfriday/v2
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 ## explicit
 github.com/shurcooL/sanitized_anchor_name
-# github.com/sirupsen/logrus v1.8.1
+# github.com/sirupsen/logrus v1.9.0
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 # github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8
@@ -171,6 +171,12 @@ github.com/urfave/cli
 # github.com/willf/bitset v1.1.10
 ## explicit
 github.com/willf/bitset
+# go.uber.org/atomic v1.10.0
+## explicit; go 1.18
+go.uber.org/atomic
+# go.uber.org/multierr v1.9.0
+## explicit; go 1.19
+go.uber.org/multierr
 # golang.org/x/net v0.7.0
 ## explicit; go 1.17
 golang.org/x/net/context
