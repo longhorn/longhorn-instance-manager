@@ -23,9 +23,6 @@ const (
 	AWSEndPoint  = "AWS_ENDPOINTS"
 	AWSCert      = "AWS_CERT"
 
-	CIFSUsername = "CIFS_USERNAME"
-	CIFSPassword = "CIFS_PASSWORD"
-
 	HTTPSProxy = "HTTPS_PROXY"
 	HTTPProxy  = "HTTP_PROXY"
 	NOProxy    = "NO_PROXY"
