@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/sirupsen/logrus"
-
 	"github.com/longhorn/backupstore"
 	"github.com/longhorn/backupstore/http"
+	"github.com/sirupsen/logrus"
 )
 
 var (
