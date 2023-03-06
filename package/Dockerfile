@@ -21,9 +21,6 @@ RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v
 
 COPY bin/longhorn-instance-manager /usr/local/bin/
 
-# TODO: deprecate
-COPY package/engine-manager /usr/local/bin/
-
 COPY package/instance-manager /usr/local/bin/
 
 # Build liblonghorn
