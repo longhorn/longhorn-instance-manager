@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pkg/errors"
 )
 
 type Service struct {
@@ -164,12 +163,12 @@ func (s *Service) DeleteObjects(key string) error {
 
 	objects, _, err := s.ListObjects(key, "")
 	if err != nil {
-		return errors.Wrapf(err, "failed to list objects with prefix %v before removing them", key)
+		return fmt.Errorf("failed to list objects with prefix %v before removing them error: %v", key, err)
 	}
 
 	svc, err := s.New()
 	if err != nil {
-		return errors.Wrap(err, "failed to get a new s3 client instance before removing objects")
+		return fmt.Errorf("failed to get a new s3 client instance before removing objects: %v", err)
 	}
 	defer s.Close()
 
@@ -181,7 +180,7 @@ func (s *Service) DeleteObjects(key string) error {
 		})
 
 		if err != nil {
-			log.Errorf("Failed to delete object: %v response: %v error: %v",
+			log.Errorf("failed to delete object: %v response: %v error: %v",
 				aws.StringValue(object.Key), resp.String(), parseAwsError(err))
 			deletionFailures = append(deletionFailures, aws.StringValue(object.Key))
 		}

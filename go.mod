@@ -6,9 +6,8 @@ require (
 	github.com/RoaringBitmap/roaring v0.4.18
 	github.com/golang/protobuf v1.3.3-0.20190920234318-1680a479a2cf
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20230125201126-0c2bd550ebc3
-	github.com/longhorn/go-iscsi-helper v0.0.0-20220927074943-051bf960608b // indirect
-	github.com/longhorn/longhorn-engine v1.3.2-0.20220929032851-7aac8ae9c8b4
+	github.com/longhorn/backupstore v0.0.0-20220913112826-5f5c95274f2a
+	github.com/longhorn/longhorn-engine v1.3.3-0.20230216042703-718990dc8a35
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8 // indirect
