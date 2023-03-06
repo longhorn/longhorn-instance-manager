@@ -29,7 +29,10 @@ func NewFileSystemOperator(ops FileSystemOps) *FileSystemOperator {
 }
 
 func (f *FileSystemOperator) preparePath(file string) error {
-	return os.MkdirAll(filepath.Dir(f.LocalPath(file)), os.ModeDir|0700)
+	if err := os.MkdirAll(filepath.Dir(f.LocalPath(file)), os.ModeDir|0700); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *FileSystemOperator) FileSize(filePath string) int64 {
@@ -137,10 +140,16 @@ func (f *FileSystemOperator) Upload(src, dst string) error {
 		return err
 	}
 	_, err = util.Execute("mv", []string{f.LocalPath(tmpDst), f.LocalPath(dst)})
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *FileSystemOperator) Download(src, dst string) error {
 	_, err := util.Execute("cp", []string{f.LocalPath(src), dst})
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }

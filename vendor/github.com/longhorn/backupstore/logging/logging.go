@@ -18,7 +18,6 @@ const (
 	LogFieldLastSnapshot = "last_snapshot"
 	LogEventBackupURL    = "backup_url"
 	LogFieldDestURL      = "dest_url"
-	LogFieldSourceURL    = "source_url"
 	LogFieldKind         = "kind"
 	LogFieldFilepath     = "filepath"
 
