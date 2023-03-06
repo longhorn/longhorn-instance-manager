@@ -82,8 +82,8 @@ github.com/honestbee/jobq
 # github.com/jmespath/go-jmespath v0.3.0
 ## explicit; go 1.14
 github.com/jmespath/go-jmespath
-# github.com/longhorn/backupstore v0.0.0-20230125201126-0c2bd550ebc3
-## explicit; go 1.13
+# github.com/longhorn/backupstore v0.0.0-20230306041950-1879d9f064bb
+## explicit; go 1.17
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/fsops
 github.com/longhorn/backupstore/http
@@ -92,11 +92,11 @@ github.com/longhorn/backupstore/nfs
 github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-iscsi-helper v0.0.0-20221209140622-1eaf67c743d6
+# github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b
 ## explicit; go 1.13
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20221221100445-de0b00d3f819
-## explicit; go 1.13
+# github.com/longhorn/longhorn-engine v1.4.1-rc1.0.20230306062607-ef48312781d9
+## explicit; go 1.17
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/meta
@@ -108,7 +108,7 @@ github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
 github.com/longhorn/longhorn-engine/proto/ptypes
-# github.com/longhorn/sparse-tools v0.0.0-20221221020038-f6f1ea623675
+# github.com/longhorn/sparse-tools v0.0.0-20230216042534-6e4173e9def4
 ## explicit; go 1.13
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
@@ -119,13 +119,6 @@ github.com/mschoch/smat
 # github.com/philhofer/fwd v1.0.0
 ## explicit
 github.com/philhofer/fwd
-# github.com/pierrec/lz4/v4 v4.1.17
-## explicit; go 1.14
-github.com/pierrec/lz4/v4
-github.com/pierrec/lz4/v4/internal/lz4block
-github.com/pierrec/lz4/v4/internal/lz4errors
-github.com/pierrec/lz4/v4/internal/lz4stream
-github.com/pierrec/lz4/v4/internal/xxh32
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -138,7 +131,7 @@ github.com/russross/blackfriday/v2
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 ## explicit
 github.com/shurcooL/sanitized_anchor_name
-# github.com/sirupsen/logrus v1.8.1
+# github.com/sirupsen/logrus v1.9.0
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 # github.com/tinylib/msgp v1.1.1-0.20190612170807-0573788bc2a8
@@ -160,7 +153,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
+# golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
