@@ -457,6 +457,11 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		return nil, err
 	}
 
+	if processToReplace.Binary == p.Binary {
+		logrus.Infof("Process Manager: the existing process already has the updated engine image %v", p.Binary)
+		return processToReplace.RPCResponse(), nil
+	}
+
 	cleanupReplacementProcess := func() {
 		// TODO process ports should be tied to process UUID's right now only the port ranges is used
 		//  so if one is not careful with allocation/release it's possible that different processes nuke each
