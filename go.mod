@@ -1,6 +1,6 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.17
+go 1.20
 
 require (
 	github.com/RoaringBitmap/roaring v1.2.3
