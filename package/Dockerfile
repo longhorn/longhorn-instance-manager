@@ -4,6 +4,8 @@ ARG ARCH=amd64
 
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP4/network:utilities.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.4/devel:libraries:c_c++.repo && \
+    zypper -n addrepo --refresh  https://download.opensuse.org/repositories/devel:languages:python:backports/15.4/devel:languages:python:backports.repo && \
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install cmake kmod curl nfs-client nfs4-acl-tools fuse git gcc \
@@ -38,6 +40,18 @@ RUN cd /usr/src && \
     git checkout 3a8bc4823b5390e046f7aa8231ed262c0365c42c && \
     make; \
     make install
+
+# Build SPDK
+ENV SPDK_DIR /usr/src/spdk
+RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
+    cd ${SPDK_DIR} && \
+    git checkout 37975647365162264ca2a820516960db309ece99 && \
+    ./scripts/pkgdep.sh && \
+    git submodule update --init && \
+    ./configure && \
+    make -j$(nproc) && \
+    make install && \
+    rm -rf /usr/src/spdk
 
 VOLUME /usr/local/bin
 
