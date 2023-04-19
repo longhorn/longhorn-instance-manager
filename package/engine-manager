@@ -1,7 +1,60 @@
 #!/bin/bash
 
-mount --rbind /host/dev /dev
+function show_help() {
+    cat <<EOF
+Usage: $0 [OPTIONS]
 
-tgtd -f 2>&1 | tee /var/log/tgtd.log &
+Options:
+    -s, --enable-spdk  Enable SPDK
+    -l, --spdk-log     SPDK log level
+    -h, --help         Show this help message and exit
+EOF
+    exit 0
+}
 
-exec longhorn-instance-manager "$@"
+function bind_dev() {
+    mount --rbind /host/dev /dev
+}
+
+function enable_tgtd() {
+    echo "Enabling tgtd"
+    tgtd -f 2>&1 | tee /var/log/tgtd.log &
+}
+
+function enable_spdk_tgt() {
+    local options=("$@")
+    echo "Enabling spdk_tgt with options: ${options[*]}"
+    spdk_tgt "${options[@]}" 2>&1 | tee /var/log/spdk_tgt.log &
+}
+
+enable_spdk=0
+spdk_options=()
+instance_manager_options=()
+
+while [[ $# -gt 0 ]]; do
+    opt="$1"
+    case $opt in
+        -s|--enable-spdk)
+            enable_spdk=1
+            ;;
+        -l|--spdk-log)
+            spdk_options+=("-L" "$2")
+            shift
+            ;;
+        -h|--help)
+            show_help
+            ;;
+        *)
+            instance_manager_options+=("$1")
+            ;;
+    esac
+    shift
+done
+
+#### Main ####
+
+bind_dev
+enable_tgtd
+[ "$enable_spdk" -eq 1 ] && enable_spdk_tgt "${spdk_options[@]}"
+
+exec longhorn-instance-manager "${instance_manager_options[@]}"
