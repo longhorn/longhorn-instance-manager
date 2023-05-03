@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/longhorn/backupstore v0.0.0-20230503020833-d16486b28076
-	github.com/longhorn/longhorn-engine v1.4.2-0.20230414092710-8ebc31c77bf1
+	github.com/longhorn/longhorn-engine v1.4.2-0.20230503093729-78d58c7e1536
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.5

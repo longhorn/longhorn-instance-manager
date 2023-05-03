@@ -59,8 +59,8 @@ github.com/longhorn/backupstore v0.0.0-20230503020833-d16486b28076 h1:x/gyf1tgZv
 github.com/longhorn/backupstore v0.0.0-20230503020833-d16486b28076/go.mod h1:TeqM/GXYtimCUyBhtmWFXwxosuhC/0BTcgdki0vmZZg=
 github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b h1:5QFvn8mnlNULzL76zi5dKdLMzq+rGc9A9qFRq/N63Rc=
 github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b/go.mod h1:fd9uUT+B0BTwilZn/3a42ZOErQmSdSLrwHD50lXVG/E=
-github.com/longhorn/longhorn-engine v1.4.2-0.20230414092710-8ebc31c77bf1 h1:7axy07P14uwVoMSLRbnI053/pS0iiPgWuHwj2otXR+I=
-github.com/longhorn/longhorn-engine v1.4.2-0.20230414092710-8ebc31c77bf1/go.mod h1:odcUHmGTSKXmajX8+MeDvQPt/7CuQ9DNEcJRJc4vM10=
+github.com/longhorn/longhorn-engine v1.4.2-0.20230503093729-78d58c7e1536 h1:la5inZODR1XKx5jqkeUVIrFiAaUy1IforWAy99wG9os=
+github.com/longhorn/longhorn-engine v1.4.2-0.20230503093729-78d58c7e1536/go.mod h1:iS9jscpTPL7VlZQfVUrq/lBwcjFHT7zD+LldI9dH2tE=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c h1:EAE/cBOWZUL9CDiI4xbOr1IudQUa2e6u/pdScytEcvo=
 github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c/go.mod h1:qhbarWiCtB2FFqg7v3KBSRshU7oQgrabmIuN3Sh0cMo=
