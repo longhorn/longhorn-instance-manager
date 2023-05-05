@@ -6,8 +6,8 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20230502155402-f71b33a72840
-	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230503033304-7f1c1a149269
+	github.com/longhorn/backupstore v0.0.0-20230505015028-a1d4a7b45f7e
+	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230505031224-c02fde759c53
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.12
@@ -28,7 +28,6 @@ require (
 	github.com/gammazero/workerpool v1.1.3 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
-	github.com/google/fscrypt v0.3.4 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
