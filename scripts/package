@@ -27,7 +27,7 @@ if [ ! -x ./bin/longhorn ]; then
 fi
 
 APIVERSION=`./bin/longhorn-instance-manager version --client-only|jq ".clientVersion.instanceManagerAPIVersion"`
-TAG="v${APIVERSION}_`date -u +%Y%m%d`"
+TAG=${TAG:-v${APIVERSION}_`date -u +%Y%m%d`}
 REPO=${REPO:-longhornio}
 IMAGE=${REPO}/${PROJECT}:${TAG}
 
