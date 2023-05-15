@@ -6,8 +6,8 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20230505042557-0f585f513869
-	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230505045918-1f57dd9a235c
+	github.com/longhorn/backupstore v0.0.0-20230522064032-228beb21aa3c
+	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230522141009-4f6770982ebd
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.12
