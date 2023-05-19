@@ -6,8 +6,8 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20230505042557-0f585f513869
-	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230505045918-1f57dd9a235c
+	github.com/longhorn/backupstore v0.0.0-20230518134155-aa42d35366e3
+	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230518180217-e9f40c98d84c
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.12
@@ -17,6 +17,9 @@ require (
 )
 
 require (
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect
 	github.com/aws/aws-sdk-go v1.34.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
