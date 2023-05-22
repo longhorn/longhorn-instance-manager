@@ -12,7 +12,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
 RUN zypper -n install cmake kmod curl nfs-client nfs4-acl-tools fuse git gcc \
     libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils \
     iputils telnet iperf qemu-tools wget iproute2 xsltproc docbook-xsl-stylesheets \
-    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel cifs-utils python3 netcat-openbsd util-linux-systemd
+    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel cifs-utils python3 netcat-openbsd util-linux-systemd tar
 
 # Install grpc_health_probe
 RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
@@ -21,6 +21,19 @@ RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v
 COPY bin/longhorn-instance-manager /usr/local/bin/
 
 COPY package/instance-manager /usr/local/bin/
+
+# Build go-spdk-helper
+ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
+    GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
+RUN wget -O - https://storage.googleapis.com/golang/go1.20.3.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
+    go install golang.org/x/lint/golint@latest
+
+ENV GO_SPDK_HELPER_DIR /usr/src/go-spdk-helper
+RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DIR} && \
+    cd ${GO_SPDK_HELPER_DIR} && \
+    go build && \
+    install -m 755 go-spdk-helper /usr/local/bin/go-spdk-helper && \
+    rm -rf ${GO_SPDK_HELPER_DIR}
 
 # Build liblonghorn
 RUN cd /usr/src && \
