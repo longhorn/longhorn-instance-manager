@@ -58,6 +58,7 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 		req.BackingImageChecksum,
 		req.CompressionMethod,
 		int(req.ConcurrentLimit),
+		req.StorageClassName,
 		labels,
 		credential,
 	)

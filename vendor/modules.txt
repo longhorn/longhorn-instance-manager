@@ -123,7 +123,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20230518134155-aa42d35366e3
+# github.com/longhorn/backupstore v0.0.0-20230522064032-228beb21aa3c
 ## explicit; go 1.17
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -138,7 +138,7 @@ github.com/longhorn/backupstore/vfs
 # github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b
 ## explicit; go 1.13
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230518180217-e9f40c98d84c
+# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230522141009-4f6770982ebd
 ## explicit; go 1.20
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
