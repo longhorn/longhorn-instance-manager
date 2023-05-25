@@ -210,7 +210,7 @@ github.com/slok/goresilience
 github.com/slok/goresilience/errors
 github.com/slok/goresilience/metrics
 github.com/slok/goresilience/timeout
-# github.com/urfave/cli v1.22.12
+# github.com/urfave/cli v1.22.13
 ## explicit; go 1.11
 github.com/urfave/cli
 # go.uber.org/multierr v1.11.0
