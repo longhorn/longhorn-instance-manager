@@ -18,10 +18,17 @@ if [ ! -e ${DIR} ]; then
     wget https://raw.githubusercontent.com/longhorn/longhorn-engine/master/proto/ptypes/syncagent.proto -P $DIR
 fi
 
-# instance manager
-python3 -m grpc_tools.protoc -I pkg/imrpc -I proto/vendor/protobuf/src/ --python_out=integration/rpc/instance_manager --grpc_python_out=integration/rpc/instance_manager pkg/imrpc/imrpc.proto
-protoc -I pkg/imrpc/ -I proto/vendor/protobuf/src/ pkg/imrpc/imrpc.proto --go_out=plugins=grpc:pkg/imrpc
 
-# proxy
-python3 -m grpc_tools.protoc -I pkg/imrpc -I proto/vendor/ -I proto/vendor/protobuf/src/ --python_out=integration/rpc/proxy --grpc_python_out=integration/rpc/proxy pkg/imrpc/proxy.proto
-protoc -I pkg/imrpc/ -I proto/vendor/ -I proto/vendor/protobuf/src/ pkg/imrpc/proxy.proto --go_out=plugins=grpc:pkg/imrpc/
+PKG_DIR="pkg/imrpc"
+TMP_DIR_BASE=".protobuild"
+TMP_DIR="${TMP_DIR_BASE}/github.com/longhorn/longhorn-instance-manager/pkg/imrpc/"
+mkdir -p "${TMP_DIR}"
+cp -a "${PKG_DIR}"/*.proto "${TMP_DIR}"
+for PROTO in common imrpc proxy disk instance; do
+    mkdir -p "integration/rpc/${PROTO}"
+    python3 -m grpc_tools.protoc -I "${TMP_DIR_BASE}" -I "proto/vendor/" -I "proto/vendor/protobuf/src/" --python_out=integration/rpc/${PROTO} --grpc_python_out=integration/rpc/${PROTO} "${TMP_DIR}/${PROTO}.proto"
+    protoc -I ${TMP_DIR_BASE}/ -I proto/vendor/ -I proto/vendor/protobuf/src/ "${TMP_DIR}/${PROTO}.proto" --go_out=plugins=grpc:"${TMP_DIR_BASE}"
+    mv "${TMP_DIR}/${PROTO}.pb.go" "${PKG_DIR}/${PROTO}.pb.go"
+done
+
+rm -rf "${TMP_DIR_BASE}"
