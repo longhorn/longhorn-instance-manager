@@ -14,13 +14,18 @@ type Proxy struct {
 	logsDir       string
 	shutdownCh    chan error
 	HealthChecker HealthChecker
+
+	diskServiceAddress string
+	spdkServiceAddress string
 }
 
-func NewProxy(logsDir string, shutdownCh chan error) (*Proxy, error) {
+func NewProxy(logsDir, diskServiceAddress, spdkServiceAddress string, shutdownCh chan error) (*Proxy, error) {
 	p := &Proxy{
-		logsDir:       logsDir,
-		shutdownCh:    shutdownCh,
-		HealthChecker: &GRPCHealthChecker{},
+		logsDir:            logsDir,
+		shutdownCh:         shutdownCh,
+		HealthChecker:      &GRPCHealthChecker{},
+		diskServiceAddress: diskServiceAddress,
+		spdkServiceAddress: spdkServiceAddress,
 	}
 
 	go p.startMonitoring()
@@ -35,7 +40,6 @@ func (p *Proxy) startMonitoring() {
 		case <-p.shutdownCh:
 			logrus.Info("Proxy Server is shutting down")
 			done = true
-			break
 		}
 		if done {
 			break
