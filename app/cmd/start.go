@@ -39,7 +39,7 @@ func StartCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "listen",
-				Value: "tcp://localhost:8500",
+				Value: "localhost:8500",
 				Usage: "specifies the server endpoint to listen on supported protocols are 'tcp' and 'unix'. The proxy server will be listening on the next port.",
 			},
 			cli.StringFlag{
