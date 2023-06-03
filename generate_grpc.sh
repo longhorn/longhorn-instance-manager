@@ -29,6 +29,14 @@ for PROTO in common imrpc proxy disk instance; do
     python3 -m grpc_tools.protoc -I "${TMP_DIR_BASE}" -I "proto/vendor/" -I "proto/vendor/protobuf/src/" --python_out=integration/rpc/${PROTO} --grpc_python_out=integration/rpc/${PROTO} "${TMP_DIR}/${PROTO}.proto"
     protoc -I ${TMP_DIR_BASE}/ -I proto/vendor/ -I proto/vendor/protobuf/src/ "${TMP_DIR}/${PROTO}.proto" --go_out=plugins=grpc:"${TMP_DIR_BASE}"
     mv "${TMP_DIR}/${PROTO}.pb.go" "${PKG_DIR}/${PROTO}.pb.go"
+
+    # Known issue: https://github.com/grpc/grpc/issues/10790
+    mv integration/rpc/${PROTO}/github.com/longhorn/longhorn_instance_manager/pkg/imrpc/${PROTO}_pb2_grpc.py integration/rpc/${PROTO}/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/${PROTO}_pb2_grpc.py
+    rm -rf integration/rpc/${PROTO}/github.com
+
+    if [ "${PROTO}" != "common" ]; then
+        cp -a integration/rpc/common/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/*.py integration/rpc/${PROTO}/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/
+    fi
 done
 
 rm -rf "${TMP_DIR_BASE}"
