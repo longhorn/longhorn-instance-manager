@@ -1,4 +1,4 @@
-FROM registry.suse.com/bci/bci-base:15.4
+FROM registry.suse.com/bci/bci-base:15.4 AS builder
 
 ARG ARCH=amd64
 
@@ -9,18 +9,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake kmod curl nfs-client nfs4-acl-tools fuse git gcc \
-    libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils \
-    iputils telnet iperf qemu-tools wget iproute2 xsltproc docbook-xsl-stylesheets \
-    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel cifs-utils python3 netcat-openbsd util-linux-systemd tar
-
-# Install grpc_health_probe
-RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
-    chmod +x /usr/local/bin/grpc_health_probe
-
-COPY bin/longhorn-instance-manager /usr/local/bin/
-
-COPY package/instance-manager /usr/local/bin/
+RUN zypper -n install cmake curl wget git gcc tar gzip xsltproc docbook-xsl-stylesheets python3
 
 # Build go-spdk-helper
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
@@ -36,34 +25,76 @@ RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DI
     rm -rf ${GO_SPDK_HELPER_DIR}
 
 # Build liblonghorn
+ENV LIBLONGHORN_COMMIT_ID 53d1c063b95efc8d949b095bd4bf04637230265f
 RUN cd /usr/src && \
     git clone https://github.com/rancher/liblonghorn.git && \
     cd liblonghorn && \
-    git checkout 53d1c063b95efc8d949b095bd4bf04637230265f && \
+    git checkout ${LIBLONGHORN_COMMIT_ID} && \
     make; \
     make install
 
 # Build TGT
+ENV TGT_COMMIT_ID 3a8bc4823b5390e046f7aa8231ed262c0365c42c
 RUN cd /usr/src && \
     git clone https://github.com/rancher/tgt.git && \
     cd tgt && \
-    git checkout 3a8bc4823b5390e046f7aa8231ed262c0365c42c && \
+    git checkout ${TGT_COMMIT_ID} && \
     make; \
     make install
 
 # Build SPDK
 ENV SPDK_DIR /usr/src/spdk
-RUN if [ ${ARCH} == "amd64" ]; then \
-        git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
+ENV SPDK_COMMIT_ID 980f535d3876a5a6665486ad0cfaac5d584034aa
+RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
+    if [ ${ARCH} == "amd64" ]; then \
         cd ${SPDK_DIR} && \
-        git checkout 980f535d3876a5a6665486ad0cfaac5d584034aa && \
+        git checkout ${SPDK_COMMIT_ID} && \
         git submodule update --init && \
         ./scripts/pkgdep.sh && \
         ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples && \
         make -j$(nproc) && \
-        make install && \
-        rm -rf ${SPDK_DIR}; \
+        make install; \
     fi
+
+FROM registry.suse.com/bci/bci-base:15.4 AS release
+
+ARG ARCH=amd64
+
+RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP4/network:utilities.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.4/devel:libraries:c_c++.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.4/devel:languages:python:Factory.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
+    zypper --gpg-auto-import-keys ref
+
+RUN zypper -n install kmod curl fuse wget \
+    nfs-client nfs4-acl-tools cifs-utils \
+    libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils \
+    iputils telnet iproute2 qemu-tools \
+    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel util-linux-systemd python3
+
+# Install SPDK dependencies
+COPY --from=builder /usr/src/spdk/scripts /spdk/
+RUN if [ "${ARCH}" == "amd64" ]; then \
+        sh /spdk/pkgdep.sh; \
+        rm -rf /tmp/spdk; \
+    fi
+
+# Copy pre-built binaries from builder
+COPY --from=builder \
+    /usr/local/bin/spdk_* \
+    /usr/sbin/tgt-admin \
+    /usr/sbin/tgt-setup-lun \
+    /usr/sbin/tgtadm \
+    /usr/sbin/tgtd \
+    /usr/sbin/tgtimg \
+    /usr/local/bin/
+
+# Install grpc_health_probe
+RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
+    chmod +x /usr/local/bin/grpc_health_probe
+
+COPY bin/longhorn-instance-manager package/instance-manager /usr/local/bin/
 
 VOLUME /usr/local/bin
 
