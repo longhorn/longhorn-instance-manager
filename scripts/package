@@ -32,8 +32,10 @@ REPO=${REPO:-longhornio}
 IMAGE=${REPO}/${PROJECT}:${TAG}
 
 # update base image to get latest changes
-BASE_IMAGE=`grep FROM package/Dockerfile  | awk '{print $2}'`
-docker pull ${BASE_IMAGE}
+grep FROM package/Dockerfile | awk '{print $2}' | while read -r BASE_IMAGE
+do
+    docker pull "$BASE_IMAGE"
+done
 
 docker build --build-arg ARCH=${ARCH} -t ${IMAGE} -f package/Dockerfile .
 
