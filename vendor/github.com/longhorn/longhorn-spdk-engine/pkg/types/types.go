@@ -11,6 +11,7 @@ const (
 const (
 	FrontendSPDKTCPNvmf     = "spdk-tcp-nvmf"
 	FrontendSPDKTCPBlockdev = "spdk-tcp-blockdev"
+	FrontendSPDKVoid        = ""
 
 	DefaultReplicaReservedPortCount = 5
 )

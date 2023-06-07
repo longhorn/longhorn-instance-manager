@@ -321,6 +321,26 @@ func (c *Client) BdevLvolResize(name string, size uint64) (resized bool, err err
 	return resized, json.Unmarshal(cmdOutput, &resized)
 }
 
+// BdevLvolShallowCopy make a shallow copy of lvol over a given bdev.
+// Only clusters allocated to the lvol will be written on the bdev.
+//
+//	"srcLvolName": Required. UUID or alias of lvol to create a copy from.
+//
+//	"destBdevName": Required. Name of the bdev that acts as destination for the copy.
+func (c *Client) BdevLvolShallowCopy(srcLvolName, destBdevName string) (copied bool, err error) {
+	req := spdktypes.BdevLvolShallowCopyRequest{
+		SrcLvolName:  srcLvolName,
+		DestBdevName: destBdevName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_shallow_copy", req)
+	if err != nil {
+		return false, err
+	}
+
+	return copied, json.Unmarshal(cmdOutput, &copied)
+}
+
 // BdevRaidCreate constructs a new RAID bdev.
 //
 //	"name": Required. a RAID bdev name rather than an alias or a UUID.
