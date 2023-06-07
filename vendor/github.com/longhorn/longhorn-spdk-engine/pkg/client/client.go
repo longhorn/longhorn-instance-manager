@@ -64,7 +64,7 @@ func NewSPDKClient(serviceUrl string) (*SPDKClient, error) {
 
 func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint64, exposeRequired bool) (*api.Replica, error) {
 	if name == "" || lvsName == "" || lvsUUID == "" {
-		return nil, fmt.Errorf("failed to start SPDK replica: missing required parameter")
+		return nil, fmt.Errorf("failed to start SPDK replica: missing required parameters")
 	}
 
 	client := c.getSPDKServiceClient()
@@ -87,7 +87,7 @@ func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint6
 
 func (c *SPDKClient) ReplicaDelete(name string, cleanupRequired bool) error {
 	if name == "" {
-		return fmt.Errorf("failed to delete SPDK replica: missing required parameter name")
+		return fmt.Errorf("failed to delete SPDK replica: missing required parameter")
 	}
 
 	client := c.getSPDKServiceClient()
@@ -103,7 +103,7 @@ func (c *SPDKClient) ReplicaDelete(name string, cleanupRequired bool) error {
 
 func (c *SPDKClient) ReplicaGet(name string) (*api.Replica, error) {
 	if name == "" {
-		return nil, fmt.Errorf("failed to get SPDK replica: missing required parameter name")
+		return nil, fmt.Errorf("failed to get SPDK replica: missing required parameter")
 	}
 
 	client := c.getSPDKServiceClient()
@@ -147,8 +147,8 @@ func (c *SPDKClient) ReplicaWatch(ctx context.Context) (*api.ReplicaStream, erro
 }
 
 func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string) (*api.Engine, error) {
-	if name == "" || volumeName == "" || frontend == "" || len(replicaAddressMap) == 0 {
-		return nil, fmt.Errorf("failed to start SPDK engine: missing required parameter")
+	if name == "" || volumeName == "" || len(replicaAddressMap) == 0 {
+		return nil, fmt.Errorf("failed to start SPDK engine: missing required parameters")
 	}
 
 	client := c.getSPDKServiceClient()
@@ -171,7 +171,7 @@ func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize ui
 
 func (c *SPDKClient) EngineDelete(name string) error {
 	if name == "" {
-		return fmt.Errorf("failed to delete SPDK engine: missing required parameter name")
+		return fmt.Errorf("failed to delete SPDK engine: missing required parameter")
 	}
 
 	client := c.getSPDKServiceClient()
@@ -186,7 +186,7 @@ func (c *SPDKClient) EngineDelete(name string) error {
 
 func (c *SPDKClient) EngineGet(name string) (*api.Engine, error) {
 	if name == "" {
-		return nil, fmt.Errorf("failed to get SPDK engine: missing required parameter name")
+		return nil, fmt.Errorf("failed to get SPDK engine: missing required parameter")
 	}
 
 	client := c.getSPDKServiceClient()
@@ -248,7 +248,7 @@ func (c *SPDKClient) EngineReplicaDelete(engineName, replicaName, replicaAddress
 
 func (c *SPDKClient) DiskCreate(diskName, diskPath string, blockSize int64) (*spdkrpc.Disk, error) {
 	if diskName == "" || diskPath == "" {
-		return nil, fmt.Errorf("failed to create disk: missing required parameter")
+		return nil, fmt.Errorf("failed to create disk: missing required parameters")
 	}
 
 	client := c.getSPDKServiceClient()
@@ -278,7 +278,7 @@ func (c *SPDKClient) DiskGet(diskName string) (*spdkrpc.Disk, error) {
 
 func (c *SPDKClient) DiskDelete(diskName, diskUUID string) error {
 	if diskName == "" || diskUUID == "" {
-		return fmt.Errorf("failed to delete disk: missing required parameter")
+		return fmt.Errorf("failed to delete disk: missing required parameters")
 	}
 
 	client := c.getSPDKServiceClient()

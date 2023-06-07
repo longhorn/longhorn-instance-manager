@@ -357,7 +357,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	if req.SpecSize == 0 {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine spec size is required")
 	}
-	if req.Frontend != types.FrontendSPDKTCPBlockdev && req.Frontend != types.FrontendSPDKTCPNvmf {
+	if req.Frontend != types.FrontendSPDKTCPBlockdev && req.Frontend != types.FrontendSPDKTCPNvmf && req.Frontend != types.FrontendSPDKVoid {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine frontend is required")
 	}
 

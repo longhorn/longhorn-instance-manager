@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
@@ -105,11 +106,16 @@ func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err
 		return "", err
 	}
 
+	jsonStr, err := extractJSONString(outputStr)
+	if err != nil {
+		return "", err
+	}
+
 	var output struct {
 		Entries []DiscoveryPageEntry `json:"records"`
 	}
 
-	err = json.Unmarshal([]byte(outputStr), &output)
+	err = json.Unmarshal([]byte(jsonStr), &output)
 	if err != nil {
 		return "", err
 	}
@@ -148,8 +154,13 @@ func ConnectTarget(ip, port, nqn string, executor util.Executor) (controllerName
 		return "", err
 	}
 
+	jsonStr, err := extractJSONString(outputStr)
+	if err != nil {
+		return "", err
+	}
+
 	output := map[string]string{}
-	if err := json.Unmarshal([]byte(outputStr), &output); err != nil {
+	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return "", err
 	}
 
@@ -223,8 +234,14 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 	if err != nil {
 		return nil, err
 	}
+
+	jsonStr, err := extractJSONString(outputStr)
+	if err != nil {
+		return nil, err
+	}
+
 	output := map[string][]Device{}
-	if err := json.Unmarshal([]byte(outputStr), &output); err != nil {
+	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
 	}
 
@@ -269,4 +286,13 @@ func GetIPAndPortFromControllerAddress(addr string) (ip, port string) {
 	reg = regexp.MustCompile(`traddr=.* trsvcid=([^"]*)$`)
 	port = reg.ReplaceAllString(addr, "${1}")
 	return ip, port
+}
+
+// Extract the JSON part without the prefix
+func extractJSONString(str string) (string, error) {
+	startIndex := strings.Index(str, "{")
+	if startIndex == -1 {
+		return "", fmt.Errorf("invalid JSON string")
+	}
+	return str[startIndex:], nil
 }
