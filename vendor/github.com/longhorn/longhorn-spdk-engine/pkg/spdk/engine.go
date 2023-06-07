@@ -145,6 +145,8 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localR
 		e.Endpoint = initiator.GetEndpoint()
 	case types.FrontendSPDKTCPNvmf:
 		e.Endpoint = GetNvmfEndpoint(nqn, e.IP, e.Port)
+	case types.FrontendSPDKVoid:
+		logrus.Infof("No frontend specified, will not expose the volume %s", e.VolumeName)
 	default:
 		return nil, fmt.Errorf("unknown frontend type %s", e.Frontend)
 	}
@@ -375,6 +377,8 @@ func (e *Engine) ValidateAndUpdate(
 		if e.Endpoint != "" && e.Endpoint != nvmfEndpoint {
 			return fmt.Errorf("found mismatching between engine endpoint %s and actual nvmf endpoint %s for engine %s", e.Endpoint, nvmfEndpoint, e.Name)
 		}
+	case types.FrontendSPDKVoid:
+		logrus.Infof("Engine %s has no frontend type, skip endpoint creation", e.Name)
 	default:
 		return fmt.Errorf("unknown frontend type %s", e.Frontend)
 	}
