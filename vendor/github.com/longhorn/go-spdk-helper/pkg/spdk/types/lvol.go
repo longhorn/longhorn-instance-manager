@@ -104,6 +104,11 @@ type BdevLvolResizeRequest struct {
 	Size uint64 `json:"size"`
 }
 
+type BdevLvolShallowCopyRequest struct {
+	SrcLvolName  string `json:"src_lvol_name"`
+	DestBdevName string `json:"dest_bdev_name"`
+}
+
 func GetLvolAlias(lvsName, lvolName string) string {
 	return fmt.Sprintf("%s/%s", lvsName, lvolName)
 }

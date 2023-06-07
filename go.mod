@@ -7,9 +7,9 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
 	github.com/longhorn/backupstore v0.0.0-20230522064032-228beb21aa3c
-	github.com/longhorn/go-spdk-helper v0.0.0-20230525131301-ddb9e9044e51
+	github.com/longhorn/go-spdk-helper v0.0.0-20230607030711-bc04b6879028
 	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230522141009-4f6770982ebd
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20230529160612-fb6a2f207976
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20230607013456-d326caa4884a
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.12
