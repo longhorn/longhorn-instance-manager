@@ -88,6 +88,7 @@ COPY --from=builder \
     /usr/sbin/tgtadm \
     /usr/sbin/tgtd \
     /usr/sbin/tgtimg \
+    /usr/local/bin/go-spdk-helper \
     /usr/local/bin/
 
 # Install grpc_health_probe
