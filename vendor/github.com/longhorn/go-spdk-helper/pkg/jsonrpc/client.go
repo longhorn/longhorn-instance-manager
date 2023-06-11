@@ -143,7 +143,7 @@ func (c *Client) handleSend(msgWrapper *messageWrapper) {
 	c.responseChans[id] = msgWrapper.response
 
 	if err := c.encoder.Encode(NewMessage(id, msgWrapper.method, msgWrapper.params)); err != nil {
-		logrus.Errorf("error encoding during handleSend: %v", err)
+		logrus.WithError(err).Errorf("Failed to encode during handleSend")
 	}
 }
 
@@ -162,7 +162,7 @@ func (c *Client) handleRecv(obj map[string]interface{}) {
 	buf := bytes.Buffer{}
 	e := json.NewEncoder(&buf)
 	if err := e.Encode(obj["result"]); err != nil {
-		logrus.Errorf("Failed to encode received object during handleRecv, id: %T, result: %+v", obj["id"], obj["result"])
+		logrus.WithError(err).Errorf("Failed to encode received object during handleRecv, id: %T, result: %+v", obj["id"], obj["result"])
 		return
 	}
 	ch <- buf.Bytes()
@@ -186,7 +186,7 @@ func (c *Client) read(errChan chan error) {
 		var obj map[string]interface{}
 
 		if err := decoder.Decode(&obj); err != nil {
-			logrus.Errorf("error decoding during read: %v", err)
+			logrus.WithError(err).Errorf("Failed to decoding during read")
 			errChan <- err
 			continue
 		}

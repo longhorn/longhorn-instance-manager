@@ -105,8 +105,8 @@ type BdevLvolResizeRequest struct {
 }
 
 type BdevLvolShallowCopyRequest struct {
-	SrcLvolName  string `json:"src_lvol_name"`
-	DestBdevName string `json:"dest_bdev_name"`
+	SrcLvolName string `json:"src_lvol_name"`
+	DstBdevName string `json:"dst_bdev_name"`
 }
 
 func GetLvolAlias(lvsName, lvolName string) string {

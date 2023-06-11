@@ -19,7 +19,7 @@ const (
 	RetryCounts   = 5
 	RetryInterval = 3 * time.Second
 
-	waitDeviceTimeout = 30 * time.Second
+	waitDeviceTimeout = 60 * time.Second
 
 	HostProc = "/host/proc"
 )
@@ -36,9 +36,6 @@ type Initiator struct {
 	NamespaceName  string
 	dev            *util.KernelDevice
 	isUp           bool
-
-	// ControllerLossTimeout int64
-	// FastIOFailTimeout     int64
 
 	hostProc string
 	executor util.Executor
@@ -201,7 +198,7 @@ func (i *Initiator) GetEndpoint() string {
 	return ""
 }
 
-func (i *Initiator) LoadNVMeDeviceInfo() error {
+func (i *Initiator) LoadNVMeDeviceInfo() (err error) {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
