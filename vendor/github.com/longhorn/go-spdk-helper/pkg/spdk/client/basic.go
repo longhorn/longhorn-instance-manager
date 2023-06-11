@@ -326,11 +326,11 @@ func (c *Client) BdevLvolResize(name string, size uint64) (resized bool, err err
 //
 //	"srcLvolName": Required. UUID or alias of lvol to create a copy from.
 //
-//	"destBdevName": Required. Name of the bdev that acts as destination for the copy.
-func (c *Client) BdevLvolShallowCopy(srcLvolName, destBdevName string) (copied bool, err error) {
+//	"dstBdevName": Required. Name of the bdev that acts as destination for the copy.
+func (c *Client) BdevLvolShallowCopy(srcLvolName, dstBdevName string) (copied bool, err error) {
 	req := spdktypes.BdevLvolShallowCopyRequest{
-		SrcLvolName:  srcLvolName,
-		DestBdevName: destBdevName,
+		SrcLvolName: srcLvolName,
+		DstBdevName: dstBdevName,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_shallow_copy", req)

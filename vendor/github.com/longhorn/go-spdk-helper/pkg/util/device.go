@@ -120,7 +120,7 @@ func DuplicateDevice(dev *KernelDevice, dest string) error {
 	dir := filepath.Dir(dest)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			logrus.Fatalf("device %v: Cannot create directory for %v", dev.Name, dest)
+			logrus.WithError(err).Fatalf("device %v: Failed to create directory for %v", dev.Name, dest)
 		}
 	}
 	if err := mknod(dest, dev.Major, dev.Minor); err != nil {
@@ -143,7 +143,7 @@ func mknod(device string, major, minor int) error {
 
 func removeAsync(path string, done chan<- error) {
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		logrus.Errorf("Unable to remove: %v", path)
+		logrus.WithError(err).Errorf("Failed to remove %v", path)
 		done <- err
 	}
 	done <- nil
