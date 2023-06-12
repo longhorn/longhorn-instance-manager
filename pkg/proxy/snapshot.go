@@ -281,7 +281,8 @@ func (p *Proxy) snapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 }
 
 func (p *Proxy) spdkSnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *empty.Empty, err error) {
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	/* TODO: implement this */
+	return &empty.Empty{}, nil
 }
 
 func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
