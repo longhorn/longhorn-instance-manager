@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"strings"
+
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -18,14 +20,27 @@ import (
 
 func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":  req.ProxyEngineRequest.Address,
-		"restore":     req.Restore,
-		"size":        req.Size,
-		"currentSize": req.CurrentSize,
-		"fastSync":    req.FastSync,
+		"serviceURL":     req.ProxyEngineRequest.Address,
+		"replicaName":    req.ReplicaName,
+		"replicaAddress": req.ReplicaAddress,
+		"restore":        req.Restore,
+		"size":           req.Size,
+		"currentSize":    req.CurrentSize,
+		"fastSync":       req.FastSync,
 	})
-	log.Infof("Adding replica %v", req.ReplicaAddress)
+	log.Info("Adding replica")
 
+	switch req.ProxyEngineRequest.BackendStoreDriver {
+	case rpc.BackendStoreDriver_longhorn:
+		return p.replicaAdd(ctx, req)
+	case rpc.BackendStoreDriver_spdk:
+		return p.spdkReplicaAdd(ctx, req)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+	}
+}
+
+func (p *Proxy) replicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *empty.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
 	if err != nil {
 		return nil, err
@@ -39,6 +54,22 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, int(req.FileSyncHttpClientTimeout), req.FastSync); err != nil {
 			return nil, err
 		}
+	}
+	return &empty.Empty{}, nil
+}
+
+func (p *Proxy) spdkReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *empty.Empty, err error) {
+	c, err := spdkclient.NewSPDKClient(p.spdkServiceAddress)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	replicaAddress := strings.TrimPrefix(req.ReplicaAddress, "tcp://")
+
+	err = c.EngineReplicaAdd(req.ProxyEngineRequest.EngineName, req.ReplicaName, replicaAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	return &empty.Empty{}, nil
