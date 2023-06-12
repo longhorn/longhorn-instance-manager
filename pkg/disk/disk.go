@@ -144,7 +144,7 @@ func (s *Server) DiskGet(ctx context.Context, req *rpc.DiskGetRequest) (*rpc.Dis
 		"diskPath": req.DiskPath,
 	})
 
-	log.Info("Getting disk info")
+	log.Debug("Getting disk info")
 
 	if req.DiskName == "" || req.DiskPath == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk path are required")
@@ -171,7 +171,7 @@ func (s *Server) DiskReplicaInstanceList(ctx context.Context, req *rpc.DiskRepli
 		"diskName": req.DiskName,
 	})
 
-	log.Info("Listing disk replica instances")
+	log.Debug("Listing disk replica instances")
 
 	if req.DiskName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name is required")
