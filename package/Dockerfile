@@ -44,7 +44,7 @@ RUN cd /usr/src && \
 
 # Build SPDK
 ENV SPDK_DIR /usr/src/spdk
-ENV SPDK_COMMIT_ID c22a9a76836ca43d6298a96340e70a83f089d5e0
+ENV SPDK_COMMIT_ID 575a9a8669b7b9a4c73b42af6f51b2c2ab54c7b4
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     if [ ${ARCH} == "amd64" ]; then \
         cd ${SPDK_DIR} && \
