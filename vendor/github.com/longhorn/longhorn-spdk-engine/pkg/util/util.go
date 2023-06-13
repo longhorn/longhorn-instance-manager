@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 func RoundUp(num, base uint64) uint64 {
@@ -36,4 +38,8 @@ func RemovePrefix(path, prefix string) string {
 		return strings.TrimPrefix(path, prefix)
 	}
 	return path
+}
+
+func UUID() string {
+	return uuid.New().String()
 }
