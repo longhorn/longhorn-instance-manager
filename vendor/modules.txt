@@ -135,7 +135,7 @@ github.com/longhorn/backupstore/nfs
 github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b
+# github.com/longhorn/go-iscsi-helper v0.0.0-20230529082528-4c3270590712
 ## explicit; go 1.13
 github.com/longhorn/go-iscsi-helper/util
 # github.com/longhorn/go-spdk-helper v0.0.0-20230610063427-757b34a43c07
@@ -146,7 +146,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/client
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230606110053-a98afe77e9de
+# github.com/longhorn/longhorn-engine v1.5.0-rc1.0.20230612091804-9e71a56aade8
 ## explicit; go 1.20
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -159,7 +159,7 @@ github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
 github.com/longhorn/longhorn-engine/proto/ptypes
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20230610074502-56cfdcf0497c
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20230613092711-13d2db326c5e
 ## explicit; go 1.17
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -249,7 +249,7 @@ golang.org/x/net/trace
 # golang.org/x/sync v0.1.0
 ## explicit
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.7.0
+# golang.org/x/sys v0.8.0
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
