@@ -101,7 +101,7 @@ func (s *Server) DiskCreate(ctx context.Context, req *rpc.DiskCreateRequest) (*r
 
 	switch req.DiskType {
 	case rpc.DiskType_block:
-		ret, err := s.spdkClient.DiskCreate(req.DiskName, req.DiskPath, req.BlockSize)
+		ret, err := s.spdkClient.DiskCreate(req.DiskName, req.DiskUuid, req.DiskPath, req.BlockSize)
 		if err != nil {
 			return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 		}
