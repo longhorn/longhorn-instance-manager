@@ -159,7 +159,11 @@ github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
 github.com/longhorn/longhorn-engine/proto/ptypes
+<<<<<<< HEAD
 # github.com/longhorn/longhorn-spdk-engine v0.0.0-20230613092711-13d2db326c5e
+=======
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20230615080848-0305d53a3a75
+>>>>>>> ad6c86a (vendor: update dependencies)
 ## explicit; go 1.17
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
