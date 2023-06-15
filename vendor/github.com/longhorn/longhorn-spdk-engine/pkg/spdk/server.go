@@ -696,7 +696,7 @@ func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.Snapshot
 func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest) (ret *spdkrpc.Disk, err error) {
 	s.Lock()
 	defer s.Unlock()
-	return svcDiskCreate(s.spdkClient, req.DiskName, req.DiskPath, req.BlockSize)
+	return svcDiskCreate(s.spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.BlockSize)
 }
 
 func (s *Server) DiskDelete(ctx context.Context, req *spdkrpc.DiskDeleteRequest) (ret *emptypb.Empty, err error) {
