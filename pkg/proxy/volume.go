@@ -23,9 +23,9 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	log.Trace("Getting volume")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.volumeGet(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkVolumeGet(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -97,9 +97,9 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	log.Infof("Expanding volume to size %v", req.Expand.Size)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.volumeExpand(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkVolumeExpand(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -134,9 +134,9 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	log.Infof("Starting volume frontend %v", req.FrontendStart.Frontend)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.volumeFrontendStart(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkVolumeFrontendStart(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -172,9 +172,9 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	log.Info("Shutting down volume frontend")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.volumeFrontendShutdown(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkVolumeFrontendShutdown(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -210,9 +210,9 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 	log.Infof("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.volumeUnmapMarkSnapChainRemovedSet(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkVolumeUnmapMarkSnapChainRemovedSet(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)

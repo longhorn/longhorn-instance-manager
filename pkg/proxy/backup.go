@@ -31,9 +31,9 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 	log.Infof("Backing up snapshot %v to backup %v", req.SnapshotName, req.BackupName)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotBackup(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotBackup(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -103,9 +103,9 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 	log.Tracef("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotBackupStatus(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotBackupStatus(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -196,9 +196,9 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 	log.Infof("Restoring backup %v to %v", req.Url, req.VolumeName)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.backupRestore(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkBackupRestore(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -266,9 +266,9 @@ func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	log.Trace("Getting backup restore status")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.backupRestoreStatus(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkBackupRestoreStatus(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)

@@ -80,9 +80,9 @@ func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequ
 	}).Info("Creating instance")
 
 	switch req.Spec.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return s.processInstanceCreate(req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return s.spdkInstanceCreate(req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.Spec.BackendStoreDriver)
@@ -142,9 +142,9 @@ func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequ
 	}).Info("Deleting instance")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return s.processInstanceDelete(req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return s.spdkInstanceDelete(req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -205,9 +205,9 @@ func (s *Server) InstanceGet(ctx context.Context, req *rpc.InstanceGetRequest) (
 	}).Trace("Getting instance")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return s.processInstanceGet(req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return s.spdkInstanceGet(req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -325,9 +325,9 @@ func (s *Server) InstanceReplace(ctx context.Context, req *rpc.InstanceReplaceRe
 	}).Info("Replacing instance")
 
 	switch req.Spec.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return s.processInstanceReplace(req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return s.spdkInstanceReplace(req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.Spec.BackendStoreDriver)
@@ -366,9 +366,9 @@ func (s *Server) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceServic
 	}).Info("Getting instance log")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return s.processInstanceLog(req, srv)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return s.spdkInstanceLog(req, srv)
 	default:
 		return grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -533,7 +533,7 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse) *rpc.InstanceResp
 			Name: p.Spec.Name,
 			// Leave Type empty. It will be determined in longhorn manager.
 			Type:               "",
-			BackendStoreDriver: rpc.BackendStoreDriver_longhorn,
+			BackendStoreDriver: rpc.BackendStoreDriver_v1,
 			ProcessInstanceSpec: &rpc.ProcessInstanceSpec{
 				Binary: p.Spec.Binary,
 				Args:   p.Spec.Args,
@@ -556,7 +556,7 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 		Spec: &rpc.InstanceSpec{
 			Name:               r.Name,
 			Type:               types.InstanceTypeReplica,
-			BackendStoreDriver: rpc.BackendStoreDriver_spdk,
+			BackendStoreDriver: rpc.BackendStoreDriver_v2,
 		},
 		Status: &rpc.InstanceStatus{
 			State:     r.State,
@@ -572,7 +572,7 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 		Spec: &rpc.InstanceSpec{
 			Name:               e.Name,
 			Type:               types.InstanceTypeEngine,
-			BackendStoreDriver: rpc.BackendStoreDriver_spdk,
+			BackendStoreDriver: rpc.BackendStoreDriver_v2,
 		},
 		Status: &rpc.InstanceStatus{
 			State:     e.State,
