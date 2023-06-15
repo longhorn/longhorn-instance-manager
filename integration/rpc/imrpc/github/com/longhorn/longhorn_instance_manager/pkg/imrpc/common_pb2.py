@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='imrpc',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\nDgithub.com/longhorn/longhorn-instance-manager/pkg/imrpc/common.proto\x12\x05imrpc*,\n\x12\x42\x61\x63kendStoreDriver\x12\x0c\n\x08longhorn\x10\x00\x12\x08\n\x04spdk\x10\x01\x62\x06proto3')
+  serialized_pb=_b('\nDgithub.com/longhorn/longhorn-instance-manager/pkg/imrpc/common.proto\x12\x05imrpc*$\n\x12\x42\x61\x63kendStoreDriver\x12\x06\n\x02v1\x10\x00\x12\x06\n\x02v2\x10\x01\x62\x06proto3')
 )
 
 _BACKENDSTOREDRIVER = _descriptor.EnumDescriptor(
@@ -31,24 +31,24 @@ _BACKENDSTOREDRIVER = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='longhorn', index=0, number=0,
+      name='v1', index=0, number=0,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='spdk', index=1, number=1,
+      name='v2', index=1, number=1,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
   serialized_start=79,
-  serialized_end=123,
+  serialized_end=115,
 )
 _sym_db.RegisterEnumDescriptor(_BACKENDSTOREDRIVER)
 
 BackendStoreDriver = enum_type_wrapper.EnumTypeWrapper(_BACKENDSTOREDRIVER)
-longhorn = 0
-spdk = 1
+v1 = 0
+v2 = 1
 
 
 DESCRIPTOR.enum_types_by_name['BackendStoreDriver'] = _BACKENDSTOREDRIVER
