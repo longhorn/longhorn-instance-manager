@@ -109,6 +109,13 @@ type BdevNvmeDetachControllerRequest struct {
 	Hostsvcid string `json:"hostsvcid,omitempty"`
 }
 
+type BdevNvmeSetOptionsRequest struct {
+	CtrlrLossTimeoutSec  int32 `json:"ctrlr_loss_timeout_sec"`
+	ReconnectDelaySec    int32 `json:"reconnect_delay_sec"`
+	FastIOFailTimeoutSec int32 `json:"fast_io_fail_timeout_sec"`
+	TransportAckTimeout  int32 `json:"transport_ack_timeout"`
+}
+
 type BdevNvmeGetControllersRequest struct {
 	Name string `json:"name,omitempty"`
 }
