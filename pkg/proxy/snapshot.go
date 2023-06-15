@@ -23,9 +23,9 @@ func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapsho
 	log.Infof("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.volumeSnapshot(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkVolumeSnapshot(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -64,9 +64,9 @@ func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (
 	log.Trace("Listing snapshots")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotList(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotList(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -125,9 +125,9 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	log.Infof("Cloning snapshot from %v to %v", req.FromController, req.ProxyEngineRequest.Address)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotClone(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotClone(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -168,9 +168,9 @@ func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	log.Trace("Getting snapshot clone status")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotCloneStatus(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotCloneStatus(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -222,9 +222,9 @@ func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 	log.Infof("Reverting snapshot %v", req.Name)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotRevert(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotRevert(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -258,9 +258,9 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 	log.Info("Purging snapshots")
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotPurge(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotPurge(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -294,9 +294,9 @@ func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	log.Trace("Getting snapshot purge status")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotPurgeStatus(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotPurgeStatus(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -345,9 +345,9 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 	log.Infof("Removing snapshots %v", req.Names)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotRemove(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotRemove(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -384,9 +384,9 @@ func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashReq
 	log.Infof("Hashing snapshot %v with rehash %v", req.SnapshotName, req.Rehash)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotHash(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotHash(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -419,9 +419,9 @@ func (p *Proxy) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotH
 	log.Trace("Getting snapshot hash status")
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.snapshotHashStatus(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkSnapshotHashStatus(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
