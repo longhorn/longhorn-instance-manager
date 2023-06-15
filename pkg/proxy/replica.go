@@ -31,9 +31,9 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 	log.Info("Adding replica")
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.replicaAdd(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkReplicaAdd(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
@@ -84,9 +84,9 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 	log.Trace("Listing replicas")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.replicaList(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkReplicaList(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -178,9 +178,9 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 	log.Trace("Getting replica rebuilding status")
 
 	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		return p.replicaRebuildingStatus(ctx, req)
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		return p.spdkReplicaRebuildingStatus(ctx, req)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
@@ -248,11 +248,11 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 	log.Info("Removing replica")
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_longhorn:
+	case rpc.BackendStoreDriver_v1:
 		if err := p.replicaDelete(ctx, req); err != nil {
 			return nil, err
 		}
-	case rpc.BackendStoreDriver_spdk:
+	case rpc.BackendStoreDriver_v2:
 		if err := p.spdkReplicaDelete(ctx, req); err != nil {
 			return nil, err
 		}
