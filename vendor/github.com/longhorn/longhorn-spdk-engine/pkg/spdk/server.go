@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
@@ -44,6 +46,14 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 	cli, err := NewSPDKClient()
 	if err != nil {
 		return nil, err
+	}
+
+	if _, err = cli.BdevNvmeSetOptions(
+		helpertypes.DefaultCtrlrLossTimeoutSec,
+		helpertypes.DefaultReconnectDelaySec,
+		helpertypes.DefaultFastIOFailTimeoutSec,
+		helpertypes.DefaultTransportAckTimeout); err != nil {
+		return nil, errors.Wrap(err, "failed to set nvme options")
 	}
 
 	broadcasters := map[types.InstanceType]*broadcaster.Broadcaster{}
@@ -686,7 +696,7 @@ func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.Snapshot
 func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest) (ret *spdkrpc.Disk, err error) {
 	s.Lock()
 	defer s.Unlock()
-	return svcDiskCreate(s.spdkClient, req.DiskName, req.DiskPath, req.BlockSize)
+	return svcDiskCreate(s.spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.BlockSize)
 }
 
 func (s *Server) DiskDelete(ctx context.Context, req *spdkrpc.DiskDeleteRequest) (ret *emptypb.Empty, err error) {
