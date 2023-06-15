@@ -64,12 +64,12 @@ github.com/longhorn/backupstore v0.0.0-20230612062152-f4e0de6bc37a h1:1LFBy2Vw3A
 github.com/longhorn/backupstore v0.0.0-20230612062152-f4e0de6bc37a/go.mod h1:wiEYTbvxEAIUxAAY1DmvMeuFuGqwWmJTzfVhZiBKlNo=
 github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b h1:5QFvn8mnlNULzL76zi5dKdLMzq+rGc9A9qFRq/N63Rc=
 github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b/go.mod h1:fd9uUT+B0BTwilZn/3a42ZOErQmSdSLrwHD50lXVG/E=
-github.com/longhorn/go-spdk-helper v0.0.0-20230610063427-757b34a43c07 h1:7Gh5chbBZm1xEZzwAp6qD6rgLcEB4uSexwDBFyaaLMA=
-github.com/longhorn/go-spdk-helper v0.0.0-20230610063427-757b34a43c07/go.mod h1:XoGXOYHw1KW3qdvTSimwY+Anyg5cPl6EVkjXxS25Upg=
+github.com/longhorn/go-spdk-helper v0.0.0-20230614144600-60ea9f38b2eb h1:p2OeRwJjVbe6MfdpV33Lw0VhjeMXkunTbiat1gR80hg=
+github.com/longhorn/go-spdk-helper v0.0.0-20230614144600-60ea9f38b2eb/go.mod h1:XoGXOYHw1KW3qdvTSimwY+Anyg5cPl6EVkjXxS25Upg=
 github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230612073917-0896a6f78315 h1:PC8jKa2J3TF2oG3rY55oc7ILOOV29g2dJ20fGllK+SA=
 github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230612073917-0896a6f78315/go.mod h1:ZxJFbQH6KUFHVf34RpfNloMqZuebpRyHCFasYX1bUaM=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20230613092711-13d2db326c5e h1:IPiU5AES6R7hrs0Z0EY8IJuK9Zd0gUvoK31i0QKQs5M=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20230613092711-13d2db326c5e/go.mod h1:t5DfU7Hb+hk7iQWWwWMa9lhbMN9THbu2+isZVVklhhw=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20230615022458-774de44673fa h1:dtztKs2RcS+HYbcsxLsGhRb4YkSVrhEdE8VMWV3VQj4=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20230615022458-774de44673fa/go.mod h1:lP78wM0HcueNJOHvqfumtnnASdET3ki8/wl+FGGHqvE=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHTxp6HcC++/vN17LfeuDmozHI2j6DoZf5E=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c h1:EAE/cBOWZUL9CDiI4xbOr1IudQUa2e6u/pdScytEcvo=

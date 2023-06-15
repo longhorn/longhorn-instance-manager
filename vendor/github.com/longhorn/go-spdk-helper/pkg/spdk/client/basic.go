@@ -560,6 +560,35 @@ func (c *Client) BdevNvmeGetControllers(name string) (controllerInfoList []spdkt
 	return controllerInfoList, json.Unmarshal(cmdOutput, &controllerInfoList)
 }
 
+// BdevNvmeSetOptions sets global parameters for all bdev NVMe.
+// This RPC may only be called before SPDK subsystems have been initialized or any bdev NVMe
+// has been created.
+// Parameters, ctrlr_loss_timeout_sec, reconnect_delay_sec, and fast_io_fail_timeout_sec, are
+// for I/O error resiliency. They can be overridden if they are given by the RPC bdev_nvme_attach_controller.
+//
+// "ctrlrLossTimeoutSec": Controller loss timeout in seconds
+//
+// "reconnectDelaySec": Controller reconnect delay in seconds
+//
+// "fastIOFailTimeoutSec": Fast I/O failure timeout in seconds
+//
+// "transportAckTimeout": Time to wait ack until retransmission for RDMA or connection close for TCP. Range 0-31 where 0 means use default
+func (c *Client) BdevNvmeSetOptions(ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec, transportAckTimeout int32) (result bool, err error) {
+	req := spdktypes.BdevNvmeSetOptionsRequest{
+		CtrlrLossTimeoutSec:  ctrlrLossTimeoutSec,
+		ReconnectDelaySec:    reconnectDelaySec,
+		FastIOFailTimeoutSec: fastIOFailTimeoutSec,
+		TransportAckTimeout:  transportAckTimeout,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_set_options", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
 // BdevNvmeGet gets information about NVMe bdevs if a name is not specified.
 //
 //	"name": Optional. UUID or name of a NVMe bdev.

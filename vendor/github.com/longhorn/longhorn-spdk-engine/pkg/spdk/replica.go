@@ -774,7 +774,7 @@ func (r *Replica) RebuildingSrcStart(spdkClient *SPDKClient, localReplicaLvsName
 		r.rebuildingDstBdevName = spdktypes.GetLvolAlias(dstReplicaLvsName, dstRebuildingLvolName)
 	} else {
 		nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(dstRebuildingLvolName, helpertypes.GetNQN(dstRebuildingLvolName), dstRebuildingLvolIP, dstRebuildingLvolPort, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
-			helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIoFailTimeoutSec)
+			helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec)
 		if err != nil {
 			return err
 		}
