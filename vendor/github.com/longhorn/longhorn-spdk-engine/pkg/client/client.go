@@ -438,7 +438,9 @@ func (c *SPDKClient) EngineReplicaDelete(engineName, replicaName, replicaAddress
 	return errors.Wrapf(err, "failed to delete replica %s with address %s to engine %s", replicaName, replicaAddress, engineName)
 }
 
-func (c *SPDKClient) DiskCreate(diskName, diskPath string, blockSize int64) (*spdkrpc.Disk, error) {
+// DiskCreate creates a disk with the given name and path.
+// diskUUID is optional, if not provided, it indicates the disk is newly added.
+func (c *SPDKClient) DiskCreate(diskName, diskUUID, diskPath string, blockSize int64) (*spdkrpc.Disk, error) {
 	if diskName == "" || diskPath == "" {
 		return nil, fmt.Errorf("failed to create disk: missing required parameters")
 	}
@@ -449,6 +451,7 @@ func (c *SPDKClient) DiskCreate(diskName, diskPath string, blockSize int64) (*sp
 
 	return client.DiskCreate(ctx, &spdkrpc.DiskCreateRequest{
 		DiskName:  diskName,
+		DiskUuid:  diskUUID,
 		DiskPath:  diskPath,
 		BlockSize: blockSize,
 	})

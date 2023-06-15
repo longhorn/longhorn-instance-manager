@@ -159,3 +159,9 @@ func (c *SPDKClient) BdevNvmeGetControllers(name string) (controllerInfoList []s
 	defer c.Unlock()
 	return c.client.BdevNvmeGetControllers(name)
 }
+
+func (c *SPDKClient) BdevNvmeSetOptions(ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec, transportAckTimeout int32) (bool, error) {
+	c.Lock()
+	defer c.Unlock()
+	return c.client.BdevNvmeSetOptions(ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec, transportAckTimeout)
+}
