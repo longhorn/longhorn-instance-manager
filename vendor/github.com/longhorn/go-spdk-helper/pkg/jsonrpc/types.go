@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Message struct {
@@ -81,4 +82,13 @@ func IsJSONRPCRespErrorFileExists(err error) bool {
 	}
 
 	return responseError.Code == RespErrorCodeNoFileExists
+}
+
+func IsJSONRPCRespErrorBrokenPipe(err error) bool {
+	jsonRPCError, ok := err.(JSONClientError)
+	if !ok {
+		return false
+	}
+	_, ok = jsonRPCError.ErrorDetail.(*ResponseError)
+	return !ok && strings.Contains(jsonRPCError.ErrorDetail.Error(), "broken pipe")
 }

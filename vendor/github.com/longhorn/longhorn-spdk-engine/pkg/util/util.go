@@ -2,10 +2,14 @@ package util
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 func RoundUp(num, base uint64) uint64 {
@@ -42,4 +46,39 @@ func RemovePrefix(path, prefix string) string {
 
 func UUID() string {
 	return uuid.New().String()
+}
+
+func IsSPDKTargetProcessRunning() (bool, error) {
+	cmd := exec.Command("pgrep", "-f", "spdk_tgt")
+	if _, err := cmd.Output(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			status, ok := exitErr.Sys().(syscall.WaitStatus)
+			if ok {
+				exitCode := status.ExitStatus()
+				if exitCode == 1 {
+					return false, nil
+				}
+			}
+		}
+		return false, errors.Wrap(err, "failed to check spdk_tgt process")
+	}
+	return true, nil
+}
+
+func StartSPDKTgtDaemon() error {
+	cmd := exec.Command("spdk_tgt")
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true,
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to start spdk_tgt daemon: %w", err)
+	}
+
+	return nil
 }

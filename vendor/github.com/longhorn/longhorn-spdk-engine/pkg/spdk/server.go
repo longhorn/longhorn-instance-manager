@@ -13,6 +13,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 
@@ -104,8 +105,18 @@ func (s *Server) monitoring() {
 			logrus.Info("SPDK Server: stopped monitoring replicas due to the context done")
 			done = true
 		case <-ticker.C:
-			if err := s.verify(); err != nil {
-				logrus.WithError(err).Errorf("SPDK Server: failed to verify and update replica cache, will retry later")
+			err := s.verify()
+			if err == nil {
+				break
+			}
+
+			logrus.WithError(err).Errorf("SPDK Server: failed to verify and update replica cache, will retry later")
+
+			if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
+				err = s.tryEnsureSPDKTgtHealthy()
+				if err != nil {
+					logrus.WithError(err).Error("SPDK Server: failed to ensure spdk_tgt is healthy")
+				}
 			}
 		}
 		if done {
@@ -114,7 +125,22 @@ func (s *Server) monitoring() {
 	}
 }
 
-func (s *Server) verify() error {
+func (s *Server) tryEnsureSPDKTgtHealthy() error {
+	running, err := util.IsSPDKTargetProcessRunning()
+	if err != nil {
+		return errors.Wrap(err, "failed to check spdk_tgt is running")
+	}
+
+	if running {
+		logrus.Info("SPDK Server: reconnecting to spdk_tgt")
+		return s.spdkClient.Reconnect()
+	}
+
+	logrus.Info("SPDK Server: restarting spdk_tgt")
+	return util.StartSPDKTgtDaemon()
+}
+
+func (s *Server) verify() (err error) {
 	replicaMap := map[string]*Replica{}
 	engineMap := map[string]*Engine{}
 	s.RLock()
@@ -125,6 +151,21 @@ func (s *Server) verify() error {
 		engineMap[k] = v
 	}
 	s.RUnlock()
+
+	defer func() {
+		if err == nil {
+			return
+		}
+		if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
+			logrus.WithError(err).Warn("SPDK Server: marking all non-stopped and non-error replicas and engines as error")
+			for _, r := range replicaMap {
+				r.SetErrorState()
+			}
+			for _, e := range engineMap {
+				e.SetErrorState()
+			}
+		}
+	}()
 
 	lvsList, err := s.spdkClient.BdevLvolGetLvstore("", "")
 	if err != nil {
@@ -254,7 +295,7 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 	r := s.replicaMap[req.Name]
 	s.Unlock()
 
-	return r.Create(s.spdkClient, req.ExposeRequired, s.portAllocator)
+	return r.Create(s.spdkClient, req.ExposeRequired, req.PortCount, s.portAllocator)
 }
 
 func (s *Server) ReplicaDelete(ctx context.Context, req *spdkrpc.ReplicaDeleteRequest) (ret *empty.Empty, err error) {
@@ -516,7 +557,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	e := s.engineMap[req.Name]
 	s.Unlock()
 
-	return e.Create(s.spdkClient, req.ReplicaAddressMap, s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap), s.portAllocator)
+	return e.Create(s.spdkClient, req.ReplicaAddressMap, s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap), req.PortCount, s.portAllocator)
 }
 
 func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replicaLvsNameMap map[string]string) {
