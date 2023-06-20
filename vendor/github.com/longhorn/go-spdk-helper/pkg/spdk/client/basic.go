@@ -294,7 +294,7 @@ func (c *Client) BdevLvolDecoupleParent(name string) (decoupled bool, err error)
 		Name: name,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_decouple_parent", req)
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_decouple_parent", req)
 	if err != nil {
 		return false, err
 	}
@@ -333,7 +333,7 @@ func (c *Client) BdevLvolShallowCopy(srcLvolName, dstBdevName string) (copied bo
 		DstBdevName: dstBdevName,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_shallow_copy", req)
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_shallow_copy", req)
 	if err != nil {
 		return false, err
 	}

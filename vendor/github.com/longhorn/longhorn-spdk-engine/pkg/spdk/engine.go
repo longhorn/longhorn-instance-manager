@@ -706,7 +706,10 @@ func (e *Engine) ReplicaShallowCopy(dstReplicaName, dstReplicaAddress string) (e
 		// Blindly mark the rebuilding replica as mode ERR now.
 		if err != nil {
 			e.Lock()
-			e.ReplicaModeMap[dstReplicaName] = types.ModeERR
+			if e.ReplicaModeMap[dstReplicaName] != types.ModeERR {
+				e.ReplicaModeMap[dstReplicaName] = types.ModeERR
+				e.log.WithError(err).Errorf("Failed to rebuild replica %s with address %s from src replica %s with address %s, will mark the rebuilding replica mode as ERR", dstReplicaName, dstReplicaAddress, srcReplicaName, srcReplicaAddress)
+			}
 			e.Unlock()
 		}
 	}()
