@@ -73,7 +73,7 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 	}
 }
 
-func (e *Engine) Create(spdkClient *SPDKClient, replicaAddressMap, localReplicaLvsNameMap map[string]string, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Engine, err error) {
+func (e *Engine) Create(spdkClient *SPDKClient, replicaAddressMap, localReplicaLvsNameMap map[string]string, portCount int32, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Engine, err error) {
 	requireUpdate := true
 
 	e.Lock()
@@ -122,7 +122,7 @@ func (e *Engine) Create(spdkClient *SPDKClient, replicaAddressMap, localReplicaL
 		return nil, err
 	}
 
-	if err := e.handleFrontend(spdkClient, superiorPortAllocator); err != nil {
+	if err := e.handleFrontend(spdkClient, portCount, superiorPortAllocator); err != nil {
 		return nil, err
 	}
 
@@ -155,7 +155,7 @@ func getBdevNameForReplica(spdkClient *SPDKClient, localReplicaLvsNameMap map[st
 	return nvmeBdevNameList[0], nil
 }
 
-func (e *Engine) handleFrontend(spdkClient *SPDKClient, superiorPortAllocator *util.Bitmap) error {
+func (e *Engine) handleFrontend(spdkClient *SPDKClient, portCount int32, superiorPortAllocator *util.Bitmap) error {
 	if e.Frontend != types.FrontendEmpty && e.Frontend != types.FrontendSPDKTCPNvmf && e.Frontend != types.FrontendSPDKTCPBlockdev {
 		return fmt.Errorf("unknown frontend type %s", e.Frontend)
 	}
@@ -166,7 +166,7 @@ func (e *Engine) handleFrontend(spdkClient *SPDKClient, superiorPortAllocator *u
 	}
 
 	nqn := helpertypes.GetNQN(e.Name)
-	port, _, err := superiorPortAllocator.AllocateRange(types.DefaultEngineReservedPortCount)
+	port, _, err := superiorPortAllocator.AllocateRange(portCount)
 	if err != nil {
 		return err
 	}
@@ -857,5 +857,23 @@ func (e *Engine) replicaSnapshotOperation(replicaName, snapshotName, snapshotOp 
 		return c.ReplicaSnapshotDelete(replicaName, snapshotName)
 	default:
 		return fmt.Errorf("unknown replica snapshot operation %s", snapshotOp)
+	}
+}
+
+func (e *Engine) SetErrorState() {
+	needUpdate := false
+
+	e.Lock()
+	defer func() {
+		e.Unlock()
+
+		if needUpdate {
+			e.UpdateCh <- nil
+		}
+	}()
+
+	if e.State != types.InstanceStateStopped && e.State != types.InstanceStateError {
+		e.State = types.InstanceStateError
+		needUpdate = true
 	}
 }

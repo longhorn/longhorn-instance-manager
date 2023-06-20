@@ -114,12 +114,12 @@ func svcDiskGet(spdkClient *SPDKClient, diskName string) (ret *spdkrpc.Disk, err
 		"diskName": diskName,
 	})
 
-	log.Info("Getting disk info")
+	log.Trace("Getting disk info")
 	defer func() {
 		if err != nil {
 			log.WithError(err).Error("Failed to get disk info")
 		} else {
-			log.Info("Got disk info")
+			log.Trace("Got disk info")
 		}
 	}()
 

@@ -3,6 +3,9 @@ package spdk
 import (
 	"sync"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
@@ -20,6 +23,26 @@ func NewSPDKClient() (*SPDKClient, error) {
 	return &SPDKClient{
 		client: client,
 	}, nil
+}
+
+func (c *SPDKClient) Reconnect() error {
+	c.Lock()
+	defer c.Unlock()
+
+	oldClient := c.client
+
+	client, err := spdkclient.NewClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create new SPDK client")
+	}
+	c.client = client
+
+	// Try the best effort to close the old client after a new client is created
+	err = oldClient.Close()
+	if err != nil {
+		logrus.WithError(err).Warn("Failed to close old SPDK client")
+	}
+	return nil
 }
 
 func (c *SPDKClient) Close() error {
