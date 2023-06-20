@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"sync/atomic"
@@ -14,7 +15,12 @@ import (
 )
 
 const (
-	DefaultTimeoutInSecond = 30
+	DefaultConcurrentLimit = 1024
+
+	DefaultResponseReadWaitPeriod = 10 * time.Millisecond
+
+	DefaultShortTimeout = 30 * time.Second
+	DefaultLongTimeout  = 24 * time.Hour
 )
 
 type Client struct {
@@ -44,19 +50,18 @@ func NewClient(conn net.Conn) *Client {
 	return &Client{
 		conn: conn,
 
-		// Get lower 5 digits of the current process ID as the prefix of the message ID
-		idCounter: uint32((os.Getpid() % (1 << 6)) * 10000),
+		idCounter: rand.Uint32() % 10000,
 
 		encoder: e,
 		decoder: json.NewDecoder(bufio.NewReader(conn)),
 
-		msgWrapperQueue:   make(chan *messageWrapper, 1024),
-		respReceiverQueue: make(chan map[string]interface{}, 1024),
+		msgWrapperQueue:   make(chan *messageWrapper, DefaultConcurrentLimit),
+		respReceiverQueue: make(chan map[string]interface{}, DefaultConcurrentLimit),
 		responseChans:     make(map[uint32]chan []byte),
 	}
 }
 
-func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeoutInSec int) (res []byte, err error) {
+func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout time.Duration) (res []byte, err error) {
 	id := atomic.AddUint32(&c.idCounter, 1)
 	msg := NewMessage(id, method, params)
 	var resp Response
@@ -86,16 +91,22 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeoutIn
 		msg.Params = nil
 	}
 
-	if err = c.encoder.Encode(msg); err != nil {
+	connEncoder := json.NewEncoder(c.conn)
+	connEncoder.SetIndent("", "\t")
+	if err = connEncoder.Encode(msg); err != nil {
 		return nil, err
 	}
 
-	for count := 0; count <= timeoutInSec; count++ {
+	for count := 0; count <= int(timeout/time.Second); count++ {
 		if c.decoder.More() {
 			break
 		}
 		time.Sleep(1 * time.Second)
 	}
+	if !c.decoder.More() {
+		return nil, fmt.Errorf("timeout %v second waiting for the response from the SPDK JSON RPC server", timeout.Seconds())
+	}
+
 	if err = c.decoder.Decode(&resp); err != nil {
 		return nil, err
 	}
@@ -108,19 +119,19 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeoutIn
 	}
 
 	buf := bytes.Buffer{}
-	e := json.NewEncoder(&buf)
-	if err := e.Encode(resp.Result); err != nil {
+	jsonEncoder := json.NewEncoder(&buf)
+	if err := jsonEncoder.Encode(resp.Result); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func (c *Client) SendMsg(method string, params interface{}) ([]byte, error) {
-	return c.SendMsgWithTimeout(method, params, DefaultTimeoutInSecond)
+func (c *Client) SendCommand(method string, params interface{}) ([]byte, error) {
+	return c.SendMsgWithTimeout(method, params, DefaultShortTimeout)
 }
 
-func (c *Client) SendCommand(method string, params interface{}) ([]byte, error) {
-	return c.SendMsg(method, params)
+func (c *Client) SendCommandWithLongTimeout(method string, params interface{}) ([]byte, error) {
+	return c.SendMsgWithTimeout(method, params, DefaultLongTimeout)
 }
 
 func (c *Client) InitAsync() chan error {
@@ -181,16 +192,22 @@ func (c *Client) dispatcher() {
 
 func (c *Client) read(errChan chan error) {
 	decoder := json.NewDecoder(c.conn)
+	ticker := time.NewTicker(DefaultResponseReadWaitPeriod)
 
-	for decoder.More() {
-		var obj map[string]interface{}
+	for {
+		select {
+		case <-ticker.C:
+			if !decoder.More() {
+				continue
+			}
 
-		if err := decoder.Decode(&obj); err != nil {
-			logrus.WithError(err).Errorf("Failed to decoding during read")
-			errChan <- err
-			continue
+			var obj map[string]interface{}
+			if err := decoder.Decode(&obj); err != nil {
+				logrus.WithError(err).Errorf("Failed to decoding during read")
+				errChan <- err
+				continue
+			}
+			c.respReceiverQueue <- obj
 		}
-
-		c.respReceiverQueue <- obj
 	}
 }
