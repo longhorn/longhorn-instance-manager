@@ -116,13 +116,13 @@ func (s *Server) spdkInstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.Instan
 
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
-		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap)
+		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount)
 		if err != nil {
 			return nil, err
 		}
 		return engineResponseToInstanceResponse(engine), nil
 	case types.InstanceTypeReplica:
-		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ExposeRequired)
+		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ExposeRequired, req.Spec.PortCount)
 		if err != nil {
 			return nil, err
 		}
