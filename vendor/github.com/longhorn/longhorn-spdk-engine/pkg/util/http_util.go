@@ -62,7 +62,7 @@ func GetIPForPod() (ip string, err error) {
 	var storageIP string
 	if ip, err := GetLocalIPv4fromInterface(StorageNetworkInterface); err != nil {
 		storageIP = os.Getenv(EnvPodIP)
-		logrus.WithError(err).Debugf("Failed to get IP from %v interface, fallback to use the default pod IP %v", StorageNetworkInterface, storageIP)
+		logrus.WithError(err).Tracef("Failed to get IP from %v interface, fallback to use the default pod IP %v", StorageNetworkInterface, storageIP)
 	} else {
 		storageIP = ip
 	}
