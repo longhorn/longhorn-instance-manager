@@ -45,7 +45,7 @@ func NewServer(spdkEnabled bool, spdkServiceAddress string, shutdownCh chan erro
 	}
 
 	if spdkEnabled {
-		logrus.Info("Creating SPDK client since SPDK is enabled")
+		logrus.Info("Disk Server: Creating SPDK client since SPDK is enabled")
 
 		if !util.IsSPDKTgtReady(spdkTgtReadinessProbeTimeout) {
 			return nil, fmt.Errorf("spdk_tgt is not ready in %v", spdkTgtReadinessProbeTimeout)
@@ -67,7 +67,7 @@ func (s *Server) startMonitoring() {
 	for {
 		select {
 		case <-s.shutdownCh:
-			logrus.Info("Disk gRPC Server is shutting down")
+			logrus.Info("Disk Server: Shutting down")
 			return
 		}
 	}
@@ -93,7 +93,7 @@ func (s *Server) DiskCreate(ctx context.Context, req *rpc.DiskCreateRequest) (*r
 		"blockSize": req.BlockSize,
 	})
 
-	log.Info("Creating disk")
+	log.Info("Disk Server: Creating disk")
 
 	if req.DiskName == "" || req.DiskPath == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk path are required")
@@ -120,7 +120,7 @@ func (s *Server) DiskDelete(ctx context.Context, req *rpc.DiskDeleteRequest) (*e
 		"diskUUID": req.DiskUuid,
 	})
 
-	log.Info("Deleting disk")
+	log.Info("Disk Server: Deleting disk")
 
 	if req.DiskName == "" || req.DiskUuid == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk UUID are required")
@@ -144,7 +144,7 @@ func (s *Server) DiskGet(ctx context.Context, req *rpc.DiskGetRequest) (*rpc.Dis
 		"diskPath": req.DiskPath,
 	})
 
-	log.Trace("Getting disk info")
+	log.Trace("Disk Server: Getting disk info")
 
 	if req.DiskName == "" || req.DiskPath == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk path are required")
@@ -171,7 +171,7 @@ func (s *Server) DiskReplicaInstanceList(ctx context.Context, req *rpc.DiskRepli
 		"diskName": req.DiskName,
 	})
 
-	log.Trace("Listing disk replica instances")
+	log.Trace("Disk Server: Listing disk replica instances")
 
 	if req.DiskName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name is required")
@@ -206,7 +206,7 @@ func (s *Server) DiskReplicaInstanceDelete(ctx context.Context, req *rpc.DiskRep
 		"replciaInstanceName": req.ReplciaInstanceName,
 	})
 
-	log.Info("Deleting disk replica instance")
+	log.Info("Disk Server: Deleting disk replica instance")
 
 	if req.DiskName == "" || req.DiskUuid == "" || req.ReplciaInstanceName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name, disk UUID and replica instance name are required")
