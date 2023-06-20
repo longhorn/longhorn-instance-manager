@@ -64,7 +64,7 @@ func NewSPDKClient(serviceUrl string) (*SPDKClient, error) {
 	}, nil
 }
 
-func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint64, exposeRequired bool) (*api.Replica, error) {
+func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint64, exposeRequired bool, portCount int32) (*api.Replica, error) {
 	if name == "" || lvsName == "" || lvsUUID == "" {
 		return nil, fmt.Errorf("failed to start SPDK replica: missing required parameters")
 	}
@@ -79,6 +79,7 @@ func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint6
 		LvsUuid:        lvsUUID,
 		SpecSize:       specSize,
 		ExposeRequired: exposeRequired,
+		PortCount:      portCount,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start SPDK replica")
@@ -283,7 +284,7 @@ func (c *SPDKClient) ReplicaRebuildingDstSnapshotCreate(name, snapshotName strin
 	return errors.Wrapf(err, "failed to create dst SPDK replica %s rebuilding snapshot %s", name, snapshotName)
 }
 
-func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string) (*api.Engine, error) {
+func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string, portCount int32) (*api.Engine, error) {
 	if name == "" || volumeName == "" || len(replicaAddressMap) == 0 {
 		return nil, fmt.Errorf("failed to start SPDK engine: missing required parameters")
 	}
@@ -298,6 +299,7 @@ func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize ui
 		SpecSize:          specSize,
 		ReplicaAddressMap: replicaAddressMap,
 		Frontend:          frontend,
+		PortCount:         portCount,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start SPDK engine")
