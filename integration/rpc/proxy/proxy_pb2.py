@@ -23,7 +23,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='imrpc',
   syntax='proto3',
   serialized_options=None,
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_pb=_b('\n\x0bproxy.proto\x12\x05imrpc\x1a\x1bgoogle/protobuf/empty.proto\x1a\x41github.com/longhorn/longhorn-engine/proto/ptypes/controller.proto\x1a@github.com/longhorn/longhorn-engine/proto/ptypes/syncagent.proto\"%\n\x12ProxyEngineRequest\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\"D\n\x1a\x45ngineVersionProxyResponse\x12&\n\x07version\x18\x01 \x01(\x0b\x32\x15.ptypes.VersionOutput\">\n\x1c\x45ngineVolumeGetProxyResponse\x12\x1e\n\x06volume\x18\x01 \x01(\x0b\x32\x0e.ptypes.Volume\"\x81\x01\n\x19\x45ngineVolumeExpandRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12+\n\x06\x65xpand\x18\x02 \x01(\x0b\x32\x1b.ptypes.VolumeExpandRequest\"\x97\x01\n EngineVolumeFrontendStartRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12:\n\x0e\x66rontend_start\x18\x02 \x01(\x0b\x32\".ptypes.VolumeFrontendStartRequest\"\x8e\x01\n\x1b\x45ngineVolumeSnapshotRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x36\n\x0fsnapshot_volume\x18\x02 \x01(\x0b\x32\x1d.ptypes.VolumeSnapshotRequest\"R\n!EngineVolumeSnapshotProxyResponse\x12-\n\x08snapshot\x18\x01 \x01(\x0b\x32\x1b.ptypes.VolumeSnapshotReply\"\xb6\x01\n/EngineVolumeUnmapMarkSnapChainRemovedSetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12J\n\x0funmap_mark_snap\x18\x02 \x01(\x0b\x32\x31.ptypes.VolumeUnmapMarkSnapChainRemovedSetRequest\"\xb0\x01\n\x1f\x45ngineSnapshotListProxyResponse\x12@\n\x05\x64isks\x18\x01 \x03(\x0b\x32\x31.imrpc.EngineSnapshotListProxyResponse.DisksEntry\x1aK\n\nDisksEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineSnapshotDiskInfo:\x02\x38\x01\"\xd6\x02\n\x16\x45ngineSnapshotDiskInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06parent\x18\x02 \x01(\t\x12=\n\x08\x63hildren\x18\x03 \x03(\x0b\x32+.imrpc.EngineSnapshotDiskInfo.ChildrenEntry\x12\x0f\n\x07removed\x18\x04 \x01(\x08\x12\x14\n\x0cuser_created\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\t\x12\x0c\n\x04size\x18\x07 \x01(\t\x12\x39\n\x06labels\x18\x08 \x03(\x0b\x32).imrpc.EngineSnapshotDiskInfo.LabelsEntry\x1a/\n\rChildrenEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"d\n\x1b\x45ngineSnapshotRevertRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04name\x18\x02 \x01(\t\"r\n\x1a\x45ngineSnapshotPurgeRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x1b\n\x13skip_if_in_progress\x18\x02 \x01(\x08\"\xc7\x01\n&EngineSnapshotPurgeStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotPurgeStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotPurgeStatusResponse:\x02\x38\x01\"\xd3\x01\n\x1a\x45ngineSnapshotCloneRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0f\x66rom_controller\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12%\n\x1d\x65xport_backing_image_if_exist\x18\x04 \x01(\x08\x12%\n\x1d\x66ile_sync_http_client_timeout\x18\x05 \x01(\x05\"\xc7\x01\n&EngineSnapshotCloneStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotCloneStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotCloneStatusResponse:\x02\x38\x01\"e\n\x1b\x45ngineSnapshotRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\r\n\x05names\x18\x02 \x03(\t\"\xd2\x02\n\x1b\x45ngineSnapshotBackupRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x08 \x03(\t\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x15\n\rbackup_target\x18\x04 \x01(\t\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\x05 \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x06 \x01(\t\x12>\n\x06labels\x18\x07 \x03(\x0b\x32..imrpc.EngineSnapshotBackupRequest.LabelsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"_\n!EngineSnapshotBackupProxyResponse\x12\x11\n\tbackup_id\x18\x01 \x01(\t\x12\x0f\n\x07replica\x18\x02 \x01(\t\x12\x16\n\x0eis_incremental\x18\x03 \x01(\x08\"\x8a\x01\n!EngineSnapshotBackupStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x17\n\x0freplica_address\x18\x03 \x01(\t\"\x9d\x01\n\'EngineSnapshotBackupStatusProxyResponse\x12\x12\n\nbackup_url\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08progress\x18\x03 \x01(\x05\x12\x15\n\rsnapshot_name\x18\x04 \x01(\t\x12\r\n\x05state\x18\x05 \x01(\t\x12\x17\n\x0freplica_address\x18\x06 \x01(\t\"\x95\x01\n\x1a\x45ngineBackupRestoreRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x13\n\x0bvolume_name\x18\x05 \x01(\t\"5\n EngineBackupRestoreProxyResponse\x12\x11\n\ttaskError\x18\x01 \x01(\x0c\"\xc4\x01\n&EngineBackupRestoreStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineBackupRestoreStatusProxyResponse.StatusEntry\x1aO\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .imrpc.EngineBackupRestoreStatus:\x02\x38\x01\"\xc0\x01\n\x19\x45ngineBackupRestoreStatus\x12\x14\n\x0cis_restoring\x18\x01 \x01(\x08\x12\x15\n\rlast_restored\x18\x02 \x01(\t\x12 \n\x18\x63urrent_restoring_backup\x18\x03 \x01(\t\x12\x10\n\x08progress\x18\x04 \x01(\x05\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x10\n\x08\x66ilename\x18\x06 \x01(\t\x12\r\n\x05state\x18\x07 \x01(\t\x12\x12\n\nbackup_url\x18\x08 \x01(\t\"\xda\x01\n\x17\x45ngineReplicaAddRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12\x0f\n\x07restore\x18\x03 \x01(\x08\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x14\n\x0c\x63urrent_size\x18\x05 \x01(\x03\x12\x11\n\tfast_sync\x18\x06 \x01(\x08\x12%\n\x1d\x66ile_sync_http_client_timeout\x18\x07 \x01(\x05\"P\n\x1e\x45ngineReplicaListProxyResponse\x12.\n\x0creplica_list\x18\x01 \x01(\x0b\x32\x18.ptypes.ReplicaListReply\"u\n!EngineReplicaVerifyRebuildRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\"\xca\x01\n\'EngineReplicaRebuildStatusProxyResponse\x12J\n\x06status\x18\x01 \x03(\x0b\x32:.imrpc.EngineReplicaRebuildStatusProxyResponse.StatusEntry\x1aS\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x33\n\x05value\x18\x02 \x01(\x0b\x32$.ptypes.ReplicaRebuildStatusResponse:\x02\x38\x01\"n\n\x1a\x45ngineReplicaRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\"\x95\x01\n\x1e\x45ngineReplicaModeUpdateRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12!\n\x04mode\x18\x03 \x01(\x0e\x32\x13.ptypes.ReplicaMode\"{\n\x19\x45ngineSnapshotHashRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x15\n\rsnapshot_name\x18\x02 \x01(\t\x12\x0e\n\x06rehash\x18\x03 \x01(\x08\"q\n\x1f\x45ngineSnapshotHashStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x15\n\rsnapshot_name\x18\x02 \x01(\t\"\xc4\x01\n%EngineSnapshotHashStatusProxyResponse\x12H\n\x06status\x18\x01 \x03(\x0b\x32\x38.imrpc.EngineSnapshotHashStatusProxyResponse.StatusEntry\x1aQ\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\".ptypes.SnapshotHashStatusResponse:\x02\x38\x01\"A\n\x1d\x45ngineMetricsGetProxyResponse\x12 \n\x07metrics\x18\x01 \x01(\x0b\x32\x0f.ptypes.Metrics2\xcd\x12\n\x12ProxyEngineService\x12P\n\x10ServerVersionGet\x12\x19.imrpc.ProxyEngineRequest\x1a!.imrpc.EngineVersionProxyResponse\x12K\n\tVolumeGet\x12\x19.imrpc.ProxyEngineRequest\x1a#.imrpc.EngineVolumeGetProxyResponse\x12H\n\x0cVolumeExpand\x12 .imrpc.EngineVolumeExpandRequest\x1a\x16.google.protobuf.Empty\x12V\n\x13VolumeFrontendStart\x12\'.imrpc.EngineVolumeFrontendStartRequest\x1a\x16.google.protobuf.Empty\x12K\n\x16VolumeFrontendShutdown\x12\x19.imrpc.ProxyEngineRequest\x1a\x16.google.protobuf.Empty\x12t\n\"VolumeUnmapMarkSnapChainRemovedSet\x12\x36.imrpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eVolumeSnapshot\x12\".imrpc.EngineVolumeSnapshotRequest\x1a(.imrpc.EngineVolumeSnapshotProxyResponse\x12Q\n\x0cSnapshotList\x12\x19.imrpc.ProxyEngineRequest\x1a&.imrpc.EngineSnapshotListProxyResponse\x12L\n\x0eSnapshotRevert\x12\".imrpc.EngineSnapshotRevertRequest\x1a\x16.google.protobuf.Empty\x12J\n\rSnapshotPurge\x12!.imrpc.EngineSnapshotPurgeRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotPurgeStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotPurgeStatusProxyResponse\x12J\n\rSnapshotClone\x12!.imrpc.EngineSnapshotCloneRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotCloneStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotCloneStatusProxyResponse\x12L\n\x0eSnapshotRemove\x12\".imrpc.EngineSnapshotRemoveRequest\x1a\x16.google.protobuf.Empty\x12H\n\x0cSnapshotHash\x12 .imrpc.EngineSnapshotHashRequest\x1a\x16.google.protobuf.Empty\x12j\n\x12SnapshotHashStatus\x12&.imrpc.EngineSnapshotHashStatusRequest\x1a,.imrpc.EngineSnapshotHashStatusProxyResponse\x12^\n\x0eSnapshotBackup\x12\".imrpc.EngineSnapshotBackupRequest\x1a(.imrpc.EngineSnapshotBackupProxyResponse\x12p\n\x14SnapshotBackupStatus\x12(.imrpc.EngineSnapshotBackupStatusRequest\x1a..imrpc.EngineSnapshotBackupStatusProxyResponse\x12[\n\rBackupRestore\x12!.imrpc.EngineBackupRestoreRequest\x1a\'.imrpc.EngineBackupRestoreProxyResponse\x12_\n\x13\x42\x61\x63kupRestoreStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineBackupRestoreStatusProxyResponse\x12\x44\n\nReplicaAdd\x12\x1e.imrpc.EngineReplicaAddRequest\x1a\x16.google.protobuf.Empty\x12O\n\x0bReplicaList\x12\x19.imrpc.ProxyEngineRequest\x1a%.imrpc.EngineReplicaListProxyResponse\x12\x64\n\x17ReplicaRebuildingStatus\x12\x19.imrpc.ProxyEngineRequest\x1a..imrpc.EngineReplicaRebuildStatusProxyResponse\x12X\n\x14ReplicaVerifyRebuild\x12(.imrpc.EngineReplicaVerifyRebuildRequest\x1a\x16.google.protobuf.Empty\x12J\n\rReplicaRemove\x12!.imrpc.EngineReplicaRemoveRequest\x1a\x16.google.protobuf.Empty\x12R\n\x11ReplicaModeUpdate\x12%.imrpc.EngineReplicaModeUpdateRequest\x1a\x16.google.protobuf.Empty\x12M\n\nMetricsGet\x12\x19.imrpc.ProxyEngineRequest\x1a$.imrpc.EngineMetricsGetProxyResponseb\x06proto3')
+=======
+  serialized_pb=_b('\nCgithub.com/longhorn/longhorn-instance-manager/pkg/imrpc/proxy.proto\x12\x05imrpc\x1a\x1bgoogle/protobuf/empty.proto\x1a\x41github.com/longhorn/longhorn-engine/proto/ptypes/controller.proto\x1a@github.com/longhorn/longhorn-engine/proto/ptypes/syncagent.proto\x1a\x44github.com/longhorn/longhorn-instance-manager/pkg/imrpc/common.proto\"\x88\x01\n\x12ProxyEngineRequest\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x12\x37\n\x14\x62\x61\x63kend_store_driver\x18\x02 \x01(\x0e\x32\x19.imrpc.BackendStoreDriver\x12\x13\n\x0b\x65ngine_name\x18\x03 \x01(\t\x12\x13\n\x0bvolume_name\x18\x04 \x01(\t\"D\n\x1a\x45ngineVersionProxyResponse\x12&\n\x07version\x18\x01 \x01(\x0b\x32\x15.ptypes.VersionOutput\">\n\x1c\x45ngineVolumeGetProxyResponse\x12\x1e\n\x06volume\x18\x01 \x01(\x0b\x32\x0e.ptypes.Volume\"\x81\x01\n\x19\x45ngineVolumeExpandRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12+\n\x06\x65xpand\x18\x02 \x01(\x0b\x32\x1b.ptypes.VolumeExpandRequest\"\x97\x01\n EngineVolumeFrontendStartRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12:\n\x0e\x66rontend_start\x18\x02 \x01(\x0b\x32\".ptypes.VolumeFrontendStartRequest\"\x8e\x01\n\x1b\x45ngineVolumeSnapshotRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x36\n\x0fsnapshot_volume\x18\x02 \x01(\x0b\x32\x1d.ptypes.VolumeSnapshotRequest\"R\n!EngineVolumeSnapshotProxyResponse\x12-\n\x08snapshot\x18\x01 \x01(\x0b\x32\x1b.ptypes.VolumeSnapshotReply\"\xb6\x01\n/EngineVolumeUnmapMarkSnapChainRemovedSetRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12J\n\x0funmap_mark_snap\x18\x02 \x01(\x0b\x32\x31.ptypes.VolumeUnmapMarkSnapChainRemovedSetRequest\"\xb0\x01\n\x1f\x45ngineSnapshotListProxyResponse\x12@\n\x05\x64isks\x18\x01 \x03(\x0b\x32\x31.imrpc.EngineSnapshotListProxyResponse.DisksEntry\x1aK\n\nDisksEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.imrpc.EngineSnapshotDiskInfo:\x02\x38\x01\"\xd6\x02\n\x16\x45ngineSnapshotDiskInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06parent\x18\x02 \x01(\t\x12=\n\x08\x63hildren\x18\x03 \x03(\x0b\x32+.imrpc.EngineSnapshotDiskInfo.ChildrenEntry\x12\x0f\n\x07removed\x18\x04 \x01(\x08\x12\x14\n\x0cuser_created\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\t\x12\x0c\n\x04size\x18\x07 \x01(\t\x12\x39\n\x06labels\x18\x08 \x03(\x0b\x32).imrpc.EngineSnapshotDiskInfo.LabelsEntry\x1a/\n\rChildrenEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"d\n\x1b\x45ngineSnapshotRevertRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04name\x18\x02 \x01(\t\"r\n\x1a\x45ngineSnapshotPurgeRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x1b\n\x13skip_if_in_progress\x18\x02 \x01(\x08\"\xc7\x01\n&EngineSnapshotPurgeStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotPurgeStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotPurgeStatusResponse:\x02\x38\x01\"\xd3\x01\n\x1a\x45ngineSnapshotCloneRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0f\x66rom_controller\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12%\n\x1d\x65xport_backing_image_if_exist\x18\x04 \x01(\x08\x12%\n\x1d\x66ile_sync_http_client_timeout\x18\x05 \x01(\x05\"\xc7\x01\n&EngineSnapshotCloneStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineSnapshotCloneStatusProxyResponse.StatusEntry\x1aR\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.ptypes.SnapshotCloneStatusResponse:\x02\x38\x01\"e\n\x1b\x45ngineSnapshotRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\r\n\x05names\x18\x02 \x03(\t\"\xa4\x03\n\x1b\x45ngineSnapshotBackupRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x08 \x03(\t\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x15\n\rsnapshot_name\x18\x03 \x01(\t\x12\x15\n\rbackup_target\x18\x04 \x01(\t\x12\x1a\n\x12\x62\x61\x63king_image_name\x18\x05 \x01(\t\x12\x1e\n\x16\x62\x61\x63king_image_checksum\x18\x06 \x01(\t\x12>\n\x06labels\x18\x07 \x03(\x0b\x32..imrpc.EngineSnapshotBackupRequest.LabelsEntry\x12\x1a\n\x12\x63ompression_method\x18\t \x01(\t\x12\x18\n\x10\x63oncurrent_limit\x18\n \x01(\x05\x12\x1a\n\x12storage_class_name\x18\x0b \x01(\t\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"_\n!EngineSnapshotBackupProxyResponse\x12\x11\n\tbackup_id\x18\x01 \x01(\t\x12\x0f\n\x07replica\x18\x02 \x01(\t\x12\x16\n\x0eis_incremental\x18\x03 \x01(\x08\"\x8a\x01\n!EngineSnapshotBackupStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x13\n\x0b\x62\x61\x63kup_name\x18\x02 \x01(\t\x12\x17\n\x0freplica_address\x18\x03 \x01(\t\"\x9d\x01\n\'EngineSnapshotBackupStatusProxyResponse\x12\x12\n\nbackup_url\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08progress\x18\x03 \x01(\x05\x12\x15\n\rsnapshot_name\x18\x04 \x01(\t\x12\r\n\x05state\x18\x05 \x01(\t\x12\x17\n\x0freplica_address\x18\x06 \x01(\t\"\xaf\x01\n\x1a\x45ngineBackupRestoreRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x0c\n\x04\x65nvs\x18\x02 \x03(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x13\n\x0bvolume_name\x18\x05 \x01(\t\x12\x18\n\x10\x63oncurrent_limit\x18\x06 \x01(\x05\"5\n EngineBackupRestoreProxyResponse\x12\x11\n\ttaskError\x18\x01 \x01(\x0c\"\xc4\x01\n&EngineBackupRestoreStatusProxyResponse\x12I\n\x06status\x18\x01 \x03(\x0b\x32\x39.imrpc.EngineBackupRestoreStatusProxyResponse.StatusEntry\x1aO\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .imrpc.EngineBackupRestoreStatus:\x02\x38\x01\"\xc0\x01\n\x19\x45ngineBackupRestoreStatus\x12\x14\n\x0cis_restoring\x18\x01 \x01(\x08\x12\x15\n\rlast_restored\x18\x02 \x01(\t\x12 \n\x18\x63urrent_restoring_backup\x18\x03 \x01(\t\x12\x10\n\x08progress\x18\x04 \x01(\x05\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x10\n\x08\x66ilename\x18\x06 \x01(\t\x12\r\n\x05state\x18\x07 \x01(\t\x12\x12\n\nbackup_url\x18\x08 \x01(\t\"\xf0\x01\n\x17\x45ngineReplicaAddRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12\x0f\n\x07restore\x18\x03 \x01(\x08\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x14\n\x0c\x63urrent_size\x18\x05 \x01(\x03\x12\x11\n\tfast_sync\x18\x06 \x01(\x08\x12%\n\x1d\x66ile_sync_http_client_timeout\x18\x07 \x01(\x05\x12\x14\n\x0creplica_name\x18\x08 \x01(\t\"P\n\x1e\x45ngineReplicaListProxyResponse\x12.\n\x0creplica_list\x18\x01 \x01(\x0b\x32\x18.ptypes.ReplicaListReply\"u\n!EngineReplicaVerifyRebuildRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\"\xca\x01\n\'EngineReplicaRebuildStatusProxyResponse\x12J\n\x06status\x18\x01 \x03(\x0b\x32:.imrpc.EngineReplicaRebuildStatusProxyResponse.StatusEntry\x1aS\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x33\n\x05value\x18\x02 \x01(\x0b\x32$.ptypes.ReplicaRebuildStatusResponse:\x02\x38\x01\"\x84\x01\n\x1a\x45ngineReplicaRemoveRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12\x14\n\x0creplica_name\x18\x03 \x01(\t\"\x95\x01\n\x1e\x45ngineReplicaModeUpdateRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x17\n\x0freplica_address\x18\x02 \x01(\t\x12!\n\x04mode\x18\x03 \x01(\x0e\x32\x13.ptypes.ReplicaMode\"{\n\x19\x45ngineSnapshotHashRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x15\n\rsnapshot_name\x18\x02 \x01(\t\x12\x0e\n\x06rehash\x18\x03 \x01(\x08\"q\n\x1f\x45ngineSnapshotHashStatusRequest\x12\x37\n\x14proxy_engine_request\x18\x01 \x01(\x0b\x32\x19.imrpc.ProxyEngineRequest\x12\x15\n\rsnapshot_name\x18\x02 \x01(\t\"\xc4\x01\n%EngineSnapshotHashStatusProxyResponse\x12H\n\x06status\x18\x01 \x03(\x0b\x32\x38.imrpc.EngineSnapshotHashStatusProxyResponse.StatusEntry\x1aQ\n\x0bStatusEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\".ptypes.SnapshotHashStatusResponse:\x02\x38\x01\"A\n\x1d\x45ngineMetricsGetProxyResponse\x12 \n\x07metrics\x18\x01 \x01(\x0b\x32\x0f.ptypes.Metrics2\xcd\x12\n\x12ProxyEngineService\x12P\n\x10ServerVersionGet\x12\x19.imrpc.ProxyEngineRequest\x1a!.imrpc.EngineVersionProxyResponse\x12K\n\tVolumeGet\x12\x19.imrpc.ProxyEngineRequest\x1a#.imrpc.EngineVolumeGetProxyResponse\x12H\n\x0cVolumeExpand\x12 .imrpc.EngineVolumeExpandRequest\x1a\x16.google.protobuf.Empty\x12V\n\x13VolumeFrontendStart\x12\'.imrpc.EngineVolumeFrontendStartRequest\x1a\x16.google.protobuf.Empty\x12K\n\x16VolumeFrontendShutdown\x12\x19.imrpc.ProxyEngineRequest\x1a\x16.google.protobuf.Empty\x12t\n\"VolumeUnmapMarkSnapChainRemovedSet\x12\x36.imrpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest\x1a\x16.google.protobuf.Empty\x12^\n\x0eVolumeSnapshot\x12\".imrpc.EngineVolumeSnapshotRequest\x1a(.imrpc.EngineVolumeSnapshotProxyResponse\x12Q\n\x0cSnapshotList\x12\x19.imrpc.ProxyEngineRequest\x1a&.imrpc.EngineSnapshotListProxyResponse\x12L\n\x0eSnapshotRevert\x12\".imrpc.EngineSnapshotRevertRequest\x1a\x16.google.protobuf.Empty\x12J\n\rSnapshotPurge\x12!.imrpc.EngineSnapshotPurgeRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotPurgeStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotPurgeStatusProxyResponse\x12J\n\rSnapshotClone\x12!.imrpc.EngineSnapshotCloneRequest\x1a\x16.google.protobuf.Empty\x12_\n\x13SnapshotCloneStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineSnapshotCloneStatusProxyResponse\x12L\n\x0eSnapshotRemove\x12\".imrpc.EngineSnapshotRemoveRequest\x1a\x16.google.protobuf.Empty\x12H\n\x0cSnapshotHash\x12 .imrpc.EngineSnapshotHashRequest\x1a\x16.google.protobuf.Empty\x12j\n\x12SnapshotHashStatus\x12&.imrpc.EngineSnapshotHashStatusRequest\x1a,.imrpc.EngineSnapshotHashStatusProxyResponse\x12^\n\x0eSnapshotBackup\x12\".imrpc.EngineSnapshotBackupRequest\x1a(.imrpc.EngineSnapshotBackupProxyResponse\x12p\n\x14SnapshotBackupStatus\x12(.imrpc.EngineSnapshotBackupStatusRequest\x1a..imrpc.EngineSnapshotBackupStatusProxyResponse\x12[\n\rBackupRestore\x12!.imrpc.EngineBackupRestoreRequest\x1a\'.imrpc.EngineBackupRestoreProxyResponse\x12_\n\x13\x42\x61\x63kupRestoreStatus\x12\x19.imrpc.ProxyEngineRequest\x1a-.imrpc.EngineBackupRestoreStatusProxyResponse\x12\x44\n\nReplicaAdd\x12\x1e.imrpc.EngineReplicaAddRequest\x1a\x16.google.protobuf.Empty\x12O\n\x0bReplicaList\x12\x19.imrpc.ProxyEngineRequest\x1a%.imrpc.EngineReplicaListProxyResponse\x12\x64\n\x17ReplicaRebuildingStatus\x12\x19.imrpc.ProxyEngineRequest\x1a..imrpc.EngineReplicaRebuildStatusProxyResponse\x12X\n\x14ReplicaVerifyRebuild\x12(.imrpc.EngineReplicaVerifyRebuildRequest\x1a\x16.google.protobuf.Empty\x12J\n\rReplicaRemove\x12!.imrpc.EngineReplicaRemoveRequest\x1a\x16.google.protobuf.Empty\x12R\n\x11ReplicaModeUpdate\x12%.imrpc.EngineReplicaModeUpdateRequest\x1a\x16.google.protobuf.Empty\x12M\n\nMetricsGet\x12\x19.imrpc.ProxyEngineRequest\x1a$.imrpc.EngineMetricsGetProxyResponseb\x06proto3')
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2.DESCRIPTOR,github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_syncagent__pb2.DESCRIPTOR,])
 
@@ -44,6 +48,30 @@ _PROXYENGINEREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
+=======
+    _descriptor.FieldDescriptor(
+      name='backend_store_driver', full_name='imrpc.ProxyEngineRequest.backend_store_driver', index=1,
+      number=2, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='engine_name', full_name='imrpc.ProxyEngineRequest.engine_name', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='volume_name', full_name='imrpc.ProxyEngineRequest.volume_name', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
   ],
   extensions=[
   ],
@@ -56,8 +84,13 @@ _PROXYENGINEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=184,
   serialized_end=221,
+=======
+  serialized_start=311,
+  serialized_end=447,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -87,8 +120,13 @@ _ENGINEVERSIONPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=223,
   serialized_end=291,
+=======
+  serialized_start=449,
+  serialized_end=517,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -118,8 +156,13 @@ _ENGINEVOLUMEGETPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=293,
   serialized_end=355,
+=======
+  serialized_start=519,
+  serialized_end=581,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -156,8 +199,13 @@ _ENGINEVOLUMEEXPANDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=358,
   serialized_end=487,
+=======
+  serialized_start=584,
+  serialized_end=713,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -194,8 +242,13 @@ _ENGINEVOLUMEFRONTENDSTARTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=490,
   serialized_end=641,
+=======
+  serialized_start=716,
+  serialized_end=867,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -232,8 +285,13 @@ _ENGINEVOLUMESNAPSHOTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=644,
   serialized_end=786,
+=======
+  serialized_start=870,
+  serialized_end=1012,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -263,8 +321,13 @@ _ENGINEVOLUMESNAPSHOTPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=788,
   serialized_end=870,
+=======
+  serialized_start=1014,
+  serialized_end=1096,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -301,8 +364,13 @@ _ENGINEVOLUMEUNMAPMARKSNAPCHAINREMOVEDSETREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=873,
   serialized_end=1055,
+=======
+  serialized_start=1099,
+  serialized_end=1281,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -339,8 +407,13 @@ _ENGINESNAPSHOTLISTPROXYRESPONSE_DISKSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1159,
   serialized_end=1234,
+=======
+  serialized_start=1385,
+  serialized_end=1460,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINESNAPSHOTLISTPROXYRESPONSE = _descriptor.Descriptor(
@@ -369,8 +442,13 @@ _ENGINESNAPSHOTLISTPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1058,
   serialized_end=1234,
+=======
+  serialized_start=1284,
+  serialized_end=1460,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -407,8 +485,13 @@ _ENGINESNAPSHOTDISKINFO_CHILDRENENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1485,
   serialized_end=1532,
+=======
+  serialized_start=1711,
+  serialized_end=1758,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINESNAPSHOTDISKINFO_LABELSENTRY = _descriptor.Descriptor(
@@ -444,8 +527,13 @@ _ENGINESNAPSHOTDISKINFO_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1534,
   serialized_end=1579,
+=======
+  serialized_start=1760,
+  serialized_end=1805,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINESNAPSHOTDISKINFO = _descriptor.Descriptor(
@@ -523,8 +611,13 @@ _ENGINESNAPSHOTDISKINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1237,
   serialized_end=1579,
+=======
+  serialized_start=1463,
+  serialized_end=1805,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -561,8 +654,13 @@ _ENGINESNAPSHOTREVERTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1581,
   serialized_end=1681,
+=======
+  serialized_start=1807,
+  serialized_end=1907,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -599,8 +697,13 @@ _ENGINESNAPSHOTPURGEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1683,
   serialized_end=1797,
+=======
+  serialized_start=1909,
+  serialized_end=2023,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -637,8 +740,13 @@ _ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1917,
   serialized_end=1999,
+=======
+  serialized_start=2143,
+  serialized_end=2225,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -667,8 +775,13 @@ _ENGINESNAPSHOTPURGESTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1800,
   serialized_end=1999,
+=======
+  serialized_start=2026,
+  serialized_end=2225,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -726,8 +839,13 @@ _ENGINESNAPSHOTCLONEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=2002,
   serialized_end=2213,
+=======
+  serialized_start=2228,
+  serialized_end=2439,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -764,8 +882,13 @@ _ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=2333,
   serialized_end=2415,
+=======
+  serialized_start=2559,
+  serialized_end=2641,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -794,8 +917,13 @@ _ENGINESNAPSHOTCLONESTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=2216,
   serialized_end=2415,
+=======
+  serialized_start=2442,
+  serialized_end=2641,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -832,8 +960,13 @@ _ENGINESNAPSHOTREMOVEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=2417,
   serialized_end=2518,
+=======
+  serialized_start=2643,
+  serialized_end=2744,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -870,8 +1003,13 @@ _ENGINESNAPSHOTBACKUPREQUEST_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=1534,
   serialized_end=1579,
+=======
+  serialized_start=1760,
+  serialized_end=1805,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINESNAPSHOTBACKUPREQUEST = _descriptor.Descriptor(
@@ -949,8 +1087,13 @@ _ENGINESNAPSHOTBACKUPREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=2521,
   serialized_end=2859,
+=======
+  serialized_start=2747,
+  serialized_end=3167,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -994,8 +1137,13 @@ _ENGINESNAPSHOTBACKUPPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=2861,
   serialized_end=2956,
+=======
+  serialized_start=3169,
+  serialized_end=3264,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1039,8 +1187,13 @@ _ENGINESNAPSHOTBACKUPSTATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=2959,
   serialized_end=3097,
+=======
+  serialized_start=3267,
+  serialized_end=3405,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1105,8 +1258,13 @@ _ENGINESNAPSHOTBACKUPSTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=3100,
   serialized_end=3257,
+=======
+  serialized_start=3408,
+  serialized_end=3565,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1164,8 +1322,13 @@ _ENGINEBACKUPRESTOREREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=3260,
   serialized_end=3409,
+=======
+  serialized_start=3568,
+  serialized_end=3743,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1195,8 +1358,13 @@ _ENGINEBACKUPRESTOREPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=3411,
   serialized_end=3464,
+=======
+  serialized_start=3745,
+  serialized_end=3798,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1233,8 +1401,13 @@ _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=3584,
   serialized_end=3663,
+=======
+  serialized_start=3918,
+  serialized_end=3997,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -1263,8 +1436,13 @@ _ENGINEBACKUPRESTORESTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=3467,
   serialized_end=3663,
+=======
+  serialized_start=3801,
+  serialized_end=3997,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1343,8 +1521,13 @@ _ENGINEBACKUPRESTORESTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=3666,
   serialized_end=3858,
+=======
+  serialized_start=4000,
+  serialized_end=4192,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1416,8 +1599,13 @@ _ENGINEREPLICAADDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=3861,
   serialized_end=4079,
+=======
+  serialized_start=4195,
+  serialized_end=4435,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1447,8 +1635,13 @@ _ENGINEREPLICALISTPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4081,
   serialized_end=4161,
+=======
+  serialized_start=4437,
+  serialized_end=4517,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1485,8 +1678,13 @@ _ENGINEREPLICAVERIFYREBUILDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4163,
   serialized_end=4280,
+=======
+  serialized_start=4519,
+  serialized_end=4636,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1523,8 +1721,13 @@ _ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4402,
   serialized_end=4485,
+=======
+  serialized_start=4758,
+  serialized_end=4841,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -1553,8 +1756,13 @@ _ENGINEREPLICAREBUILDSTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4283,
   serialized_end=4485,
+=======
+  serialized_start=4639,
+  serialized_end=4841,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1591,8 +1799,13 @@ _ENGINEREPLICAREMOVEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4487,
   serialized_end=4597,
+=======
+  serialized_start=4844,
+  serialized_end=4976,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1636,8 +1849,13 @@ _ENGINEREPLICAMODEUPDATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4600,
   serialized_end=4749,
+=======
+  serialized_start=4979,
+  serialized_end=5128,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1681,8 +1899,13 @@ _ENGINESNAPSHOTHASHREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4751,
   serialized_end=4874,
+=======
+  serialized_start=5130,
+  serialized_end=5253,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1719,8 +1942,13 @@ _ENGINESNAPSHOTHASHSTATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4876,
   serialized_end=4989,
+=======
+  serialized_start=5255,
+  serialized_end=5368,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1757,8 +1985,13 @@ _ENGINESNAPSHOTHASHSTATUSPROXYRESPONSE_STATUSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=5107,
   serialized_end=5188,
+=======
+  serialized_start=5486,
+  serialized_end=5567,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINESNAPSHOTHASHSTATUSPROXYRESPONSE = _descriptor.Descriptor(
@@ -1787,8 +2020,13 @@ _ENGINESNAPSHOTHASHSTATUSPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=4992,
   serialized_end=5188,
+=======
+  serialized_start=5371,
+  serialized_end=5567,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 
@@ -1818,8 +2056,13 @@ _ENGINEMETRICSGETPROXYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=5190,
   serialized_end=5255,
+=======
+  serialized_start=5569,
+  serialized_end=5634,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
 )
 
 _ENGINEVERSIONPROXYRESPONSE.fields_by_name['version'].message_type = github_dot_com_dot_longhorn_dot_longhorn__engine_dot_proto_dot_ptypes_dot_controller__pb2._VERSIONOUTPUT
@@ -2236,8 +2479,13 @@ _PROXYENGINESERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
+<<<<<<< HEAD:integration/rpc/proxy/proxy_pb2.py
   serialized_start=5258,
   serialized_end=7639,
+=======
+  serialized_start=5637,
+  serialized_end=8018,
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest):integration/rpc/proxy/github/com/longhorn/longhorn_instance_manager/pkg/imrpc/proxy_pb2.py
   methods=[
   _descriptor.MethodDescriptor(
     name='ServerVersionGet',

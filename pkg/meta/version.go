@@ -6,7 +6,11 @@ const (
 	InstanceManagerAPIMinVersion = 1
 
 	// InstanceManagerProxyAPIVersion is used for compatibility check for longhorn-manager
+<<<<<<< HEAD
 	InstanceManagerProxyAPIVersion    = 3
+=======
+	InstanceManagerProxyAPIVersion    = 5
+>>>>>>> c258d43 (Add extra field to ProxyEngineRequest)
 	InstanceManagerProxyAPIMinVersion = 1
 )
 
