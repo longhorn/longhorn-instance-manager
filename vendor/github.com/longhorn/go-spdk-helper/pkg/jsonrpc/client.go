@@ -97,17 +97,18 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout t
 		return nil, err
 	}
 
+	connDecoder := json.NewDecoder(bufio.NewReader(c.conn))
 	for count := 0; count <= int(timeout/time.Second); count++ {
-		if c.decoder.More() {
+		if connDecoder.More() {
 			break
 		}
 		time.Sleep(1 * time.Second)
 	}
-	if !c.decoder.More() {
+	if !connDecoder.More() {
 		return nil, fmt.Errorf("timeout %v second waiting for the response from the SPDK JSON RPC server", timeout.Seconds())
 	}
 
-	if err = c.decoder.Decode(&resp); err != nil {
+	if err = connDecoder.Decode(&resp); err != nil {
 		return nil, err
 	}
 	if resp.ID != id {

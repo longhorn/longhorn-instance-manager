@@ -112,7 +112,7 @@ func (s *Server) monitoring() {
 
 			logrus.WithError(err).Errorf("SPDK Server: failed to verify and update replica cache, will retry later")
 
-			if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
+			if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) || jsonrpc.IsJSONRPCRespErrorInvalidCharacter(err) {
 				err = s.tryEnsureSPDKTgtHealthy()
 				if err != nil {
 					logrus.WithError(err).Error("SPDK Server: failed to ensure spdk_tgt is healthy")
