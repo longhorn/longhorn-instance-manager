@@ -56,11 +56,12 @@ func (p *Proxy) replicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 	}
 
 	if req.Restore {
-		if err := task.AddRestoreReplica(req.Size, req.CurrentSize, req.ReplicaAddress); err != nil {
+		if err := task.AddRestoreReplica(req.Size, req.CurrentSize, req.ReplicaAddress, req.ReplicaName); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, int(req.FileSyncHttpClientTimeout), req.FastSync); err != nil {
+		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, req.ReplicaName,
+			int(req.FileSyncHttpClientTimeout), req.FastSync); err != nil {
 			return nil, err
 		}
 	}
@@ -187,7 +188,7 @@ func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplica
 		return nil, err
 	}
 
-	err = task.VerifyRebuildReplica(req.ReplicaAddress)
+	err = task.VerifyRebuildReplica(req.ReplicaAddress, req.ReplicaName)
 	if err != nil {
 		return nil, err
 	}

@@ -160,13 +160,18 @@ func (c *ProxyClient) ReplicaRebuildingStatus(backendStoreDriver, engineName, vo
 func (c *ProxyClient) ReplicaVerifyRebuild(serviceAddress, replicaAddress string) (err error) {
 =======
 func (c *ProxyClient) ReplicaVerifyRebuild(backendStoreDriver, engineName, volumeName, serviceAddress,
+<<<<<<< HEAD
 	replicaAddress string) (err error) {
 >>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
+=======
+	replicaAddress, replicaName string) (err error) {
+>>>>>>> 35a5eb2 (Add replicaName fields to messages and ensure they are used)
 	input := map[string]string{
 		"engineName":     engineName,
 		"volumeName":     volumeName,
 		"serviceAddress": serviceAddress,
 		"replicaAddress": replicaAddress,
+		"replicaName":    replicaName,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return errors.Wrap(err, "failed to verify replica rebuild")
@@ -188,6 +193,7 @@ func (c *ProxyClient) ReplicaVerifyRebuild(backendStoreDriver, engineName, volum
 >>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		ReplicaAddress: replicaAddress,
+		ReplicaName:    replicaName,
 	}
 	_, err = c.service.ReplicaVerifyRebuild(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {

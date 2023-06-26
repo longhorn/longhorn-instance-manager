@@ -162,6 +162,7 @@ message EngineSnapshotBackupStatusRequest {
 
 	string backup_name = 2;
 	string replica_address = 3;
+	string replica_name = 4;
 }
 
 message EngineSnapshotBackupStatusProxyResponse {
@@ -222,6 +223,7 @@ message EngineReplicaVerifyRebuildRequest {
 	ProxyEngineRequest proxy_engine_request = 1;
 
 	string replica_address = 2;
+	string replica_name = 3;
 }
 
 message EngineReplicaRebuildStatusProxyResponse {

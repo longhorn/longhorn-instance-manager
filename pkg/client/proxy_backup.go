@@ -64,7 +64,7 @@ func (c *ProxyClient) SnapshotBackupStatus(serviceAddress, backupName, replicaAd
 	input := map[string]string{
 =======
 func (c *ProxyClient) SnapshotBackupStatus(backendStoreDriver, engineName, volumeName, serviceAddress, backupName,
-	replicaAddress string) (status *SnapshotBackupStatus, err error) {
+	replicaAddress, replicaName string) (status *SnapshotBackupStatus, err error) {
 	input := map[string]string{
 		"engineName":     engineName,
 		"volumeName":     volumeName,
@@ -93,6 +93,9 @@ func (c *ProxyClient) SnapshotBackupStatus(backendStoreDriver, engineName, volum
 		},
 		BackupName:     backupName,
 		ReplicaAddress: replicaAddress,
+		// For now, it is unlikely we actually know replicaName. Pass it anyway, as an empty string will not cause a
+		// validation failure and this may change in the future.
+		ReplicaName: replicaName,
 	}
 	recv, err := c.service.SnapshotBackupStatus(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {

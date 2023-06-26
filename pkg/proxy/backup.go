@@ -128,7 +128,11 @@ func (p *Proxy) snapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 				continue
 			}
 
-			cReplica, err := rclient.NewReplicaClient(r.Address.Address)
+			// We don't know the replicaName here since we retrieved address from the engine, which doesn't know it.
+			// Pass it anyway, since the default empty string disables validation and we may know it with a future
+			// code change.
+			cReplica, err := rclient.NewReplicaClient(r.Address.Address, req.ProxyEngineRequest.VolumeName,
+				r.Address.InstanceName)
 			if err != nil {
 				logrus.WithError(err).Debugf("Failed to create replica client with %v", r.Address.Address)
 				continue
@@ -157,7 +161,8 @@ func (p *Proxy) snapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 		}
 	}
 
-	cReplica, err := rclient.NewReplicaClient(replicaAddress)
+	// We may know replicaName here. If we don't, we pass an empty string, which disables validation.
+	cReplica, err := rclient.NewReplicaClient(replicaAddress, req.ProxyEngineRequest.VolumeName, req.ReplicaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create replica client with %v", replicaAddress)
 	}
