@@ -21,6 +21,8 @@ import (
 func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *empty.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":     req.ProxyEngineRequest.Address,
+		"engineName":     req.ProxyEngineRequest.EngineName,
+		"volumeName":     req.ProxyEngineRequest.VolumeName,
 		"replicaName":    req.ReplicaName,
 		"replicaAddress": req.ReplicaAddress,
 		"restore":        req.Restore,
@@ -41,7 +43,8 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 }
 
 func (p *Proxy) replicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *empty.Empty, err error) {
-	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +82,7 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.Address,
 		"engineName":         req.EngineName,
+		"volumeName":         req.VolumeName,
 		"backendStoreDriver": req.BackendStoreDriver,
 	})
 	log.Trace("Listing replicas")
@@ -94,7 +98,7 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 }
 
 func (p *Proxy) replicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
-	c, err := eclient.NewControllerClient(req.Address)
+	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +177,7 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.Address,
 		"engineName":         req.EngineName,
+		"volumeName":         req.VolumeName,
 		"backendStoreDriver": req.BackendStoreDriver,
 	})
 	log.Trace("Getting replica rebuilding status")
@@ -188,7 +193,7 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 }
 
 func (p *Proxy) replicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
-	task, err := esync.NewTask(ctx, req.Address)
+	task, err := esync.NewTask(ctx, req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +230,8 @@ func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplica
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Infof("Verifying replica %v rebuild", req.ReplicaAddress)
 
-	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +248,7 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":     req.ProxyEngineRequest.Address,
 		"engineName":     req.ProxyEngineRequest.EngineName,
+		"volumeName":     req.ProxyEngineRequest.VolumeName,
 		"replicaName":    req.ReplicaName,
 		"replicaAddress": req.ReplicaAddress,
 	})
@@ -264,7 +271,8 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 }
 
 func (p *Proxy) replicaDelete(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) error {
-	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return err
 	}
@@ -287,7 +295,8 @@ func (p *Proxy) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaMod
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Infof("Updating replica mode to %v", req.Mode)
 
-	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}

@@ -26,6 +26,7 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
 	log.Infof("Backing up snapshot %v to backup %v", req.SnapshotName, req.BackupName)
@@ -62,7 +63,8 @@ func (p *Proxy) snapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 		labels = append(labels, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +100,7 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
 	log.Tracef("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
@@ -113,7 +116,8 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 }
 
 func (p *Proxy) snapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
-	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -191,6 +195,7 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
 	log.Infof("Restoring backup %v to %v", req.Url, req.VolumeName)
@@ -209,6 +214,7 @@ func (p *Proxy) backupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
 
@@ -228,7 +234,8 @@ func (p *Proxy) backupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 		return nil, err
 	}
 
-	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -261,6 +268,7 @@ func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.Address,
 		"engineName":         req.EngineName,
+		"volumeName":         req.VolumeName,
 		"backendStoreDriver": req.BackendStoreDriver,
 	})
 	log.Trace("Getting backup restore status")
@@ -276,7 +284,7 @@ func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineReq
 }
 
 func (p *Proxy) backupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
-	task, err := esync.NewTask(ctx, req.Address)
+	task, err := esync.NewTask(ctx, req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
 	}
