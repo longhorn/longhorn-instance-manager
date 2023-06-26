@@ -147,12 +147,13 @@ func (c *ProxyClient) ReplicaRebuildingStatus(backendStoreDriver, engineName, vo
 }
 
 func (c *ProxyClient) ReplicaVerifyRebuild(backendStoreDriver, engineName, volumeName, serviceAddress,
-	replicaAddress string) (err error) {
+	replicaAddress, replicaName string) (err error) {
 	input := map[string]string{
 		"engineName":     engineName,
 		"volumeName":     volumeName,
 		"serviceAddress": serviceAddress,
 		"replicaAddress": replicaAddress,
+		"replicaName":    replicaName,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return errors.Wrap(err, "failed to verify replica rebuild")
@@ -175,6 +176,7 @@ func (c *ProxyClient) ReplicaVerifyRebuild(backendStoreDriver, engineName, volum
 			VolumeName:         volumeName,
 		},
 		ReplicaAddress: replicaAddress,
+		ReplicaName:    replicaName,
 	}
 	_, err = c.service.ReplicaVerifyRebuild(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
