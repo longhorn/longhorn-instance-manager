@@ -47,7 +47,7 @@ func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineReques
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Trace("Getting server version")
 
-	c, err := eclient.NewControllerClient(req.Address)
+	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
 	}

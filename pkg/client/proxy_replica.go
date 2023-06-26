@@ -9,9 +9,20 @@ import (
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
+<<<<<<< HEAD
 func (c *ProxyClient) ReplicaAdd(serviceAddress, replicaAddress string, restore bool, size, currentSize int64, fileSyncHTTPClientTimeout int, fastSync bool) (err error) {
 	input := map[string]string{
 		"serviceAddress": serviceAddress,
+=======
+func (c *ProxyClient) ReplicaAdd(backendStoreDriver, engineName, volumeName, serviceAddress, replicaName,
+	replicaAddress string, restore bool, size, currentSize int64, fileSyncHTTPClientTimeout int,
+	fastSync bool) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+		"serviceAddress": serviceAddress,
+		"replicaName":    replicaName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"replicaAddress": replicaAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -28,7 +39,14 @@ func (c *ProxyClient) ReplicaAdd(serviceAddress, replicaAddress string, restore 
 
 	req := &rpc.EngineReplicaAddRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		ReplicaAddress:            replicaAddress,
 		Restore:                   restore,
@@ -45,8 +63,16 @@ func (c *ProxyClient) ReplicaAdd(serviceAddress, replicaAddress string, restore 
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) ReplicaList(serviceAddress string) (rInfoList []*etypes.ControllerReplicaInfo, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) ReplicaList(backendStoreDriver, engineName, volumeName,
+	serviceAddress string) (rInfoList []*etypes.ControllerReplicaInfo, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -58,7 +84,14 @@ func (c *ProxyClient) ReplicaList(serviceAddress string) (rInfoList []*etypes.Co
 	}()
 
 	req := &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 		Address: serviceAddress,
+=======
+		Address:            serviceAddress,
+		EngineName:         engineName,
+		BackendStoreDriver: rpc.BackendStoreDriver(driver),
+		VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 	resp, err := c.service.ReplicaList(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
@@ -75,8 +108,16 @@ func (c *ProxyClient) ReplicaList(serviceAddress string) (rInfoList []*etypes.Co
 	return rInfoList, nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) ReplicaRebuildingStatus(serviceAddress string) (status map[string]*ReplicaRebuildStatus, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) ReplicaRebuildingStatus(backendStoreDriver, engineName, volumeName,
+	serviceAddress string) (status map[string]*ReplicaRebuildStatus, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -88,7 +129,14 @@ func (c *ProxyClient) ReplicaRebuildingStatus(serviceAddress string) (status map
 	}()
 
 	req := &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 		Address: serviceAddress,
+=======
+		Address:            serviceAddress,
+		EngineName:         engineName,
+		BackendStoreDriver: rpc.BackendStoreDriver(driver),
+		VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 	recv, err := c.service.ReplicaRebuildingStatus(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
@@ -108,8 +156,15 @@ func (c *ProxyClient) ReplicaRebuildingStatus(serviceAddress string) (status map
 	return status, nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) ReplicaVerifyRebuild(serviceAddress, replicaAddress string) (err error) {
+=======
+func (c *ProxyClient) ReplicaVerifyRebuild(backendStoreDriver, engineName, volumeName, serviceAddress,
+	replicaAddress string) (err error) {
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
 		"serviceAddress": serviceAddress,
 		"replicaAddress": replicaAddress,
 	}
@@ -123,7 +178,14 @@ func (c *ProxyClient) ReplicaVerifyRebuild(serviceAddress, replicaAddress string
 
 	req := &rpc.EngineReplicaVerifyRebuildRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		ReplicaAddress: replicaAddress,
 	}

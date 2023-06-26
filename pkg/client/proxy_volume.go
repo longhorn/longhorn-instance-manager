@@ -9,8 +9,15 @@ import (
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
+<<<<<<< HEAD
 func (c *ProxyClient) VolumeGet(serviceAddress string) (info *etypes.VolumeInfo, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) VolumeGet(backendStoreDriver, engineName, volumeName, serviceAddress string) (info *etypes.VolumeInfo, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -22,7 +29,14 @@ func (c *ProxyClient) VolumeGet(serviceAddress string) (info *etypes.VolumeInfo,
 	}()
 
 	req := &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 		Address: serviceAddress,
+=======
+		Address:            serviceAddress,
+		EngineName:         engineName,
+		BackendStoreDriver: rpc.BackendStoreDriver(driver),
+		VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 	resp, err := c.service.VolumeGet(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
@@ -44,8 +58,16 @@ func (c *ProxyClient) VolumeGet(serviceAddress string) (info *etypes.VolumeInfo,
 	return info, nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) VolumeExpand(serviceAddress string, size int64) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) VolumeExpand(backendStoreDriver, engineName, volumeName, serviceAddress string,
+	size int64) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -58,7 +80,14 @@ func (c *ProxyClient) VolumeExpand(serviceAddress string, size int64) (err error
 
 	req := &rpc.EngineVolumeExpandRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		Expand: &eptypes.VolumeExpandRequest{
 			Size: size,
@@ -72,8 +101,15 @@ func (c *ProxyClient) VolumeExpand(serviceAddress string, size int64) (err error
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) VolumeFrontendStart(serviceAddress, frontendName string) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) VolumeFrontendStart(backendStoreDriver, engineName, volumeName, serviceAddress, frontendName string) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 		"frontendName":   frontendName,
 	}
@@ -87,7 +123,14 @@ func (c *ProxyClient) VolumeFrontendStart(serviceAddress, frontendName string) (
 
 	req := &rpc.EngineVolumeFrontendStartRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		FrontendStart: &eptypes.VolumeFrontendStartRequest{
 			Frontend: frontendName,
@@ -101,8 +144,16 @@ func (c *ProxyClient) VolumeFrontendStart(serviceAddress, frontendName string) (
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) VolumeFrontendShutdown(serviceAddress string) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) VolumeFrontendShutdown(backendStoreDriver, engineName, volumeName,
+	serviceAddress string) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -114,7 +165,14 @@ func (c *ProxyClient) VolumeFrontendShutdown(serviceAddress string) (err error) 
 	}()
 
 	req := &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 		Address: serviceAddress,
+=======
+		Address:            serviceAddress,
+		EngineName:         engineName,
+		BackendStoreDriver: rpc.BackendStoreDriver(driver),
+		VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 	_, err = c.service.VolumeFrontendShutdown(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
@@ -124,8 +182,16 @@ func (c *ProxyClient) VolumeFrontendShutdown(serviceAddress string) (err error) 
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) VolumeUnmapMarkSnapChainRemovedSet(serviceAddress string, enabled bool) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) VolumeUnmapMarkSnapChainRemovedSet(backendStoreDriver, engineName, volumeName,
+	serviceAddress string, enabled bool) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -137,8 +203,18 @@ func (c *ProxyClient) VolumeUnmapMarkSnapChainRemovedSet(serviceAddress string, 
 	}()
 
 	req := &rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest{
+<<<<<<< HEAD
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{Address: serviceAddress},
 		UnmapMarkSnap:      &eptypes.VolumeUnmapMarkSnapChainRemovedSetRequest{Enabled: enabled},
+=======
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+		},
+		UnmapMarkSnap: &eptypes.VolumeUnmapMarkSnapChainRemovedSetRequest{Enabled: enabled},
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 	_, err = c.service.VolumeUnmapMarkSnapChainRemovedSet(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {

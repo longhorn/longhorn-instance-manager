@@ -21,7 +21,16 @@ import (
 )
 
 func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
+<<<<<<< HEAD
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
+=======
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+	})
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	log.Infof("Backing up snapshot %v to backup %v", req.SnapshotName, req.BackupName)
 
 	for _, env := range req.Envs {
@@ -45,7 +54,8 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 		labels = append(labels, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -71,10 +81,34 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 }
 
 func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
+<<<<<<< HEAD
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Tracef("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
 
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+=======
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+	})
+	log.Tracef("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
+
+	switch req.ProxyEngineRequest.BackendStoreDriver {
+	case rpc.BackendStoreDriver_v1:
+		return p.snapshotBackupStatus(ctx, req)
+	case rpc.BackendStoreDriver_v2:
+		return p.spdkSnapshotBackupStatus(ctx, req)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+	}
+}
+
+func (p *Proxy) snapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	if err != nil {
 		return nil, err
 	}
@@ -145,9 +179,38 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 }
 
 func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
+<<<<<<< HEAD
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Infof("Restoring backup %v to %v", req.Url, req.VolumeName)
 
+=======
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+	})
+	log.Infof("Restoring backup %v to %v", req.Url, req.VolumeName)
+
+	switch req.ProxyEngineRequest.BackendStoreDriver {
+	case rpc.BackendStoreDriver_v1:
+		return p.backupRestore(ctx, req)
+	case rpc.BackendStoreDriver_v2:
+		return p.spdkBackupRestore(ctx, req)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+	}
+}
+
+func (p *Proxy) backupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+	})
+
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	for _, env := range req.Envs {
 		part := strings.SplitN(env, "=", 2)
 		if len(part) < 2 {
@@ -164,7 +227,8 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 		return nil, err
 	}
 
-	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address)
+	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -190,10 +254,33 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 }
 
 func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
+<<<<<<< HEAD
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Trace("Getting backup restore status")
 
 	task, err := esync.NewTask(ctx, req.Address)
+=======
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":         req.Address,
+		"engineName":         req.EngineName,
+		"volumeName":         req.VolumeName,
+		"backendStoreDriver": req.BackendStoreDriver,
+	})
+	log.Trace("Getting backup restore status")
+
+	switch req.BackendStoreDriver {
+	case rpc.BackendStoreDriver_v1:
+		return p.backupRestoreStatus(ctx, req)
+	case rpc.BackendStoreDriver_v2:
+		return p.spdkBackupRestoreStatus(ctx, req)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+	}
+}
+
+func (p *Proxy) backupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
+	task, err := esync.NewTask(ctx, req.Address, req.VolumeName, req.EngineName)
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	if err != nil {
 		return nil, err
 	}

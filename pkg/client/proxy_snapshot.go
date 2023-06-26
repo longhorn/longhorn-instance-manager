@@ -10,8 +10,16 @@ import (
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
+<<<<<<< HEAD
 func (c *ProxyClient) VolumeSnapshot(serviceAddress, volumeSnapshotName string, labels map[string]string) (snapshotName string, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) VolumeSnapshot(backendStoreDriver, engineName, volumeName, serviceAddress,
+	volumeSnapshotName string, labels map[string]string) (snapshotName string, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -38,7 +46,14 @@ func (c *ProxyClient) VolumeSnapshot(serviceAddress, volumeSnapshotName string, 
 
 	req := &rpc.EngineVolumeSnapshotRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		SnapshotVolume: &eptypes.VolumeSnapshotRequest{
 			Name:   volumeSnapshotName,
@@ -53,8 +68,16 @@ func (c *ProxyClient) VolumeSnapshot(serviceAddress, volumeSnapshotName string, 
 	return recv.Snapshot.Name, nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotList(serviceAddress string) (snapshotDiskInfo map[string]*etypes.DiskInfo, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotList(backendStoreDriver, engineName, volumeName,
+	serviceAddress string) (snapshotDiskInfo map[string]*etypes.DiskInfo, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -66,7 +89,14 @@ func (c *ProxyClient) SnapshotList(serviceAddress string) (snapshotDiskInfo map[
 	}()
 
 	req := &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 		Address: serviceAddress,
+=======
+		Address:            serviceAddress,
+		EngineName:         engineName,
+		BackendStoreDriver: rpc.BackendStoreDriver(driver),
+		VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 	resp, err := c.service.SnapshotList(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
@@ -95,8 +125,16 @@ func (c *ProxyClient) SnapshotList(serviceAddress string) (snapshotDiskInfo map[
 	return snapshotDiskInfo, nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotClone(serviceAddress, name, fromController string, fileSyncHTTPClientTimeout int) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress, snapshotName,
+	fromController string, fileSyncHTTPClientTimeout int) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 		"name":           name,
 		"fromController": fromController,
@@ -111,7 +149,14 @@ func (c *ProxyClient) SnapshotClone(serviceAddress, name, fromController string,
 
 	req := &rpc.EngineSnapshotCloneRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		FromController:            fromController,
 		SnapshotName:              name,
@@ -126,8 +171,15 @@ func (c *ProxyClient) SnapshotClone(serviceAddress, name, fromController string,
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotCloneStatus(serviceAddress string) (status map[string]*SnapshotCloneStatus, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotCloneStatus(backendStoreDriver, engineName, volumeName, serviceAddress string) (status map[string]*SnapshotCloneStatus, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -139,7 +191,14 @@ func (c *ProxyClient) SnapshotCloneStatus(serviceAddress string) (status map[str
 	}()
 
 	req := &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 		Address: serviceAddress,
+=======
+		Address:            serviceAddress,
+		EngineName:         engineName,
+		BackendStoreDriver: rpc.BackendStoreDriver(driver),
+		VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 	recv, err := c.service.SnapshotCloneStatus(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
@@ -160,8 +219,16 @@ func (c *ProxyClient) SnapshotCloneStatus(serviceAddress string) (status map[str
 	return status, nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotRevert(serviceAddress string, name string) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotRevert(backendStoreDriver, engineName, volumeName, serviceAddress string,
+	name string) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 		"name":           name,
 	}
@@ -180,7 +247,14 @@ func (c *ProxyClient) SnapshotRevert(serviceAddress string, name string) (err er
 
 	req := &rpc.EngineSnapshotRevertRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		Name: name,
 	}
@@ -192,8 +266,16 @@ func (c *ProxyClient) SnapshotRevert(serviceAddress string, name string) (err er
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotPurge(serviceAddress string, skipIfInProgress bool) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotPurge(backendStoreDriver, engineName, volumeName, serviceAddress string,
+	skipIfInProgress bool) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -206,7 +288,14 @@ func (c *ProxyClient) SnapshotPurge(serviceAddress string, skipIfInProgress bool
 
 	req := &rpc.EngineSnapshotPurgeRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		SkipIfInProgress: skipIfInProgress,
 	}
@@ -218,8 +307,15 @@ func (c *ProxyClient) SnapshotPurge(serviceAddress string, skipIfInProgress bool
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotPurgeStatus(serviceAddress string) (status map[string]*SnapshotPurgeStatus, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotPurgeStatus(backendStoreDriver, engineName, volumeName, serviceAddress string) (status map[string]*SnapshotPurgeStatus, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -231,7 +327,14 @@ func (c *ProxyClient) SnapshotPurgeStatus(serviceAddress string) (status map[str
 	}()
 
 	req := &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 		Address: serviceAddress,
+=======
+		Address:            serviceAddress,
+		EngineName:         engineName,
+		BackendStoreDriver: rpc.BackendStoreDriver(driver),
+		VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
 
 	recv, err := c.service.SnapshotPurgeStatus(getContextWithGRPCTimeout(c.ctx), req)
@@ -251,8 +354,16 @@ func (c *ProxyClient) SnapshotPurgeStatus(serviceAddress string) (status map[str
 	return status, nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotRemove(serviceAddress string, names []string) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotRemove(backendStoreDriver, engineName, volumeName, serviceAddress string,
+	names []string) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -265,7 +376,14 @@ func (c *ProxyClient) SnapshotRemove(serviceAddress string, names []string) (err
 
 	req := &rpc.EngineSnapshotRemoveRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		Names: names,
 	}
@@ -277,8 +395,16 @@ func (c *ProxyClient) SnapshotRemove(serviceAddress string, names []string) (err
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotHash(serviceAddress string, snapshotName string, rehash bool) (err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotHash(backendStoreDriver, engineName, volumeName, serviceAddress string,
+	snapshotName string, rehash bool) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -291,7 +417,14 @@ func (c *ProxyClient) SnapshotHash(serviceAddress string, snapshotName string, r
 
 	req := &rpc.EngineSnapshotHashRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		SnapshotName: snapshotName,
 		Rehash:       rehash,
@@ -304,8 +437,16 @@ func (c *ProxyClient) SnapshotHash(serviceAddress string, snapshotName string, r
 	return nil
 }
 
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotHashStatus(serviceAddress, snapshotName string) (status map[string]*SnapshotHashStatus, err error) {
 	input := map[string]string{
+=======
+func (c *ProxyClient) SnapshotHashStatus(backendStoreDriver, engineName, volumeName, serviceAddress,
+	snapshotName string) (status map[string]*SnapshotHashStatus, err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -318,7 +459,14 @@ func (c *ProxyClient) SnapshotHashStatus(serviceAddress, snapshotName string) (s
 
 	req := &rpc.EngineSnapshotHashStatusRequest{
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+<<<<<<< HEAD
 			Address: serviceAddress,
+=======
+			Address:            serviceAddress,
+			EngineName:         engineName,
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			VolumeName:         volumeName,
+>>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
 		SnapshotName: snapshotName,
 	}
