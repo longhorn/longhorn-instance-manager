@@ -139,7 +139,8 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 }
 
 func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
-	cFrom, err := eclient.NewControllerClient(req.FromController, req.ProxyEngineRequest.VolumeName)
+	cFrom, err := eclient.NewControllerClient(req.FromController, req.ProxyEngineRequest.VolumeName,
+		req.FromControllerName)
 	if err != nil {
 		return nil, err
 	}

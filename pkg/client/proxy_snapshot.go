@@ -120,13 +120,14 @@ func (c *ProxyClient) SnapshotList(backendStoreDriver, engineName, volumeName,
 }
 
 func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress, snapshotName,
-	fromController string, fileSyncHTTPClientTimeout int) (err error) {
+	fromControllerAddress, fromControllerName string, fileSyncHTTPClientTimeout int) (err error) {
 	input := map[string]string{
-		"engineName":     engineName,
-		"volumeName":     volumeName,
-		"serviceAddress": serviceAddress,
-		"snapshotName":   snapshotName,
-		"fromController": fromController,
+		"engineName":            engineName,
+		"volumeName":            volumeName,
+		"serviceAddress":        serviceAddress,
+		"snapshotName":          snapshotName,
+		"fromControllerAddress": fromControllerAddress,
+		"fromControllerName":    fromControllerName,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return errors.Wrap(err, "failed to clone snapshot")
@@ -138,7 +139,8 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 	}
 
 	defer func() {
-		err = errors.Wrapf(err, "%v failed to clone snapshot %v from %v", c.getProxyErrorPrefix(serviceAddress), snapshotName, fromController)
+		err = errors.Wrapf(err, "%v failed to clone snapshot %v from %v", c.getProxyErrorPrefix(serviceAddress),
+			snapshotName, fromControllerAddress)
 	}()
 
 	req := &rpc.EngineSnapshotCloneRequest{
@@ -148,10 +150,11 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 			BackendStoreDriver: rpc.BackendStoreDriver(driver),
 			VolumeName:         volumeName,
 		},
-		FromController:            fromController,
+		FromController:            fromControllerAddress,
 		SnapshotName:              snapshotName,
 		ExportBackingImageIfExist: false,
 		FileSyncHttpClientTimeout: int32(fileSyncHTTPClientTimeout),
+		FromControllerName:        fromControllerName,
 	}
 	_, err = c.service.SnapshotClone(getContextWithGRPCLongTimeout(c.ctx), req)
 	if err != nil {
