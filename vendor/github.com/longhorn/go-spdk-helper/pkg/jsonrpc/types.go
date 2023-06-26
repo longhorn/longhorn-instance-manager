@@ -92,3 +92,12 @@ func IsJSONRPCRespErrorBrokenPipe(err error) bool {
 	_, ok = jsonRPCError.ErrorDetail.(*ResponseError)
 	return !ok && strings.Contains(jsonRPCError.ErrorDetail.Error(), "broken pipe")
 }
+
+func IsJSONRPCRespErrorInvalidCharacter(err error) bool {
+	jsonRPCError, ok := err.(JSONClientError)
+	if !ok {
+		return false
+	}
+	_, ok = jsonRPCError.ErrorDetail.(*ResponseError)
+	return !ok && strings.Contains(jsonRPCError.ErrorDetail.Error(), "invalid character")
+}
