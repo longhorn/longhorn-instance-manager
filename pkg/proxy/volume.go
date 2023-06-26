@@ -18,6 +18,7 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.Address,
 		"engineName":         req.EngineName,
+		"volumeName":         req.VolumeName,
 		"backendStoreDriver": req.BackendStoreDriver,
 	})
 	log.Trace("Getting volume")
@@ -33,7 +34,7 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 }
 
 func (p *Proxy) volumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
-	c, err := eclient.NewControllerClient(req.Address)
+	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +93,7 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
 	log.Infof("Expanding volume to size %v", req.Expand.Size)
@@ -107,7 +109,8 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 }
 
 func (p *Proxy) volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *empty.Empty, err error) {
-	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +132,7 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
 	log.Infof("Starting volume frontend %v", req.FrontendStart.Frontend)
@@ -144,7 +148,8 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 }
 
 func (p *Proxy) volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *empty.Empty, err error) {
-	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -167,6 +172,7 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.Address,
 		"engineName":         req.EngineName,
+		"volumeName":         req.VolumeName,
 		"backendStoreDriver": req.BackendStoreDriver,
 	})
 	log.Info("Shutting down volume frontend")
@@ -182,7 +188,7 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 }
 
 func (p *Proxy) volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *empty.Empty, err error) {
-	c, err := eclient.NewControllerClient(req.Address)
+	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -205,6 +211,7 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
 	log.Infof("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
@@ -221,7 +228,8 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 }
 
 func (p *Proxy) volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *empty.Empty, err error) {
-	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address)
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
