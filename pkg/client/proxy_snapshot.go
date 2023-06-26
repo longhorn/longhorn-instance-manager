@@ -130,21 +130,35 @@ func (c *ProxyClient) SnapshotClone(serviceAddress, name, fromController string,
 	input := map[string]string{
 =======
 func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress, snapshotName,
-	fromController string, fileSyncHTTPClientTimeout int) (err error) {
+	fromControllerAddress, fromControllerName string, fileSyncHTTPClientTimeout int) (err error) {
 	input := map[string]string{
+<<<<<<< HEAD
 		"engineName":     engineName,
 		"volumeName":     volumeName,
 >>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		"serviceAddress": serviceAddress,
 		"name":           name,
 		"fromController": fromController,
+=======
+		"engineName":            engineName,
+		"volumeName":            volumeName,
+		"serviceAddress":        serviceAddress,
+		"snapshotName":          snapshotName,
+		"fromControllerAddress": fromControllerAddress,
+		"fromControllerName":    fromControllerName,
+>>>>>>> 8c88da9 (Add FromControllerName field to EngineSnapshotCloneRequest)
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return errors.Wrap(err, "failed to clone snapshot")
 	}
 
 	defer func() {
+<<<<<<< HEAD
 		err = errors.Wrapf(err, "%v failed to clone snapshot %v from %v", c.getProxyErrorPrefix(serviceAddress), name, fromController)
+=======
+		err = errors.Wrapf(err, "%v failed to clone snapshot %v from %v", c.getProxyErrorPrefix(serviceAddress),
+			snapshotName, fromControllerAddress)
+>>>>>>> 8c88da9 (Add FromControllerName field to EngineSnapshotCloneRequest)
 	}()
 
 	req := &rpc.EngineSnapshotCloneRequest{
@@ -158,10 +172,16 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 			VolumeName:         volumeName,
 >>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 		},
+<<<<<<< HEAD
 		FromController:            fromController,
 		SnapshotName:              name,
+=======
+		FromController:            fromControllerAddress,
+		SnapshotName:              snapshotName,
+>>>>>>> 8c88da9 (Add FromControllerName field to EngineSnapshotCloneRequest)
 		ExportBackingImageIfExist: false,
 		FileSyncHttpClientTimeout: int32(fileSyncHTTPClientTimeout),
+		FromControllerName:        fromControllerName,
 	}
 	_, err = c.service.SnapshotClone(getContextWithGRPCLongTimeout(c.ctx), req)
 	if err != nil {

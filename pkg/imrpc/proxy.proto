@@ -125,6 +125,7 @@ message EngineSnapshotCloneRequest {
 	string snapshot_name = 3;
 	bool export_backing_image_if_exist = 4;
 	int32 file_sync_http_client_timeout = 5;
+	string from_controller_name = 6;
 }
 
 message EngineSnapshotCloneStatusProxyResponse {
