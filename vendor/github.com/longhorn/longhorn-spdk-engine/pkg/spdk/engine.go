@@ -427,7 +427,7 @@ func (e *Engine) validateAndUpdateFrontend(subsystemMap map[string]*spdktypes.Nv
 			return fmt.Errorf("found non-empty endpoint %s for engine %s with empty frontend", e.Endpoint, e.Name)
 		}
 		if e.Port != 0 {
-			return fmt.Errorf("found non-zero port %s for engine %s with empty frontend", e.Port, e.Name)
+			return fmt.Errorf("found non-zero port %v for engine %s with empty frontend", e.Port, e.Name)
 		}
 		return nil
 	}
