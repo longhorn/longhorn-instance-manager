@@ -133,7 +133,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
-	log.Infof("Cloning snapshot from %v to %v", req.FromController, req.ProxyEngineRequest.Address)
+	log.Infof("Cloning snapshot from %v to %v", req.FromEngineAddress, req.ProxyEngineRequest.Address)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
 	case rpc.BackendStoreDriver_v1:
@@ -147,12 +147,17 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 
 func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	cFrom, err := eclient.NewControllerClient(req.FromController, req.ProxyEngineRequest.VolumeName)
 >>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 =======
 	cFrom, err := eclient.NewControllerClient(req.FromController, req.ProxyEngineRequest.VolumeName,
 		req.FromControllerName)
 >>>>>>> 8c88da9 (Add FromControllerName field to EngineSnapshotCloneRequest)
+=======
+	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.ProxyEngineRequest.VolumeName,
+		req.FromEngineName)
+>>>>>>> a9ef717 (Fix naming in SnapshotClone fields)
 	if err != nil {
 		return nil, err
 	}
