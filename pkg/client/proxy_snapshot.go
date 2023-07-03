@@ -120,14 +120,14 @@ func (c *ProxyClient) SnapshotList(backendStoreDriver, engineName, volumeName,
 }
 
 func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress, snapshotName,
-	fromControllerAddress, fromControllerName string, fileSyncHTTPClientTimeout int) (err error) {
+	fromEngineAddress, fromEngineName string, fileSyncHTTPClientTimeout int) (err error) {
 	input := map[string]string{
-		"engineName":            engineName,
-		"volumeName":            volumeName,
-		"serviceAddress":        serviceAddress,
-		"snapshotName":          snapshotName,
-		"fromControllerAddress": fromControllerAddress,
-		"fromControllerName":    fromControllerName,
+		"engineName":        engineName,
+		"volumeName":        volumeName,
+		"serviceAddress":    serviceAddress,
+		"snapshotName":      snapshotName,
+		"fromEngineAddress": fromEngineAddress,
+		"fromEngineName":    fromEngineName,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return errors.Wrap(err, "failed to clone snapshot")
@@ -140,7 +140,7 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 
 	defer func() {
 		err = errors.Wrapf(err, "%v failed to clone snapshot %v from %v", c.getProxyErrorPrefix(serviceAddress),
-			snapshotName, fromControllerAddress)
+			snapshotName, fromEngineAddress)
 	}()
 
 	req := &rpc.EngineSnapshotCloneRequest{
@@ -150,11 +150,11 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 			BackendStoreDriver: rpc.BackendStoreDriver(driver),
 			VolumeName:         volumeName,
 		},
-		FromController:            fromControllerAddress,
+		FromEngineAddress:         fromEngineAddress,
 		SnapshotName:              snapshotName,
 		ExportBackingImageIfExist: false,
 		FileSyncHttpClientTimeout: int32(fileSyncHTTPClientTimeout),
-		FromControllerName:        fromControllerName,
+		FromEngineName:            fromEngineName,
 	}
 	_, err = c.service.SnapshotClone(getContextWithGRPCLongTimeout(c.ctx), req)
 	if err != nil {
