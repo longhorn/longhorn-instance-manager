@@ -126,7 +126,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 		"volumeName":         req.ProxyEngineRequest.VolumeName,
 		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
 	})
-	log.Infof("Cloning snapshot from %v to %v", req.FromController, req.ProxyEngineRequest.Address)
+	log.Infof("Cloning snapshot from %v to %v", req.FromEngineAddress, req.ProxyEngineRequest.Address)
 
 	switch req.ProxyEngineRequest.BackendStoreDriver {
 	case rpc.BackendStoreDriver_v1:
@@ -139,8 +139,8 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 }
 
 func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
-	cFrom, err := eclient.NewControllerClient(req.FromController, req.ProxyEngineRequest.VolumeName,
-		req.FromControllerName)
+	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.ProxyEngineRequest.VolumeName,
+		req.FromEngineName)
 	if err != nil {
 		return nil, err
 	}
