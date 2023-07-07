@@ -114,6 +114,7 @@ func (c *ProxyClient) SnapshotBackupStatus(backendStoreDriver, engineName, volum
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (c *ProxyClient) BackupRestore(serviceAddress, url, target, volumeName string, envs []string) (err error) {
 	input := map[string]string{
 =======
@@ -126,6 +127,17 @@ func (c *ProxyClient) BackupRestore(backendStoreDriver, engineName, volumeName, 
 		"serviceAddress": serviceAddress,
 		"url":            url,
 		"target":         target,
+=======
+func (c *ProxyClient) BackupRestore(backendStoreDriver, engineName, volumeName, serviceAddress, url, target,
+	backupVolumeName string, envs []string, concurrentLimit int) (err error) {
+	input := map[string]string{
+		"engineName":       engineName,
+		"volumeName":       volumeName,
+		"serviceAddress":   serviceAddress,
+		"url":              url,
+		"target":           target,
+		"backupVolumeName": backupVolumeName,
+>>>>>>> d1f2cc2 (Differentiate between volumeName and backupVolumeName in BackupRestore)
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return errors.Wrap(err, "failed to restore backup to volume")
@@ -152,12 +164,14 @@ func (c *ProxyClient) BackupRestore(backendStoreDriver, engineName, volumeName, 
 			Address:            serviceAddress,
 			EngineName:         engineName,
 			BackendStoreDriver: rpc.BackendStoreDriver(driver),
-			VolumeName:         volumeName,
+			// This is the name we will use for validation when communicating with the restoring engine.
+			VolumeName: volumeName,
 		},
 		Envs:   envs,
 		Url:    url,
 		Target: target,
-		// VolumeName deprecated in favor of ProxyEngineRequest.VolumeName.
+		// Historically, we have passed backupVolumeName as VolumeName here.
+		VolumeName:      backupVolumeName,
 		ConcurrentLimit: int32(concurrentLimit),
 >>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 	}
