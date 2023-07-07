@@ -106,14 +106,15 @@ func (c *ProxyClient) SnapshotBackupStatus(backendStoreDriver, engineName, volum
 	return status, nil
 }
 
-func (c *ProxyClient) BackupRestore(backendStoreDriver, engineName, volumeName, serviceAddress, url, target string,
-	envs []string, concurrentLimit int) (err error) {
+func (c *ProxyClient) BackupRestore(backendStoreDriver, engineName, volumeName, serviceAddress, url, target,
+	backupVolumeName string, envs []string, concurrentLimit int) (err error) {
 	input := map[string]string{
-		"engineName":     engineName,
-		"volumeName":     volumeName,
-		"serviceAddress": serviceAddress,
-		"url":            url,
-		"target":         target,
+		"engineName":       engineName,
+		"volumeName":       volumeName,
+		"serviceAddress":   serviceAddress,
+		"url":              url,
+		"target":           target,
+		"backupVolumeName": backupVolumeName,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return errors.Wrap(err, "failed to restore backup to volume")
@@ -137,12 +138,14 @@ func (c *ProxyClient) BackupRestore(backendStoreDriver, engineName, volumeName, 
 			Address:            serviceAddress,
 			EngineName:         engineName,
 			BackendStoreDriver: rpc.BackendStoreDriver(driver),
-			VolumeName:         volumeName,
+			// This is the name we will use for validation when communicating with the restoring engine.
+			VolumeName: volumeName,
 		},
 		Envs:   envs,
 		Url:    url,
 		Target: target,
-		// VolumeName deprecated in favor of ProxyEngineRequest.VolumeName.
+		// Historically, we have passed backupVolumeName as VolumeName here.
+		VolumeName:      backupVolumeName,
 		ConcurrentLimit: int32(concurrentLimit),
 	}
 	recv, err := c.service.BackupRestore(getContextWithGRPCTimeout(c.ctx), req)
