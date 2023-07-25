@@ -119,14 +119,15 @@ func (c *ProxyClient) SnapshotList(backendStoreDriver, engineName, volumeName,
 	return snapshotDiskInfo, nil
 }
 
-func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress, snapshotName,
-	fromEngineAddress, fromEngineName string, fileSyncHTTPClientTimeout int) (err error) {
+func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress,
+	snapshotName, fromEngineAddress, fromVolumeName, fromEngineName string, fileSyncHTTPClientTimeout int) (err error) {
 	input := map[string]string{
 		"engineName":        engineName,
 		"volumeName":        volumeName,
 		"serviceAddress":    serviceAddress,
 		"snapshotName":      snapshotName,
 		"fromEngineAddress": fromEngineAddress,
+		"fromVolumeName":    fromVolumeName,
 		"fromEngineName":    fromEngineName,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
@@ -155,6 +156,7 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 		ExportBackingImageIfExist: false,
 		FileSyncHttpClientTimeout: int32(fileSyncHTTPClientTimeout),
 		FromEngineName:            fromEngineName,
+		FromVolumeName:            fromVolumeName,
 	}
 	_, err = c.service.SnapshotClone(getContextWithGRPCLongTimeout(c.ctx), req)
 	if err != nil {

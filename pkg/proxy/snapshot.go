@@ -139,8 +139,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 }
 
 func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
-	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.ProxyEngineRequest.VolumeName,
-		req.FromEngineName)
+	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.FromVolumeName, req.FromEngineName)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +152,7 @@ func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	}
 	defer cTo.Close()
 
-	err = esync.CloneSnapshot(cTo, cFrom, req.ProxyEngineRequest.VolumeName, req.SnapshotName,
+	err = esync.CloneSnapshot(cTo, cFrom, req.ProxyEngineRequest.VolumeName, req.FromVolumeName, req.SnapshotName,
 		req.ExportBackingImageIfExist, int(req.FileSyncHttpClientTimeout))
 	if err != nil {
 		return nil, err
