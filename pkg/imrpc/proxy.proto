@@ -126,6 +126,7 @@ message EngineSnapshotCloneRequest {
 	bool export_backing_image_if_exist = 4;
 	int32 file_sync_http_client_timeout = 5;
 	string from_engine_name = 6;
+	string from_volume_name = 7;
 }
 
 message EngineSnapshotCloneStatusProxyResponse {

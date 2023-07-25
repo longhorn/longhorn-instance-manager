@@ -126,11 +126,16 @@ func (c *ProxyClient) SnapshotList(backendStoreDriver, engineName, volumeName,
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (c *ProxyClient) SnapshotClone(serviceAddress, name, fromController string, fileSyncHTTPClientTimeout int) (err error) {
 	input := map[string]string{
 =======
 func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress, snapshotName,
 	fromEngineAddress, fromEngineName string, fileSyncHTTPClientTimeout int) (err error) {
+=======
+func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, serviceAddress,
+	snapshotName, fromEngineAddress, fromVolumeName, fromEngineName string, fileSyncHTTPClientTimeout int) (err error) {
+>>>>>>> 08b3613 (Fix SnapshotClone with engine identity validation enabled)
 	input := map[string]string{
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -154,6 +159,7 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 		"serviceAddress":    serviceAddress,
 		"snapshotName":      snapshotName,
 		"fromEngineAddress": fromEngineAddress,
+		"fromVolumeName":    fromVolumeName,
 		"fromEngineName":    fromEngineName,
 >>>>>>> a9ef717 (Fix naming in SnapshotClone fields)
 	}
@@ -199,6 +205,7 @@ func (c *ProxyClient) SnapshotClone(backendStoreDriver, engineName, volumeName, 
 		ExportBackingImageIfExist: false,
 		FileSyncHttpClientTimeout: int32(fileSyncHTTPClientTimeout),
 		FromEngineName:            fromEngineName,
+		FromVolumeName:            fromVolumeName,
 	}
 	_, err = c.service.SnapshotClone(getContextWithGRPCLongTimeout(c.ctx), req)
 	if err != nil {

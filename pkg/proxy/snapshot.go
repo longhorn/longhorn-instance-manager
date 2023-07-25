@@ -148,6 +148,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	cFrom, err := eclient.NewControllerClient(req.FromController, req.ProxyEngineRequest.VolumeName)
 >>>>>>> 04a30dc (Use fields from ProxyEngineRequest to instantiate tasks and controller clients)
 =======
@@ -158,6 +159,9 @@ func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.ProxyEngineRequest.VolumeName,
 		req.FromEngineName)
 >>>>>>> a9ef717 (Fix naming in SnapshotClone fields)
+=======
+	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.FromVolumeName, req.FromEngineName)
+>>>>>>> 08b3613 (Fix SnapshotClone with engine identity validation enabled)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +174,7 @@ func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	}
 	defer cTo.Close()
 
-	err = esync.CloneSnapshot(cTo, cFrom, req.ProxyEngineRequest.VolumeName, req.SnapshotName,
+	err = esync.CloneSnapshot(cTo, cFrom, req.ProxyEngineRequest.VolumeName, req.FromVolumeName, req.SnapshotName,
 		req.ExportBackingImageIfExist, int(req.FileSyncHttpClientTimeout))
 	if err != nil {
 		return nil, err
