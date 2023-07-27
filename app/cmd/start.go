@@ -88,7 +88,7 @@ func cleanup(pm *process.Manager) {
 		}
 		if len(pmResp.Processes) == 0 {
 			logrus.Info("Shutdown all instance processes successfully")
-			break
+			return
 		}
 		time.Sleep(types.WaitInterval)
 	}
