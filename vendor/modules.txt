@@ -123,7 +123,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20230830075002-fa25b1a97ffd
+# github.com/longhorn/backupstore v0.0.0-20231025000449-5316e8b5320d
 ## explicit; go 1.17
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -140,9 +140,7 @@ github.com/longhorn/backupstore/vfs
 ## explicit; go 1.21
 github.com/longhorn/go-common-libs/proc
 github.com/longhorn/go-common-libs/types
-# github.com/longhorn/go-iscsi-helper v0.0.0-20230802055236-4ec8edae3fad
-## explicit; go 1.13
-github.com/longhorn/go-iscsi-helper/util
+github.com/longhorn/go-common-libs/utils
 # github.com/longhorn/go-spdk-helper v0.0.0-20231212033123-3b72caa5a1ea
 ## explicit; go 1.21
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
@@ -151,8 +149,8 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/client
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443
-## explicit; go 1.20
+# github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20231221124647-1a5cdbf02a5a
+## explicit; go 1.21
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/meta
@@ -238,6 +236,8 @@ github.com/slok/goresilience
 github.com/slok/goresilience/errors
 github.com/slok/goresilience/metrics
 github.com/slok/goresilience/timeout
+# github.com/stretchr/testify v1.8.4
+## explicit; go 1.20
 # github.com/urfave/cli v1.22.12
 ## explicit; go 1.11
 github.com/urfave/cli
