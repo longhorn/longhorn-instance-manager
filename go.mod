@@ -5,9 +5,9 @@ go 1.21
 require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/google/uuid v1.3.0
-	github.com/longhorn/backupstore v0.0.0-20230830075002-fa25b1a97ffd
+	github.com/longhorn/backupstore v0.0.0-20231025000449-5316e8b5320d
 	github.com/longhorn/go-spdk-helper v0.0.0-20231212033123-3b72caa5a1ea
-	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443
+	github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20231221124647-1a5cdbf02a5a
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20231218140159-260714390564
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -40,7 +40,6 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/longhorn/go-common-libs v0.0.0-20231207171057-cd5fff99e604 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20230802055236-4ec8edae3fad // indirect
 	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
@@ -56,6 +55,7 @@ require (
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/slok/goresilience v0.2.0 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
