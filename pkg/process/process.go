@@ -174,7 +174,7 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 			logrus.Infof("Wait for process %v to shutdown", p.Name)
 			time.Sleep(types.WaitInterval)
 		}
-		logrus.Warnf("Process Manager: cannot graceful stop process %v in %v seconds, will kill the process", p.Name, types.WaitCount)
+		logrus.Warnf("Process Manager: cannot graceful stop process %v in %v, will kill the process", p.Name, time.Duration(types.WaitCount)*types.WaitInterval)
 		cmd.Kill()
 	}()
 }
