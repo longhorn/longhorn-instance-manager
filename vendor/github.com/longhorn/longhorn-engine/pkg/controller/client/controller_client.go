@@ -30,6 +30,7 @@ func (c ControllerServiceContext) Close() error {
 
 type ControllerClient struct {
 	serviceURL string
+	VolumeName string
 	ControllerServiceContext
 }
 
@@ -41,9 +42,10 @@ const (
 	GRPCServiceTimeout = 3 * time.Minute
 )
 
-func NewControllerClient(address string) (*ControllerClient, error) {
+func NewControllerClient(address, volumeName, instanceName string) (*ControllerClient, error) {
 	getControllerServiceContext := func(serviceUrl string) (ControllerServiceContext, error) {
-		connection, err := grpc.Dial(serviceUrl, grpc.WithInsecure())
+		connection, err := grpc.Dial(serviceUrl, grpc.WithInsecure(),
+			ptypes.WithIdentityValidationClientInterceptor(volumeName, instanceName))
 		if err != nil {
 			return ControllerServiceContext{}, errors.Wrapf(err, "cannot connect to ControllerService %v", serviceUrl)
 		}
@@ -62,6 +64,7 @@ func NewControllerClient(address string) (*ControllerClient, error) {
 
 	return &ControllerClient{
 		serviceURL:               serviceURL,
+		VolumeName:               volumeName,
 		ControllerServiceContext: serviceContext,
 	}, nil
 }
@@ -306,13 +309,14 @@ func (c *ControllerClient) ReplicaUpdate(address string, mode types.Mode) (*type
 	return GetControllerReplicaInfo(cr), nil
 }
 
-func (c *ControllerClient) ReplicaPrepareRebuild(address string) ([]types.SyncFileInfo, error) {
+func (c *ControllerClient) ReplicaPrepareRebuild(address, instanceName string) ([]types.SyncFileInfo, error) {
 	controllerServiceClient := c.getControllerServiceClient()
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
 	reply, err := controllerServiceClient.ReplicaPrepareRebuild(ctx, &ptypes.ReplicaAddress{
-		Address: address,
+		Address:      address,
+		InstanceName: instanceName,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare rebuilding replica %v for volume %v", address, c.serviceURL)
@@ -321,13 +325,14 @@ func (c *ControllerClient) ReplicaPrepareRebuild(address string) ([]types.SyncFi
 	return GetSyncFileInfoList(reply.SyncFileInfoList), nil
 }
 
-func (c *ControllerClient) ReplicaVerifyRebuild(address string) error {
+func (c *ControllerClient) ReplicaVerifyRebuild(address, instanceName string) error {
 	controllerServiceClient := c.getControllerServiceClient()
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
 	if _, err := controllerServiceClient.ReplicaVerifyRebuild(ctx, &ptypes.ReplicaAddress{
-		Address: address,
+		Address:      address,
+		InstanceName: instanceName,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to verify rebuilt replica %v for volume %v", address, c.serviceURL)
 	}

@@ -103,6 +103,17 @@ github.com/longhorn/backupstore/vfs
 github.com/longhorn/go-iscsi-helper/util
 # github.com/longhorn/longhorn-engine v1.4.2-0.20230505050105-32bc047e398a
 ## explicit; go 1.17
+<<<<<<< HEAD
+=======
+github.com/longhorn/go-spdk-helper/pkg/jsonrpc
+github.com/longhorn/go-spdk-helper/pkg/nvme
+github.com/longhorn/go-spdk-helper/pkg/spdk/client
+github.com/longhorn/go-spdk-helper/pkg/spdk/types
+github.com/longhorn/go-spdk-helper/pkg/types
+github.com/longhorn/go-spdk-helper/pkg/util
+# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230804172754-4d54af9e4ccf
+## explicit; go 1.20
+>>>>>>> c651afc (Use version of longhorn-engine with engine identity flags and fields)
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/meta
