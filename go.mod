@@ -39,7 +39,7 @@ require (
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20230529082528-4c3270590712 // indirect
 	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
