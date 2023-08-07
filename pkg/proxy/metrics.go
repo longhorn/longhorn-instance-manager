@@ -14,7 +14,7 @@ func (p *Proxy) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (re
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.Address})
 	log.Trace("Getting metrics")
 
-	c, err := eclient.NewControllerClient(req.Address)
+	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
 	}
