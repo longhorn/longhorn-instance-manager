@@ -147,7 +147,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/client
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443
+# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443 => ../longhorn-engine
 ## explicit; go 1.20
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -376,3 +376,5 @@ k8s.io/utils/exec
 k8s.io/utils/io
 k8s.io/utils/keymutex
 # golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3
+# github.com/longhorn/longhorn-engine => ../longhorn-engine
+# github.com/longhorn/backupstore v0.0.0-20230627040634-5b4f2d040e9d => ../backupstore
