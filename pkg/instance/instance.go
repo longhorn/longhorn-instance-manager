@@ -2,7 +2,9 @@ package instance
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
@@ -19,6 +21,11 @@ import (
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
+)
+
+const (
+	maxMonitorRetryCount     = 10
+	monitorRetryPollInterval = 1 * time.Second
 )
 
 type Server struct {
@@ -406,122 +413,205 @@ func (s *Server) spdkInstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceSe
 	return grpcstatus.Error(grpccodes.Unimplemented, "spdk instance log is not supported")
 }
 
+func (s *Server) handleNotify(ctx context.Context, notifyChan chan struct{}, srv rpc.InstanceService_InstanceWatchServer) error {
+	logrus.Info("Start handling notify")
+
+	for {
+		select {
+		case <-ctx.Done():
+			logrus.Info("Stopped handling notify")
+			return ctx.Err()
+		case <-notifyChan:
+			if err := srv.Send(&empty.Empty{}); err != nil {
+				return errors.Wrap(err, "failed to send instance response")
+			}
+		}
+	}
+}
+
 func (s *Server) InstanceWatch(req *empty.Empty, srv rpc.InstanceService_InstanceWatchServer) error {
 	logrus.Info("Start watching instances")
+
+	done := make(chan struct{})
+
+	clients := map[string]interface{}{}
+	go func() {
+		<-done
+
+		logrus.Info("Stopped clients")
+		for name, c := range clients {
+			switch c := c.(type) {
+			case *client.ProcessManagerClient:
+				c.Close()
+			case *spdkclient.SPDKClient:
+				c.Close()
+			}
+			delete(clients, name)
+		}
+		close(done)
+	}()
+
+	// Create a client for watching processes
+	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	if err != nil {
+		done <- struct{}{}
+		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
+	}
+	clients["processManagerClient"] = pmClient
+
+	var spdkClient *spdkclient.SPDKClient
+	if s.spdkEnabled {
+		// Create a client for watching SPDK engines and replicas
+		spdkClient, err = spdkclient.NewSPDKClient(s.spdkServiceAddress)
+		if err != nil {
+			done <- struct{}{}
+			return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+		}
+		clients["spdkClient"] = spdkClient
+	}
+
+	notifyChan := make(chan struct{}, 1024)
+	defer close(notifyChan)
 
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return s.watchProcess(ctx, req, srv)
+		defer func() {
+			// Close the clients for closing streams and unblocking notifier Recv() with error.
+			done <- struct{}{}
+		}()
+		return s.handleNotify(ctx, notifyChan, srv)
+	})
+
+	g.Go(func() error {
+		return s.watchProcess(ctx, req, pmClient, notifyChan)
 	})
 
 	if s.spdkEnabled {
 		g.Go(func() error {
-			return s.watchSPDKReplica(ctx, req, srv)
+			return s.watchSPDKEngine(ctx, req, spdkClient, notifyChan)
 		})
 
 		g.Go(func() error {
-			return s.watchSPDKEngine(ctx, req, srv)
+			return s.watchSPDKReplica(ctx, req, spdkClient, notifyChan)
 		})
 	}
 
 	if err := g.Wait(); err != nil {
+		logrus.WithError(err).Error("Failed to watch instances")
 		return errors.Wrap(err, "failed to watch instances")
 	}
 
 	return nil
 }
 
-func (s *Server) watchSPDKReplica(ctx context.Context, req *emptypb.Empty, srv rpc.InstanceService_InstanceWatchServer) error {
-	logrus.Info("Start watching SPDK replica")
+func (s *Server) watchSPDKReplica(ctx context.Context, req *emptypb.Empty, client *spdkclient.SPDKClient, notifyChan chan struct{}) error {
+	logrus.Info("Start watching SPDK replicas")
 
-	c, err := spdkclient.NewSPDKClient(s.spdkServiceAddress)
-	if err != nil {
-		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
-	}
-	defer c.Close()
-
-	notifier, err := c.ReplicaWatch(context.Background())
+	notifier, err := client.ReplicaWatch(context.Background())
 	if err != nil {
 		return errors.Wrap(err, "failed to create SPDK replica watch notifier")
 	}
 
+	failureCount := 0
 	for {
+		if failureCount >= maxMonitorRetryCount {
+			logrus.Errorf("Continuously receiving errors for %v times, stopping watching SPDK replicas", maxMonitorRetryCount)
+			return fmt.Errorf("continuously receiving errors for %v times, stopping watching SPDK replicas", maxMonitorRetryCount)
+		}
+
 		select {
 		case <-ctx.Done():
-			logrus.Info("Stopped watching SPDK replica")
-			return nil
+			logrus.Info("Stopped watching SPDK replicas")
+			return ctx.Err()
 		default:
 			_, err := notifier.Recv()
 			if err != nil {
-				logrus.WithError(err).Error("Failed to receive next item in SPDK replica watch")
-			} else {
-				if err := srv.Send(&empty.Empty{}); err != nil {
-					return errors.Wrap(err, "failed to send instance response")
+				status, ok := grpcstatus.FromError(err)
+				if ok && status.Code() == grpccodes.Canceled {
+					logrus.WithError(err).Warn("SPDK replica watch is canceled")
+					return err
 				}
+				logrus.WithError(err).Error("Failed to receive next item in SPDK replica watch")
+				time.Sleep(monitorRetryPollInterval)
+				failureCount++
+			} else {
+				notifyChan <- struct{}{}
 			}
 		}
 	}
 }
 
-func (s *Server) watchSPDKEngine(ctx context.Context, req *emptypb.Empty, srv rpc.InstanceService_InstanceWatchServer) error {
-	c, err := spdkclient.NewSPDKClient(s.spdkServiceAddress)
-	if err != nil {
-		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
-	}
-	defer c.Close()
+func (s *Server) watchSPDKEngine(ctx context.Context, req *emptypb.Empty, client *spdkclient.SPDKClient, notifyChan chan struct{}) error {
+	logrus.Info("Start watching SPDK engines")
 
-	notifier, err := c.EngineWatch(context.Background())
+	notifier, err := client.EngineWatch(context.Background())
 	if err != nil {
 		return errors.Wrap(err, "failed to create SPDK engine watch notifier")
 	}
 
+	failureCount := 0
 	for {
+		if failureCount >= maxMonitorRetryCount {
+			logrus.Errorf("Continuously receiving errors for %v times, stopping watching SPDK engines", maxMonitorRetryCount)
+			return fmt.Errorf("continuously receiving errors for %v times, stopping watching SPDK engines", maxMonitorRetryCount)
+		}
+
 		select {
 		case <-ctx.Done():
-			logrus.Info("Stopped watching SPDK engine")
-			return nil
+			logrus.Info("Stopped watching SPDK engines")
+			return ctx.Err()
 		default:
 			_, err := notifier.Recv()
 			if err != nil {
-				logrus.WithError(err).Error("Failed to receive next item in SPDK engine watch")
-			} else {
-				if err := srv.Send(&empty.Empty{}); err != nil {
-					return errors.Wrap(err, "failed to send instance response")
+				status, ok := grpcstatus.FromError(err)
+				if ok && status.Code() == grpccodes.Canceled {
+					logrus.WithError(err).Warn("SPDK engine watch is canceled")
+					return err
 				}
+				logrus.WithError(err).Error("Failed to receive next item in SPDK engine watch")
+				time.Sleep(monitorRetryPollInterval)
+				failureCount++
+			} else {
+				notifyChan <- struct{}{}
 			}
 		}
 	}
 }
 
-func (s *Server) watchProcess(ctx context.Context, req *emptypb.Empty, srv rpc.InstanceService_InstanceWatchServer) error {
+func (s *Server) watchProcess(ctx context.Context, req *emptypb.Empty, client *client.ProcessManagerClient, notifyChan chan struct{}) error {
 	logrus.Info("Start watching processes")
 
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
-	if err != nil {
-		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
-	}
-	defer pmClient.Close()
-
-	notifier, err := pmClient.ProcessWatch(context.Background())
+	notifier, err := client.ProcessWatch(context.Background())
 	if err != nil {
 		return errors.Wrap(err, "failed to create process watch notifier")
 	}
 
+	failureCount := 0
 	for {
+		if failureCount >= maxMonitorRetryCount {
+			logrus.Errorf("Continuously receiving errors for %v times, stopping watching processes", maxMonitorRetryCount)
+			return fmt.Errorf("continuously receiving errors for %v times, stopping watching processes", maxMonitorRetryCount)
+		}
+
 		select {
 		case <-ctx.Done():
 			logrus.Info("Stopped watching processes")
-			return nil
+			return ctx.Err()
 		default:
 			_, err := notifier.Recv()
 			if err != nil {
-				logrus.WithError(err).Error("Failed to receive next item in process watch")
-			} else {
-				if err := srv.Send(&empty.Empty{}); err != nil {
-					return errors.Wrap(err, "failed to send instance response")
+				status, ok := grpcstatus.FromError(err)
+				if ok && status.Code() == grpccodes.Canceled {
+					logrus.WithError(err).Warn("Process watch is canceled")
+					return err
 				}
+				logrus.WithError(err).Error("Failed to receive next item in process watch")
+				time.Sleep(monitorRetryPollInterval)
+				failureCount++
+			} else {
+				notifyChan <- struct{}{}
 			}
 		}
 	}
