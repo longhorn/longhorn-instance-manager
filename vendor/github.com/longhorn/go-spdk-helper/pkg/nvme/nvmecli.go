@@ -42,7 +42,7 @@ type Namespace struct {
 	NameSpace    string
 	NSID         int32
 	UsedBytes    int64
-	MaximumLBA   int32
+	MaximumLBA   int64
 	PhysicalSize int64
 	SectorSize   int32
 }
@@ -184,7 +184,7 @@ type NvmeDevice struct {
 	ModelNumber  string `json:"ModelNumber,omitempty"`
 	SerialNumber string `json:"SerialNumber,omitempty"`
 	UsedBytes    int64  `json:"UsedBytes,omitempty"`
-	MaximumLBA   int32  `json:"MaximumLBA,omitempty"`
+	MaximumLBA   int64  `json:"MaximumLBA,omitempty"`
 	PhysicalSize int64  `json:"PhysicalSize,omitempty"`
 	SectorSize   int32  `json:"SectorSize,omitempty"`
 }
