@@ -12,11 +12,11 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+	butil "github.com/longhorn/backupstore/util"
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	rclient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
-	eutil "github.com/longhorn/longhorn-engine/pkg/util"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
@@ -53,7 +53,7 @@ func (p *Proxy) snapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 		}
 	}
 
-	credential, err := eutil.GetBackupCredential(req.BackupTarget)
+	credential, err := butil.GetBackupCredential(req.BackupTarget)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func (p *Proxy) backupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 		}
 	}
 
-	credential, err := eutil.GetBackupCredential(req.Target)
+	credential, err := butil.GetBackupCredential(req.Target)
 	if err != nil {
 		return nil, err
 	}
