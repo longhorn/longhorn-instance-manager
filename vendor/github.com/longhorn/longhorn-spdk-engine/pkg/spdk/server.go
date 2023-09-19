@@ -360,7 +360,7 @@ func (s *Server) ReplicaWatch(req *empty.Empty, srv spdkrpc.SPDKService_ReplicaW
 			logrus.Info("SPDK service replica watch ended successfully")
 		}
 	}()
-	logrus.Info("Started new SPDK service update watch")
+	logrus.Info("Started new SPDK service replica update watch")
 
 	done := false
 	for {
@@ -635,7 +635,7 @@ func (s *Server) EngineWatch(req *empty.Empty, srv spdkrpc.SPDKService_EngineWat
 			logrus.Info("SPDK service engine watch ended successfully")
 		}
 	}()
-	logrus.Info("Started new SPDK service update watch")
+	logrus.Info("Started new SPDK service engine update watch")
 
 	done := false
 	for {
