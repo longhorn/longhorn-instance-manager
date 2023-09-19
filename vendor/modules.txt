@@ -114,6 +114,21 @@ github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
 github.com/longhorn/longhorn-engine/proto/ptypes
+<<<<<<< HEAD
+=======
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20230918005703-278e4c64077e
+## explicit; go 1.17
+github.com/longhorn/longhorn-spdk-engine/pkg/api
+github.com/longhorn/longhorn-spdk-engine/pkg/client
+github.com/longhorn/longhorn-spdk-engine/pkg/spdk
+github.com/longhorn/longhorn-spdk-engine/pkg/types
+github.com/longhorn/longhorn-spdk-engine/pkg/util
+github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
+github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc
+# github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003
+## explicit
+github.com/longhorn/nsfilelock
+>>>>>>> 5fe6bb5 (vendor: update longhorn-spdk-engine)
 # github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c
 ## explicit; go 1.17
 github.com/longhorn/sparse-tools/sparse
