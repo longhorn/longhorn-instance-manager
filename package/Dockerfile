@@ -9,7 +9,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake curl wget git gcc tar gzip xsltproc docbook-xsl-stylesheets python3
+RUN zypper -n install cmake curl wget git gcc tar gzip xsltproc docbook-xsl-stylesheets python3 meson ninja python3-pip
 
 # Build go-spdk-helper
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
@@ -56,6 +56,16 @@ RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
         make install; \
     fi
 
+# Build nvme-cli 2.5
+ENV NVME_CLI_DIR /usr/src/nvme-cli
+ENV NVME_CLI_COMMIT_ID d6c07e0de9be777009ebb9ab7475bee1ae3e0e95
+RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
+    cd ${NVME_CLI_DIR} && \
+    git checkout ${NVME_CLI_COMMIT_ID} && \
+    meson setup --force-fallback-for=libnvme .build && \
+    meson compile -C .build && \
+    meson install -C .build --destdir /usr/local/nvme
+
 FROM registry.suse.com/bci/bci-base:15.4 AS release
 
 ARG ARCH=amd64
@@ -89,7 +99,14 @@ COPY --from=builder \
     /usr/sbin/tgtd \
     /usr/sbin/tgtimg \
     /usr/local/bin/go-spdk-helper \
+    /usr/local/nvme/usr/local/sbin/nvme \
     /usr/local/bin/
+
+COPY --from=builder \
+    /usr/local/nvme/usr/local/lib64/libnvme* \
+    /usr/local/lib64/
+
+RUN ldconfig
 
 # Install grpc_health_probe
 RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
