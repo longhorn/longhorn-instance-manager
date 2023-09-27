@@ -16,6 +16,10 @@ function bind_dev() {
     mount --rbind /host/dev /dev
 }
 
+function bind_sys() {
+    mount --rbind /host/sys /sys
+}
+
 function enable_tgtd() {
     echo "Enabling tgtd"
     tgtd -f 2>&1 | tee /var/log/tgtd.log &
@@ -54,6 +58,7 @@ done
 #### Main ####
 
 bind_dev
+bind_sys
 enable_tgtd
 [ "$enable_spdk" -eq 1 ] && enable_spdk_tgt "${spdk_options[@]}"
 
