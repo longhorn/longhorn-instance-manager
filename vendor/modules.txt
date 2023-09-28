@@ -135,7 +135,7 @@ github.com/longhorn/backupstore/nfs
 github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b
+# github.com/longhorn/go-iscsi-helper v0.0.0-20230529082528-4c3270590712
 ## explicit; go 1.13
 github.com/longhorn/go-iscsi-helper/util
 # github.com/longhorn/go-spdk-helper v0.0.0-20230802035240-e5fe21b6067f
