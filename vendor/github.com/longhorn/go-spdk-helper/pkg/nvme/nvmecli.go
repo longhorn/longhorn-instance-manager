@@ -60,7 +60,7 @@ type Path struct {
 	State     string `json:"State,omitempty"`
 }
 
-func getNvmeVersion(executor util.Executor) (major, minor int, err error) {
+func cliVersion(executor util.Executor) (major, minor int, err error) {
 	opts := []string{
 		"--version",
 	}
@@ -98,7 +98,7 @@ func getNvmeVersion(executor util.Executor) (major, minor int, err error) {
 	return major, minor, nil
 }
 
-func performNvmeShowHostNQN(executor util.Executor) (string, error) {
+func showHostNQN(executor util.Executor) (string, error) {
 	opts := []string{
 		"--show-hostnqn",
 	}
@@ -117,8 +117,8 @@ func performNvmeShowHostNQN(executor util.Executor) (string, error) {
 	return "", fmt.Errorf("failed to get host NQN from %s", outputStr)
 }
 
-func performNvmeListSubsystems(device string, executor util.Executor) ([]Subsystem, error) {
-	major, _, err := getNvmeVersion(executor)
+func listSubsystems(devicePath string, executor util.Executor) ([]Subsystem, error) {
+	major, _, err := cliVersion(executor)
 	if err != nil {
 		return nil, err
 	}
@@ -128,8 +128,8 @@ func performNvmeListSubsystems(device string, executor util.Executor) ([]Subsyst
 		"-o", "json",
 	}
 
-	if device != "" {
-		opts = append(opts, device)
+	if devicePath != "" {
+		opts = append(opts, devicePath)
 	}
 
 	outputStr, err := executor.Execute(nvmeBinary, opts)
@@ -142,12 +142,12 @@ func performNvmeListSubsystems(device string, executor util.Executor) ([]Subsyst
 	}
 
 	if major == 1 {
-		return performNvmeListSubsystemsV1(jsonStr, executor)
+		return listSubsystemsV1(jsonStr, executor)
 	}
-	return performNvmeListSubsystemsV2(jsonStr, executor)
+	return listSubsystemsV2(jsonStr, executor)
 }
 
-func performNvmeListSubsystemsV1(jsonStr string, executor util.Executor) ([]Subsystem, error) {
+func listSubsystemsV1(jsonStr string, executor util.Executor) ([]Subsystem, error) {
 	output := map[string][]Subsystem{}
 	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
@@ -162,17 +162,18 @@ type ListSubsystemsV2Output struct {
 	Subsystems []Subsystem `json:"Subsystems"`
 }
 
-func performNvmeListSubsystemsV2(jsonStr string, executor util.Executor) ([]Subsystem, error) {
+func listSubsystemsV2(jsonStr string, executor util.Executor) ([]Subsystem, error) {
 	var output []ListSubsystemsV2Output
 	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
 	}
 
-	if len(output) != 1 {
-		return nil, fmt.Errorf("unexpected output: %+v", output)
+	subsystems := []Subsystem{}
+	for _, o := range output {
+		subsystems = append(subsystems, o.Subsystems...)
 	}
 
-	return output[0].Subsystems, nil
+	return subsystems, nil
 }
 
 // Use signed integers instead, because the output of buggy nvme-cli 2.x is possibly negative.
@@ -189,7 +190,7 @@ type NvmeDevice struct {
 	SectorSize   int32  `json:"SectorSize,omitempty"`
 }
 
-func performNvmeList(executor util.Executor) ([]NvmeDevice, error) {
+func listControllers(executor util.Executor) ([]NvmeDevice, error) {
 	opts := []string{
 		"list",
 		"-o", "json",
@@ -210,8 +211,8 @@ func performNvmeList(executor util.Executor) ([]NvmeDevice, error) {
 	return output["Devices"], nil
 }
 
-func performNvmeDiscovery(ip, port string, executor util.Executor) ([]DiscoveryPageEntry, error) {
-	hostNQN, err := performNvmeShowHostNQN(executor)
+func discovery(ip, port string, executor util.Executor) ([]DiscoveryPageEntry, error) {
+	hostNQN, err := showHostNQN(executor)
 	if err != nil {
 		return nil, err
 	}
@@ -279,8 +280,8 @@ func performNvmeDiscovery(ip, port string, executor util.Executor) ([]DiscoveryP
 	return output.Entries, nil
 }
 
-func performNvmeConnect(ip, port, nqn string, executor util.Executor) (string, error) {
-	hostNQN, err := performNvmeShowHostNQN(executor)
+func connect(ip, port, nqn string, executor util.Executor) (string, error) {
+	hostNQN, err := showHostNQN(executor)
 	if err != nil {
 		return "", err
 	}
@@ -317,7 +318,7 @@ func performNvmeConnect(ip, port, nqn string, executor util.Executor) (string, e
 	return output["device"], nil
 }
 
-func performNvmeDisconnect(nqn string, executor util.Executor) error {
+func disconnect(nqn string, executor util.Executor) error {
 	opts := []string{
 		"disconnect",
 		"--nqn", nqn,
