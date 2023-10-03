@@ -24,11 +24,14 @@ type SPDKServiceContext struct {
 	service spdkrpc.SPDKServiceClient
 }
 
-func (c SPDKServiceContext) Close() error {
-	if c.cc == nil {
-		return nil
+func (c *SPDKServiceContext) Close() error {
+	if c.cc != nil {
+		if err := c.cc.Close(); err != nil {
+			return err
+		}
+		c.cc = nil
 	}
-	return c.cc.Close()
+	return nil
 }
 
 func (c *SPDKClient) getSPDKServiceClient() spdkrpc.SPDKServiceClient {

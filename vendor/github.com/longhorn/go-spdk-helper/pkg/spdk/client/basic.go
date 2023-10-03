@@ -197,6 +197,21 @@ func (c *Client) BdevLvolCreate(lvstoreName, lvstoreUUID, lvolName string, sizeI
 	return uuid, json.Unmarshal(cmdOutput, &uuid)
 }
 
+// BdevLvolGetXattr gets the value of an extended attribute of a logical volume.
+func (c *Client) BdevLvolGetXattr(name, xattrName string) (value string, err error) {
+	req := spdktypes.BdevLvolGetXattrRequest{
+		Name:      name,
+		XattrName: xattrName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_get_xattr", req)
+	if err != nil {
+		return "", err
+	}
+
+	return value, json.Unmarshal(cmdOutput, &value)
+}
+
 // BdevLvolDelete destroys a logical volume.
 //
 //	"name": Required. UUID or alias of the logical volume. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>.
