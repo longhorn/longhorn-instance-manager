@@ -254,10 +254,6 @@ func addBlockDevice(spdkClient *SPDKClient, diskName, diskUUID, diskPath string,
 	// Name of the lvstore is the same as the name of the aio bdev
 	lvstoreName := bdevName
 
-	if diskUUID == "" {
-		return spdkClient.BdevLvolCreateLvstore(lvstoreName, diskName, defaultClusterSize)
-	}
-
 	lvstores, err := spdkClient.BdevLvolGetLvstore("", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get lvstores")
@@ -268,7 +264,7 @@ func addBlockDevice(spdkClient *SPDKClient, diskName, diskUUID, diskPath string,
 			continue
 		}
 
-		if diskUUID != lvstore.UUID {
+		if diskUUID != "" && diskUUID != lvstore.UUID {
 			continue
 		}
 
@@ -287,6 +283,11 @@ func addBlockDevice(spdkClient *SPDKClient, diskName, diskUUID, diskPath string,
 			return "", fmt.Errorf("failed to rename lvstore from %v to %v", lvstore.Name, lvstoreName)
 		}
 		return lvstore.UUID, nil
+	}
+
+	if diskUUID == "" {
+		log.Infof("Creating a new lvstore %v", lvstoreName)
+		return spdkClient.BdevLvolCreateLvstore(lvstoreName, diskName, defaultClusterSize)
 	}
 
 	// The lvstore should be created before, but it cannot be found now.
