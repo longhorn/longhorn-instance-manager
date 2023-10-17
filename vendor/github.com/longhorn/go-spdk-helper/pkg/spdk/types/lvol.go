@@ -114,6 +114,12 @@ type BdevLvolShallowCopyRequest struct {
 	DstBdevName string `json:"dst_bdev_name"`
 }
 
+type BdevLvolGetFragmapRequest struct {
+	Name   string `json:"name"`
+	Offset uint64 `json:"offset"`
+	Size   uint64 `json:"size"`
+}
+
 func GetLvolAlias(lvsName, lvolName string) string {
 	return fmt.Sprintf("%s/%s", lvsName, lvolName)
 }
