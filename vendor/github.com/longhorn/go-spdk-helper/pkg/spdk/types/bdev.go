@@ -130,3 +130,10 @@ type BdevGetBdevsRequest struct {
 type BdevGetBdevsResponse struct {
 	bdevs []BdevInfo
 }
+
+type BdevLvolFragmap struct {
+	ClusterSize          uint64 `json:"cluster_size"`
+	NumClusters          uint64 `json:"num_clusters"`
+	NumAllocatedClusters uint64 `json:"num_allocated_clusters"`
+	Fragmap              string `json:"fragmap"`
+}
