@@ -35,6 +35,7 @@ func NewNamespaceExecutor(ns string) (*NamespaceExecutor, error) {
 	}
 	mntNS := filepath.Join(ns, "mnt")
 	netNS := filepath.Join(ns, "net")
+	ipcNS := filepath.Join(ns, "ipc")
 	if _, err := Execute(NSBinary, []string{"-V"}); err != nil {
 		return nil, errors.Wrap(err, "cannot find nsenter for namespace switching")
 	}
@@ -44,6 +45,9 @@ func NewNamespaceExecutor(ns string) (*NamespaceExecutor, error) {
 	if _, err := Execute(NSBinary, []string{"--net=" + netNS, "ip", "addr"}); err != nil {
 		return nil, errors.Wrapf(err, "invalid net namespace %v", netNS)
 	}
+	if _, err := Execute(NSBinary, []string{"--ipc=" + ipcNS, "ip", "addr"}); err != nil {
+		return nil, errors.Wrapf(err, "invalid ipc namespace %v", ipcNS)
+	}
 	return ne, nil
 }
 
@@ -51,6 +55,7 @@ func (ne *NamespaceExecutor) prepareCommandArgs(name string, args []string) []st
 	cmdArgs := []string{
 		"--mount=" + filepath.Join(ne.ns, "mnt"),
 		"--net=" + filepath.Join(ne.ns, "net"),
+		"--ipc=" + filepath.Join(ne.ns, "ipc"),
 		name,
 	}
 	return append(cmdArgs, args...)
@@ -115,6 +120,7 @@ func (ne *NamespaceExecutor) ExecuteWithStdin(name string, args []string, stdinS
 	cmdArgs := []string{
 		"--mount=" + filepath.Join(ne.ns, "mnt"),
 		"--net=" + filepath.Join(ne.ns, "net"),
+		"--ipc=" + filepath.Join(ne.ns, "ipc"),
 		name,
 	}
 	cmdArgs = append(cmdArgs, args...)

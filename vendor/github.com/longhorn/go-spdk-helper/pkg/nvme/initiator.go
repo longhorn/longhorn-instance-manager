@@ -70,7 +70,23 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 	}, nil
 }
 
-func (i *Initiator) Start(transportAddress, transportServiceID string) (err error) {
+func (i *Initiator) Suspend() error {
+	if i.hostProc != "" {
+		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
+		if err := lock.Lock(); err != nil {
+			return errors.Wrapf(err, "failed to get file lock for initiator %s", i.Name)
+		}
+		defer lock.Unlock()
+	}
+
+	if err := util.SuspendLinearDmDevice(i.Name, i.executor); err != nil {
+		return errors.Wrapf(err, "failed to suspend device mapper device for NVMe initiator %s", i.Name)
+	}
+
+	return nil
+}
+
+func (i *Initiator) Start(transportAddress, transportServiceID string, requestUpgrade bool) (err error) {
 	if transportAddress == "" || transportServiceID == "" {
 		return fmt.Errorf("empty TransportAddress %s and TransportServiceID %s for initiator %s start", transportAddress, transportServiceID, i.Name)
 	}
@@ -95,11 +111,12 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 			transportAddress, transportServiceID)
 	}
 
-	i.logger.Infof("Stopping NVMe initiator blindly before starting")
-	if err := i.stopWithoutLock(); err != nil {
-		return errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
+	if !requestUpgrade {
+		i.logger.Infof("Stopping NVMe initiator blindly before starting")
+		if err := i.stopWithoutLock(false); err != nil {
+			return errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
+		}
 	}
-
 	i.logger.Infof("Launching NVMe initiator")
 
 	// Setup initiator
@@ -120,7 +137,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 	}
 
 	if i.ControllerName == "" {
-		return fmt.Errorf("failed to start NVMe initiator %s within %d * %vsec retrys", i.Name, RetryCounts, RetryInterval.Seconds())
+		return fmt.Errorf("failed to start NVMe initiator %s within %d * %v sec retries", i.Name, RetryCounts, RetryInterval.Seconds())
 	}
 
 	for t := 0; t < int(waitDeviceTimeout.Seconds()); t++ {
@@ -133,16 +150,32 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		return errors.Wrapf(err, "failed to load device info after starting NVMe initiator %s", i.Name)
 	}
 
-	if err := i.makeEndpoint(); err != nil {
-		return err
+	if requestUpgrade {
+		i.logger.Infof("Reloading device mapper device")
+		if err := util.ReloadLinearDmDevice(i.Name, i.dev, i.executor); err != nil {
+			return errors.Wrapf(err, "failed to reload device mapper device for NVMe initiator %s", i.Name)
+		}
+		if err := util.ResumeLinearDmDevice(i.Name, i.executor); err != nil {
+			return errors.Wrapf(err, "failed to resume device mapper device for NVMe initiator %s", i.Name)
+		}
+	} else {
+		i.logger.Infof("Creating device mapper device")
+		if err := util.CreateLinearDmDevice(i.Name, i.dev, i.executor); err != nil {
+			return errors.Wrapf(err, "failed to create device mapper device for NVMe initiator %s", i.Name)
+		}
+
+		i.logger.Infof("Create endpoint %v", i.Endpoint)
+		if err := i.makeEndpoint(); err != nil {
+			return err
+		}
 	}
 
-	i.logger.Infof("Launched NVMe initiator")
+	i.logger.Infof("Launched NVMe initiator: %+v", i)
 
 	return nil
 }
 
-func (i *Initiator) Stop() error {
+func (i *Initiator) Stop(onlyDisconnectTarget bool) error {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -151,12 +184,19 @@ func (i *Initiator) Stop() error {
 		defer lock.Unlock()
 	}
 
-	return i.stopWithoutLock()
+	return i.stopWithoutLock(onlyDisconnectTarget)
 }
 
-func (i *Initiator) stopWithoutLock() error {
-	if err := i.removeEndpoint(); err != nil {
-		return err
+func (i *Initiator) stopWithoutLock(onlyDisconnectTarget bool) error {
+	if !onlyDisconnectTarget {
+		if err := i.removeEndpoint(); err != nil {
+			return err
+		}
+
+		if err := util.RemoveLinearDmDevice(i.Name, i.executor); err != nil {
+			logrus.WithError(err).Warn("Failed to remove dm device")
+			return err
+		}
 	}
 
 	if err := DisconnectTarget(i.SubsystemNQN, i.executor); err != nil {
@@ -239,13 +279,36 @@ func (i *Initiator) loadNVMeDeviceInfoWithoutLock() error {
 	return nil
 }
 
+func (i *Initiator) isNamespaceExist(devices []string) bool {
+	for _, device := range devices {
+		if device == i.NamespaceName {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *Initiator) findDependentDevices(devName string) ([]string, error) {
+	depDevices, err := util.DmsetupDeps(devName, i.executor)
+	if err != nil {
+		return nil, err
+	}
+	return depDevices, nil
+}
+
 func (i *Initiator) LoadEndpoint() error {
 	dev, err := util.DetectDevice(i.Endpoint, i.executor)
 	if err != nil {
 		return err
 	}
-	if i.NamespaceName != "" && i.NamespaceName != dev.Name {
-		return fmt.Errorf("detected device %s name mismatching from endpoint %v for NVMe initiator %s", dev.Name, i.Endpoint, i.Name)
+
+	depDevices, err := i.findDependentDevices(dev.Nvme.Name)
+	if err != nil {
+		return err
+	}
+
+	if i.NamespaceName != "" && !i.isNamespaceExist(depDevices) {
+		return fmt.Errorf("detected device %s name mismatching from endpoint %v for NVMe initiator %s", dev.Nvme.Name, i.Endpoint, i.Name)
 	}
 	i.dev = dev
 	i.isUp = true
@@ -255,6 +318,10 @@ func (i *Initiator) LoadEndpoint() error {
 
 func (i *Initiator) makeEndpoint() error {
 	if err := util.DuplicateDevice(i.dev, i.Endpoint); err != nil {
+		logrus.WithError(err).Warn("Failed to duplicate device")
+		if err := util.RemoveLinearDmDevice(i.Name, i.executor); err != nil {
+			logrus.WithError(err).Warn("Failed to remove dm device after duplicating device failure")
+		}
 		return err
 	}
 	i.isUp = true

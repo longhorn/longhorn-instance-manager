@@ -25,6 +25,10 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/derekbit/go-spdk-helper v0.0.0-20231101100534-c0fc08bf97a6 h1:P7NLDJb0gWOjxkTfajAiikkqtiR/LaBZ7A/UOfJnCV8=
+github.com/derekbit/go-spdk-helper v0.0.0-20231101100534-c0fc08bf97a6/go.mod h1:XoGXOYHw1KW3qdvTSimwY+Anyg5cPl6EVkjXxS25Upg=
+github.com/derekbit/longhorn-spdk-engine v0.0.0-20231102060521-26282a5099e7 h1:NoTQ337tqLCKlS+LIfim+FEuObVqsc7gAl/CFRkB+F4=
+github.com/derekbit/longhorn-spdk-engine v0.0.0-20231102060521-26282a5099e7/go.mod h1:l+wX/UrnxXeFxVjEZCjzv1yGJgw4DsArYMh4mOHy8KU=
 github.com/dnaeon/go-vcr v1.1.0/go.mod h1:M7tiix8f0r6mKKJ3Yq/kqU1OYf3MnfmBWVbPx/yU9ko=
 github.com/dnaeon/go-vcr v1.2.0 h1:zHCHvJYTMh1N7xnV7zf1m1GPBF9Ad0Jk/whtQ1663qI=
 github.com/dnaeon/go-vcr v1.2.0/go.mod h1:R4UdLID7HZT3taECzJs4YgbbH6PIGXB6W/sc5OLb6RQ=
@@ -64,12 +68,8 @@ github.com/longhorn/backupstore v0.0.0-20230830075002-fa25b1a97ffd h1:kMPcZ7n6NI
 github.com/longhorn/backupstore v0.0.0-20230830075002-fa25b1a97ffd/go.mod h1:wiEYTbvxEAIUxAAY1DmvMeuFuGqwWmJTzfVhZiBKlNo=
 github.com/longhorn/go-iscsi-helper v0.0.0-20230802055236-4ec8edae3fad h1:1eZBx9ZSopMM969E/BTTUIhM0O2klBOgh8qnmGnXftA=
 github.com/longhorn/go-iscsi-helper v0.0.0-20230802055236-4ec8edae3fad/go.mod h1:hxy8Ra38KtX4MFmXZRAZUpJZSYcaI1pmnWmKA3ICA2c=
-github.com/longhorn/go-spdk-helper v0.0.0-20231002161457-6c31a95f76e8 h1:tV7DKLG7xKdM3CratmRLF2JsOA1BpzFGj90nu0PiNCc=
-github.com/longhorn/go-spdk-helper v0.0.0-20231002161457-6c31a95f76e8/go.mod h1:XoGXOYHw1KW3qdvTSimwY+Anyg5cPl6EVkjXxS25Upg=
 github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443 h1:4P/dmOAq8nMGg9vnXkT04NBdNidOCPXg2LM3J63ewn8=
 github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443/go.mod h1:zcfS53mU3LkxWAWf2MkHsa75Q4t01GmiW++mfp1+78M=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47 h1:hadV15fSF+akBFZ8dMQFscTsJUVpEC1t6Go3B28ZNYw=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47/go.mod h1:mx8AOJWxLvWr+w4WtFirIPsEW88RajimS/pOEsw8A2k=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHTxp6HcC++/vN17LfeuDmozHI2j6DoZf5E=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c h1:EAE/cBOWZUL9CDiI4xbOr1IudQUa2e6u/pdScytEcvo=

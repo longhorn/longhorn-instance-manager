@@ -2,9 +2,11 @@ package util
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,13 +16,24 @@ import (
 )
 
 const (
-	LSBLKBinary = "lsblk"
+	lsblkBinary    = "lsblk"
+	blockdevBinary = "blockdev"
 )
 
+type BlockDevice struct {
+	Name   string `json:"name"`
+	Major  int    `json:"maj"`
+	Minor  int    `json:"min"`
+	MajMin string `json:"maj:min"`
+}
+
+type BlockDevices struct {
+	Devices []BlockDevice `json:"blockdevices"`
+}
+
 type KernelDevice struct {
-	Name  string
-	Major int
-	Minor int
+	Nvme   BlockDevice
+	Export BlockDevice
 }
 
 func RemoveDevice(dev string) error {
@@ -50,7 +63,7 @@ func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 		"-l", "-n", "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(LSBLKBinary, opts)
+	output, err := executor.Execute(lsblkBinary, opts)
 	if err != nil {
 		return knownDevices, err
 	}
@@ -61,12 +74,14 @@ func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 		f := strings.Fields(line)
 		if len(f) == 2 {
 			dev := &KernelDevice{
-				Name: f[0],
+				Nvme: BlockDevice{
+					Name: f[0],
+				},
 			}
-			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Major, &dev.Minor); err != nil {
-				return nil, fmt.Errorf("invalid major:minor %s for device %s", dev.Name, f[1])
+			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Nvme.Major, &dev.Nvme.Minor); err != nil {
+				return nil, fmt.Errorf("invalid major:minor %s for NVMe device %s", dev.Nvme.Name, f[1])
 			}
-			knownDevices[dev.Name] = dev
+			knownDevices[dev.Nvme.Name] = dev
 		}
 	}
 
@@ -83,7 +98,7 @@ func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
 		"-l", "-n", path, "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(LSBLKBinary, opts)
+	output, err := executor.Execute(lsblkBinary, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -95,10 +110,12 @@ func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
 		f := strings.Fields(line)
 		if len(f) == 2 {
 			dev = &KernelDevice{
-				Name: f[0],
+				Nvme: BlockDevice{
+					Name: f[0],
+				},
 			}
-			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Major, &dev.Minor); err != nil {
-				return nil, fmt.Errorf("invalid major:minor %s for device %s with path %s", dev.Name, f[1], path)
+			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Nvme.Major, &dev.Nvme.Minor); err != nil {
+				return nil, fmt.Errorf("invalid major:minor %s for device %s with path %s", dev.Nvme.Name, f[1], path)
 			}
 		}
 		break
@@ -108,6 +125,157 @@ func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
 	}
 
 	return dev, nil
+}
+
+func parseMajorMinorFromJSON(jsonStr string) (int, int, error) {
+	var data BlockDevices
+	err := json.Unmarshal([]byte(jsonStr), &data)
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "failed to parse JSON")
+	}
+
+	if len(data.Devices) != 1 {
+		return 0, 0, fmt.Errorf("number of devices is not 1")
+	}
+
+	majMinParts := splitMajMin(data.Devices[0].MajMin)
+
+	if len(majMinParts) != 2 {
+		return 0, 0, fmt.Errorf("invalid maj:min format: %s", data.Devices[0].MajMin)
+	}
+
+	major, err := parseNumber(majMinParts[0])
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "failed to parse major number")
+	}
+
+	minor, err := parseNumber(majMinParts[1])
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "failed to parse minor number")
+	}
+
+	return major, minor, nil
+}
+
+func splitMajMin(majMin string) []string {
+	return splitIgnoreEmpty(majMin, ":")
+}
+
+func splitIgnoreEmpty(str string, sep string) []string {
+	parts := []string{}
+	for _, part := range strings.Split(str, sep) {
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
+	return parts
+}
+
+func parseNumber(str string) (int, error) {
+	return strconv.Atoi(strings.TrimSpace(str))
+}
+
+func SuspendLinearDmDevice(name string, executor Executor) error {
+	logrus.Infof("Suspending linear dm device %s", name)
+
+	return DmsetupSuspend(name, executor)
+}
+
+func ResumeLinearDmDevice(name string, executor Executor) error {
+	logrus.Infof("Resuming linear dm device %s", name)
+
+	return DmsetupResume(name, executor)
+}
+
+func ReloadLinearDmDevice(name string, dev *KernelDevice, executor Executor) error {
+	devPath := fmt.Sprintf("/dev/%s", dev.Nvme.Name)
+
+	// Get the size of the device
+	opts := []string{
+		"--getsize", devPath,
+	}
+	output, err := executor.Execute(blockdevBinary, opts)
+	if err != nil {
+		return err
+	}
+	sectors, err := strconv.ParseInt(strings.TrimSpace(output), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	table := fmt.Sprintf("0 %v linear %v 0", sectors, devPath)
+
+	logrus.Infof("Reloading linear dm device %s with table %s", name, table)
+
+	return DmsetupReload(name, table, executor)
+}
+
+func getDeviceSectorSize(devPath string, executor Executor) (int64, error) {
+	opts := []string{
+		"--getsize", devPath,
+	}
+
+	output, err := executor.Execute(blockdevBinary, opts)
+	if err != nil {
+		return -1, err
+	}
+
+	return strconv.ParseInt(strings.TrimSpace(output), 10, 64)
+}
+
+func getDeviceNumbers(devPath string, executor Executor) (int, int, error) {
+	opts := []string{
+		"-l", "-J", "-n", "-o", "MAJ:MIN", devPath,
+	}
+	output, err := executor.Execute(lsblkBinary, opts)
+	if err != nil {
+		return -1, -1, err
+	}
+
+	return parseMajorMinorFromJSON(output)
+}
+
+func CreateLinearDmDevice(name string, dev *KernelDevice, executor Executor) error {
+	if dev == nil {
+		return fmt.Errorf("found nil device for linear dm device creation")
+	}
+
+	nvmeDevPath := fmt.Sprintf("/dev/%s", dev.Nvme.Name)
+	sectors, err := getDeviceSectorSize(nvmeDevPath, executor)
+	if err != nil {
+		return err
+	}
+
+	// Create a device mapper device with the same size as the original device
+	table := fmt.Sprintf("0 %v linear %v 0", sectors, nvmeDevPath)
+	logrus.Infof("Creating linear dm device %s with table %s", name, table)
+	err = DmsetupCreate(name, table, executor)
+	if err != nil {
+		return err
+	}
+
+	dmDevPath := fmt.Sprintf("/dev/mapper/%s", name)
+	major, minor, err := getDeviceNumbers(dmDevPath, executor)
+	if err != nil {
+		return err
+	}
+
+	dev.Export.Name = name
+	dev.Export.Major = major
+	dev.Export.Minor = minor
+
+	return nil
+}
+
+func RemoveLinearDmDevice(name string, executor Executor) error {
+	devPath := fmt.Sprintf("/dev/mapper/%s", name)
+	if _, err := os.Stat(devPath); err != nil {
+		logrus.WithError(err).Warnf("Failed to stat linear dm device %s", devPath)
+		return nil
+	}
+
+	logrus.Infof("Removing linear dm device %s", name)
+	return DmsetupRemove(name, executor)
 }
 
 func DuplicateDevice(dev *KernelDevice, dest string) error {
@@ -120,11 +288,11 @@ func DuplicateDevice(dev *KernelDevice, dest string) error {
 	dir := filepath.Dir(dest)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			logrus.WithError(err).Fatalf("device %v: Failed to create directory for %v", dev.Name, dest)
+			logrus.WithError(err).Fatalf("device %v: Failed to create directory for %v", dev.Nvme.Name, dest)
 		}
 	}
-	if err := mknod(dest, dev.Major, dev.Minor); err != nil {
-		return errors.Wrapf(err, "cannot create device node %s for device %s", dest, dev.Name)
+	if err := mknod(dest, dev.Export.Major, dev.Export.Minor); err != nil {
+		return errors.Wrapf(err, "cannot create device node %s for device %s", dest, dev.Nvme.Name)
 	}
 	if err := os.Chmod(dest, 0660); err != nil {
 		return errors.Wrapf(err, "cannot change permission of the device %s", dest)

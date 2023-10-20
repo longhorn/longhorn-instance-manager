@@ -165,7 +165,7 @@ func getDiskID(filename string) (string, error) {
 		return "", errors.Wrap(err, "failed to detect disk device")
 	}
 
-	return fmt.Sprintf("%d-%d", dev.Major, dev.Minor), nil
+	return fmt.Sprintf("%d-%d", dev.Export.Major, dev.Export.Minor), nil
 }
 
 func isBlockDevice(fullPath string) (bool, error) {
