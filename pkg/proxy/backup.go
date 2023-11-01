@@ -6,12 +6,18 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+<<<<<<< HEAD
+=======
+	backupstore "github.com/longhorn/backupstore"
+	butil "github.com/longhorn/backupstore/util"
+>>>>>>> 055db7e (feat(backuptarget): add cleanup all mounts grpc function)
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	rclient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
@@ -21,6 +27,13 @@ import (
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
+
+func (p *Proxy) CleanupBackupMountPoints(ctx context.Context, req *empty.Empty) (resp *empty.Empty, err error) {
+	if err := backupstore.CleanUpAllMounts(); err != nil {
+		return &empty.Empty{}, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to unmount all mount points").Error())
+	}
+	return &empty.Empty{}, nil
+}
 
 func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
