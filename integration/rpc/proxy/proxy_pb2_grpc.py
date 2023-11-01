@@ -115,6 +115,11 @@ class ProxyEngineServiceStub(object):
         request_serializer=proxy__pb2.ProxyEngineRequest.SerializeToString,
         response_deserializer=proxy__pb2.EngineBackupRestoreStatusProxyResponse.FromString,
         )
+    self.CleanupBackupMountPoints = channel.unary_unary(
+        '/imrpc.ProxyEngineService/CleanupBackupMountPoints',
+        request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+        response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+        )
     self.ReplicaAdd = channel.unary_unary(
         '/imrpc.ProxyEngineService/ReplicaAdd',
         request_serializer=proxy__pb2.EngineReplicaAddRequest.SerializeToString,
@@ -296,6 +301,13 @@ class ProxyEngineServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def CleanupBackupMountPoints(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
   def ReplicaAdd(self, request, context):
     # missing associated documentation comment in .proto file
     pass
@@ -447,6 +459,11 @@ def add_ProxyEngineServiceServicer_to_server(servicer, server):
           servicer.BackupRestoreStatus,
           request_deserializer=proxy__pb2.ProxyEngineRequest.FromString,
           response_serializer=proxy__pb2.EngineBackupRestoreStatusProxyResponse.SerializeToString,
+      ),
+      'CleanupBackupMountPoints': grpc.unary_unary_rpc_method_handler(
+          servicer.CleanupBackupMountPoints,
+          request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+          response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
       ),
       'ReplicaAdd': grpc.unary_unary_rpc_method_handler(
           servicer.ReplicaAdd,
