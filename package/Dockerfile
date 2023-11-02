@@ -81,7 +81,7 @@ RUN zypper -n install kmod curl fuse wget \
     nfs-client nfs4-acl-tools cifs-utils \
     libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils \
     iputils telnet iproute2 qemu-tools \
-    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel util-linux-systemd python3
+    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel util-linux-systemd python3 device-mapper
 
 # Install SPDK dependencies
 COPY --from=builder /usr/src/spdk/scripts /spdk/
