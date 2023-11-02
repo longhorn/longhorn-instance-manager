@@ -16,7 +16,7 @@ require (
 	golang.org/x/net v0.17.0
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.53.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 )
 
@@ -66,6 +66,6 @@ require (
 
 replace golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3
 
-replace github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47 => github.com/derekbit/longhorn-spdk-engine v0.0.0-20231102060521-26282a5099e7
+replace github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47 => github.com/derekbit/longhorn-spdk-engine v0.0.0-20231103110429-e6ba912832eb
 
-replace github.com/longhorn/go-spdk-helper v0.0.0-20231002161457-6c31a95f76e8 => github.com/derekbit/go-spdk-helper v0.0.0-20231101100534-c0fc08bf97a6
+replace github.com/longhorn/go-spdk-helper v0.0.0-20231002161457-6c31a95f76e8 => github.com/derekbit/go-spdk-helper v0.0.0-20231103105654-1a22ce12efdc

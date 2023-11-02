@@ -184,7 +184,7 @@ func (e *Engine) handleFrontend(spdkClient *SPDKClient, portCount int32, superio
 	if err != nil {
 		return err
 	}
-	return initiator.Start(e.IP, strconv.Itoa(int(port)), false)
+	return initiator.Start(e.IP, strconv.Itoa(int(port)))
 }
 
 func (e *Engine) Delete(spdkClient *SPDKClient, superiorPortAllocator *util.Bitmap) (err error) {
@@ -209,7 +209,7 @@ func (e *Engine) Delete(spdkClient *SPDKClient, superiorPortAllocator *util.Bitm
 		if err != nil {
 			return err
 		}
-		if err := initiator.Stop(false); err != nil {
+		if err := initiator.Stop(); err != nil {
 			return err
 		}
 

@@ -36,6 +36,7 @@ type KernelDevice struct {
 	Export BlockDevice
 }
 
+// RemoveDevice removes the given device
 func RemoveDevice(dev string) error {
 	if _, err := os.Stat(dev); err == nil {
 		if err := remove(dev); err != nil {
@@ -45,6 +46,7 @@ func RemoveDevice(dev string) error {
 	return nil
 }
 
+// GetDevicePath returns the path of the device with the given major and minor numbers
 func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 	knownDevices := make(map[string]*KernelDevice)
 
@@ -88,6 +90,7 @@ func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 	return knownDevices, nil
 }
 
+// DetectDevice detects the device with the given path
 func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
 	/* Example command output
 	   $ lsblk -l -n <Device Path> -o NAME,MAJ:MIN
@@ -175,42 +178,7 @@ func parseNumber(str string) (int, error) {
 	return strconv.Atoi(strings.TrimSpace(str))
 }
 
-func SuspendLinearDmDevice(name string, executor Executor) error {
-	logrus.Infof("Suspending linear dm device %s", name)
-
-	return DmsetupSuspend(name, executor)
-}
-
-func ResumeLinearDmDevice(name string, executor Executor) error {
-	logrus.Infof("Resuming linear dm device %s", name)
-
-	return DmsetupResume(name, executor)
-}
-
-func ReloadLinearDmDevice(name string, dev *KernelDevice, executor Executor) error {
-	devPath := fmt.Sprintf("/dev/%s", dev.Nvme.Name)
-
-	// Get the size of the device
-	opts := []string{
-		"--getsize", devPath,
-	}
-	output, err := executor.Execute(blockdevBinary, opts)
-	if err != nil {
-		return err
-	}
-	sectors, err := strconv.ParseInt(strings.TrimSpace(output), 10, 64)
-	if err != nil {
-		return err
-	}
-
-	table := fmt.Sprintf("0 %v linear %v 0", sectors, devPath)
-
-	logrus.Infof("Reloading linear dm device %s with table %s", name, table)
-
-	return DmsetupReload(name, table, executor)
-}
-
-func getDeviceSectorSize(devPath string, executor Executor) (int64, error) {
+func GetDeviceSectorSize(devPath string, executor Executor) (int64, error) {
 	opts := []string{
 		"--getsize", devPath,
 	}
@@ -223,7 +191,7 @@ func getDeviceSectorSize(devPath string, executor Executor) (int64, error) {
 	return strconv.ParseInt(strings.TrimSpace(output), 10, 64)
 }
 
-func getDeviceNumbers(devPath string, executor Executor) (int, int, error) {
+func GetDeviceNumbers(devPath string, executor Executor) (int, int, error) {
 	opts := []string{
 		"-l", "-J", "-n", "-o", "MAJ:MIN", devPath,
 	}
@@ -235,49 +203,7 @@ func getDeviceNumbers(devPath string, executor Executor) (int, int, error) {
 	return parseMajorMinorFromJSON(output)
 }
 
-func CreateLinearDmDevice(name string, dev *KernelDevice, executor Executor) error {
-	if dev == nil {
-		return fmt.Errorf("found nil device for linear dm device creation")
-	}
-
-	nvmeDevPath := fmt.Sprintf("/dev/%s", dev.Nvme.Name)
-	sectors, err := getDeviceSectorSize(nvmeDevPath, executor)
-	if err != nil {
-		return err
-	}
-
-	// Create a device mapper device with the same size as the original device
-	table := fmt.Sprintf("0 %v linear %v 0", sectors, nvmeDevPath)
-	logrus.Infof("Creating linear dm device %s with table %s", name, table)
-	err = DmsetupCreate(name, table, executor)
-	if err != nil {
-		return err
-	}
-
-	dmDevPath := fmt.Sprintf("/dev/mapper/%s", name)
-	major, minor, err := getDeviceNumbers(dmDevPath, executor)
-	if err != nil {
-		return err
-	}
-
-	dev.Export.Name = name
-	dev.Export.Major = major
-	dev.Export.Minor = minor
-
-	return nil
-}
-
-func RemoveLinearDmDevice(name string, executor Executor) error {
-	devPath := fmt.Sprintf("/dev/mapper/%s", name)
-	if _, err := os.Stat(devPath); err != nil {
-		logrus.WithError(err).Warnf("Failed to stat linear dm device %s", devPath)
-		return nil
-	}
-
-	logrus.Infof("Removing linear dm device %s", name)
-	return DmsetupRemove(name, executor)
-}
-
+// DuplicateDevice creates a device node for the given device
 func DuplicateDevice(dev *KernelDevice, dest string) error {
 	if dev == nil {
 		return fmt.Errorf("found nil device for device duplication")
@@ -326,4 +252,15 @@ func remove(path string) error {
 	case <-time.After(30 * time.Second):
 		return fmt.Errorf("timeout trying to delete %s", path)
 	}
+}
+
+// IsBlockDevice returns true if the given path is a block device
+func IsBlockDevice(path string) (bool, error) {
+	var st unix.Stat_t
+	err := unix.Stat(path, &st)
+	if err != nil {
+		return false, err
+	}
+
+	return (st.Mode & unix.S_IFMT) == unix.S_IFBLK, nil
 }
