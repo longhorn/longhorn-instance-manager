@@ -3,7 +3,10 @@ package cmd
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
+	"net/http"
+	_ "net/http/pprof" // for runtime profiling
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -128,6 +131,15 @@ func start(c *cli.Context) (err error) {
 	}
 
 	shutdownCh := make(chan error)
+
+	go func() {
+		debugAddress := ":6060"
+		debugHandler := http.DefaultServeMux
+		logrus.Infof("Debug pprof server listening on %s", debugAddress)
+		if err := http.ListenAndServe(debugAddress, debugHandler); err != nil && err != http.ErrServerClosed {
+			logrus.Errorf(fmt.Sprintf("ListenAndServe: %s", err))
+		}
+	}()
 
 	processManagerServiceAddress, proxyServiceAddress, diskServiceAddress, instanceServiceAddress, spdkServiceAddress, err := getServiceAddresses(listen)
 	if err != nil {

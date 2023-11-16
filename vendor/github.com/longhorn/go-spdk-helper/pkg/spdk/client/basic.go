@@ -356,6 +356,33 @@ func (c *Client) BdevLvolShallowCopy(srcLvolName, dstBdevName string) (copied bo
 	return copied, json.Unmarshal(cmdOutput, &copied)
 }
 
+// BdevLvolGetFragmap gets fragmap of the specific segment of the logical volume.
+//
+//	"name": Required. UUID or alias of the logical volume.
+//
+//	"offset": Optional. Offset in bytes of the specific segment of the logical volume (Default: 0).
+//
+//	"size": Optional. Size in bytes of the specific segment of the logical volume (Default: 0 for representing the entire file).
+func (c *Client) BdevLvolGetFragmap(name string, offset, size uint64) (*spdktypes.BdevLvolFragmap, error) {
+	req := spdktypes.BdevLvolGetFragmapRequest{
+		Name:   name,
+		Offset: offset,
+		Size:   size,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_get_fragmap", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var result spdktypes.BdevLvolFragmap
+	err = json.Unmarshal(cmdOutput, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 // BdevRaidCreate constructs a new RAID bdev.
 //
 //	"name": Required. a RAID bdev name rather than an alias or a UUID.
