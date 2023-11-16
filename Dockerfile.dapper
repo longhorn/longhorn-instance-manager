@@ -4,12 +4,13 @@ ARG DAPPER_HOST_ARCH=amd64
 ARG http_proxy
 ARG https_proxy
 ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
+ENV PROTOBUF_VER=3.18.0
 
 # Setup environment
 ENV PATH /go/bin:$PATH
 ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO
-ENV DAPPER_OUTPUT bin coverage.out
+ENV DAPPER_OUTPUT bin integration/rpc coverage.out
 ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.venv:exec --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.tox:exec -v /dev:/host/dev -v /proc:/host/proc
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
 WORKDIR ${DAPPER_SOURCE}
@@ -24,12 +25,45 @@ RUN if [ ${ARCH} == "amd64" ]; then \
         zypper -n install autoconf libtool libunwind-devel; \
     fi
 
-RUN zypper -n install cmake wget curl git less file \
-        libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
-        psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
-        bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
-        perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
-        rm -rf /var/cache/zypp/*
+RUN zypper -n install \
+  bash-completion \
+  cmake \
+  curl \
+  docbook-xsl-stylesheets \
+  docker \
+  file \
+  fuse \
+  gcc \
+  gcc-c++ \
+  git \
+  glibc-devel \
+  glibc-devel-static \
+  iproute2 \
+  iptables \
+  jq \
+  less \
+  libaio-devel \
+  libdevmapper1_03 \
+  libglib-2_0-0 \
+  libibverbs \
+  libkmod-devel \
+  libltdl7 \
+  libnl3-devel \
+  linux-glibc-devel \
+  perl-Config-General \
+  pkg-config \
+  psmisc \
+  python3-devel \
+  python3-pip \
+  qemu-tools \
+  rdma-core-devel \
+  tox \
+  wget \
+  xsltproc \
+  zlib-devel \
+  zlib-devel-static \
+  unzip \
+  && rm -rf /var/cache/zypp/*
 
 # needed for ${!var} substitution
 RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
@@ -53,6 +87,26 @@ RUN cd /usr/src/libqcow-20181117 && \
     make -j$(nproc) && \
     make install
 RUN ldconfig
+
+# protoc
+ENV PROTOC_amd64=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-x86_64.zip \
+	PROTOC_arm64=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-aarch_64.zip \
+	PROTOC_s390x=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-s390_64.zip \
+	PROTOC=PROTOC_${ARCH}
+
+RUN cd /usr/src && \
+	wget ${!PROTOC} -O protoc_${ARCH}.zip && \
+    unzip protoc_${ARCH}.zip -d /usr/local/
+
+# protoc-gen-go
+RUN mkdir -p /usr/src/github.com/golang/ && \
+    cd /usr/src/github.com/golang/ && \
+    git clone --branch v1.3.2 --depth 1 https://github.com/golang/protobuf.git && \
+    cd protobuf/protoc-gen-go && \
+    go build && \
+    cp protoc-gen-go /usr/local/bin
+
+RUN pip3 install grpcio==1.25.0 grpcio_tools==1.25.0 protobuf==${PROTOBUF_VER}
 
 VOLUME /tmp
 ENV TMPDIR /tmp
