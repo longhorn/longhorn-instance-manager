@@ -1,4 +1,4 @@
-FROM registry.suse.com/bci/bci-base:15.4
+FROM registry.suse.com/bci/bci-base:15.4 AS builder
 
 ARG ARCH=amd64
 
@@ -6,22 +6,12 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP4/network:utilities.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake kmod curl nfs-client nfs4-acl-tools fuse git gcc \
-    libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils \
-    iputils telnet iperf qemu-tools wget iproute2 xsltproc docbook-xsl-stylesheets \
-    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel
-
-RUN if [ ${ARCH} == "amd64" ]; then \
-        zypper -n install autoconf libtool libunwind-devel gcc-c++; \
-    fi
+RUN zypper -n install cmake curl git gcc wget xsltproc docbook-xsl-stylesheets && \
+    rm -rf /var/cache/zypp/*
 
 # Install grpc_health_probe
 RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
     chmod +x /usr/local/bin/grpc_health_probe
-
-COPY bin/longhorn-instance-manager /usr/local/bin/
-
-COPY package/engine-manager /usr/local/bin/
 
 # Build liblonghorn
 RUN cd /usr/src && \
@@ -38,6 +28,33 @@ RUN cd /usr/src && \
     git checkout 3a8bc4823b5390e046f7aa8231ed262c0365c42c && \
     make; \
     make install
+
+
+FROM registry.suse.com/bci/bci-base:15.4 AS release
+
+ARG ARCH=amd64
+
+RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP4/network:utilities.repo && \
+    zypper --gpg-auto-import-keys ref
+
+RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils libaio1 sg3_utils\
+    iputils iproute2 qemu-tools e2fsprogs && \
+    rm -rf /var/cache/zypp/*
+
+# Copy pre-built binaries from builder
+COPY --from=builder \
+    /usr/local/bin/grpc_health_probe \
+    /usr/sbin/tgt-admin \
+    /usr/sbin/tgt-setup-lun \
+    /usr/sbin/tgtadm \
+    /usr/sbin/tgtd \
+    /usr/sbin/tgtimg \
+    /usr/local/bin/
+
+COPY bin/longhorn-instance-manager /usr/local/bin/
+
+COPY package/engine-manager /usr/local/bin/
 
 VOLUME /usr/local/bin
 
