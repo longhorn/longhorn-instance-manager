@@ -66,6 +66,10 @@ RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
     meson compile -C .build && \
     meson install -C .build --destdir /usr/local/nvme
 
+# Install grpc_health_probe
+RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
+    chmod +x /usr/local/bin/grpc_health_probe
+
 FROM registry.suse.com/bci/bci-base:15.4 AS release
 
 ARG ARCH=amd64
@@ -77,11 +81,9 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install kmod curl fuse wget \
-    nfs-client nfs4-acl-tools cifs-utils \
-    libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils \
-    iputils telnet iproute2 qemu-tools \
-    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel util-linux-systemd python3
+RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils libaio1 sg3_utils \
+    iputils iproute2 qemu-tools e2fsprogs util-linux-systemd python3 && \
+    rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
 COPY --from=builder /usr/src/spdk/scripts /spdk/
@@ -92,6 +94,7 @@ RUN if [ "${ARCH}" == "amd64" ]; then \
 
 # Copy pre-built binaries from builder
 COPY --from=builder \
+    /usr/local/bin/grpc_health_probe \
     /usr/local/bin/spdk_* \
     /usr/sbin/tgt-admin \
     /usr/sbin/tgt-setup-lun \
@@ -107,10 +110,6 @@ COPY --from=builder \
     /usr/local/lib64/
 
 RUN ldconfig
-
-# Install grpc_health_probe
-RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
-    chmod +x /usr/local/bin/grpc_health_probe
 
 COPY bin/longhorn-instance-manager package/instance-manager /usr/local/bin/
 
