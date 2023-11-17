@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/mount-utils"
 
 	spdkhelpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 )
@@ -132,6 +133,15 @@ func IsSPDKTgtReady(timeout time.Duration) bool {
 			return true
 		}
 		time.Sleep(time.Second)
+	}
+	return false
+}
+
+func IsMountPointReadOnly(mp mount.MountPoint) bool {
+	for _, opt := range mp.Opts {
+		if opt == "ro" {
+			return true
+		}
 	}
 	return false
 }
