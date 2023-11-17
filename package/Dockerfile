@@ -46,14 +46,21 @@ RUN cd /usr/src && \
 ENV SPDK_DIR /usr/src/spdk
 ENV SPDK_COMMIT_ID 700b93962fba0dcd54091fd8f128a01bb0d86701
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
-    if [ ${ARCH} == "amd64" ]; then \
-        cd ${SPDK_DIR} && \
-        git checkout ${SPDK_COMMIT_ID} && \
-        git submodule update --init && \
-        ./scripts/pkgdep.sh && \
+    cd ${SPDK_DIR} && \
+    git checkout ${SPDK_COMMIT_ID} && \
+    git submodule update --init && \
+    ./scripts/pkgdep.sh && \
+    if [ ${ARCH} = "amd64" ]; then \
         ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples && \
         make -j$(nproc) && \
         make install; \
+    elif [ ${ARCH} = "arm64" ]; then \
+        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples && \
+        DPDKBUILD_FLAGS="-Dplatform=generic" make -j$(nproc) && \
+        make install; \
+    else \
+        echo "Unsupported architecture: ${ARCH}"; \
+        exit 1; \
     fi
 
 # Build nvme-cli 2.5
@@ -87,10 +94,7 @@ RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
 
 # Install SPDK dependencies
 COPY --from=builder /usr/src/spdk/scripts /spdk/
-RUN if [ "${ARCH}" == "amd64" ]; then \
-        sh /spdk/pkgdep.sh; \
-        rm -rf /spdk; \
-    fi
+RUN sh /spdk/pkgdep.sh && rm -rf /spdk
 
 # Copy pre-built binaries from builder
 COPY --from=builder \
