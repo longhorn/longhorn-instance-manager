@@ -377,4 +377,3 @@ k8s.io/utils/clock
 k8s.io/utils/exec
 k8s.io/utils/io
 k8s.io/utils/keymutex
-# golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3

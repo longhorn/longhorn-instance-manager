@@ -6,7 +6,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -64,7 +63,7 @@ func (s *Server) startMonitoring() {
 	}
 }
 
-func (s *Server) VersionGet(ctx context.Context, req *empty.Empty) (*rpc.VersionResponse, error) {
+func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.VersionResponse, error) {
 	v := meta.GetVersion()
 	return &rpc.VersionResponse{
 		Version:   v.Version,
@@ -260,7 +259,7 @@ func (s *Server) spdkInstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResp
 	}
 }
 
-func (s *Server) InstanceList(ctx context.Context, req *empty.Empty) (*rpc.InstanceListResponse, error) {
+func (s *Server) InstanceList(ctx context.Context, req *emptypb.Empty) (*rpc.InstanceListResponse, error) {
 	logrus.WithFields(logrus.Fields{}).Trace("Listing instances")
 
 	instances := map[string]*rpc.InstanceResponse{}
@@ -422,14 +421,14 @@ func (s *Server) handleNotify(ctx context.Context, notifyChan chan struct{}, srv
 			logrus.Info("Stopped handling notify")
 			return ctx.Err()
 		case <-notifyChan:
-			if err := srv.Send(&empty.Empty{}); err != nil {
+			if err := srv.Send(&emptypb.Empty{}); err != nil {
 				return errors.Wrap(err, "failed to send instance response")
 			}
 		}
 	}
 }
 
-func (s *Server) InstanceWatch(req *empty.Empty, srv rpc.InstanceService_InstanceWatchServer) error {
+func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_InstanceWatchServer) error {
 	logrus.Info("Start watching instances")
 
 	done := make(chan struct{})
