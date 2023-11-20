@@ -1,11 +1,11 @@
 package proxy
 
 import (
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
@@ -119,7 +119,7 @@ func (p *Proxy) spdkSnapshotList(ctx context.Context, req *rpc.ProxyEngineReques
 	}, nil
 }
 
-func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -138,7 +138,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	}
 }
 
-func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
 	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.FromVolumeName, req.FromEngineName)
 	if err != nil {
 		return nil, err
@@ -158,10 +158,10 @@ func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkSnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -220,7 +220,7 @@ func (p *Proxy) spdkSnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngin
 	}, nil
 }
 
-func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -239,7 +239,7 @@ func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 	}
 }
 
-func (p *Proxy) snapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) snapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -251,14 +251,14 @@ func (p *Proxy) snapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkSnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
-func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -277,7 +277,7 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 	}
 }
 
-func (p *Proxy) snapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) snapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -288,12 +288,12 @@ func (p *Proxy) snapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkSnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
 	/* TODO: implement this */
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
@@ -348,7 +348,7 @@ func (p *Proxy) spdkSnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngin
 	}, nil
 }
 
-func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -367,7 +367,7 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 	}
 }
 
-func (p *Proxy) snapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) snapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -382,14 +382,14 @@ func (p *Proxy) snapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 		}
 	}
 
-	return &empty.Empty{}, lastErr
+	return &emptypb.Empty{}, lastErr
 }
 
-func (p *Proxy) spdkSnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkSnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
-func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -408,7 +408,7 @@ func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashReq
 	}
 }
 
-func (p *Proxy) snapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) snapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -419,10 +419,10 @@ func (p *Proxy) snapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashReq
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkSnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 

@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
@@ -343,7 +343,7 @@ func (pm *Manager) Subscribe() (<-chan interface{}, error) {
 	return pm.broadcaster.Subscribe(context.TODO(), pm.broadcastConnector)
 }
 
-func (pm *Manager) ProcessWatch(req *empty.Empty, srv rpc.ProcessManagerService_ProcessWatchServer) (err error) {
+func (pm *Manager) ProcessWatch(req *emptypb.Empty, srv rpc.ProcessManagerService_ProcessWatchServer) (err error) {
 	responseChan, err := pm.Subscribe()
 	if err != nil {
 		return err

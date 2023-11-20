@@ -2,9 +2,9 @@ syntax="proto3";
 
 package ptypes;
 
+option go_package = "github.com/longhorn/longhorn-engine/proto/ptypes";
+
 import "google/protobuf/empty.proto";
-// This was manually updated to resolve error:
-//   Import "common.proto" was not found or had errors.
 import "github.com/longhorn/longhorn-engine/proto/ptypes/common.proto";
 
 service SyncAgentService {

@@ -1,11 +1,11 @@
 package proxy
 
 import (
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
@@ -89,7 +89,7 @@ func (p *Proxy) spdkVolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) 
 	}, nil
 }
 
-func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -108,7 +108,7 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	}
 }
 
-func (p *Proxy) volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -121,14 +121,14 @@ func (p *Proxy) volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkVolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
-func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -147,7 +147,7 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	}
 }
 
-func (p *Proxy) volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -160,15 +160,15 @@ func (p *Proxy) volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkVolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.Address,
 		"engineName":         req.EngineName,
@@ -187,7 +187,7 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	}
 }
 
-func (p *Proxy) volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -199,15 +199,15 @@ func (p *Proxy) volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkVolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL":         req.ProxyEngineRequest.Address,
 		"engineName":         req.ProxyEngineRequest.EngineName,
@@ -227,7 +227,7 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 
 }
 
-func (p *Proxy) volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -240,10 +240,10 @@ func (p *Proxy) volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *empty.Empty, err error) {
+func (p *Proxy) spdkVolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
