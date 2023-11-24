@@ -103,8 +103,8 @@ COPY --from=builder \
     /usr/local/bin/
 
 COPY --from=builder \
-    /usr/local/nvme/usr/local/lib64/libnvme* \
-    /usr/local/lib64/
+    /usr/local/nvme/usr/local/lib64 \
+    /usr/local/lib64
 
 RUN ldconfig
 
