@@ -10,20 +10,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 
-<<<<<<< HEAD
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
-
-=======
 	backupstore "github.com/longhorn/backupstore"
-	butil "github.com/longhorn/backupstore/util"
->>>>>>> 055db7e (feat(backuptarget): add cleanup all mounts grpc function)
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	rclient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
 	eutil "github.com/longhorn/longhorn-engine/pkg/util"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 func (p *Proxy) CleanupBackupMountPoints(ctx context.Context, req *empty.Empty) (resp *empty.Empty, err error) {
