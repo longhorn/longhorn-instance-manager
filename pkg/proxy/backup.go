@@ -13,11 +13,7 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
-<<<<<<< HEAD
-=======
 	backupstore "github.com/longhorn/backupstore"
-	butil "github.com/longhorn/backupstore/util"
->>>>>>> 055db7e (feat(backuptarget): add cleanup all mounts grpc function)
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	rclient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
