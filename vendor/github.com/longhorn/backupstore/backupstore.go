@@ -5,8 +5,9 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/longhorn/backupstore/util"
 	"github.com/pkg/errors"
+
+	"github.com/longhorn/backupstore/util"
 )
 
 type Volume struct {
@@ -21,6 +22,8 @@ type Volume struct {
 	BackingImageChecksum string `json:",string"`
 	CompressionMethod    string `json:",string"`
 	StorageClassName     string `json:",string"`
+	BackendStoreDriver   string `json:",string"`
+	ObjectStoreBackup    string `json:",string"`
 }
 
 type Snapshot struct {
@@ -44,6 +47,7 @@ type Backup struct {
 	Labels            map[string]string
 	IsIncremental     bool
 	CompressionMethod string
+	ObjectStoreBackup string
 
 	ProcessingBlocks *ProcessingBlocks
 
@@ -110,12 +114,24 @@ func removeVolume(volumeName string, driver BackupStoreDriver) error {
 }
 
 func EncodeBackupURL(backupName, volumeName, destURL string) string {
-	v := url.Values{}
+	u, err := url.Parse(destURL)
+	if err != nil {
+		return ""
+	}
+
+	v, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		// Just start with empty values list then
+		v = url.Values{}
+	}
+
 	v.Add("volume", volumeName)
 	if backupName != "" {
 		v.Add("backup", backupName)
 	}
-	return destURL + "?" + v.Encode()
+
+	u.RawQuery = v.Encode()
+	return u.String()
 }
 
 func DecodeBackupURL(backupURL string) (string, string, string, error) {
@@ -132,7 +148,10 @@ func DecodeBackupURL(backupURL string) (string, string, string, error) {
 	if backupName != "" && !util.ValidateName(backupName) {
 		return "", "", "", fmt.Errorf("invalid backup name parsed, got %v", backupName)
 	}
-	u.RawQuery = ""
+
+	v.Del("volume")
+	v.Del("backup")
+	u.RawQuery = v.Encode()
 	destURL := u.String()
 	return backupName, volumeName, destURL, nil
 }

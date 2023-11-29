@@ -28,6 +28,8 @@ type VolumeInfo struct {
 	BackingImageName     string
 	BackingImageChecksum string
 	StorageClassname     string
+	BackendStoreDriver   string
+	ObjectStoreBackup    string `json:",omitempty"`
 }
 
 type BackupInfo struct {
@@ -45,6 +47,7 @@ type BackupInfo struct {
 	VolumeSize             int64  `json:",string,omitempty"`
 	VolumeCreated          string `json:",omitempty"`
 	VolumeBackingImageName string `json:",omitempty"`
+	ObjectStoreBackup      string `json:",omitempty"`
 
 	Messages map[types.MessageType]string
 }
