@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/go-spdk-helper/pkg/util"
@@ -41,9 +42,7 @@ func DisconnectTarget(nqn string, executor util.Executor) error {
 // GetDevices returns all devices
 func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device, err error) {
 	defer func() {
-		if err != nil {
-			logrus.WithError(err).Warnf("Failed to get devices for address %s:%s and nqn %s", ip, port, nqn)
-		}
+		err = errors.Wrapf(err, "failed to get devices for address %s:%s and nqn %s", ip, port, nqn)
 	}()
 
 	devices = []Device{}

@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -100,4 +101,17 @@ func IsJSONRPCRespErrorInvalidCharacter(err error) bool {
 	}
 	_, ok = jsonRPCError.ErrorDetail.(*ResponseError)
 	return !ok && strings.Contains(jsonRPCError.ErrorDetail.Error(), "invalid character")
+}
+
+func IsJSONRPCRespErrorTransportTypeAlreadyExists(err error) bool {
+	jsonRPCError, ok := err.(JSONClientError)
+	if !ok {
+		return false
+	}
+	_, ok = jsonRPCError.ErrorDetail.(*ResponseError)
+	if !ok {
+		return false
+	}
+	matched, _ := regexp.MatchString("Transport type .* already exists", jsonRPCError.ErrorDetail.Error())
+	return matched
 }

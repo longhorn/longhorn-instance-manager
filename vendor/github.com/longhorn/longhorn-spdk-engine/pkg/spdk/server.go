@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 
@@ -32,7 +33,7 @@ type Server struct {
 
 	ctx context.Context
 
-	spdkClient    *SPDKClient
+	spdkClient    *spdkclient.Client
 	portAllocator *util.Bitmap
 
 	replicaMap map[string]*Replica
@@ -44,7 +45,7 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
-	cli, err := NewSPDKClient()
+	cli, err := spdkclient.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -133,24 +134,47 @@ func (s *Server) tryEnsureSPDKTgtHealthy() error {
 
 	if running {
 		logrus.Info("SPDK Server: reconnecting to spdk_tgt")
-		return s.spdkClient.Reconnect()
+		return s.clientReconnect()
 	}
 
 	logrus.Info("SPDK Server: restarting spdk_tgt")
 	return util.StartSPDKTgtDaemon()
 }
 
+func (s *Server) clientReconnect() error {
+	s.Lock()
+	defer s.Unlock()
+
+	oldClient := s.spdkClient
+
+	client, err := spdkclient.NewClient(s.ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to create new SPDK client")
+	}
+	s.spdkClient = client
+
+	// Try the best effort to close the old client after a new client is created
+	err = oldClient.Close()
+	if err != nil {
+		logrus.WithError(err).Warn("Failed to close old SPDK client")
+	}
+	return nil
+}
+
 func (s *Server) verify() (err error) {
 	replicaMap := map[string]*Replica{}
-	engineMap := map[string]*Engine{}
-	s.RLock()
+	replicaMapForSync := map[string]*Replica{}
+	engineMapForSync := map[string]*Engine{}
+
+	s.Lock()
 	for k, v := range s.replicaMap {
 		replicaMap[k] = v
+		replicaMapForSync[k] = v
 	}
 	for k, v := range s.engineMap {
-		engineMap[k] = v
+		engineMapForSync[k] = v
 	}
-	s.RUnlock()
+	spdkClient := s.spdkClient
 
 	defer func() {
 		if err == nil {
@@ -158,85 +182,69 @@ func (s *Server) verify() (err error) {
 		}
 		if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
 			logrus.WithError(err).Warn("SPDK Server: marking all non-stopped and non-error replicas and engines as error")
-			for _, r := range replicaMap {
+			for _, r := range replicaMapForSync {
 				r.SetErrorState()
 			}
-			for _, e := range engineMap {
+			for _, e := range engineMapForSync {
 				e.SetErrorState()
 			}
 		}
 	}()
 
-	lvsList, err := s.spdkClient.BdevLvolGetLvstore("", "")
+	// Detect if the lvol bdev is an uncached replica.
+	// But cannot detect if a RAID bdev is an engine since:
+	//   1. we don't know the frontend
+	//   2. RAID bdevs are not persist objects in SPDK. After spdk_tgt start/restart, there is no RAID bdev hence there is no need to do detection.
+	// TODO: May need to cache Disks as well.
+	bdevList, err := spdkClient.BdevGetBdevs("", 0)
 	if err != nil {
+		s.Unlock()
 		return err
 	}
-	bdevList, err := s.spdkClient.BdevGetBdevs("", 0)
+	lvsList, err := spdkClient.BdevLvolGetLvstore("", "")
 	if err != nil {
+		s.Unlock()
 		return err
 	}
-	subsystemList, err := s.spdkClient.NvmfGetSubsystems("", "")
-	if err != nil {
-		return err
-	}
-
 	lvsUUIDNameMap := map[string]string{}
 	for _, lvs := range lvsList {
 		lvsUUIDNameMap[lvs.UUID] = lvs.Name
 	}
-
-	subsystemMap := map[string]*spdktypes.NvmfSubsystem{}
-	for idx := range subsystemList {
-		subsystem := &subsystemList[idx]
-		subsystemMap[subsystem.Nqn] = subsystem
-	}
-
-	bdevMap := map[string]*spdktypes.BdevInfo{}
-	bdevLvolMap := map[string]*spdktypes.BdevInfo{}
 	for idx := range bdevList {
 		bdev := &bdevList[idx]
-		bdevType := spdktypes.GetBdevType(bdev)
-
-		switch bdevType {
-		case spdktypes.BdevTypeLvol:
-			if len(bdev.Aliases) != 1 {
-				continue
-			}
-			lvolName := spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
-			bdevMap[bdev.Aliases[0]] = bdev
-			bdevLvolMap[lvolName] = bdev
-
-			// Detect if the lvol bdev is an uncached replica.
-			if bdev.DriverSpecific.Lvol.Snapshot {
-				continue
-			}
-			if replicaMap[lvolName] != nil {
-				continue
-			}
-			lvsUUID := bdev.DriverSpecific.Lvol.LvolStoreUUID
-			specSize := bdev.NumBlocks * uint64(bdev.BlockSize)
-			// TODO: May need to cache Disks
-			replicaMap[lvolName] = NewReplica(lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, s.updateChs[types.InstanceTypeReplica])
-		case spdktypes.BdevTypeRaid:
-			// Cannot detect if a RAID bdev is an engine since:
-			//   1. we don't know the frontend
-			//   2. RAID bdevs are not persist objects in SPDK. After spdk_tgt start/restart, there is no RAID bdev henc there is no need to do detection.
-			fallthrough
-		default:
-			bdevMap[bdev.Name] = bdev
+		if spdktypes.GetBdevType(bdev) != spdktypes.BdevTypeLvol {
+			continue
 		}
+		if len(bdev.Aliases) != 1 {
+			continue
+		}
+		if bdev.DriverSpecific.Lvol.Snapshot {
+			continue
+		}
+		lvolName := spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
+		if replicaMap[lvolName] != nil {
+			continue
+		}
+		lvsUUID := bdev.DriverSpecific.Lvol.LvolStoreUUID
+		specSize := bdev.NumBlocks * uint64(bdev.BlockSize)
+		replicaMap[lvolName] = NewReplica(s.ctx, lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, s.updateChs[types.InstanceTypeReplica])
+		replicaMapForSync[lvolName] = replicaMap[lvolName]
 	}
-
-	s.Lock()
 	s.replicaMap = replicaMap
 	s.Unlock()
 
-	for _, r := range replicaMap {
-		r.Sync(bdevLvolMap, subsystemMap)
+	for _, r := range replicaMapForSync {
+		err = r.Sync(spdkClient)
+		if err != nil && jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
+			return err
+		}
 	}
 
-	for _, e := range engineMap {
-		e.ValidateAndUpdate(bdevMap, subsystemMap)
+	for _, e := range engineMapForSync {
+		err = e.ValidateAndUpdate(spdkClient)
+		if err != nil && jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
+			return err
+		}
 	}
 
 	// TODO: send update signals if there is a Replica/Replica change
@@ -290,27 +298,31 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 
 	s.Lock()
 	if _, ok := s.replicaMap[req.Name]; !ok {
-		s.replicaMap[req.Name] = NewReplica(req.Name, req.LvsName, req.LvsUuid, req.SpecSize, s.updateChs[types.InstanceTypeReplica])
+		s.replicaMap[req.Name] = NewReplica(s.ctx, req.Name, req.LvsName, req.LvsUuid, req.SpecSize, s.updateChs[types.InstanceTypeReplica])
 	}
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.Unlock()
 
-	return r.Create(s.spdkClient, req.ExposeRequired, req.PortCount, s.portAllocator)
+	return r.Create(spdkClient, req.ExposeRequired, req.PortCount, s.portAllocator)
 }
 
 func (s *Server) ReplicaDelete(ctx context.Context, req *spdkrpc.ReplicaDeleteRequest) (ret *empty.Empty, err error) {
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	defer func() {
 		if err == nil && req.CleanupRequired {
+			s.Lock()
 			delete(s.replicaMap, req.Name)
+			s.Unlock()
 		}
 	}()
 
 	if r != nil {
-		if err := r.Delete(s.spdkClient, req.CleanupRequired, s.portAllocator); err != nil {
+		if err := r.Delete(spdkClient, req.CleanupRequired, s.portAllocator); err != nil {
 			return nil, err
 		}
 	}
@@ -388,13 +400,14 @@ func (s *Server) ReplicaSnapshotCreate(ctx context.Context, req *spdkrpc.Snapsho
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during snapshot create", req.Name)
 	}
 
-	return r.SnapshotCreate(s.spdkClient, req.SnapshotName)
+	return r.SnapshotCreate(spdkClient, req.SnapshotName)
 }
 
 func (s *Server) ReplicaSnapshotDelete(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *empty.Empty, err error) {
@@ -404,13 +417,14 @@ func (s *Server) ReplicaSnapshotDelete(ctx context.Context, req *spdkrpc.Snapsho
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during snapshot delete", req.Name)
 	}
 
-	_, err = r.SnapshotDelete(s.spdkClient, req.SnapshotName)
+	_, err = r.SnapshotDelete(spdkClient, req.SnapshotName)
 	return &empty.Empty{}, err
 }
 
@@ -424,13 +438,14 @@ func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.Rep
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src start", req.Name)
 	}
 
-	if err = r.RebuildingSrcStart(s.spdkClient, s.getLocalReplicaLvsNameMap(map[string]string{req.DstReplicaName: ""}), req.DstReplicaName, req.DstRebuildingLvolAddress); err != nil {
+	if err = r.RebuildingSrcStart(spdkClient, s.getLocalReplicaLvsNameMap(map[string]string{req.DstReplicaName: ""}), req.DstReplicaName, req.DstRebuildingLvolAddress); err != nil {
 		return nil, err
 	}
 	return &empty.Empty{}, nil
@@ -446,13 +461,14 @@ func (s *Server) ReplicaRebuildingSrcFinish(ctx context.Context, req *spdkrpc.Re
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src finish", req.Name)
 	}
 
-	if err = r.RebuildingSrcFinish(s.spdkClient, req.DstReplicaName); err != nil {
+	if err = r.RebuildingSrcFinish(spdkClient, req.DstReplicaName); err != nil {
 		return nil, err
 	}
 	return &empty.Empty{}, nil
@@ -465,6 +481,7 @@ func (s *Server) ReplicaSnapshotShallowCopy(ctx context.Context, req *spdkrpc.Re
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
@@ -472,7 +489,7 @@ func (s *Server) ReplicaSnapshotShallowCopy(ctx context.Context, req *spdkrpc.Re
 	}
 
 	// Cannot add a lock to protect this now since a shallow copy may be time-consuming
-	if err = r.SnapshotShallowCopy(req.SnapshotName); err != nil {
+	if err = r.SnapshotShallowCopy(spdkClient, req.SnapshotName); err != nil {
 		return nil, err
 	}
 	return &empty.Empty{}, nil
@@ -485,13 +502,14 @@ func (s *Server) ReplicaRebuildingDstStart(ctx context.Context, req *spdkrpc.Rep
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding dst start", req.Name)
 	}
 
-	address, err := r.RebuildingDstStart(s.spdkClient, req.ExposeRequired)
+	address, err := r.RebuildingDstStart(spdkClient, req.ExposeRequired)
 	if err != nil {
 		return nil, err
 	}
@@ -505,13 +523,14 @@ func (s *Server) ReplicaRebuildingDstFinish(ctx context.Context, req *spdkrpc.Re
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding dst finish", req.Name)
 	}
 
-	if err = r.RebuildingDstFinish(s.spdkClient, req.UnexposeRequired); err != nil {
+	if err = r.RebuildingDstFinish(spdkClient, req.UnexposeRequired); err != nil {
 		return nil, err
 	}
 	return &empty.Empty{}, nil
@@ -524,13 +543,14 @@ func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *sp
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding dst snapshot create", req.Name)
 	}
 
-	if err = r.RebuildingDstSnapshotCreate(s.spdkClient, req.SnapshotName); err != nil {
+	if err = r.RebuildingDstSnapshotCreate(spdkClient, req.SnapshotName); err != nil {
 		return nil, err
 	}
 	return &empty.Empty{}, nil
@@ -555,9 +575,10 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 
 	s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine])
 	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
 	s.Unlock()
 
-	return e.Create(s.spdkClient, req.ReplicaAddressMap, s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap), req.PortCount, s.portAllocator)
+	return e.Create(spdkClient, req.ReplicaAddressMap, s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap), req.PortCount, s.portAllocator)
 }
 
 func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replicaLvsNameMap map[string]string) {
@@ -576,16 +597,19 @@ func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replic
 func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequest) (ret *empty.Empty, err error) {
 	s.RLock()
 	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	defer func() {
 		if err == nil {
+			s.Lock()
 			delete(s.engineMap, req.Name)
+			s.Unlock()
 		}
 	}()
 
 	if e != nil {
-		if err := e.Delete(s.spdkClient, s.portAllocator); err != nil {
+		if err := e.Delete(spdkClient, s.portAllocator); err != nil {
 			return nil, err
 		}
 	}
@@ -659,6 +683,7 @@ func (s *Server) EngineWatch(req *empty.Empty, srv spdkrpc.SPDKService_EngineWat
 func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplicaAddRequest) (ret *empty.Empty, err error) {
 	s.RLock()
 	e := s.engineMap[req.EngineName]
+	spdkClient := s.spdkClient
 	localReplicaLvsNameMap := s.getLocalReplicaLvsNameMap(map[string]string{req.ReplicaName: ""})
 	s.RUnlock()
 
@@ -675,7 +700,7 @@ func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplic
 		return nil, err
 	}
 
-	if err := e.ReplicaAddFinish(s.spdkClient, req.ReplicaName, req.ReplicaAddress, localReplicaLvsNameMap); err != nil {
+	if err := e.ReplicaAddFinish(spdkClient, req.ReplicaName, req.ReplicaAddress, localReplicaLvsNameMap); err != nil {
 		return nil, err
 	}
 
@@ -685,13 +710,14 @@ func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplic
 func (s *Server) EngineReplicaDelete(ctx context.Context, req *spdkrpc.EngineReplicaDeleteRequest) (ret *empty.Empty, err error) {
 	s.RLock()
 	e := s.engineMap[req.EngineName]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if e == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for replica %s with address %s delete", req.EngineName, req.ReplicaName, req.ReplicaAddress)
 	}
 
-	if err := e.ReplicaDelete(s.spdkClient, req.ReplicaName, req.ReplicaAddress); err != nil {
+	if err := e.ReplicaDelete(spdkClient, req.ReplicaName, req.ReplicaAddress); err != nil {
 		return nil, err
 	}
 
@@ -735,21 +761,27 @@ func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.Snapshot
 }
 
 func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest) (ret *spdkrpc.Disk, err error) {
-	s.Lock()
-	defer s.Unlock()
-	return svcDiskCreate(s.spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.BlockSize)
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	return svcDiskCreate(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.BlockSize)
 }
 
 func (s *Server) DiskDelete(ctx context.Context, req *spdkrpc.DiskDeleteRequest) (ret *emptypb.Empty, err error) {
-	s.Lock()
-	defer s.Unlock()
-	return svcDiskDelete(s.spdkClient, req.DiskName, req.DiskUuid)
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	return svcDiskDelete(spdkClient, req.DiskName, req.DiskUuid)
 }
 
 func (s *Server) DiskGet(ctx context.Context, req *spdkrpc.DiskGetRequest) (ret *spdkrpc.Disk, err error) {
-	s.Lock()
-	defer s.Unlock()
-	return svcDiskGet(s.spdkClient, req.DiskName)
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	return svcDiskGet(spdkClient, req.DiskName)
 }
 
 func (s *Server) VersionDetailGet(context.Context, *empty.Empty) (*spdkrpc.VersionDetailGetReply, error) {

@@ -1,6 +1,7 @@
 package spdk
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -26,8 +27,11 @@ import (
 type Replica struct {
 	sync.RWMutex
 
+	ctx context.Context
+
 	ActiveChain []*Lvol
 	ChainLength int
+	// SnapshotMap map[<snapshot name>]. <snapshot name> is a caller provided name and does not contain prefix `<replica name>-snap-`
 	SnapshotMap map[string]*Lvol
 
 	Name      string
@@ -67,7 +71,8 @@ type Lvol struct {
 	SpecSize   uint64
 	ActualSize uint64
 	Parent     string
-	Children   map[string]*Lvol
+	// Children is map[<snapshot lvol name>] rather than map[<snapshot name>]. <snapshot lvol name> consists of `<replica name>-snap-<snapshot name>`
+	Children map[string]*Lvol
 }
 
 func ServiceReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
@@ -83,6 +88,7 @@ func ServiceReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 		PortEnd:   r.PortEnd,
 		State:     string(r.State),
 	}
+	// spdkrpc.Replica.Snapshots is map[<snapshot name>] rather than map[<snapshot lvol name>]
 	for name, lvol := range r.SnapshotMap {
 		res.Snapshots[name] = ServiceLvolToProtoLvol(lvol)
 	}
@@ -100,6 +106,7 @@ func ServiceLvolToProtoLvol(lvol *Lvol) *spdkrpc.Lvol {
 		Children:   map[string]bool{},
 	}
 	for _, childSvcLvol := range lvol.Children {
+		// For a snapshot lvol, the child name means the child lvol name, which consists of <replica-name>-snap-<snapshot-name>
 		res.Children[childSvcLvol.Name] = true
 	}
 
@@ -118,7 +125,7 @@ func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
 	}
 }
 
-func NewReplica(replicaName, lvsName, lvsUUID string, specSize uint64, updateCh chan interface{}) *Replica {
+func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specSize uint64, updateCh chan interface{}) *Replica {
 	log := logrus.StandardLogger().WithFields(logrus.Fields{
 		"replicaName": replicaName,
 		"lvsName":     lvsName,
@@ -132,6 +139,8 @@ func NewReplica(replicaName, lvsName, lvsUUID string, specSize uint64, updateCh 
 	log.WithField("specSize", roundedSpecSize)
 
 	return &Replica{
+		ctx: ctx,
+
 		ActiveChain: []*Lvol{
 			{
 				Name:     replicaName,
@@ -155,13 +164,24 @@ func NewReplica(replicaName, lvsName, lvsUUID string, specSize uint64, updateCh 
 	}
 }
 
-func (r *Replica) Sync(bdevLvolMap map[string]*spdktypes.BdevInfo, subsystemMap map[string]*spdktypes.NvmfSubsystem) (err error) {
+func (r *Replica) Sync(spdkClient *spdkclient.Client) (err error) {
 	r.Lock()
 	defer r.Unlock()
 	// It's better to let the server send the update signal
 
+	// This lvol and nvmf subsystem fetch should be protected by replica lock, in case of snapshot operations happened during the sync-up.
+	bdevLvolMap, err := GetBdevLvolMap(spdkClient)
+	if err != nil {
+		return err
+	}
+
 	if r.State == types.InstanceStatePending {
 		return r.construct(bdevLvolMap)
+	}
+
+	subsystemMap, err := GetNvmfSubsystemMap(spdkClient)
+	if err != nil {
+		return err
 	}
 
 	return r.validateAndUpdate(bdevLvolMap, subsystemMap)
@@ -425,7 +445,7 @@ func constructSnapshotMap(replicaName string, rootSvcLvol *Lvol, bdevLvolMap map
 	return res, nil
 }
 
-func (r *Replica) Create(spdkClient *SPDKClient, exposeRequired bool, portCount int32, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Replica, err error) {
+func (r *Replica) Create(spdkClient *spdkclient.Client, exposeRequired bool, portCount int32, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Replica, err error) {
 	updateRequired := true
 
 	r.Lock()
@@ -522,7 +542,7 @@ func (r *Replica) Create(spdkClient *SPDKClient, exposeRequired bool, portCount 
 	return ServiceReplicaToProtoReplica(r), nil
 }
 
-func (r *Replica) Delete(spdkClient *SPDKClient, cleanupRequired bool, superiorPortAllocator *util.Bitmap) (err error) {
+func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, superiorPortAllocator *util.Bitmap) (err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -590,7 +610,7 @@ func (r *Replica) Get() (pReplica *spdkrpc.Replica) {
 	return ServiceReplicaToProtoReplica(r)
 }
 
-func (r *Replica) SnapshotCreate(spdkClient *SPDKClient, snapshotName string) (pReplica *spdkrpc.Replica, err error) {
+func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName string) (pReplica *spdkrpc.Replica, err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -651,10 +671,12 @@ func (r *Replica) SnapshotCreate(spdkClient *SPDKClient, snapshotName string) (p
 	headSvcLvol.Parent = snapSvcLvol.Name
 	updateRequired = true
 
+	r.log.Infof("Replica created snapshot %s(%s)", snapshotName, snapSvcLvol.Alias)
+
 	return ServiceReplicaToProtoReplica(r), err
 }
 
-func (r *Replica) SnapshotDelete(spdkClient *SPDKClient, snapshotName string) (pReplica *spdkrpc.Replica, err error) {
+func (r *Replica) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName string) (pReplica *spdkrpc.Replica, err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -698,6 +720,8 @@ func (r *Replica) SnapshotDelete(spdkClient *SPDKClient, snapshotName string) (p
 
 	updateRequired = true
 
+	r.log.Infof("Replica deleted snapshot %s(%s)", snapshotName, snapSvcLvol.Alias)
+
 	return ServiceReplicaToProtoReplica(r), nil
 }
 
@@ -740,7 +764,7 @@ func (r *Replica) removeLvolFromActiveChainWithoutLock(snapLvolName string) int 
 	return pos
 }
 
-func (r *Replica) RebuildingSrcStart(spdkClient *SPDKClient, localReplicaLvsNameMap map[string]string, dstReplicaName, dstRebuildingLvolAddress string) (err error) {
+func (r *Replica) RebuildingSrcStart(spdkClient *spdkclient.Client, localReplicaLvsNameMap map[string]string, dstReplicaName, dstRebuildingLvolAddress string) (err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -772,6 +796,7 @@ func (r *Replica) RebuildingSrcStart(spdkClient *SPDKClient, localReplicaLvsName
 			return fmt.Errorf("cannot find dst replica %s from the local replica map for replica %s rebuilding src start", dstReplicaName, r.Name)
 		}
 		r.rebuildingDstBdevName = spdktypes.GetLvolAlias(dstReplicaLvsName, dstRebuildingLvolName)
+		r.rebuildingDstBdevType = spdktypes.BdevTypeLvol
 	} else {
 		nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(dstRebuildingLvolName, helpertypes.GetNQN(dstRebuildingLvolName), dstRebuildingLvolIP, dstRebuildingLvolPort, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
 			helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec)
@@ -782,16 +807,15 @@ func (r *Replica) RebuildingSrcStart(spdkClient *SPDKClient, localReplicaLvsName
 			return fmt.Errorf("got zero or multiple results when attaching rebuilding dst lvol %s with address %s as a NVMe bdev: %+v", dstRebuildingLvolName, dstRebuildingLvolAddress, nvmeBdevNameList)
 		}
 		r.rebuildingDstBdevName = nvmeBdevNameList[0]
+		r.rebuildingDstBdevType = spdktypes.BdevTypeNvme
 	}
-
 	r.rebuildingDstReplicaName = dstReplicaName
-	r.rebuildingDstBdevType = spdktypes.BdevTypeNvme
 	updateRequired = true
 
 	return nil
 }
 
-func (r *Replica) RebuildingSrcFinish(spdkClient *SPDKClient, dstReplicaName string) (err error) {
+func (r *Replica) RebuildingSrcFinish(spdkClient *spdkclient.Client, dstReplicaName string) (err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -840,7 +864,7 @@ func (r *Replica) RebuildingSrcFinish(spdkClient *SPDKClient, dstReplicaName str
 	return nil
 }
 
-func (r *Replica) SnapshotShallowCopy(snapshotName string) (err error) {
+func (r *Replica) SnapshotShallowCopy(spdkClient *spdkclient.Client, snapshotName string) (err error) {
 	r.RLock()
 	srcSnapLvol := r.SnapshotMap[snapshotName]
 	dstBdevName := r.rebuildingDstBdevName
@@ -853,15 +877,11 @@ func (r *Replica) SnapshotShallowCopy(snapshotName string) (err error) {
 		return fmt.Errorf("cannot find snapshot %s for replica %s shallow copy", snapshotName, r.Name)
 	}
 
-	spdkClient, err := spdkclient.NewClient()
-	if err != nil {
-		return err
-	}
 	_, err = spdkClient.BdevLvolShallowCopy(srcSnapLvol.UUID, dstBdevName)
 	return err
 }
 
-func (r *Replica) RebuildingDstStart(spdkClient *SPDKClient, exposeRequired bool) (address string, err error) {
+func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, exposeRequired bool) (address string, err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -933,7 +953,7 @@ func (r *Replica) RebuildingDstStart(spdkClient *SPDKClient, exposeRequired bool
 	return net.JoinHostPort(r.IP, strconv.Itoa(int(r.rebuildingPort))), nil
 }
 
-func (r *Replica) RebuildingDstFinish(spdkClient *SPDKClient, unexposeRequired bool) (err error) {
+func (r *Replica) RebuildingDstFinish(spdkClient *spdkclient.Client, unexposeRequired bool) (err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -994,7 +1014,7 @@ func (r *Replica) RebuildingDstFinish(spdkClient *SPDKClient, unexposeRequired b
 	return r.construct(bdevLvolMap)
 }
 
-// func (r *Replica) rebuildingDstCleanup(spdkClient *SPDKClient) error {
+// func (r *Replica) rebuildingDstCleanup(spdkClient *spdkclient.Client) error {
 // 	if r.rebuildingPort != 0 {
 // 		if err := spdkClient.StopExposeBdev(helpertypes.GetNQN(r.rebuildingLvol.Name)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 // 			return err
@@ -1013,7 +1033,7 @@ func (r *Replica) RebuildingDstFinish(spdkClient *SPDKClient, unexposeRequired b
 // 	return nil
 // }
 
-func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *SPDKClient, snapshotName string) (err error) {
+func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *spdkclient.Client, snapshotName string) (err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -1031,8 +1051,8 @@ func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *SPDKClient, snapshotNa
 	if !r.isRebuilding {
 		return fmt.Errorf("replica %s is not in rebuilding", r.Name)
 	}
-	if r.rebuildingLvol == nil || r.rebuildingPort == 0 || !r.IsExposed {
-		return fmt.Errorf("rebuilding lvol is not existed or exposed for replica %s rebuilding snapshot %s creation", r.Name, snapshotName)
+	if r.rebuildingLvol == nil || (r.IsExposed && r.rebuildingPort == 0) {
+		return fmt.Errorf("rebuilding lvol is not existed, or exposed without rebuilding port for replica %s rebuilding snapshot %s creation", r.Name, snapshotName)
 	}
 
 	defer func() {

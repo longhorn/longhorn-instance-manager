@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	spdkutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
@@ -29,7 +30,7 @@ const (
 	hostPrefix = "/host"
 )
 
-func svcDiskCreate(spdkClient *SPDKClient, diskName, diskUUID, diskPath string, blockSize int64) (ret *spdkrpc.Disk, err error) {
+func svcDiskCreate(spdkClient *spdkclient.Client, diskName, diskUUID, diskPath string, blockSize int64) (ret *spdkrpc.Disk, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskName":  diskName,
 		"diskUUID":  diskUUID,
@@ -67,7 +68,7 @@ func svcDiskCreate(spdkClient *SPDKClient, diskName, diskUUID, diskPath string, 
 	return lvstoreToDisk(spdkClient, diskPath, "", uuid)
 }
 
-func svcDiskDelete(spdkClient *SPDKClient, diskName, diskUUID string) (ret *emptypb.Empty, err error) {
+func svcDiskDelete(spdkClient *spdkclient.Client, diskName, diskUUID string) (ret *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskName": diskName,
 		"diskUUID": diskUUID,
@@ -109,7 +110,7 @@ func svcDiskDelete(spdkClient *SPDKClient, diskName, diskUUID string) (ret *empt
 	return &empty.Empty{}, nil
 }
 
-func svcDiskGet(spdkClient *SPDKClient, diskName string) (ret *spdkrpc.Disk, err error) {
+func svcDiskGet(spdkClient *spdkclient.Client, diskName string) (ret *spdkrpc.Disk, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskName": diskName,
 	})
@@ -192,7 +193,7 @@ func getDiskDeviceSize(path string) (int64, error) {
 	return pos, nil
 }
 
-func validateDiskCreation(spdkClient *SPDKClient, diskPath string) error {
+func validateDiskCreation(spdkClient *spdkclient.Client, diskPath string) error {
 	ok, err := isBlockDevice(diskPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if disk is a block device")
@@ -233,7 +234,7 @@ func validateDiskCreation(spdkClient *SPDKClient, diskPath string) error {
 	return nil
 }
 
-func addBlockDevice(spdkClient *SPDKClient, diskName, diskUUID, diskPath string, blockSize int64) (string, error) {
+func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, diskPath string, blockSize int64) (string, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskName":  diskName,
 		"diskUUID":  diskUUID,
@@ -294,7 +295,7 @@ func addBlockDevice(spdkClient *SPDKClient, diskName, diskUUID, diskPath string,
 	return "", grpcstatus.Error(grpccodes.NotFound, fmt.Sprintf("cannot find lvstore with UUID %v", diskUUID))
 }
 
-func lvstoreToDisk(spdkClient *SPDKClient, diskPath, lvstoreName, lvstoreUUID string) (*spdkrpc.Disk, error) {
+func lvstoreToDisk(spdkClient *spdkclient.Client, diskPath, lvstoreName, lvstoreUUID string) (*spdkrpc.Disk, error) {
 	lvstores, err := spdkClient.BdevLvolGetLvstore(lvstoreName, lvstoreUUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get lvstore with name %v and UUID %v", lvstoreName, lvstoreUUID)

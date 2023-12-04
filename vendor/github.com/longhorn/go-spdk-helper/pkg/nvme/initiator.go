@@ -86,13 +86,19 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 	// Check if the initiator/NVMe device is already launched and matches the params
 	if err := i.loadNVMeDeviceInfoWithoutLock(); err == nil {
 		if i.TransportAddress == transportAddress && i.TransportServiceID == transportServiceID {
-			if err := i.LoadEndpoint(); err == nil {
+			i.logger.WithFields(logrus.Fields{
+				"transportAddress":   transportAddress,
+				"transportServiceID": transportServiceID,
+			})
+			if err = i.LoadEndpoint(); err == nil {
 				i.logger.Info("NVMe initiator is already launched with correct params")
 				return nil
 			}
+			i.logger.WithError(err).Warnf("NVMe initiator is launched with failed to load the endpoint")
+		} else {
+			i.logger.Warnf("NVMe initiator is launched but with incorrect address, the required one is %s:%s, will try to stop then relaunch it",
+				transportAddress, transportServiceID)
 		}
-		i.logger.Warnf("NVMe initiator is launched but with incorrect address, the required one is %s:%s, will try to stop then relaunch it",
-			transportAddress, transportServiceID)
 	}
 
 	i.logger.Infof("Stopping NVMe initiator blindly before starting")
@@ -100,6 +106,10 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		return errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
 	}
 
+	i.logger.WithFields(logrus.Fields{
+		"transportAddress":   transportAddress,
+		"transportServiceID": transportServiceID,
+	})
 	i.logger.Infof("Launching NVMe initiator")
 
 	// Setup initiator
