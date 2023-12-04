@@ -1,7 +1,10 @@
 package util
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -81,4 +84,23 @@ func StartSPDKTgtDaemon() error {
 	}
 
 	return nil
+}
+
+func GetFileChunkChecksum(filePath string, start, size int64) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	if _, err = f.Seek(start, 0); err != nil {
+		return "", err
+	}
+
+	h := sha512.New()
+	if _, err := io.CopyN(h, f, size); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

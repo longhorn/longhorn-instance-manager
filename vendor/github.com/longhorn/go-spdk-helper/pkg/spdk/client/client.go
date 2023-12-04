@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"net"
 
 	"github.com/pkg/errors"
@@ -15,15 +16,16 @@ type Client struct {
 	jsonCli *jsonrpc.Client
 }
 
-func NewClient() (*Client, error) {
-	conn, err := net.Dial(types.DefaultJSONServerNetwork, types.DefaultUnixDomainSocketPath)
+func NewClient(ctx context.Context) (*Client, error) {
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, types.DefaultJSONServerNetwork, types.DefaultUnixDomainSocketPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "error opening socket for spdk client")
 	}
 
 	return &Client{
 		conn:    conn,
-		jsonCli: jsonrpc.NewClient(conn),
+		jsonCli: jsonrpc.NewClient(ctx, conn),
 	}, nil
 }
 

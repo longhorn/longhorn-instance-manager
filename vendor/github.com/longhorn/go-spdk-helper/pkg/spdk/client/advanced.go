@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"path/filepath"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -55,7 +56,7 @@ func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
 		return err
 	}
 	if nvmfTransportList != nil && len(nvmfTransportList) == 0 {
-		if _, err := c.NvmfCreateTransport(spdktypes.NvmeTransportTypeTCP); err != nil {
+		if _, err := c.NvmfCreateTransport(spdktypes.NvmeTransportTypeTCP); err != nil && !jsonrpc.IsJSONRPCRespErrorTransportTypeAlreadyExists(err) {
 			return err
 		}
 	}
