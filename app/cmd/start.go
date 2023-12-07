@@ -17,12 +17,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
 	spdk "github.com/longhorn/longhorn-spdk-engine/pkg/spdk"
+	spdkutil "github.com/longhorn/longhorn-spdk-engine/pkg/util"
 	spdkrpc "github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/disk"
@@ -34,6 +36,10 @@ import (
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
+)
+
+const (
+	spdkTgtStopTimeout = 120 * time.Second
 )
 
 func StartCmd() cli.Command {
@@ -71,10 +77,11 @@ func StartCmd() cli.Command {
 }
 
 func cleanup(pm *process.Manager) {
-	logrus.Info("Trying to gracefully shut down Instance Manager")
+	logrus.Infof("Trying to gracefully shut down %v", types.ProcessManagerGrpcService)
+
 	pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
 	if err != nil {
-		logrus.WithError(err).Error("Failed to list processes before shutdown")
+		logrus.WithError(err).Errorf("Failed to list processes before shutting down %v", types.ProcessManagerGrpcService)
 		return
 	}
 	for _, p := range pmResp.Processes {
@@ -86,17 +93,17 @@ func cleanup(pm *process.Manager) {
 	for i := 0; i < types.WaitCount; i++ {
 		pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
 		if err != nil {
-			logrus.WithError(err).Error("Failed to list instance processes when shutting down")
+			logrus.WithError(err).Errorf("Failed to list processes when shutting down %v", types.ProcessManagerGrpcService)
 			break
 		}
 		if len(pmResp.Processes) == 0 {
-			logrus.Info("Shutdown all instance processes successfully")
+			logrus.Info("Shut down all processes successfully")
 			return
 		}
 		time.Sleep(types.WaitInterval)
 	}
 
-	logrus.Error("Failed to clean up all processes for Instance Manager graceful shutdown")
+	logrus.Errorf("Failed to clean up all processes for %s graceful shutdown", types.ProcessManagerGrpcService)
 }
 
 func start(c *cli.Context) (err error) {
@@ -105,6 +112,15 @@ func start(c *cli.Context) (err error) {
 	processPortRange := c.String("port-range")
 	spdkPortRange := c.String("spdk-port-range")
 	spdkEnabled := c.Bool("spdk-enabled")
+
+	defer func() {
+		if spdkEnabled {
+			logrus.Infof("Stopping spdk_tgt daemon")
+			if err := spdkutil.StopSPDKTgtDaemon(spdkTgtStopTimeout); err != nil {
+				logrus.WithError(err).Error("Failed to stop spdk_tgt daemon")
+			}
+		}
+	}()
 
 	if err := util.SetUpLogger(logsDir); err != nil {
 		return err
@@ -130,8 +146,6 @@ func start(c *cli.Context) (err error) {
 		logrus.Info("Creating gRPC server with no auth")
 	}
 
-	shutdownCh := make(chan error)
-
 	go func() {
 		debugAddress := ":6060"
 		debugHandler := http.DefaultServeMux
@@ -141,117 +155,146 @@ func start(c *cli.Context) (err error) {
 		}
 	}()
 
-	processManagerServiceAddress, proxyServiceAddress, diskServiceAddress, instanceServiceAddress, spdkServiceAddress, err := getServiceAddresses(listen)
+	addresses, err := getServiceAddresses(listen)
 	if err != nil {
+		logrus.WithError(err).Error("Failed to get service addresses")
 		return err
 	}
+
+	// Create gRPC servers
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	servers := map[string]*grpc.Server{}
+	listeners := map[string]net.Listener{}
 
 	// Start disk server
-	diskGRPCServer, diskGRPCListener, err := setupDiskGRPCServer(diskServiceAddress, spdkServiceAddress, spdkEnabled, shutdownCh)
+	diskGRPCServer, diskGRPCListener, err := setupDiskGRPCServer(ctx, addresses[types.DiskGrpcService], addresses[types.SpdkGrpcService], spdkEnabled)
 	if err != nil {
+		logrus.WithError(err).Errorf("Failed to setup %s", types.DiskGrpcService)
 		return err
 	}
-	go func() {
-		if err := diskGRPCServer.Serve(diskGRPCListener); err != nil {
-			logrus.WithError(err).Error("Stopping disk gRPC server")
-		}
-		// graceful shutdown before exit
-		close(shutdownCh)
-	}()
-	logrus.Infof("Instance Manager disk gRPC server listening to %v", diskServiceAddress)
+	servers[types.DiskGrpcService] = diskGRPCServer
+	listeners[types.DiskGrpcService] = diskGRPCListener
 
 	// Start instance server
-	instanceGRPCServer, instanceRPCListener, err := setupInstanceGRPCServer(logsDir,
-		instanceServiceAddress, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress, tlsConfig, spdkEnabled, shutdownCh)
+	instanceGRPCServer, instanceRPCListener, err := setupInstanceGRPCServer(ctx, logsDir,
+		addresses[types.InstanceGrpcService], addresses[types.ProcessManagerGrpcService],
+		addresses[types.DiskGrpcService], addresses[types.SpdkGrpcService],
+		tlsConfig, spdkEnabled)
 	if err != nil {
+		logrus.WithError(err).Errorf("Failed to setup %s", types.InstanceGrpcService)
 		return err
 	}
-	go func() {
-		if err := instanceGRPCServer.Serve(instanceRPCListener); err != nil {
-			logrus.WithError(err).Error("Stopping instance gRPC server")
-		}
-		// graceful shutdown before exit
-		close(shutdownCh)
-	}()
-	logrus.Infof("Instance Manager instance gRPC server listening to %v", instanceServiceAddress)
+	servers[types.InstanceGrpcService] = instanceGRPCServer
+	listeners[types.InstanceGrpcService] = instanceRPCListener
 
 	// Start proxy server
-	proxyGRPCServer, proxyGRPCListener, err := setupProxyGRPCServer(logsDir, proxyServiceAddress, diskServiceAddress, spdkServiceAddress, tlsConfig, shutdownCh)
+	proxyGRPCServer, proxyGRPCListener, err := setupProxyGRPCServer(ctx, logsDir,
+		addresses[types.ProxyGRPCService], addresses[types.DiskGrpcService], addresses[types.SpdkGrpcService], tlsConfig)
 	if err != nil {
+		logrus.WithError(err).Errorf("Failed to setup %s", types.ProxyGRPCService)
 		return err
 	}
-	go func() {
-		if err := proxyGRPCServer.Serve(proxyGRPCListener); err != nil {
-			logrus.WithError(err).Error("Stopping proxy gRPC server")
-		}
-		// graceful shutdown before exit
-		close(shutdownCh)
-	}()
-	logrus.Infof("Instance Manager proxy gRPC server listening to %v", proxyServiceAddress)
+	servers[types.ProxyGRPCService] = proxyGRPCServer
+	listeners[types.ProxyGRPCService] = proxyGRPCListener
 
-	// Start process manager server
-	pm, pmGRPCServer, pmGRPCListener, err := setupProcessManagerGRPCServer(processPortRange, logsDir, processManagerServiceAddress, shutdownCh)
+	// Start process-manager server
+	pm, pmGRPCServer, pmGRPCListener, err := setupProcessManagerGRPCServer(ctx, processPortRange, logsDir, addresses[types.ProcessManagerGrpcService])
 	if err != nil {
+		logrus.WithError(err).Errorf("Failed to setup %s", types.ProcessManagerGrpcService)
 		return err
 	}
-	go func() {
-		if err := pmGRPCServer.Serve(pmGRPCListener); err != nil {
-			logrus.WithError(err).Error("Stopping process manager gRPC server")
-		}
-		// graceful shutdown before exit
-		cleanup(pm)
-		close(shutdownCh)
-	}()
-	logrus.Infof("Instance Manager process manager gRPC server listening to %v", listen)
+	servers[types.ProcessManagerGrpcService] = pmGRPCServer
+	listeners[types.ProcessManagerGrpcService] = pmGRPCListener
 
-	// Start SPDK server
+	// Start spdk server
 	if spdkEnabled {
-		spdkGRPCServer, spdkGRPCListener, err := setupSPDKGRPCServer(spdkPortRange, spdkServiceAddress, shutdownCh)
+		spdkGRPCServer, spdkGRPCListener, err := setupSPDKGRPCServer(ctx, spdkPortRange, addresses[types.SpdkGrpcService])
 		if err != nil {
+			logrus.WithError(err).Errorf("Failed to setup %s", types.SpdkGrpcService)
 			return err
 		}
-		go func() {
-			if err := spdkGRPCServer.Serve(spdkGRPCListener); err != nil {
-				logrus.WithError(err).Error("Stopping SPDK gRPC server")
-			}
-			// graceful shutdown before exit
-			close(shutdownCh)
-		}()
-		logrus.Infof("Instance Manager SPDK gRPC server listening to %v", spdkServiceAddress)
+		servers[types.SpdkGrpcService] = spdkGRPCServer
+		listeners[types.SpdkGrpcService] = spdkGRPCListener
 	}
 
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Register signal handler
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
+	g.Go(func() error {
 		sig := <-sigs
 		logrus.Infof("Instance Manager received %v to exit", sig)
-		pmGRPCServer.Stop()
-	}()
 
-	return <-shutdownCh
+		for _, server := range servers {
+			server.Stop()
+		}
+		return nil
+	})
+
+	// Start gRPC servers
+	for name, server := range servers {
+		name, server := name, server
+		g.Go(func() error {
+			defer func() {
+				// Send SIGTERM to stop other grpc servers
+				select {
+				case sigs <- syscall.SIGTERM:
+					logrus.Infof("Instance Manager sent %v to exit", syscall.SIGTERM)
+				default:
+					logrus.Infof("Instance Manager already sent %v to exit", syscall.SIGTERM)
+				}
+			}()
+
+			listener := listeners[name]
+			address := addresses[name]
+
+			logrus.Infof("%s listening to %v", name, address)
+			err := server.Serve(listener)
+			if err != nil {
+				logrus.WithError(err).Errorf("%s failed to serve", name)
+			}
+
+			if name == types.ProcessManagerGrpcService {
+				cleanup(pm)
+			}
+
+			logrus.Infof("Stopped %s", name)
+			return err
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		logrus.WithError(err).Error("Instance Manager exited with error")
+	}
+
+	return nil
 }
 
-func getServiceAddresses(listen string) (processManagerServiceAddress, proxyServiceAddress, diskServiceAddress, instanceServiceAddress, spdkerviceAddress string, err error) {
+func getServiceAddresses(listen string) (addresses map[string]string, err error) {
 	host, port, err := net.SplitHostPort(listen)
 	if err != nil {
-		return "", "", "", "", "", err
+		return nil, err
 	}
 
 	intPort, err := strconv.Atoi(port)
 	if err != nil {
-		return "", "", "", "", "", err
+		return nil, err
 	}
 
-	return net.JoinHostPort(host, strconv.Itoa(intPort)),
-		net.JoinHostPort(host, strconv.Itoa(intPort+1)),
-		net.JoinHostPort(host, strconv.Itoa(intPort+2)),
-		net.JoinHostPort(host, strconv.Itoa(intPort+3)),
-		net.JoinHostPort(host, strconv.Itoa(intPort+4)),
-		nil
+	return map[string]string{
+		types.ProcessManagerGrpcService: net.JoinHostPort(host, strconv.Itoa(intPort)),
+		types.ProxyGRPCService:          net.JoinHostPort(host, strconv.Itoa(intPort+1)),
+		types.DiskGrpcService:           net.JoinHostPort(host, strconv.Itoa(intPort+2)),
+		types.InstanceGrpcService:       net.JoinHostPort(host, strconv.Itoa(intPort+3)),
+		types.SpdkGrpcService:           net.JoinHostPort(host, strconv.Itoa(intPort+4)),
+	}, nil
 }
 
-func setupDiskGRPCServer(listen, spdkServiceAddress string, spdkEnabled bool, shutdownCh chan error) (*grpc.Server, net.Listener, error) {
-	srv, err := disk.NewServer(spdkEnabled, spdkServiceAddress, shutdownCh)
+func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
+	srv, err := disk.NewServer(ctx, spdkEnabled, spdkServiceAddress)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -264,7 +307,7 @@ func setupDiskGRPCServer(listen, spdkServiceAddress string, spdkEnabled bool, sh
 		}),
 	)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to setup disk gRPC server")
+		return nil, nil, errors.Wrapf(err, "failed to setup %s", types.DiskGrpcService)
 	}
 
 	rpc.RegisterDiskServiceServer(grpcServer, srv)
@@ -274,10 +317,10 @@ func setupDiskGRPCServer(listen, spdkServiceAddress string, spdkEnabled bool, sh
 	return grpcServer, rpcListener, nil
 }
 
-func setupSPDKGRPCServer(portRange, listen string, shutdownCh chan error) (*grpc.Server, net.Listener, error) {
+func setupSPDKGRPCServer(ctx context.Context, portRange, listen string) (*grpc.Server, net.Listener, error) {
 	portStart, portEnd, err := util.ParsePortRange(portRange)
 
-	srv, err := spdk.NewServer(context.Background(), portStart, portEnd)
+	srv, err := spdk.NewServer(ctx, portStart, portEnd)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -290,7 +333,7 @@ func setupSPDKGRPCServer(portRange, listen string, shutdownCh chan error) (*grpc
 		}),
 	)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to setup SPDK gRPC server")
+		return nil, nil, errors.Wrapf(err, "failed to setup %s", types.SpdkGrpcService)
 	}
 
 	spdkrpc.RegisterSPDKServiceServer(grpcServer, srv)
@@ -300,9 +343,9 @@ func setupSPDKGRPCServer(portRange, listen string, shutdownCh chan error) (*grpc
 	return grpcServer, grpcListener, nil
 }
 
-func setupProxyGRPCServer(logsDir, listen, diskServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config, shutdownCh chan error) (*grpc.Server, net.Listener, error) {
+func setupProxyGRPCServer(ctx context.Context, logsDir, listen, diskServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config) (*grpc.Server, net.Listener, error) {
 	// TODO: skip proxy for replica instance manager pod
-	srv, err := proxy.NewProxy(logsDir, diskServiceAddress, spdkServiceAddress, shutdownCh)
+	srv, err := proxy.NewProxy(ctx, logsDir, diskServiceAddress, spdkServiceAddress)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -315,7 +358,7 @@ func setupProxyGRPCServer(logsDir, listen, diskServiceAddress, spdkServiceAddres
 		}),
 	)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to setup proxy gRPC server")
+		return nil, nil, errors.Wrapf(err, "failed to setup %s", types.ProxyGRPCService)
 	}
 
 	rpc.RegisterProxyEngineServiceServer(grpcProxyServer, srv)
@@ -325,8 +368,8 @@ func setupProxyGRPCServer(logsDir, listen, diskServiceAddress, spdkServiceAddres
 	return grpcProxyServer, grpcProxyListener, nil
 }
 
-func setupProcessManagerGRPCServer(portRange, logsDir, listen string, shutdownCh chan error) (*process.Manager, *grpc.Server, net.Listener, error) {
-	srv, err := process.NewManager(portRange, logsDir, shutdownCh)
+func setupProcessManagerGRPCServer(ctx context.Context, portRange, logsDir, listen string) (*process.Manager, *grpc.Server, net.Listener, error) {
+	srv, err := process.NewManager(ctx, portRange, logsDir)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -339,7 +382,7 @@ func setupProcessManagerGRPCServer(portRange, logsDir, listen string, shutdownCh
 		}),
 	)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "failed to setup process manager gRPC server")
+		return nil, nil, nil, errors.Wrapf(err, "failed to setup %s", types.ProcessManagerGrpcService)
 	}
 
 	rpc.RegisterProcessManagerServiceServer(grpcServer, srv)
@@ -349,8 +392,8 @@ func setupProcessManagerGRPCServer(portRange, logsDir, listen string, shutdownCh
 	return srv, grpcServer, grpcListener, nil
 }
 
-func setupInstanceGRPCServer(logsDir, listen, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config, spdkEnabled bool, shutdownCh chan error) (*grpc.Server, net.Listener, error) {
-	srv, err := instance.NewServer(logsDir, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress, spdkEnabled, shutdownCh)
+func setupInstanceGRPCServer(ctx context.Context, logsDir, listen, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
+	srv, err := instance.NewServer(ctx, logsDir, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress, spdkEnabled)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -363,7 +406,7 @@ func setupInstanceGRPCServer(logsDir, listen, processManagerServiceAddress, disk
 		}),
 	)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to setup instance gRPC server")
+		return nil, nil, errors.Wrapf(err, "failed to setup %s", types.InstanceGrpcService)
 	}
 
 	rpc.RegisterInstanceServiceServer(grpcServer, srv)
