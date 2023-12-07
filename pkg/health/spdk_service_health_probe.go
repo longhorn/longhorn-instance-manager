@@ -9,7 +9,8 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	spdk "github.com/longhorn/longhorn-spdk-engine/pkg/spdk"
-	//"github.com/longhorn/longhorn-instance-manager/pkg/spdk"
+
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
 
 type CheckSPDKServer struct {
@@ -40,15 +41,15 @@ func (hc *CheckSPDKServer) Watch(req *healthpb.HealthCheckRequest, ws healthpb.H
 			if err := ws.Send(&healthpb.HealthCheckResponse{
 				Status: healthpb.HealthCheckResponse_SERVING,
 			}); err != nil {
-				logrus.Errorf("Failed to send health check result %v for SPDK gRPC server: %v",
-					healthpb.HealthCheckResponse_SERVING, err)
+				logrus.WithError(err).Errorf("Failed to send health check result %v for %s",
+					healthpb.HealthCheckResponse_SERVING, types.SpdkGrpcService)
 			}
 		} else {
 			if err := ws.Send(&healthpb.HealthCheckResponse{
 				Status: healthpb.HealthCheckResponse_NOT_SERVING,
 			}); err != nil {
-				logrus.Errorf("Failed to send health check result %v for SPDK gRPC server: %v",
-					healthpb.HealthCheckResponse_NOT_SERVING, err)
+				logrus.WithError(err).Errorf("Failed to send health check result %v for %s",
+					healthpb.HealthCheckResponse_NOT_SERVING, types.SpdkGrpcService)
 			}
 
 		}
