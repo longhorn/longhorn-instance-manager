@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -307,7 +306,7 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 	return r.Create(spdkClient, req.ExposeRequired, req.PortCount, s.portAllocator)
 }
 
-func (s *Server) ReplicaDelete(ctx context.Context, req *spdkrpc.ReplicaDeleteRequest) (ret *empty.Empty, err error) {
+func (s *Server) ReplicaDelete(ctx context.Context, req *spdkrpc.ReplicaDeleteRequest) (ret *emptypb.Empty, err error) {
 	s.RLock()
 	r := s.replicaMap[req.Name]
 	spdkClient := s.spdkClient
@@ -327,7 +326,7 @@ func (s *Server) ReplicaDelete(ctx context.Context, req *spdkrpc.ReplicaDeleteRe
 		}
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) ReplicaGet(ctx context.Context, req *spdkrpc.ReplicaGetRequest) (ret *spdkrpc.Replica, err error) {
@@ -342,7 +341,7 @@ func (s *Server) ReplicaGet(ctx context.Context, req *spdkrpc.ReplicaGetRequest)
 	return r.Get(), nil
 }
 
-func (s *Server) ReplicaList(ctx context.Context, req *empty.Empty) (*spdkrpc.ReplicaListResponse, error) {
+func (s *Server) ReplicaList(ctx context.Context, req *emptypb.Empty) (*spdkrpc.ReplicaListResponse, error) {
 	replicaMap := map[string]*Replica{}
 	res := map[string]*spdkrpc.Replica{}
 
@@ -359,7 +358,7 @@ func (s *Server) ReplicaList(ctx context.Context, req *empty.Empty) (*spdkrpc.Re
 	return &spdkrpc.ReplicaListResponse{Replicas: res}, nil
 }
 
-func (s *Server) ReplicaWatch(req *empty.Empty, srv spdkrpc.SPDKService_ReplicaWatchServer) error {
+func (s *Server) ReplicaWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_ReplicaWatchServer) error {
 	responseCh, err := s.Subscribe(types.InstanceTypeReplica)
 	if err != nil {
 		return err
@@ -381,7 +380,7 @@ func (s *Server) ReplicaWatch(req *empty.Empty, srv spdkrpc.SPDKService_ReplicaW
 			logrus.Info("SPDK Server: stopped replica watch due to the context done")
 			done = true
 		case <-responseCh:
-			if err := srv.Send(&empty.Empty{}); err != nil {
+			if err := srv.Send(&emptypb.Empty{}); err != nil {
 				return err
 			}
 		}
@@ -410,7 +409,7 @@ func (s *Server) ReplicaSnapshotCreate(ctx context.Context, req *spdkrpc.Snapsho
 	return r.SnapshotCreate(spdkClient, req.SnapshotName)
 }
 
-func (s *Server) ReplicaSnapshotDelete(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *empty.Empty, err error) {
+func (s *Server) ReplicaSnapshotDelete(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" || req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name and snapshot name are required")
 	}
@@ -425,10 +424,10 @@ func (s *Server) ReplicaSnapshotDelete(ctx context.Context, req *spdkrpc.Snapsho
 	}
 
 	_, err = r.SnapshotDelete(spdkClient, req.SnapshotName)
-	return &empty.Empty{}, err
+	return &emptypb.Empty{}, err
 }
 
-func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcStartRequest) (ret *empty.Empty, err error) {
+func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcStartRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
 	}
@@ -448,10 +447,10 @@ func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.Rep
 	if err = r.RebuildingSrcStart(spdkClient, s.getLocalReplicaLvsNameMap(map[string]string{req.DstReplicaName: ""}), req.DstReplicaName, req.DstRebuildingLvolAddress); err != nil {
 		return nil, err
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) ReplicaRebuildingSrcFinish(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcFinishRequest) (ret *empty.Empty, err error) {
+func (s *Server) ReplicaRebuildingSrcFinish(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcFinishRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
 	}
@@ -471,10 +470,10 @@ func (s *Server) ReplicaRebuildingSrcFinish(ctx context.Context, req *spdkrpc.Re
 	if err = r.RebuildingSrcFinish(spdkClient, req.DstReplicaName); err != nil {
 		return nil, err
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) ReplicaSnapshotShallowCopy(ctx context.Context, req *spdkrpc.ReplicaSnapshotShallowCopyRequest) (ret *empty.Empty, err error) {
+func (s *Server) ReplicaSnapshotShallowCopy(ctx context.Context, req *spdkrpc.ReplicaSnapshotShallowCopyRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" || req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica snapshot name is required")
 	}
@@ -492,7 +491,7 @@ func (s *Server) ReplicaSnapshotShallowCopy(ctx context.Context, req *spdkrpc.Re
 	if err = r.SnapshotShallowCopy(spdkClient, req.SnapshotName); err != nil {
 		return nil, err
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) ReplicaRebuildingDstStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingDstStartRequest) (ret *spdkrpc.ReplicaRebuildingDstStartResponse, err error) {
@@ -516,7 +515,7 @@ func (s *Server) ReplicaRebuildingDstStart(ctx context.Context, req *spdkrpc.Rep
 	return &spdkrpc.ReplicaRebuildingDstStartResponse{Address: address}, nil
 }
 
-func (s *Server) ReplicaRebuildingDstFinish(ctx context.Context, req *spdkrpc.ReplicaRebuildingDstFinishRequest) (ret *empty.Empty, err error) {
+func (s *Server) ReplicaRebuildingDstFinish(ctx context.Context, req *spdkrpc.ReplicaRebuildingDstFinishRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
 	}
@@ -533,10 +532,10 @@ func (s *Server) ReplicaRebuildingDstFinish(ctx context.Context, req *spdkrpc.Re
 	if err = r.RebuildingDstFinish(spdkClient, req.UnexposeRequired); err != nil {
 		return nil, err
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *empty.Empty, err error) {
+func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" || req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name and snapshot name are required")
 	}
@@ -553,7 +552,7 @@ func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *sp
 	if err = r.RebuildingDstSnapshotCreate(spdkClient, req.SnapshotName); err != nil {
 		return nil, err
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequest) (ret *spdkrpc.Engine, err error) {
@@ -594,7 +593,7 @@ func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replic
 	return replicaLvsNameMap
 }
 
-func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequest) (ret *empty.Empty, err error) {
+func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequest) (ret *emptypb.Empty, err error) {
 	s.RLock()
 	e := s.engineMap[req.Name]
 	spdkClient := s.spdkClient
@@ -614,7 +613,7 @@ func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequ
 		}
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) EngineGet(ctx context.Context, req *spdkrpc.EngineGetRequest) (ret *spdkrpc.Engine, err error) {
@@ -629,7 +628,7 @@ func (s *Server) EngineGet(ctx context.Context, req *spdkrpc.EngineGetRequest) (
 	return e.Get(), nil
 }
 
-func (s *Server) EngineList(ctx context.Context, req *empty.Empty) (*spdkrpc.EngineListResponse, error) {
+func (s *Server) EngineList(ctx context.Context, req *emptypb.Empty) (*spdkrpc.EngineListResponse, error) {
 	engineMap := map[string]*Engine{}
 	res := map[string]*spdkrpc.Engine{}
 
@@ -646,7 +645,7 @@ func (s *Server) EngineList(ctx context.Context, req *empty.Empty) (*spdkrpc.Eng
 	return &spdkrpc.EngineListResponse{Engines: res}, nil
 }
 
-func (s *Server) EngineWatch(req *empty.Empty, srv spdkrpc.SPDKService_EngineWatchServer) error {
+func (s *Server) EngineWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_EngineWatchServer) error {
 	responseCh, err := s.Subscribe(types.InstanceTypeEngine)
 	if err != nil {
 		return err
@@ -668,7 +667,7 @@ func (s *Server) EngineWatch(req *empty.Empty, srv spdkrpc.SPDKService_EngineWat
 			logrus.Info("SPDK Server: stopped engine watch due to the context done")
 			done = true
 		case <-responseCh:
-			if err := srv.Send(&empty.Empty{}); err != nil {
+			if err := srv.Send(&emptypb.Empty{}); err != nil {
 				return err
 			}
 		}
@@ -680,7 +679,7 @@ func (s *Server) EngineWatch(req *empty.Empty, srv spdkrpc.SPDKService_EngineWat
 	return nil
 }
 
-func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplicaAddRequest) (ret *empty.Empty, err error) {
+func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplicaAddRequest) (ret *emptypb.Empty, err error) {
 	s.RLock()
 	e := s.engineMap[req.EngineName]
 	spdkClient := s.spdkClient
@@ -704,10 +703,10 @@ func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplic
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) EngineReplicaDelete(ctx context.Context, req *spdkrpc.EngineReplicaDeleteRequest) (ret *empty.Empty, err error) {
+func (s *Server) EngineReplicaDelete(ctx context.Context, req *spdkrpc.EngineReplicaDeleteRequest) (ret *emptypb.Empty, err error) {
 	s.RLock()
 	e := s.engineMap[req.EngineName]
 	spdkClient := s.spdkClient
@@ -721,7 +720,7 @@ func (s *Server) EngineReplicaDelete(ctx context.Context, req *spdkrpc.EngineRep
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) EngineSnapshotCreate(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *spdkrpc.Engine, err error) {
@@ -740,7 +739,7 @@ func (s *Server) EngineSnapshotCreate(ctx context.Context, req *spdkrpc.Snapshot
 	return e.SnapshotCreate(req.SnapshotName)
 }
 
-func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *empty.Empty, err error) {
+func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" || req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name and snapshot name are required")
 	}
@@ -757,7 +756,7 @@ func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.Snapshot
 		return nil, err
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest) (ret *spdkrpc.Disk, err error) {
@@ -784,7 +783,7 @@ func (s *Server) DiskGet(ctx context.Context, req *spdkrpc.DiskGetRequest) (ret 
 	return svcDiskGet(spdkClient, req.DiskName)
 }
 
-func (s *Server) VersionDetailGet(context.Context, *empty.Empty) (*spdkrpc.VersionDetailGetReply, error) {
+func (s *Server) VersionDetailGet(context.Context, *emptypb.Empty) (*spdkrpc.VersionDetailGetReply, error) {
 	// TODO: Implement this
 	return &spdkrpc.VersionDetailGetReply{
 		Version: &spdkrpc.VersionOutput{},

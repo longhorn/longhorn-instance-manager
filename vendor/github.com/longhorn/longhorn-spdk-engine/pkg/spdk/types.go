@@ -34,6 +34,10 @@ func GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, snapLvolName string
 	return strings.TrimPrefix(snapLvolName, GetReplicaSnapshotLvolNamePrefix(replicaName))
 }
 
+func IsReplicaSnapshotLvol(replicaName, lvolName string) bool {
+	return strings.HasPrefix(lvolName, GetReplicaSnapshotLvolNamePrefix(replicaName))
+}
+
 func GenerateRebuildingSnapshotName() string {
 	return fmt.Sprintf("%s-%s", RebuildingSnapshotNamePrefix, util.UUID()[:8])
 }

@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
@@ -84,7 +83,7 @@ func svcDiskDelete(spdkClient *spdkclient.Client, diskName, diskUUID string) (re
 	}()
 
 	if diskName == "" || diskUUID == "" {
-		return &empty.Empty{}, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk UUID are required")
+		return &emptypb.Empty{}, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk UUID are required")
 	}
 
 	aioBdevName := ""
@@ -107,7 +106,7 @@ func svcDiskDelete(spdkClient *spdkclient.Client, diskName, diskUUID string) (re
 	if _, err := spdkClient.BdevAioDelete(aioBdevName); err != nil {
 		return nil, errors.Wrapf(err, "failed to delete AIO bdev %v", aioBdevName)
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func svcDiskGet(spdkClient *spdkclient.Client, diskName string) (ret *spdkrpc.Disk, err error) {

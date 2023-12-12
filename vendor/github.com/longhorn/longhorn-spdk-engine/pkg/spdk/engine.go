@@ -133,6 +133,8 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localR
 
 	e.State = types.InstanceStateRunning
 
+	e.log.Infof("Created engine")
+
 	return e.getWithoutLock(), nil
 }
 
@@ -259,6 +261,8 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 		delete(e.ReplicaModeMap, replicaName)
 		requireUpdate = true
 	}
+
+	e.log.Infof("Deleted engine")
 
 	return nil
 }

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
@@ -119,7 +119,7 @@ func NewReplicaStream(stream spdkrpc.SPDKService_ReplicaWatchClient) *ReplicaStr
 	}
 }
 
-func (s *ReplicaStream) Recv() (*empty.Empty, error) {
+func (s *ReplicaStream) Recv() (*emptypb.Empty, error) {
 	return s.stream.Recv()
 }
 
@@ -133,6 +133,6 @@ func NewEngineStream(stream spdkrpc.SPDKService_EngineWatchClient) *EngineStream
 	}
 }
 
-func (s *EngineStream) Recv() (*empty.Empty, error) {
+func (s *EngineStream) Recv() (*emptypb.Empty, error) {
 	return s.stream.Recv()
 }
