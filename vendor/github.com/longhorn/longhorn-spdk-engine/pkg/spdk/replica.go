@@ -29,6 +29,9 @@ type Replica struct {
 
 	ctx context.Context
 
+	// ActiveChain stores the backing image info in index 0.
+	// If a replica does not contain a backing image, the first entry will be nil.
+	// The last entry of the chain is always the head lvol.
 	ActiveChain []*Lvol
 	ChainLength int
 	// SnapshotMap map[<snapshot name>]. <snapshot name> is a caller provided name and does not contain prefix `<replica name>-snap-`
@@ -142,6 +145,7 @@ func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specS
 		ctx: ctx,
 
 		ActiveChain: []*Lvol{
+			nil,
 			{
 				Name:     replicaName,
 				Alias:    spdktypes.GetLvolAlias(lvsName, replicaName),
@@ -149,7 +153,7 @@ func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specS
 				Children: map[string]*Lvol{},
 			},
 		},
-		ChainLength: 1,
+		ChainLength: 2,
 		SnapshotMap: map[string]*Lvol{},
 		Name:        replicaName,
 		Alias:       spdktypes.GetLvolAlias(lvsName, replicaName),
@@ -215,7 +219,9 @@ func (r *Replica) construct(bdevLvolMap map[string]*spdktypes.BdevInfo) (err err
 	if err != nil {
 		return err
 	}
-	newSnapshotMap, err := constructSnapshotMap(r.Name, newChain[0], bdevLvolMap)
+
+	// Skip newChain[0], which is the backing image lvol and may be the ancestor of multiple replicas
+	newSnapshotMap, err := constructSnapshotMap(r.Name, newChain[1], bdevLvolMap)
 	if err != nil {
 		return err
 	}
@@ -263,7 +269,20 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 	}
 	for idx, svcLvol := range r.ActiveChain {
 		newSvcLvol := newChain[idx]
-		if err := compareSvcLvols(svcLvol, newChain[idx], false, svcLvol.Name != r.Name); err != nil {
+		// Handle nil backing image separately
+		if idx == 0 {
+			if svcLvol == nil && newSvcLvol == nil {
+				continue
+			}
+			if svcLvol != nil && newSvcLvol == nil {
+				return fmt.Errorf("replica current backing image is %v while the latest chain contains a nil backing image", svcLvol.Name)
+			}
+			if svcLvol == nil && newSvcLvol != nil {
+				return fmt.Errorf("replica current backing image is nil while the latest chain contains backing image %v", newSvcLvol.Name)
+			}
+		}
+
+		if err := compareSvcLvols(svcLvol, newSvcLvol, false, svcLvol.Name != r.Name); err != nil {
 			return err
 		}
 		// Then update the actual size for the head lvol
@@ -272,7 +291,8 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 		}
 	}
 
-	newSnapshotMap, err := constructSnapshotMap(r.Name, newChain[0], bdevLvolMap)
+	// Skip newChain[0], which is the backing image lvol and may be the ancestor of multiple replicas
+	newSnapshotMap, err := constructSnapshotMap(r.Name, newChain[1], bdevLvolMap)
 	if err != nil {
 		return err
 	}
@@ -324,17 +344,17 @@ func compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSize bool) error
 		return fmt.Errorf("cannot find the corresponding cur lvol")
 	}
 	if prev.Name != cur.Name || prev.UUID != cur.UUID || prev.SpecSize != cur.SpecSize || prev.Parent != cur.Parent || len(prev.Children) != len(cur.Children) {
-		return fmt.Errorf("found mismatching lvol %+v with recorded prev lvol %+v when validating the active chain", cur, prev)
+		return fmt.Errorf("found mismatching lvol %+v with recorded prev lvol %+v", cur, prev)
 	}
 	if checkChildren {
 		for childName := range prev.Children {
 			if cur.Children[childName] == nil {
-				return fmt.Errorf("found mismatching lvol children %+v with recorded prev lvol children %+v when validating the active chain lvol %s", cur.Children, prev.Children, prev.Name)
+				return fmt.Errorf("found mismatching lvol children %+v with recorded prev lvol children %+v when validating lvol %s", cur.Children, prev.Children, prev.Name)
 			}
 		}
 	}
 	if checkActualSize && prev.ActualSize != cur.ActualSize {
-		return fmt.Errorf("found mismatching lvol actual size %v with recorded prev lvol actual size %v when validating the active chain lvol %s", cur.ActualSize, prev.ActualSize, prev.Name)
+		return fmt.Errorf("found mismatching lvol actual size %v with recorded prev lvol actual size %v when validating lvol %s", cur.ActualSize, prev.ActualSize, prev.Name)
 	}
 
 	return nil
@@ -382,6 +402,7 @@ func (r *Replica) validateReplicaInfo(headBdevLvol *spdktypes.BdevInfo) (err err
 	return nil
 }
 
+// constructActiveChain retrive the chain bottom up (from the head to the ancestor snapshot/backing image)
 func constructActiveChain(replicaName string, bdevLvolMap map[string]*spdktypes.BdevInfo) (res []*Lvol, err error) {
 	newChain := []*Lvol{}
 
@@ -400,6 +421,11 @@ func constructActiveChain(replicaName string, bdevLvolMap map[string]*spdktypes.
 
 		childSvcLvol = curSvcLvol
 		curBdevLvol = bdevLvolMap[curBdevLvol.DriverSpecific.Lvol.BaseSnapshot]
+	}
+
+	// Check if the ancestor is a snapshot lvol. If YES, we need to append a nil as the backing image
+	if len(newChain) == 0 || IsReplicaSnapshotLvol(replicaName, newChain[len(newChain)-1].Name) {
+		newChain = append(newChain, nil)
 	}
 
 	// Need to flip r.ActiveSnapshotChain since the oldest should be the first entry
@@ -472,7 +498,7 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, exposeRequired bool, por
 		}
 	}()
 
-	if r.ChainLength < 1 {
+	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica creation", r.ChainLength)
 	}
 	headSvcLvol := r.ActiveChain[r.ChainLength-1]
@@ -638,7 +664,7 @@ func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName str
 		}
 	}()
 
-	if r.ChainLength < 1 {
+	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica snapshot creation", r.ChainLength)
 	}
 	headSvcLvol := r.ActiveChain[r.ChainLength-1]
@@ -658,8 +684,8 @@ func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName str
 	snapSvcLvol := BdevLvolInfoToServiceLvol(&bdevLvolList[0])
 	snapSvcLvol.Children[headSvcLvol.Name] = headSvcLvol
 
-	// Already contain active snapshots before this snapshot creation
-	if r.ChainLength > 1 {
+	// Already contain a valid snapshot lvol or backing image lvol before this snapshot creation
+	if r.ActiveChain[r.ChainLength-2] != nil {
 		prevSvcLvol := r.ActiveChain[r.ChainLength-2]
 		delete(prevSvcLvol.Children, headSvcLvol.Name)
 		prevSvcLvol.Children[snapSvcLvol.Name] = snapSvcLvol
@@ -708,7 +734,7 @@ func (r *Replica) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName str
 		}
 	}()
 
-	if r.ChainLength < 1 {
+	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica snapshot delete", r.ChainLength)
 	}
 
@@ -748,14 +774,19 @@ func (r *Replica) removeLvolFromSnapshotMapWithoutLock(snapshotName string) {
 func (r *Replica) removeLvolFromActiveChainWithoutLock(snapLvolName string) int {
 	pos := -1
 	for idx, lvol := range r.ActiveChain {
+		// Cannot remove the backing image from the chain
+		if idx == 0 {
+			continue
+		}
 		if lvol.Name == snapLvolName {
 			pos = idx
 			break
 		}
 	}
 
+	// Cannot remove backing image lvol or head lvol
 	prevChain := r.ActiveChain
-	if pos >= 0 && pos < r.ChainLength-1 {
+	if pos >= 1 && pos < r.ChainLength-1 {
 		r.ActiveChain = append([]*Lvol{}, prevChain[:pos]...)
 		r.ActiveChain = append(r.ActiveChain, prevChain[pos+1:]...)
 	}

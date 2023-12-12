@@ -282,9 +282,9 @@ func (c *Client) BdevLvolSnapshot(name, snapshotName string) (uuid string, err e
 
 // BdevLvolClone creates a logical volume based on a snapshot.
 //
-//	"name": Required. UUID or alias of the logical volume/snapshot to clone. The alias of a lvol is <LVSTORE NAME>/<SNAPSHOT or LVOL NAME>.
+//	"name": Required. UUID or alias of the snapshot to clone. The alias of a lvol is <LVSTORE NAME>/<SNAPSHOT or LVOL NAME>.
 //
-//	"snapshotName": Required. the name for the newly cloned lvol.
+//	"cloneName": Required. the name for the newly created lvol.
 func (c *Client) BdevLvolClone(name, cloneName string) (uuid string, err error) {
 	req := spdktypes.BdevLvolCloneRequest{
 		SnapshotName: name,
