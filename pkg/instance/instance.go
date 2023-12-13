@@ -635,9 +635,9 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse) *rpc.InstanceResp
 		},
 		Status: &rpc.InstanceStatus{
 			State:     p.Status.State,
+			ErrorMsg:  p.Status.ErrorMsg,
 			PortStart: p.Status.PortStart,
 			PortEnd:   p.Status.PortEnd,
-			ErrorMsg:  p.Status.ErrorMsg,
 		},
 		Deleted: p.Deleted,
 	}
@@ -652,7 +652,7 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 		},
 		Status: &rpc.InstanceStatus{
 			State:     r.State,
-			ErrorMsg:  "",
+			ErrorMsg:  r.ErrorMsg,
 			PortStart: r.PortStart,
 			PortEnd:   r.PortEnd,
 		},
@@ -668,7 +668,7 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 		},
 		Status: &rpc.InstanceStatus{
 			State:     e.State,
-			ErrorMsg:  "",
+			ErrorMsg:  e.ErrorMsg,
 			PortStart: e.Port,
 			PortEnd:   e.Port,
 		},
