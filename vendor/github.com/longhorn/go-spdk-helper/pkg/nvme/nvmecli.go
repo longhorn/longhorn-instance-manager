@@ -37,7 +37,7 @@ type Controller struct {
 	State      string
 }
 
-// Use signed integers instead, because the output of buggy nvme-cli 2.x is possibly negative.
+// Namespace fields use signed integers instead, because the output of buggy nvme-cli 2.x is possibly negative.
 type Namespace struct {
 	NameSpace    string
 	NSID         int32
@@ -176,8 +176,8 @@ func listSubsystemsV2(jsonStr string, executor util.Executor) ([]Subsystem, erro
 	return subsystems, nil
 }
 
-// Use signed integers instead, because the output of buggy nvme-cli 2.x is possibly negative.
-type NvmeDevice struct {
+// CliDevice fields use signed integers instead, because the output of buggy nvme-cli 2.x is possibly negative.
+type CliDevice struct {
 	NameSpace    int32  `json:"Namespace,omitempty"`
 	DevicePath   string `json:"DevicePath,omitempty"`
 	Firmware     string `json:"Firmware,omitempty"`
@@ -190,7 +190,7 @@ type NvmeDevice struct {
 	SectorSize   int32  `json:"SectorSize,omitempty"`
 }
 
-func listControllers(executor util.Executor) ([]NvmeDevice, error) {
+func listControllers(executor util.Executor) ([]CliDevice, error) {
 	opts := []string{
 		"list",
 		"-o", "json",
@@ -203,7 +203,7 @@ func listControllers(executor util.Executor) ([]NvmeDevice, error) {
 	if err != nil {
 		return nil, err
 	}
-	output := map[string][]NvmeDevice{}
+	output := map[string][]CliDevice{}
 	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
 	}

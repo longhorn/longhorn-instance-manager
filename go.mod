@@ -7,16 +7,16 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
 	github.com/longhorn/backupstore v0.0.0-20230830075002-fa25b1a97ffd
-	github.com/longhorn/go-spdk-helper v0.0.0-20231113055029-9acddd184246
+	github.com/longhorn/go-spdk-helper v0.0.0-20231212033123-3b72caa5a1ea
 	github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20231212092407-57d46bd66e91
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.12
 	golang.org/x/net v0.17.0
-	golang.org/x/sync v0.1.0
-	google.golang.org/grpc v1.53.0
-	google.golang.org/protobuf v1.30.0
+	golang.org/x/sync v0.3.0
+	google.golang.org/grpc v1.58.3
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 )
 
@@ -57,11 +57,9 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
-	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	k8s.io/apimachinery v0.27.1 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/mount-utils v0.27.1 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
 )
-
-replace golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3

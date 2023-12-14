@@ -2,6 +2,8 @@ syntax="proto3";
 
 package spdkrpc;
 
+option go_package = "github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc";
+
 import "google/protobuf/empty.proto";
 
 service SPDKService {

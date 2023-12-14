@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+
+	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
@@ -43,9 +45,9 @@ type SPDKClient struct {
 	SPDKServiceContext
 }
 
-func NewSPDKClient(serviceUrl string) (*SPDKClient, error) {
+func NewSPDKClient(serviceURL string) (*SPDKClient, error) {
 	getSPDKServiceContext := func(serviceUrl string) (SPDKServiceContext, error) {
-		connection, err := grpc.Dial(serviceUrl, grpc.WithInsecure())
+		connection, err := grpc.Dial(serviceUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return SPDKServiceContext{}, errors.Wrapf(err, "cannot connect to SPDKService %v", serviceUrl)
 		}
@@ -56,13 +58,13 @@ func NewSPDKClient(serviceUrl string) (*SPDKClient, error) {
 		}, nil
 	}
 
-	serviceContext, err := getSPDKServiceContext(serviceUrl)
+	serviceContext, err := getSPDKServiceContext(serviceURL)
 	if err != nil {
 		return nil, err
 	}
 
 	return &SPDKClient{
-		serviceURL:         serviceUrl,
+		serviceURL:         serviceURL,
 		SPDKServiceContext: serviceContext,
 	}, nil
 }
@@ -130,7 +132,7 @@ func (c *SPDKClient) ReplicaList() (map[string]*api.Replica, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	resp, err := client.ReplicaList(ctx, &empty.Empty{})
+	resp, err := client.ReplicaList(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list SPDK replicas")
 	}
@@ -144,7 +146,7 @@ func (c *SPDKClient) ReplicaList() (map[string]*api.Replica, error) {
 
 func (c *SPDKClient) ReplicaWatch(ctx context.Context) (*api.ReplicaStream, error) {
 	client := c.getSPDKServiceClient()
-	stream, err := client.ReplicaWatch(ctx, &empty.Empty{})
+	stream, err := client.ReplicaWatch(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open replica watch stream")
 	}
@@ -239,20 +241,26 @@ func (c *SPDKClient) ReplicaSnapshotShallowCopy(srcReplicaName, snapshotName str
 	return errors.Wrapf(err, "failed to shallow copy snapshot %s from src replica %s", snapshotName, srcReplicaName)
 }
 
-func (c *SPDKClient) ReplicaRebuildingDstStart(replicaName string, exposeRequired bool) error {
+// ReplicaRebuildingDstStart asks the rebuilding replicas to expose the rebuilding lvol as a nvmf bdev if the source replica and the destination replica are on the different nodes.
+// It returns an address <IP>:<Port> of the rebuilding destination bdev.
+// If the source replica and the destination replicas are on the same node, the rebuilding lvol won't be exposed as a nvmf bdev and <port> will be zero.
+func (c *SPDKClient) ReplicaRebuildingDstStart(replicaName string, exposeRequired bool) (dstRebuildingLvolAddress string, err error) {
 	if replicaName == "" {
-		return fmt.Errorf("failed to start replica rebuilding dst: missing required parameter replica name")
+		return "", fmt.Errorf("failed to start replica rebuilding dst: missing required parameter replica name")
 	}
 
 	client := c.getSPDKServiceClient()
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	_, err := client.ReplicaRebuildingDstStart(ctx, &spdkrpc.ReplicaRebuildingDstStartRequest{
+	resp, err := client.ReplicaRebuildingDstStart(ctx, &spdkrpc.ReplicaRebuildingDstStartRequest{
 		Name:           replicaName,
 		ExposeRequired: exposeRequired,
 	})
-	return errors.Wrapf(err, "failed to start replica rebuilding dst %s", replicaName)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to start replica rebuilding dst %s", replicaName)
+	}
+	return resp.Address, nil
 }
 
 func (c *SPDKClient) ReplicaRebuildingDstFinish(replicaName string, unexposeRequired bool) error {
@@ -349,7 +357,7 @@ func (c *SPDKClient) EngineList() (map[string]*api.Engine, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	resp, err := client.EngineList(ctx, &empty.Empty{})
+	resp, err := client.EngineList(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list SPDK engines")
 	}
@@ -363,7 +371,7 @@ func (c *SPDKClient) EngineList() (map[string]*api.Engine, error) {
 
 func (c *SPDKClient) EngineWatch(ctx context.Context) (*api.EngineStream, error) {
 	client := c.getSPDKServiceClient()
-	stream, err := client.EngineWatch(ctx, &empty.Empty{})
+	stream, err := client.EngineWatch(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open engine watch stream")
 	}

@@ -6,6 +6,9 @@ import (
 	"strconv"
 	"strings"
 
+	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+
 	"github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
@@ -31,6 +34,10 @@ func GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, snapLvolName string
 	return strings.TrimPrefix(snapLvolName, GetReplicaSnapshotLvolNamePrefix(replicaName))
 }
 
+func IsReplicaSnapshotLvol(replicaName, lvolName string) bool {
+	return strings.HasPrefix(lvolName, GetReplicaSnapshotLvolNamePrefix(replicaName))
+}
+
 func GenerateRebuildingSnapshotName() string {
 	return fmt.Sprintf("%s-%s", RebuildingSnapshotNamePrefix, util.UUID()[:8])
 }
@@ -53,4 +60,69 @@ func GetServiceClient(address string) (*client.SPDKClient, error) {
 
 	// TODO: Can we share the clients in the whole server?
 	return client.NewSPDKClient(addr)
+}
+
+func GetBdevMap(cli *spdkclient.Client) (map[string]*spdktypes.BdevInfo, error) {
+	bdevList, err := cli.BdevGetBdevs("", 0)
+	if err != nil {
+		return nil, err
+	}
+
+	bdevMap := map[string]*spdktypes.BdevInfo{}
+	for idx := range bdevList {
+		bdev := &bdevList[idx]
+		bdevType := spdktypes.GetBdevType(bdev)
+
+		switch bdevType {
+		case spdktypes.BdevTypeLvol:
+			if len(bdev.Aliases) != 1 {
+				continue
+			}
+			bdevMap[bdev.Aliases[0]] = bdev
+		case spdktypes.BdevTypeRaid:
+			fallthrough
+		default:
+			bdevMap[bdev.Name] = bdev
+		}
+	}
+
+	return bdevMap, nil
+}
+
+func GetBdevLvolMap(cli *spdkclient.Client) (map[string]*spdktypes.BdevInfo, error) {
+	bdevList, err := cli.BdevGetBdevs("", 0)
+	if err != nil {
+		return nil, err
+	}
+
+	bdevLvolMap := map[string]*spdktypes.BdevInfo{}
+	for idx := range bdevList {
+		bdev := &bdevList[idx]
+		bdevType := spdktypes.GetBdevType(bdev)
+		if bdevType != spdktypes.BdevTypeLvol {
+			continue
+		}
+		if len(bdev.Aliases) != 1 {
+			continue
+		}
+		lvolName := spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
+		bdevLvolMap[lvolName] = bdev
+	}
+
+	return bdevLvolMap, nil
+}
+
+func GetNvmfSubsystemMap(cli *spdkclient.Client) (map[string]*spdktypes.NvmfSubsystem, error) {
+	subsystemList, err := cli.NvmfGetSubsystems("", "")
+	if err != nil {
+		return nil, err
+	}
+
+	subsystemMap := map[string]*spdktypes.NvmfSubsystem{}
+	for idx := range subsystemList {
+		subsystem := &subsystemList[idx]
+		subsystemMap[subsystem.Nqn] = subsystem
+	}
+
+	return subsystemMap, nil
 }

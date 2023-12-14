@@ -6,21 +6,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
-	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
-	spdkrpc "github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
-
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
+	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
+	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	spdkrpc "github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
 
 const (
@@ -73,7 +70,7 @@ func (s *Server) startMonitoring() {
 	}
 }
 
-func (s *Server) VersionGet(ctx context.Context, req *empty.Empty) (*rpc.DiskVersionResponse, error) {
+func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.DiskVersionResponse, error) {
 	v := meta.GetDiskServiceVersion()
 	return &rpc.DiskVersionResponse{
 		Version:   v.Version,
@@ -128,7 +125,7 @@ func (s *Server) DiskDelete(ctx context.Context, req *rpc.DiskDeleteRequest) (*e
 
 	switch req.DiskType {
 	case rpc.DiskType_block:
-		return &empty.Empty{}, s.spdkClient.DiskDelete(req.DiskName, req.DiskUuid)
+		return &emptypb.Empty{}, s.spdkClient.DiskDelete(req.DiskName, req.DiskUuid)
 	case rpc.DiskType_filesystem:
 		// TODO: implement filesystem disk type
 		fallthrough
@@ -198,7 +195,7 @@ func (s *Server) DiskReplicaInstanceList(ctx context.Context, req *rpc.DiskRepli
 	}
 }
 
-func (s *Server) DiskReplicaInstanceDelete(ctx context.Context, req *rpc.DiskReplicaInstanceDeleteRequest) (*empty.Empty, error) {
+func (s *Server) DiskReplicaInstanceDelete(ctx context.Context, req *rpc.DiskReplicaInstanceDeleteRequest) (*emptypb.Empty, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskType":            req.DiskType,
 		"diskName":            req.DiskName,
@@ -218,7 +215,7 @@ func (s *Server) DiskReplicaInstanceDelete(ctx context.Context, req *rpc.DiskRep
 		if err != nil {
 			return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 		}
-		return &empty.Empty{}, nil
+		return &emptypb.Empty{}, nil
 	case rpc.DiskType_filesystem:
 		// TODO: implement filesystem disk type
 		fallthrough
