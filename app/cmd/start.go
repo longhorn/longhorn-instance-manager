@@ -10,7 +10,9 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,6 +25,9 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
+	helpernvme "github.com/longhorn/go-spdk-helper/pkg/nvme"
+	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
+	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 	spdk "github.com/longhorn/longhorn-spdk-engine/pkg/spdk"
 	spdkutil "github.com/longhorn/longhorn-spdk-engine/pkg/util"
 	spdkrpc "github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
@@ -106,6 +111,53 @@ func cleanup(pm *process.Manager) {
 	logrus.Errorf("Failed to clean up all processes for %s graceful shutdown", types.ProcessManagerGrpcService)
 }
 
+func getVolumeNameFromNQN(input string) (string, error) {
+	// compile a regular expression that matches ${name} between : and -e-
+	re, err := regexp.Compile(`:(.*)-e-`)
+	if err != nil {
+		return "", err
+	}
+	// find the first submatch of the input string
+	submatch := re.FindStringSubmatch(input)
+	if len(submatch) < 2 {
+		return "", fmt.Errorf("no name found in input")
+	}
+	// return the second element of the submatch, which is ${name}
+	return submatch[1], nil
+}
+
+func cleanupStaledNvmeAndDmDevices() error {
+	executor, err := helperutil.GetExecutorByHostProc("")
+	if err != nil {
+		return errors.Wrap(err, "failed to get executor")
+	}
+
+	subsystems, err := helpernvme.GetSubsystems(executor)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get NVMe subsystems")
+	}
+	for _, sys := range subsystems {
+		logrus.Infof("Found NVMe subsystem %+v", sys)
+		if strings.HasPrefix(sys.NQN, helpertypes.NQNPrefix) {
+			logrus.Infof("Cleaning up NVMe subsystem %v: NQN %v", sys.Name, sys.NQN)
+
+			if err := helpernvme.DisconnectTarget(sys.NQN, executor); err != nil {
+				return errors.Wrapf(err, "failed to disconnect NVMe subsystem %v: NQN %v", sys.Name, sys.NQN)
+			}
+
+			dmDeviceName, err := getVolumeNameFromNQN(sys.NQN)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get volume name from NQN %v", sys.NQN)
+			}
+			logrus.Infof("Removing dm device %v", dmDeviceName)
+			if err := helperutil.DmsetupRemove(dmDeviceName, true, true, executor); err != nil {
+				return errors.Wrapf(err, "failed to remove dm device %v", dmDeviceName)
+			}
+		}
+	}
+	return nil
+}
+
 func start(c *cli.Context) (err error) {
 	listen := c.String("listen")
 	logsDir := c.String("logs-dir")
@@ -124,6 +176,12 @@ func start(c *cli.Context) (err error) {
 
 	if err := util.SetUpLogger(logsDir); err != nil {
 		return err
+	}
+
+	if spdkEnabled {
+		if err := cleanupStaledNvmeAndDmDevices(); err != nil {
+			return err
+		}
 	}
 
 	// setup tls config
