@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
@@ -173,6 +174,12 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 	}
 
 	nqn := helpertypes.GetNQN(e.Name)
+
+	e.log.Infof("Blindly stopping expose bdev for engine")
+	if err := spdkClient.StopExposeBdev(nqn); err != nil {
+		return errors.Wrap(err, "failed to stop expose bdev for engine")
+	}
+
 	port, _, err := superiorPortAllocator.AllocateRange(portCount)
 	if err != nil {
 		return err

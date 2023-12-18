@@ -10,9 +10,14 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"go.uber.org/multierr"
+
+	"github.com/longhorn/go-common-libs/proc"
 )
 
 func RoundUp(num, base uint64) uint64 {
@@ -84,6 +89,41 @@ func StartSPDKTgtDaemon() error {
 	}
 
 	return nil
+}
+
+func StopSPDKTgtDaemon(timeout time.Duration) error {
+	processes, err := proc.FindProcessByCmdline("spdk_tgt")
+	if err != nil {
+		return errors.Wrap(err, "failed to find spdk_tgt")
+	}
+
+	var errs error
+	for _, process := range processes {
+		if err := process.Signal(syscall.SIGTERM); err != nil {
+			multierr.Append(errs, errors.Wrapf(err, "failed to send SIGTERM to spdk_tgt %v", process.Pid))
+		} else {
+			done := make(chan error, 1)
+			go func() {
+				_, err := process.Wait()
+				done <- err
+				close(done)
+			}()
+
+			select {
+			case <-time.After(timeout):
+				logrus.Warnf("spdk_tgt %v failed to exit in time, sending SIGKILL", process.Pid)
+				process.Signal(syscall.SIGKILL)
+			case err := <-done:
+				if err != nil {
+					multierr.Append(errs, errors.Wrapf(err, "spdk_tgt %v exited with error", process.Pid))
+				} else {
+					logrus.Infof("spdk_tgt %v exited successfully", process.Pid)
+				}
+			}
+		}
+	}
+
+	return errs
 }
 
 func GetFileChunkChecksum(filePath string, start, size int64) (string, error) {
