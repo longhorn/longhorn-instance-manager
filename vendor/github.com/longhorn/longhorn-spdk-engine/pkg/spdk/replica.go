@@ -47,7 +47,9 @@ type Replica struct {
 	PortStart int32
 	PortEnd   int32
 
-	State     types.InstanceState
+	State    types.InstanceState
+	ErrorMsg string
+
 	IsExposed bool
 
 	isRebuilding   bool
@@ -90,6 +92,7 @@ func ServiceReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 		PortStart: r.PortStart,
 		PortEnd:   r.PortEnd,
 		State:     string(r.State),
+		ErrorMsg:  r.ErrorMsg,
 	}
 	// spdkrpc.Replica.Snapshots is map[<snapshot name>] rather than map[<snapshot lvol name>]
 	for name, lvol := range r.SnapshotMap {
@@ -197,8 +200,11 @@ func (r *Replica) construct(bdevLvolMap map[string]*spdktypes.BdevInfo) (err err
 	defer func() {
 		if err != nil {
 			r.State = types.InstanceStateError
+			r.ErrorMsg = err.Error()
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	switch r.State {
 	case types.InstanceStatePending:
@@ -240,11 +246,16 @@ func (r *Replica) construct(bdevLvolMap map[string]*spdktypes.BdevInfo) (err err
 
 func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, subsystemMap map[string]*spdktypes.NvmfSubsystem) (err error) {
 	defer func() {
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			r.log.Errorf("Found error during validation and update: %v", err)
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+				r.log.Errorf("Found error during validation and update: %v", err)
+			}
+			r.ErrorMsg = err.Error()
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	// Stop syncing with the SPDK TGT server if the replica does not contain any valid SPDK components.
 	if r.State != types.InstanceStateRunning && r.State != types.InstanceStateStopped {
@@ -493,10 +504,19 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, exposeRequired bool, por
 	}
 
 	defer func() {
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
+		if err != nil {
+			r.log.WithError(err).Errorf("Failed to create replica %s", r.Name)
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+			}
+			r.ErrorMsg = err.Error()
+
+			ret = ServiceReplicaToProtoReplica(r)
+			err = nil
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica creation", r.ChainLength)
@@ -575,6 +595,7 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 	defer func() {
 		if err != nil {
 			r.State = types.InstanceStateError
+			r.ErrorMsg = err.Error()
 		}
 		// The port can be released once the rebuilding and expose are stopped
 		if r.PortStart != 0 {
@@ -595,6 +616,8 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 			r.UpdateCh <- nil
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	// TODO: Need to stop all in-progress rebuilding first
 	// if err := r.rebuildingDstCleanup(spdkClient); err != nil {
@@ -658,11 +681,16 @@ func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName str
 	}
 
 	defer func() {
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+				updateRequired = true
+			}
+			r.ErrorMsg = err.Error()
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica snapshot creation", r.ChainLength)
@@ -728,11 +756,16 @@ func (r *Replica) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName str
 	}
 
 	defer func() {
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+				updateRequired = true
+			}
+			r.ErrorMsg = err.Error()
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica snapshot delete", r.ChainLength)
@@ -932,11 +965,16 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, exposeRequir
 	}
 
 	defer func() {
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+				updateRequired = true
+			}
+			r.ErrorMsg = err.Error()
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	// TODO: When online rebuilding related APIs are ready, we need to create a separate and temporary lvol for snapshot lvol rebuilding
 	// lvolName := GetReplicaRebuildingLvolName(r.Name)
@@ -1007,12 +1045,17 @@ func (r *Replica) RebuildingDstFinish(spdkClient *spdkclient.Client, unexposeReq
 	}
 
 	defer func() {
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+				updateRequired = true
+			}
+			r.ErrorMsg = err.Error()
 		}
 		r.isRebuilding = false
 	}()
+
+	r.ErrorMsg = ""
 
 	// TODO: For the online rebuilding, Remove the temporary rebuilding lvol and release ports for r.portAllocator
 	// if err := r.rebuildingDstCleanup(spdkClient); err != nil {
@@ -1087,11 +1130,16 @@ func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *spdkclient.Client, sna
 	}
 
 	defer func() {
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+				updateRequired = true
+			}
+			r.ErrorMsg = err.Error()
 		}
 	}()
+
+	r.ErrorMsg = ""
 
 	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
 	snapUUID, err := spdkClient.BdevLvolSnapshot(r.rebuildingLvol.UUID, snapLvolName)

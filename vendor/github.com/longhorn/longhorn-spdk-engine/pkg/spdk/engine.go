@@ -37,7 +37,8 @@ type Engine struct {
 	Frontend           string
 	Endpoint           string
 
-	State types.InstanceState
+	State    types.InstanceState
+	ErrorMsg string
 
 	// UpdateCh should not be protected by the engine lock
 	UpdateCh chan interface{}
@@ -93,10 +94,19 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localR
 	}
 
 	defer func() {
-		if err != nil && e.State != types.InstanceStateError {
-			e.State = types.InstanceStateError
+		if err != nil {
+			e.log.WithError(err).Errorf("Failed to create engine %s", e.Name)
+			if e.State != types.InstanceStateError {
+				e.State = types.InstanceStateError
+			}
+			e.ErrorMsg = err.Error()
+
+			ret = e.getWithoutLock()
+			err = nil
 		}
 	}()
+
+	e.ErrorMsg = ""
 
 	podIP, err := util.GetIPForPod()
 	if err != nil {
@@ -213,8 +223,12 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 
 	e.Lock()
 	defer func() {
-		if err != nil && e.State != types.InstanceStateError {
-			e.State = types.InstanceStateError
+		if err != nil {
+			e.log.WithError(err).Errorf("Failed to delete engine %s", e.Name)
+			if e.State != types.InstanceStateError {
+				e.State = types.InstanceStateError
+			}
+			e.ErrorMsg = err.Error()
 		}
 		e.Unlock()
 
@@ -222,6 +236,8 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 			e.UpdateCh <- nil
 		}
 	}()
+
+	e.ErrorMsg = ""
 
 	if e.Endpoint != "" {
 		nqn := helpertypes.GetNQN(e.Name)
@@ -313,6 +329,7 @@ func (e *Engine) getWithoutLock() (res *spdkrpc.Engine) {
 		Frontend:          e.Frontend,
 		Endpoint:          e.Endpoint,
 		State:             string(e.State),
+		ErrorMsg:          e.ErrorMsg,
 	}
 
 	for replicaName, replicaMode := range e.ReplicaModeMap {
@@ -350,12 +367,17 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 
 	defer func() {
 		// TODO: we may not need to mark the engine as ERR for each error
-		if err != nil && e.State != types.InstanceStateError {
-			e.State = types.InstanceStateError
-			e.log.WithError(err).Error("Found error during engine validation and update")
-			updateRequired = true
+		if err != nil {
+			if e.State != types.InstanceStateError {
+				e.State = types.InstanceStateError
+				e.log.WithError(err).Error("Found error during engine validation and update")
+				updateRequired = true
+			}
+			e.ErrorMsg = err.Error()
 		}
 	}()
+
+	e.ErrorMsg = ""
 
 	podIP, err := util.GetIPForPod()
 	if err != nil {
@@ -592,11 +614,16 @@ func (e *Engine) ReplicaAddStart(replicaName, replicaAddress string) (err error)
 	}
 
 	defer func() {
-		if err != nil && e.State != types.InstanceStateError {
-			e.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if e.State != types.InstanceStateError {
+				e.State = types.InstanceStateError
+				updateRequired = true
+			}
+			e.ErrorMsg = err.Error()
 		}
 	}()
+
+	e.ErrorMsg = ""
 
 	// TODO: For online rebuilding, the IO should be paused first
 	snapshotName := GenerateRebuildingSnapshotName()
@@ -662,11 +689,16 @@ func (e *Engine) ReplicaAddFinish(spdkClient *spdkclient.Client, replicaName, re
 	}
 
 	defer func() {
-		if err != nil && e.State != types.InstanceStateError {
-			e.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if e.State != types.InstanceStateError {
+				e.State = types.InstanceStateError
+				updateRequired = true
+			}
+			e.ErrorMsg = err.Error()
 		}
 	}()
+
+	e.ErrorMsg = ""
 
 	if _, err := spdkClient.BdevRaidDelete(e.Name); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 		return err
@@ -858,11 +890,16 @@ func (e *Engine) snapshotOperation(snapshotName, snapshotOp string) (res *spdkrp
 	}
 
 	defer func() {
-		if err != nil && e.State != types.InstanceStateError {
-			e.State = types.InstanceStateError
-			updateRequired = true
+		if err != nil {
+			if e.State != types.InstanceStateError {
+				e.State = types.InstanceStateError
+				updateRequired = true
+			}
+			e.ErrorMsg = err.Error()
 		}
 	}()
+
+	e.ErrorMsg = ""
 
 	updateRequired = e.snapshotOperationWithoutLock(snapshotName, snapshotOp)
 
