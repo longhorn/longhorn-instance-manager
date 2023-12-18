@@ -102,7 +102,7 @@ func (s *Server) monitoring() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			logrus.Info("SPDK Server: stopped monitoring replicas due to the context done")
+			logrus.Info("spdk gRPC server: stopped monitoring replicas due to the context done")
 			done = true
 		case <-ticker.C:
 			err := s.verify()
@@ -110,12 +110,12 @@ func (s *Server) monitoring() {
 				break
 			}
 
-			logrus.WithError(err).Errorf("SPDK Server: failed to verify and update replica cache, will retry later")
+			logrus.WithError(err).Errorf("spdk gRPC server: failed to verify and update replica cache, will retry later")
 
 			if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) || jsonrpc.IsJSONRPCRespErrorInvalidCharacter(err) {
 				err = s.tryEnsureSPDKTgtHealthy()
 				if err != nil {
-					logrus.WithError(err).Error("SPDK Server: failed to ensure spdk_tgt is healthy")
+					logrus.WithError(err).Error("spdk gRPC server: failed to ensure spdk_tgt is healthy")
 				}
 			}
 		}
@@ -132,11 +132,11 @@ func (s *Server) tryEnsureSPDKTgtHealthy() error {
 	}
 
 	if running {
-		logrus.Info("SPDK Server: reconnecting to spdk_tgt")
+		logrus.Info("spdk gRPC server: reconnecting to spdk_tgt")
 		return s.clientReconnect()
 	}
 
-	logrus.Info("SPDK Server: restarting spdk_tgt")
+	logrus.Info("spdk gRPC server: restarting spdk_tgt")
 	return util.StartSPDKTgtDaemon()
 }
 
@@ -180,7 +180,7 @@ func (s *Server) verify() (err error) {
 			return
 		}
 		if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
-			logrus.WithError(err).Warn("SPDK Server: marking all non-stopped and non-error replicas and engines as error")
+			logrus.WithError(err).Warn("spdk gRPC server: marking all non-stopped and non-error replicas and engines as error")
 			for _, r := range replicaMapForSync {
 				r.SetErrorState()
 			}
@@ -256,7 +256,7 @@ func (s *Server) broadcasting() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			logrus.Info("SPDK Server: stopped broadcasting instances due to the context done")
+			logrus.Info("spdk gRPC server: stopped broadcasting instances due to the context done")
 			done = true
 		case <-s.updateChs[types.InstanceTypeReplica]:
 			s.broadcastChs[types.InstanceTypeReplica] <- nil
@@ -377,7 +377,7 @@ func (s *Server) ReplicaWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_Replic
 	for {
 		select {
 		case <-s.ctx.Done():
-			logrus.Info("SPDK Server: stopped replica watch due to the context done")
+			logrus.Info("spdk gRPC server: stopped replica watch due to the context done")
 			done = true
 		case <-responseCh:
 			if err := srv.Send(&emptypb.Empty{}); err != nil {
@@ -664,7 +664,7 @@ func (s *Server) EngineWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_EngineW
 	for {
 		select {
 		case <-s.ctx.Done():
-			logrus.Info("SPDK Server: stopped engine watch due to the context done")
+			logrus.Info("spdk gRPC server: stopped engine watch due to the context done")
 			done = true
 		case <-responseCh:
 			if err := srv.Send(&emptypb.Empty{}); err != nil {
