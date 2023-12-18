@@ -19,6 +19,7 @@ type Replica struct {
 	PortStart  int32            `json:"port_start"`
 	PortEnd    int32            `json:"port_end"`
 	State      string           `json:"state"`
+	ErrorMsg   string           `json:"error_msg"`
 }
 
 type Lvol struct {
@@ -53,6 +54,7 @@ func ProtoReplicaToReplica(r *spdkrpc.Replica) *Replica {
 		PortStart:  r.PortStart,
 		PortEnd:    r.PortEnd,
 		State:      r.State,
+		ErrorMsg:   r.ErrorMsg,
 	}
 	for snapName, snapProtoLvol := range r.Snapshots {
 		res.Snapshots[snapName] = ProtoLvolToLvol(snapProtoLvol)
@@ -73,6 +75,7 @@ type Engine struct {
 	Frontend          string                `json:"frontend"`
 	Endpoint          string                `json:"endpoint"`
 	State             string                `json:"state"`
+	ErrorMsg          string                `json:"error_msg"`
 }
 
 func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
@@ -88,6 +91,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		Frontend:          e.Frontend,
 		Endpoint:          e.Endpoint,
 		State:             e.State,
+		ErrorMsg:          e.ErrorMsg,
 	}
 	for rName, mode := range e.ReplicaModeMap {
 		res.ReplicaModeMap[rName] = spdkrpc.GRPCReplicaModeToReplicaMode(mode)
