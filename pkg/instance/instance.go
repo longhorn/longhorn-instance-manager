@@ -653,7 +653,7 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 		},
 		Status: &rpc.InstanceStatus{
 			State:      r.State,
-			ErrorMsg:   "",
+			ErrorMsg:   r.ErrorMsg,
 			PortStart:  r.PortStart,
 			PortEnd:    r.PortEnd,
 			Conditions: make(map[string]bool),
@@ -670,7 +670,7 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 		},
 		Status: &rpc.InstanceStatus{
 			State:      e.State,
-			ErrorMsg:   "",
+			ErrorMsg:   e.ErrorMsg,
 			PortStart:  e.Port,
 			PortEnd:    e.Port,
 			Conditions: make(map[string]bool),

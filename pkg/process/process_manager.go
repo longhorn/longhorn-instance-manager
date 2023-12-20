@@ -101,7 +101,7 @@ func (pm *Manager) startInstanceConditionCheck() {
 	for {
 		select {
 		case <-pm.ctx.Done():
-			logrus.Info("Process Manager is shutting down")
+			logrus.Infof("%s: stopped monitoring conditions due to the context done", types.ProcessManagerGrpcService)
 			done = true
 		case <-ticker.C:
 			pm.checkMountPointStatusForEngine()
@@ -144,10 +144,10 @@ func (pm *Manager) checkMountPointStatusForEngine() {
 	}
 
 	pm.lock.RLock()
+	defer pm.lock.RUnlock()
 	for _, p := range pm.processes {
 		p.lock.Lock()
 		if isEngineProcess(p) && p.State == StateRunning {
-
 			nameSlices := strings.Split(p.Name, "-")
 			volumeNameSHA := sha256.Sum256([]byte(strings.Join(nameSlices[:len(nameSlices)-2], "-")))
 
@@ -158,7 +158,6 @@ func (pm *Manager) checkMountPointStatusForEngine() {
 		}
 		p.lock.Unlock()
 	}
-	pm.lock.RUnlock()
 
 	for _, p := range processToUpdate {
 		p.UpdateCh <- p
