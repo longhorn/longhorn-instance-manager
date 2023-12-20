@@ -29,6 +29,23 @@ function enable_spdk_tgt() {
     local options=("$@")
     echo "Enabling spdk_tgt with options: ${options[*]}"
     spdk_tgt "${options[@]}" 2>&1 | tee /var/log/spdk_tgt.log &
+
+    timeout=120  # Timeout in seconds
+    interval=1  # Interval in seconds
+    elapsed_time=0
+
+    while [ $elapsed_time -lt $timeout ]; do
+        if [ -S "/var/tmp/spdk.sock" ]; then
+            echo "Socket file '/var/tmp/spdk.sock' found after $elapsed_time seconds."
+            return 0  # Exit successfully if the file exists
+        fi
+
+        sleep $interval
+        elapsed_time=$((elapsed_time + interval))
+    done
+
+    echo "Timeout reached. Socket file '/var/tmp/spdk.sock' not found."
+    return 1
 }
 
 enable_spdk=0

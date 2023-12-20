@@ -9,6 +9,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/disk"
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
 
 type CheckDiskServer struct {
@@ -39,15 +40,15 @@ func (hc *CheckDiskServer) Watch(req *healthpb.HealthCheckRequest, ws healthpb.H
 			if err := ws.Send(&healthpb.HealthCheckResponse{
 				Status: healthpb.HealthCheckResponse_SERVING,
 			}); err != nil {
-				logrus.Errorf("Failed to send health check result %v for disk gRPC server: %v",
-					healthpb.HealthCheckResponse_SERVING, err)
+				logrus.WithError(err).Errorf("Failed to send health check result %v for %s",
+					healthpb.HealthCheckResponse_SERVING, types.DiskGrpcService)
 			}
 		} else {
 			if err := ws.Send(&healthpb.HealthCheckResponse{
 				Status: healthpb.HealthCheckResponse_NOT_SERVING,
 			}); err != nil {
-				logrus.Errorf("Failed to send health check result %v for disk gRPC server: %v",
-					healthpb.HealthCheckResponse_NOT_SERVING, err)
+				logrus.WithError(err).Errorf("Failed to send health check result %v for %s",
+					healthpb.HealthCheckResponse_NOT_SERVING, types.DiskGrpcService)
 			}
 
 		}

@@ -14,6 +14,7 @@ import (
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
@@ -27,17 +28,18 @@ const (
 type Server struct {
 	sync.RWMutex
 
+	ctx context.Context
+
 	spdkServiceAddress string
-	shutdownCh         chan error
 	HealthChecker      HealthChecker
 
 	spdkClient *spdkclient.SPDKClient
 }
 
-func NewServer(spdkEnabled bool, spdkServiceAddress string, shutdownCh chan error) (*Server, error) {
+func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string) (*Server, error) {
 	s := &Server{
+		ctx:                ctx,
 		spdkServiceAddress: spdkServiceAddress,
-		shutdownCh:         shutdownCh,
 		HealthChecker:      &GRPCHealthChecker{},
 	}
 
@@ -61,11 +63,15 @@ func NewServer(spdkEnabled bool, spdkServiceAddress string, shutdownCh chan erro
 }
 
 func (s *Server) startMonitoring() {
+	done := false
 	for {
 		select {
-		case <-s.shutdownCh:
-			logrus.Info("Disk Server: Shutting down")
-			return
+		case <-s.ctx.Done():
+			logrus.Infof("%s: stopped monitoring replicas due to the context done", types.DiskGrpcService)
+			done = true
+		}
+		if done {
+			break
 		}
 	}
 }

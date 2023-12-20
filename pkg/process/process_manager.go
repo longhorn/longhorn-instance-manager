@@ -38,6 +38,8 @@ const (
 */
 
 type Manager struct {
+	ctx context.Context
+
 	portRangeMin int32
 	portRangeMax int32
 
@@ -47,7 +49,6 @@ type Manager struct {
 	lock            *sync.RWMutex
 	processes       map[string]*Process
 	processUpdateCh chan *Process
-	shutdownCh      chan error
 
 	availablePorts *util.Bitmap
 
@@ -57,12 +58,13 @@ type Manager struct {
 	HealthChecker HealthChecker
 }
 
-func NewManager(portRange string, logsDir string, shutdownCh chan error) (*Manager, error) {
+func NewManager(ctx context.Context, portRange string, logsDir string) (*Manager, error) {
 	start, end, err := ParsePortRange(portRange)
 	if err != nil {
 		return nil, err
 	}
 	pm := &Manager{
+		ctx:          ctx,
 		portRangeMin: start,
 		portRangeMax: end,
 
@@ -73,8 +75,6 @@ func NewManager(portRange string, logsDir string, shutdownCh chan error) (*Manag
 		processes:       map[string]*Process{},
 		processUpdateCh: make(chan *Process),
 		availablePorts:  util.NewBitmap(start, end),
-
-		shutdownCh: shutdownCh,
 
 		logsDir: logsDir,
 
@@ -100,7 +100,7 @@ func (pm *Manager) startInstanceConditionCheck() {
 
 	for {
 		select {
-		case <-pm.shutdownCh:
+		case <-pm.ctx.Done():
 			logrus.Info("Process Manager is shutting down")
 			done = true
 		case <-ticker.C:
@@ -117,8 +117,8 @@ func (pm *Manager) startMonitoring() {
 
 	for {
 		select {
-		case <-pm.shutdownCh:
-			logrus.Info("Process Manager is shutting down")
+		case <-pm.ctx.Done():
+			logrus.Infof("%s: stopped monitoring replicas due to the context done", types.ProcessManagerGrpcService)
 			done = true
 		case p := <-pm.processUpdateCh:
 			resp := p.RPCResponse()
@@ -134,13 +134,6 @@ func (pm *Manager) startMonitoring() {
 			break
 		}
 	}
-}
-
-func (pm *Manager) Shutdown() {
-	pm.lock.Lock()
-	defer pm.lock.Unlock()
-
-	close(pm.shutdownCh)
 }
 
 func (pm *Manager) checkMountPointStatusForEngine() {

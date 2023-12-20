@@ -28,23 +28,23 @@ const (
 )
 
 type Server struct {
+	ctx                          context.Context
 	logsDir                      string
 	processManagerServiceAddress string
 	diskServiceAddress           string
 	spdkServiceAddress           string
 	spdkEnabled                  bool
-	shutdownCh                   chan error
 	HealthChecker                HealthChecker
 }
 
-func NewServer(logsDir, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress string, spdkEnabled bool, shutdownCh chan error) (*Server, error) {
+func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress string, spdkEnabled bool) (*Server, error) {
 	s := &Server{
+		ctx:                          ctx,
 		logsDir:                      logsDir,
 		processManagerServiceAddress: processManagerServiceAddress,
 		diskServiceAddress:           diskServiceAddress,
 		spdkServiceAddress:           spdkServiceAddress,
 		spdkEnabled:                  spdkEnabled,
-		shutdownCh:                   shutdownCh,
 		HealthChecker:                &GRPCHealthChecker{},
 	}
 
@@ -54,11 +54,15 @@ func NewServer(logsDir, processManagerServiceAddress, diskServiceAddress, spdkSe
 }
 
 func (s *Server) startMonitoring() {
+	done := false
 	for {
 		select {
-		case <-s.shutdownCh:
-			logrus.Info("Instance gRPC Server is shutting down")
-			return
+		case <-s.ctx.Done():
+			logrus.Infof("%s: stopped monitoring replicas due to the context done", types.InstanceGrpcService)
+			done = true
+		}
+		if done {
+			break
 		}
 	}
 }
@@ -418,7 +422,7 @@ func (s *Server) handleNotify(ctx context.Context, notifyChan chan struct{}, srv
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Info("Stopped handling notify")
+			logrus.Info("Stopped handling notify due to the context done")
 			return ctx.Err()
 		case <-notifyChan:
 			if err := srv.Send(&emptypb.Empty{}); err != nil {
@@ -437,7 +441,7 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 	go func() {
 		<-done
 
-		logrus.Info("Stopped clients")
+		logrus.Info("Stopped clients for watching instances")
 		for name, c := range clients {
 			switch c := c.(type) {
 			case *client.ProcessManagerClient:
@@ -472,8 +476,7 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 	notifyChan := make(chan struct{}, 1024)
 	defer close(notifyChan)
 
-	ctx := context.Background()
-	g, ctx := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(s.ctx)
 
 	g.Go(func() error {
 		defer func() {

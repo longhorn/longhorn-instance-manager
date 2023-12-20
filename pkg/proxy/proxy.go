@@ -5,12 +5,14 @@ import (
 	"golang.org/x/net/context"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
 type Proxy struct {
+	ctx           context.Context
 	logsDir       string
 	shutdownCh    chan error
 	HealthChecker HealthChecker
@@ -19,10 +21,10 @@ type Proxy struct {
 	spdkServiceAddress string
 }
 
-func NewProxy(logsDir, diskServiceAddress, spdkServiceAddress string, shutdownCh chan error) (*Proxy, error) {
+func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddress string) (*Proxy, error) {
 	p := &Proxy{
+		ctx:                ctx,
 		logsDir:            logsDir,
-		shutdownCh:         shutdownCh,
 		HealthChecker:      &GRPCHealthChecker{},
 		diskServiceAddress: diskServiceAddress,
 		spdkServiceAddress: spdkServiceAddress,
@@ -37,8 +39,8 @@ func (p *Proxy) startMonitoring() {
 	done := false
 	for {
 		select {
-		case <-p.shutdownCh:
-			logrus.Info("Proxy Server is shutting down")
+		case <-p.ctx.Done():
+			logrus.Infof("%s: stopped monitoring replicas due to the context done", types.ProxyGRPCService)
 			done = true
 		}
 		if done {

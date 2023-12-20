@@ -1,6 +1,7 @@
 package process
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"strconv"
@@ -58,7 +59,7 @@ func (s *TestSuite) SetUpSuite(c *C) {
 	s.shutdownCh = make(chan error)
 
 	s.logDir = os.TempDir()
-	s.pm, err = NewManager("10000-30000", s.logDir, s.shutdownCh)
+	s.pm, err = NewManager(context.Background(), "10000-30000", s.logDir)
 	c.Assert(err, IsNil)
 	s.pm.Executor = &MockExecutor{
 		CreationHook: func(cmd *MockCommand) (*MockCommand, error) {
