@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
+	commonTypes "github.com/longhorn/go-common-libs/types"
 	helpernvme "github.com/longhorn/go-spdk-helper/pkg/nvme"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -127,9 +128,9 @@ func getVolumeNameFromNQN(input string) (string, error) {
 }
 
 func cleanupStaledNvmeAndDmDevices() error {
-	executor, err := helperutil.GetExecutorByHostProc("")
+	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
 	if err != nil {
-		return errors.Wrap(err, "failed to get executor")
+		return errors.Wrapf(err, "failed to create executor for cleaning up staled NVMe and dm devices")
 	}
 
 	subsystems, err := helpernvme.GetSubsystems(executor)
