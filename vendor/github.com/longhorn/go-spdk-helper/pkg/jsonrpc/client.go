@@ -21,7 +21,7 @@ const (
 	DefaultResponseReadWaitPeriod = 10 * time.Millisecond
 	DefaultQueueBlockingTimeout   = 3 * time.Second
 
-	DefaultShortTimeout = 30 * time.Second
+	DefaultShortTimeout = 60 * time.Second
 	DefaultLongTimeout  = 24 * time.Hour
 )
 
@@ -150,8 +150,6 @@ func (c *Client) handleShutdown() {
 
 func (c *Client) handleSend(msgWrapper *messageWrapper) {
 	id := c.idCounter
-	c.idCounter++
-	c.responseChans[id] = msgWrapper.responseChan
 
 	if err := c.encoder.Encode(NewMessage(id, msgWrapper.method, msgWrapper.params)); err != nil {
 		logrus.WithError(err).Errorf("Failed to encode during handleSend")
@@ -159,8 +157,11 @@ func (c *Client) handleSend(msgWrapper *messageWrapper) {
 		// In case of the cached error info of the old encoder fails the following response, it's better to recreate the encoder.
 		c.encoder = json.NewEncoder(c.conn)
 		c.encoder.SetIndent("", "\t")
-
+		return
 	}
+
+	c.idCounter++
+	c.responseChans[id] = msgWrapper.responseChan
 }
 
 func (c *Client) handleRecv(resp *Response) {
@@ -171,7 +172,11 @@ func (c *Client) handleRecv(resp *Response) {
 	}
 	delete(c.responseChans, resp.ID)
 
-	ch <- resp
+	select {
+	case ch <- resp:
+	default:
+		logrus.Errorf("Response receiver queue is full when sending response id %v", resp.ID)
+	}
 	close(ch)
 }
 
