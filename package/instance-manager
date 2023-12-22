@@ -25,6 +25,16 @@ function enable_tgtd() {
     tgtd -f 2>&1 | tee /var/log/tgtd.log &
 }
 
+function generate_nvme_hostid_and_hostnqn() {
+    mkdir -p /etc/nvme
+
+    local hostnqn=$(nvme gen-hostnqn)
+    # hostnqn is generated from /sys/class/dmi/id/product_uuid according to the implemetation of libnvme
+    echo "$hostnqn" > /etc/nvme/hostnqn
+    # Always generate the same hostid for the same hostnqn
+    cat /sys/class/dmi/id/product_uuid > /etc/nvme/hostid
+}
+
 function enable_spdk_tgt() {
     local options=("$@")
     echo "Enabling spdk_tgt with options: ${options[*]}"
@@ -77,6 +87,7 @@ done
 bind_dev
 bind_sys
 enable_tgtd
+[ "$enable_spdk" -eq 1 ] && generate_nvme_hostid_and_hostnqn
 [ "$enable_spdk" -eq 1 ] && enable_spdk_tgt "${spdk_options[@]}"
 
 exec longhorn-instance-manager "${instance_manager_options[@]}"
