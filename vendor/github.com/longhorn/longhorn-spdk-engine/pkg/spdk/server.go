@@ -287,6 +287,41 @@ func (s *Server) engineBroadcastConnector() (chan interface{}, error) {
 	return s.broadcastChs[types.InstanceTypeEngine], nil
 }
 
+func (s *Server) checkLvsReadiness(lvsUUID, lvsName string) (bool, error) {
+	var err error
+	var lvsList []spdktypes.LvstoreInfo
+
+	if lvsUUID != "" {
+		lvsList, err = s.spdkClient.BdevLvolGetLvstore("", lvsUUID)
+	} else if lvsName != "" {
+		lvsList, err = s.spdkClient.BdevLvolGetLvstore(lvsName, "")
+	}
+	if err != nil {
+		return false, err
+	}
+
+	if len(lvsList) == 0 {
+		return false, fmt.Errorf("found zero lvstore with name %v and UUID %v", lvsName, lvsUUID)
+	}
+
+	return true, nil
+}
+
+func (s *Server) newReplica(req *spdkrpc.ReplicaCreateRequest) (*Replica, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	if _, ok := s.replicaMap[req.Name]; !ok {
+		ready, err := s.checkLvsReadiness(req.LvsUuid, req.LvsName)
+		if err != nil || !ready {
+			return nil, err
+		}
+		s.replicaMap[req.Name] = NewReplica(s.ctx, req.Name, req.LvsName, req.LvsUuid, req.SpecSize, s.updateChs[types.InstanceTypeReplica])
+	}
+
+	return s.replicaMap[req.Name], nil
+}
+
 func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRequest) (ret *spdkrpc.Replica, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
@@ -295,13 +330,12 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "lvs name or lvs UUID are required")
 	}
 
-	s.Lock()
-	if _, ok := s.replicaMap[req.Name]; !ok {
-		s.replicaMap[req.Name] = NewReplica(s.ctx, req.Name, req.LvsName, req.LvsUuid, req.SpecSize, s.updateChs[types.InstanceTypeReplica])
+	r, err := s.newReplica(req)
+	if err != nil {
+		return nil, err
 	}
-	r := s.replicaMap[req.Name]
+
 	spdkClient := s.spdkClient
-	s.Unlock()
 
 	return r.Create(spdkClient, req.ExposeRequired, req.PortCount, s.portAllocator)
 }
