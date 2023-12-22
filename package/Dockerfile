@@ -44,7 +44,7 @@ RUN cd /usr/src && \
 
 # Build SPDK
 ENV SPDK_DIR /usr/src/spdk
-ENV SPDK_COMMIT_ID 71f5508d91c4c0aa9958fe9cf7fcb5c807f66475
+ENV SPDK_COMMIT_ID 700b93962fba0dcd54091fd8f128a01bb0d86701
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     if [ ${ARCH} == "amd64" ]; then \
         cd ${SPDK_DIR} && \
@@ -58,8 +58,8 @@ RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
 
 # Build nvme-cli 2.5
 ENV NVME_CLI_DIR /usr/src/nvme-cli
-ENV NVME_CLI_COMMIT_ID d6c07e0de9be777009ebb9ab7475bee1ae3e0e95
-RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
+ENV NVME_CLI_COMMIT_ID 882d0e86bb0af5e7fce87c1d6ec254e2583d3dd0
+RUN git clone https://github.com/derekbit/nvme-cli.git ${NVME_CLI_DIR} && \
     cd ${NVME_CLI_DIR} && \
     git checkout ${NVME_CLI_COMMIT_ID} && \
     meson setup --force-fallback-for=libnvme .build && \
