@@ -63,6 +63,18 @@ RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
         exit 1; \
     fi
 
+# Build libjson-c-devel
+ENV LIBJSONC_COMMIT_ID b4c371fa0cbc4dcbaccc359ce9e957a22988fb34
+RUN cd /usr/src && \
+    git clone https://github.com/json-c/json-c.git && \
+    cd json-c && \
+    git checkout ${LIBJSONC_COMMIT_ID} && \
+    mkdir .build && \
+    cd .build && \
+    cmake ../ && \
+    make && \
+    make install
+
 # Build nvme-cli 2.5
 ENV NVME_CLI_DIR /usr/src/nvme-cli
 ENV NVME_CLI_COMMIT_ID d6c07e0de9be777009ebb9ab7475bee1ae3e0e95
@@ -71,7 +83,7 @@ RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
     git checkout ${NVME_CLI_COMMIT_ID} && \
     meson setup --force-fallback-for=libnvme .build && \
     meson compile -C .build && \
-    meson install -C .build --destdir /usr/local/nvme
+    meson install -C .build
 
 # Install grpc_health_probe
 RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
@@ -89,7 +101,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iputils iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper && \
+    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
@@ -100,17 +112,23 @@ RUN sh /spdk/pkgdep.sh && rm -rf /spdk
 COPY --from=builder \
     /usr/local/bin/grpc_health_probe \
     /usr/local/bin/spdk_* \
+    /usr/local/bin/go-spdk-helper \
+    /usr/local/bin/
+
+COPY --from=builder \
+    /usr/local/sbin/nvme \
+    /usr/local/sbin/
+
+COPY --from=builder \
     /usr/sbin/tgt-admin \
     /usr/sbin/tgt-setup-lun \
     /usr/sbin/tgtadm \
     /usr/sbin/tgtd \
     /usr/sbin/tgtimg \
-    /usr/local/bin/go-spdk-helper \
-    /usr/local/nvme/usr/local/sbin/nvme \
-    /usr/local/bin/
+    /usr/sbin/
 
 COPY --from=builder \
-    /usr/local/nvme/usr/local/lib64 \
+    /usr/local/lib64 \
     /usr/local/lib64
 
 RUN ldconfig
