@@ -8,7 +8,7 @@ ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 # Setup environment
 ENV PATH /go/bin:$PATH
 ENV DAPPER_DOCKER_SOCKET true
-ENV DAPPER_ENV TAG REPO
+ENV DAPPER_ENV TAG REPO DRONE_REPO DRONE_PULL_REQUEST DRONE_COMMIT_REF
 ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.venv:exec --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.tox:exec -v /dev:/host/dev -v /proc:/host/proc
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
@@ -21,28 +21,28 @@ RUN zypper refresh && \
 
 # Install packages
 RUN if [ ${ARCH} == "amd64" ]; then \
-        zypper -n install autoconf libtool libunwind-devel; \
+    zypper -n install autoconf libtool libunwind-devel; \
     fi
 
 RUN zypper -n install cmake wget curl git less file \
-        libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
-        psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
-        bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
-        perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
-        rm -rf /var/cache/zypp/*
+    libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
+    psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
+    bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
+    perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
+    rm -rf /var/cache/zypp/*
 
 # needed for ${!var} substitution
 RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
 
 RUN if [ ${ARCH} == "s390x" ]; then \
-        ln -s /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc;\
+    ln -s /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc;\
     fi
 
 # Install Go & tools
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
-RUN wget -O - https://storage.googleapis.com/golang/go1.21.3.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
-    go install golang.org/x/lint/golint@latest
+RUN wget -O - https://storage.googleapis.com/golang/go1.21.3.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 
 # Install libqcow to resolve error:
 #   vendor/github.com/longhorn/longhorn-engine/pkg/qcow/libqcow.go:6:11: fatal error: libqcow.h: No such file or directory
