@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,8 @@ import (
 	"k8s.io/mount-utils"
 
 	spdkhelpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
+
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
 
 const (
@@ -144,4 +147,40 @@ func IsMountPointReadOnly(mp mount.MountPoint) bool {
 		}
 	}
 	return false
+}
+
+func GetVolumeMountPointMap() (map[string]mount.MountPoint, error) {
+	volumeMountPointMap := make(map[string]mount.MountPoint)
+
+	mounter := mount.New("")
+	mountPoints, err := mounter.List()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, mp := range mountPoints {
+		match, err := path.Match(types.GlobalMountPathPattern, mp.Path)
+		if err != nil {
+			return nil, err
+		}
+		if match {
+			volumeNameSHAStr := GetVolumeNameSHAStrFromPath(mp.Path)
+			volumeMountPointMap[volumeNameSHAStr] = mp
+		}
+	}
+	return volumeMountPointMap, nil
+}
+
+func GetVolumeNameSHAStrFromPath(path string) string {
+	// mount path for volume: "/host/var/lib/kubelet/plugins/kubernetes.io/csi/driver.longhorn.io/${VolumeNameSHAStr}/globalmount"
+	pathSlices := strings.Split(path, "/")
+	volumeNameSHAStr := pathSlices[len(pathSlices)-2]
+	return volumeNameSHAStr
+}
+
+func ProcessNameToVolumeName(processName string) string {
+	// process name: "pvc-e130e369-274d-472d-98d1-f6074d2725e8-e-0"
+	nameSlices := strings.Split(processName, "-")
+	volumeName := strings.Join(nameSlices[:len(nameSlices)-2], "-")
+	return volumeName
 }

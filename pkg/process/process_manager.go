@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -92,26 +91,6 @@ func NewManager(ctx context.Context, portRange string, logsDir string) (*Manager
 	return pm, nil
 }
 
-func (pm *Manager) startInstanceConditionCheck() {
-	done := false
-
-	ticker := time.NewTicker(MountCheckInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-pm.ctx.Done():
-			logrus.Infof("%s: stopped monitoring conditions due to the context done", types.ProcessManagerGrpcService)
-			done = true
-		case <-ticker.C:
-			pm.checkMountPointStatusForEngine()
-		}
-		if done {
-			break
-		}
-	}
-}
-
 func (pm *Manager) startMonitoring() {
 	done := false
 
@@ -136,58 +115,62 @@ func (pm *Manager) startMonitoring() {
 	}
 }
 
+func (pm *Manager) startInstanceConditionCheck() {
+	done := false
+
+	ticker := time.NewTicker(MountCheckInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-pm.ctx.Done():
+			logrus.Infof("%s: stopped monitoring conditions due to the context done", types.ProcessManagerGrpcService)
+			done = true
+		case <-ticker.C:
+			pm.checkMountPointStatusForEngine()
+		}
+		if done {
+			break
+		}
+	}
+}
+
 func (pm *Manager) checkMountPointStatusForEngine() {
-	var processToUpdate []*Process
-	volumeMountPointMap, err := getVolumeMountPointMap()
+	volumeMountPointMap, err := util.GetVolumeMountPointMap()
 	if err != nil {
 		logrus.WithError(err).Warn("Failed to get all volume mount points")
 	}
 
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
+
+	processToUpdate := pm.getProcessToUpdateConditions(volumeMountPointMap)
+	for _, p := range processToUpdate {
+		p.UpdateCh <- p
+	}
+}
+
+func (pm *Manager) getProcessToUpdateConditions(volumeMountPointMap map[string]mount.MountPoint) []*Process {
+	var processToUpdate []*Process
 	for _, p := range pm.processes {
 		p.lock.Lock()
 		if isEngineProcess(p) && p.State == StateRunning {
-			nameSlices := strings.Split(p.Name, "-")
-			volumeNameSHA := sha256.Sum256([]byte(strings.Join(nameSlices[:len(nameSlices)-2], "-")))
+			volumeName := util.ProcessNameToVolumeName(p.Name)
+			volumeNameSHA := sha256.Sum256([]byte(volumeName))
+			volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
 
-			if mp, exists := volumeMountPointMap[hex.EncodeToString(volumeNameSHA[:])]; exists {
+			if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
 				p.Conditions[types.EngineConditionFilesystemReadOnly] = util.IsMountPointReadOnly(mp)
 				processToUpdate = append(processToUpdate, p)
 			}
 		}
 		p.lock.Unlock()
 	}
-
-	for _, p := range processToUpdate {
-		p.UpdateCh <- p
-	}
-
+	return processToUpdate
 }
 
 func isEngineProcess(p *Process) bool {
 	return p.PortCount == DefaultEnginePortCount
-}
-
-func getVolumeMountPointMap() (map[string]mount.MountPoint, error) {
-	volumeMountPointMap := make(map[string]mount.MountPoint)
-	mounter := mount.New("")
-	mountPoints, err := mounter.List()
-	if err != nil {
-		return nil, err
-	}
-	for _, mp := range mountPoints {
-		match, err := path.Match(types.GlobalMountPathPattern, mp.Path)
-		if err != nil {
-			return nil, err
-		}
-		if match {
-			pathSlices := strings.Split(mp.Path, "/")
-			volumeNameSHAStr := pathSlices[len(pathSlices)-2]
-			volumeMountPointMap[volumeNameSHAStr] = mp
-		}
-	}
-	return volumeMountPointMap, nil
 }
 
 func decodeProcessPath(path string) (dir, image, binary string) {
