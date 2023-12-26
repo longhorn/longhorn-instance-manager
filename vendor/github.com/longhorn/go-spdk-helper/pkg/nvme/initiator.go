@@ -2,13 +2,19 @@ package nvme
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonTypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/nsfilelock"
 
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
@@ -22,6 +28,8 @@ const (
 	waitDeviceTimeout = 60 * time.Second
 
 	HostProc = "/host/proc"
+
+	validateDiskCreationTimeout = 30 // seconds
 )
 
 type Initiator struct {
@@ -38,7 +46,7 @@ type Initiator struct {
 	isUp           bool
 
 	hostProc string
-	executor util.Executor
+	executor *commonNs.Executor
 
 	logger logrus.FieldLogger
 }
@@ -49,7 +57,7 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 	}
 
 	// If transportAddress or transportServiceID is empty, the initiator is still valid for stopping
-	executor, err := util.GetExecutorByHostProc("")
+	executor, err := util.NewExecutor(commonTypes.ProcDirectory)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +78,33 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 	}, nil
 }
 
+// Suspend suspends the device mapper device for the NVMe initiator
+func (i *Initiator) Suspend() error {
+	if i.hostProc != "" {
+		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
+		if err := lock.Lock(); err != nil {
+			return errors.Wrapf(err, "failed to get file lock for initiator %s", i.Name)
+		}
+		defer lock.Unlock()
+	}
+
+	if err := i.suspendLinearDmDevice(); err != nil {
+		return errors.Wrapf(err, "failed to suspend device mapper device for NVMe initiator %s", i.Name)
+	}
+
+	return nil
+}
+
+// Start starts the NVMe initiator with the given transportAddress and transportServiceID
 func (i *Initiator) Start(transportAddress, transportServiceID string) (err error) {
+	defer func() {
+		if err != nil {
+			err = errors.Wrapf(err, "failed to start NVMe initiator %s", i.Name)
+		}
+	}()
+
 	if transportAddress == "" || transportServiceID == "" {
-		return fmt.Errorf("empty TransportAddress %s and TransportServiceID %s for initiator %s start", transportAddress, transportServiceID, i.Name)
+		return fmt.Errorf("invalid TransportAddress %s and TransportServiceID %s for initiator %s start", transportAddress, transportServiceID, i.Name)
 	}
 
 	if i.hostProc != "" {
@@ -130,7 +162,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 	}
 
 	if i.ControllerName == "" {
-		return fmt.Errorf("failed to start NVMe initiator %s within %d * %vsec retrys", i.Name, RetryCounts, RetryInterval.Seconds())
+		return fmt.Errorf("failed to start NVMe initiator %s within %d * %v sec retries", i.Name, RetryCounts, RetryInterval.Seconds())
 	}
 
 	for t := 0; t < int(waitDeviceTimeout.Seconds()); t++ {
@@ -143,11 +175,17 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		return errors.Wrapf(err, "failed to load device info after starting NVMe initiator %s", i.Name)
 	}
 
+	i.logger.Infof("Creating linear dm device for NVMe initiator %s", i.Name)
+	if err := i.createLinearDmDevice(); err != nil {
+		return errors.Wrapf(err, "failed to create linear dm device for NVMe initiator %s", i.Name)
+	}
+
+	i.logger.Infof("Creating endpoint %v", i.Endpoint)
 	if err := i.makeEndpoint(); err != nil {
 		return err
 	}
 
-	i.logger.Infof("Launched NVMe initiator")
+	i.logger.Infof("Launched NVMe initiator: %+v", i)
 
 	return nil
 }
@@ -169,9 +207,14 @@ func (i *Initiator) stopWithoutLock() error {
 		return err
 	}
 
+	if err := i.removeLinearDmDevice(true, true); err != nil {
+		return err
+	}
+
 	if err := DisconnectTarget(i.SubsystemNQN, i.executor); err != nil {
 		return errors.Wrapf(err, "failed to logout target")
 	}
+
 	i.ControllerName = ""
 	i.NamespaceName = ""
 	i.TransportAddress = ""
@@ -242,11 +285,28 @@ func (i *Initiator) loadNVMeDeviceInfoWithoutLock() error {
 	devicePath := fmt.Sprintf("/dev/%s", i.NamespaceName)
 	dev, err := util.DetectDevice(devicePath, i.executor)
 	if err != nil {
-		return fmt.Errorf("cannot find the device for NVMe initiator %s with namespace name %s", i.Name, i.NamespaceName)
+		return errors.Wrapf(err, "cannot find the device for NVMe initiator %s with namespace name %s", i.Name, i.NamespaceName)
 	}
 
 	i.dev = dev
 	return nil
+}
+
+func (i *Initiator) isNamespaceExist(devices []string) bool {
+	for _, device := range devices {
+		if device == i.NamespaceName {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *Initiator) findDependentDevices(devName string) ([]string, error) {
+	depDevices, err := util.DmsetupDeps(devName, i.executor)
+	if err != nil {
+		return nil, err
+	}
+	return depDevices, nil
 }
 
 func (i *Initiator) LoadEndpoint() error {
@@ -254,8 +314,14 @@ func (i *Initiator) LoadEndpoint() error {
 	if err != nil {
 		return err
 	}
-	if i.NamespaceName != "" && i.NamespaceName != dev.Name {
-		return fmt.Errorf("detected device %s name mismatching from endpoint %v for NVMe initiator %s", dev.Name, i.Endpoint, i.Name)
+
+	depDevices, err := i.findDependentDevices(dev.Nvme.Name)
+	if err != nil {
+		return err
+	}
+
+	if i.NamespaceName != "" && !i.isNamespaceExist(depDevices) {
+		return fmt.Errorf("detected device %s name mismatching from endpoint %v for NVMe initiator %s", dev.Nvme.Name, i.Endpoint, i.Name)
 	}
 	i.dev = dev
 	i.isUp = true
@@ -265,10 +331,9 @@ func (i *Initiator) LoadEndpoint() error {
 
 func (i *Initiator) makeEndpoint() error {
 	if err := util.DuplicateDevice(i.dev, i.Endpoint); err != nil {
-		return err
+		return errors.Wrap(err, "failed to duplicate device")
 	}
 	i.isUp = true
-
 	return nil
 }
 
@@ -280,4 +345,104 @@ func (i *Initiator) removeEndpoint() error {
 	i.isUp = false
 
 	return nil
+}
+
+func (i *Initiator) removeLinearDmDevice(force, deferred bool) error {
+	devPath := getDmDevicePath(i.Name)
+	if _, err := os.Stat(devPath); err != nil {
+		if os.IsNotExist(err) {
+			logrus.Infof("Linear dm device %s doesn't exist", devPath)
+			return nil
+		}
+		return errors.Wrapf(err, "failed to stat linear dm device %s", devPath)
+	}
+
+	logrus.Infof("Removing linear dm device %s", i.Name)
+	return util.DmsetupRemove(i.Name, force, deferred, i.executor)
+}
+
+func (i *Initiator) createLinearDmDevice() error {
+	if i.dev == nil {
+		return fmt.Errorf("found nil device for linear dm device creation")
+	}
+
+	nvmeDevPath := fmt.Sprintf("/dev/%s", i.dev.Nvme.Name)
+	sectors, err := util.GetDeviceSectorSize(nvmeDevPath, i.executor)
+	if err != nil {
+		return err
+	}
+
+	// Create a device mapper device with the same size as the original device
+	table := fmt.Sprintf("0 %v linear %v 0", sectors, nvmeDevPath)
+	logrus.Infof("Creating linear dm device %s with table %s", i.Name, table)
+	if err := util.DmsetupCreate(i.Name, table, i.executor); err != nil {
+		return err
+	}
+
+	dmDevPath := getDmDevicePath(i.Name)
+	if err := validateDiskCreation(dmDevPath, validateDiskCreationTimeout); err != nil {
+		return err
+	}
+
+	major, minor, err := util.GetDeviceNumbers(dmDevPath, i.executor)
+	if err != nil {
+		return err
+	}
+
+	i.dev.Export.Name = i.Name
+	i.dev.Export.Major = major
+	i.dev.Export.Minor = minor
+
+	return nil
+}
+
+func validateDiskCreation(path string, timeout int) error {
+	for i := 0; i < timeout; i++ {
+		isBlockDev, _ := util.IsBlockDevice(path)
+		if isBlockDev {
+			return nil
+		}
+		time.Sleep(time.Second * 1)
+	}
+
+	return fmt.Errorf("failed to validate device %s creation", path)
+}
+
+func (i *Initiator) suspendLinearDmDevice() error {
+	logrus.Infof("Suspending linear dm device %s", i.Name)
+
+	return util.DmsetupSuspend(i.Name, i.executor)
+}
+
+func (i *Initiator) resumeLinearDmDevice() error {
+	logrus.Infof("Resuming linear dm device %s", i.Name)
+
+	return util.DmsetupResume(i.Name, i.executor)
+}
+
+func (i *Initiator) reloadLinearDmDevice() error {
+	devPath := fmt.Sprintf("/dev/%s", i.dev.Nvme.Name)
+
+	// Get the size of the device
+	opts := []string{
+		"--getsize", devPath,
+	}
+	output, err := i.executor.Execute(util.BlockdevBinary, opts, types.ExecuteTimeout)
+	if err != nil {
+		return err
+	}
+	sectors, err := strconv.ParseInt(strings.TrimSpace(output), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	table := fmt.Sprintf("0 %v linear %v 0", sectors, devPath)
+
+	logrus.Infof("Reloading linear dm device %s with table %s", i.Name, table)
+
+	return util.DmsetupReload(i.Name, table, i.executor)
+}
+
+func getDmDevicePath(name string) string {
+	return fmt.Sprintf("/dev/mapper/%s", name)
 }

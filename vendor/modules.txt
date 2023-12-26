@@ -96,6 +96,10 @@ github.com/gammazero/workerpool
 # github.com/go-logr/logr v1.2.4
 ## explicit; go 1.16
 github.com/go-logr/logr
+# github.com/go-ole/go-ole v1.2.6
+## explicit; go 1.12
+github.com/go-ole/go-ole
+github.com/go-ole/go-ole/oleutil
 # github.com/gofrs/flock v0.8.1
 ## explicit
 github.com/gofrs/flock
@@ -123,7 +127,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20230830075002-fa25b1a97ffd
+# github.com/longhorn/backupstore v0.0.0-20231025000449-5316e8b5320d
 ## explicit; go 1.17
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -138,12 +142,15 @@ github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
 # github.com/longhorn/go-common-libs v0.0.0-20231207171057-cd5fff99e604
 ## explicit; go 1.21
+github.com/longhorn/go-common-libs/exec
+github.com/longhorn/go-common-libs/io
+github.com/longhorn/go-common-libs/ns
 github.com/longhorn/go-common-libs/proc
+github.com/longhorn/go-common-libs/sync
+github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
-# github.com/longhorn/go-iscsi-helper v0.0.0-20230802055236-4ec8edae3fad
-## explicit; go 1.13
-github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.0.0-20231212033123-3b72caa5a1ea
+github.com/longhorn/go-common-libs/utils
+# github.com/longhorn/go-spdk-helper v0.0.0-20231222092128-dd4eb991eecb
 ## explicit; go 1.21
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
@@ -151,8 +158,8 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/client
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.4.0-rc1.0.20230914160943-b42224518443
-## explicit; go 1.20
+# github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20231221124647-1a5cdbf02a5a
+## explicit; go 1.21
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/meta
@@ -164,7 +171,7 @@ github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
 github.com/longhorn/longhorn-engine/proto/ptypes
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20231218140159-260714390564
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20231222082603-3a141da3f5c0
 ## explicit; go 1.21
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -203,6 +210,9 @@ github.com/pierrec/lz4/v4/internal/xxh32
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c
+## explicit; go 1.14
+github.com/power-devops/perfstat
 # github.com/prometheus/client_golang v1.15.0
 ## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus
@@ -229,6 +239,11 @@ github.com/rogpeppe/go-internal/fmtsort
 # github.com/russross/blackfriday/v2 v2.1.0
 ## explicit
 github.com/russross/blackfriday/v2
+# github.com/shirou/gopsutil/v3 v3.23.7
+## explicit; go 1.15
+github.com/shirou/gopsutil/v3/common
+github.com/shirou/gopsutil/v3/disk
+github.com/shirou/gopsutil/v3/internal/common
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
@@ -241,6 +256,9 @@ github.com/slok/goresilience/timeout
 # github.com/urfave/cli v1.22.12
 ## explicit; go 1.11
 github.com/urfave/cli
+# github.com/yusufpapurcu/wmi v1.2.3
+## explicit; go 1.16
+github.com/yusufpapurcu/wmi
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
@@ -261,6 +279,7 @@ golang.org/x/sync/errgroup
 ## explicit; go 1.17
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
 # golang.org/x/text v0.13.0
 ## explicit; go 1.17
 golang.org/x/text/secure/bidirule

@@ -3,7 +3,7 @@ FROM registry.suse.com/bci/bci-base:15.5 AS builder
 ARG ARCH=amd64
 
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP5/network:utilities.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.5/devel:languages:python:Factory.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
@@ -44,7 +44,7 @@ RUN cd /usr/src && \
 
 # Build SPDK
 ENV SPDK_DIR /usr/src/spdk
-ENV SPDK_COMMIT_ID 71f5508d91c4c0aa9958fe9cf7fcb5c807f66475
+ENV SPDK_COMMIT_ID 700b93962fba0dcd54091fd8f128a01bb0d86701
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     if [ ${ARCH} == "amd64" ]; then \
         cd ${SPDK_DIR} && \
@@ -75,14 +75,14 @@ FROM registry.suse.com/bci/bci-base:15.5 AS release
 ARG ARCH=amd64
 
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP4/network:utilities.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.5/devel:languages:python:Factory.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iputils iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel && \
+    iputils iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
