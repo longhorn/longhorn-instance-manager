@@ -84,24 +84,24 @@ func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.Versi
 
 func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
-		"name":               req.Spec.Name,
-		"type":               req.Spec.Type,
-		"backendStoreDriver": req.Spec.BackendStoreDriver,
+		"name":       req.Spec.Name,
+		"type":       req.Spec.Type,
+		"dataEngine": req.Spec.DataEngine,
 	}).Info("Creating instance")
 
-	switch req.Spec.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.Spec.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return s.processInstanceCreate(req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return s.spdkInstanceCreate(req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.Spec.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.Spec.DataEngine)
 	}
 }
 
 func (s *Server) processInstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
 	if req.Spec.ProcessInstanceSpec == nil {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn backend store driver")
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn data engine")
 	}
 
 	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
@@ -144,20 +144,20 @@ func (s *Server) spdkInstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.Instan
 
 func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
-		"name":               req.Name,
-		"type":               req.Type,
-		"backendStoreDriver": req.BackendStoreDriver,
-		"diskUuid":           req.DiskUuid,
-		"cleanupRequired":    req.CleanupRequired,
+		"name":            req.Name,
+		"type":            req.Type,
+		"dataEngine":      req.DataEngine,
+		"diskUuid":        req.DiskUuid,
+		"cleanupRequired": req.CleanupRequired,
 	}).Info("Deleting instance")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return s.processInstanceDelete(req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return s.spdkInstanceDelete(req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -209,18 +209,18 @@ func (s *Server) spdkInstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.Instan
 
 func (s *Server) InstanceGet(ctx context.Context, req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
-		"name":               req.Name,
-		"type":               req.Type,
-		"backendStoreDriver": req.BackendStoreDriver,
+		"name":       req.Name,
+		"type":       req.Type,
+		"dataEngine": req.DataEngine,
 	}).Trace("Getting instance")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return s.processInstanceGet(req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return s.spdkInstanceGet(req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -329,24 +329,24 @@ func (s *Server) spdkInstanceList(instances map[string]*rpc.InstanceResponse) er
 
 func (s *Server) InstanceReplace(ctx context.Context, req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
-		"name":               req.Spec.Name,
-		"type":               req.Spec.Type,
-		"backendStoreDriver": req.Spec.BackendStoreDriver,
+		"name":       req.Spec.Name,
+		"type":       req.Spec.Type,
+		"dataEngine": req.Spec.DataEngine,
 	}).Info("Replacing instance")
 
-	switch req.Spec.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.Spec.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return s.processInstanceReplace(req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return s.spdkInstanceReplace(req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.Spec.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.Spec.DataEngine)
 	}
 }
 
 func (s *Server) processInstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
 	if req.Spec.ProcessInstanceSpec == nil {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn backend store driver")
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn data engine")
 	}
 
 	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
@@ -370,18 +370,18 @@ func (s *Server) spdkInstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.Inst
 
 func (s *Server) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
 	logrus.WithFields(logrus.Fields{
-		"name":               req.Name,
-		"type":               req.Type,
-		"backendStoreDriver": req.BackendStoreDriver,
+		"name":       req.Name,
+		"type":       req.Type,
+		"dataEngine": req.DataEngine,
 	}).Info("Getting instance log")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return s.processInstanceLog(req, srv)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return s.spdkInstanceLog(req, srv)
 	default:
-		return grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -624,8 +624,10 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse) *rpc.InstanceResp
 		Spec: &rpc.InstanceSpec{
 			Name: p.Spec.Name,
 			// Leave Type empty. It will be determined in longhorn manager.
-			Type:               "",
+			Type: "",
+			// Deprecated
 			BackendStoreDriver: rpc.BackendStoreDriver_v1,
+			DataEngine:         rpc.DataEngine_DATA_ENGINE_V1,
 			ProcessInstanceSpec: &rpc.ProcessInstanceSpec{
 				Binary: p.Spec.Binary,
 				Args:   p.Spec.Args,
@@ -647,9 +649,11 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse) *rpc.InstanceResp
 func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse {
 	return &rpc.InstanceResponse{
 		Spec: &rpc.InstanceSpec{
-			Name:               r.Name,
-			Type:               types.InstanceTypeReplica,
+			Name: r.Name,
+			Type: types.InstanceTypeReplica,
+			// Deprecated
 			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
 			State:      r.State,
@@ -664,9 +668,11 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 	return &rpc.InstanceResponse{
 		Spec: &rpc.InstanceSpec{
-			Name:               e.Name,
-			Type:               types.InstanceTypeEngine,
+			Name: e.Name,
+			Type: types.InstanceTypeEngine,
+			// Deprecated
 			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
 			State:      e.State,
