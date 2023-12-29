@@ -16,20 +16,20 @@ import (
 
 func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.volumeSnapshot(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkVolumeSnapshot(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 
@@ -59,20 +59,20 @@ func (p *Proxy) spdkVolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSna
 
 func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.Address,
-		"engineName":         req.EngineName,
-		"volumeName":         req.VolumeName,
-		"backendStoreDriver": req.BackendStoreDriver,
+		"serviceURL": req.Address,
+		"engineName": req.EngineName,
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
 	})
 	log.Trace("Listing snapshots")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotList(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotList(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -121,20 +121,20 @@ func (p *Proxy) spdkSnapshotList(ctx context.Context, req *rpc.ProxyEngineReques
 
 func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Cloning snapshot from %v to %v", req.FromEngineAddress, req.ProxyEngineRequest.Address)
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotClone(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotClone(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 
@@ -167,20 +167,20 @@ func (p *Proxy) spdkSnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCl
 
 func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.Address,
-		"engineName":         req.EngineName,
-		"volumeName":         req.VolumeName,
-		"backendStoreDriver": req.BackendStoreDriver,
+		"serviceURL": req.Address,
+		"engineName": req.EngineName,
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
 	})
 	log.Trace("Getting snapshot clone status")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotCloneStatus(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotCloneStatus(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -222,20 +222,20 @@ func (p *Proxy) spdkSnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngin
 
 func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Reverting snapshot %v", req.Name)
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotRevert(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotRevert(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 
@@ -260,20 +260,20 @@ func (p *Proxy) spdkSnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotR
 
 func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
 	log.Info("Purging snapshots")
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotPurge(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotPurge(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 
@@ -298,20 +298,20 @@ func (p *Proxy) spdkSnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPu
 
 func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.Address,
-		"engineName":         req.EngineName,
-		"volumeName":         req.VolumeName,
-		"backendStoreDriver": req.BackendStoreDriver,
+		"serviceURL": req.Address,
+		"engineName": req.EngineName,
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
 	})
 	log.Trace("Getting snapshot purge status")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotPurgeStatus(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotPurgeStatus(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -350,20 +350,20 @@ func (p *Proxy) spdkSnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngin
 
 func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Removing snapshots %v", req.Names)
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotRemove(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotRemove(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 
@@ -391,20 +391,20 @@ func (p *Proxy) spdkSnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotR
 
 func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Hashing snapshot %v with rehash %v", req.SnapshotName, req.Rehash)
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotHash(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotHash(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 
@@ -428,20 +428,20 @@ func (p *Proxy) spdkSnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHas
 
 func (p *Proxy) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"backendStoreDriver": req.ProxyEngineRequest.BackendStoreDriver,
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
 	log.Trace("Getting snapshot hash status")
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.snapshotHashStatus(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkSnapshotHashStatus(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 

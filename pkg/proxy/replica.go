@@ -32,13 +32,13 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 	})
 	log.Info("Adding replica")
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.replicaAdd(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkReplicaAdd(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 }
 
@@ -81,20 +81,20 @@ func (p *Proxy) spdkReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddReq
 
 func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.Address,
-		"engineName":         req.EngineName,
-		"volumeName":         req.VolumeName,
-		"backendStoreDriver": req.BackendStoreDriver,
+		"serviceURL": req.Address,
+		"engineName": req.EngineName,
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
 	})
 	log.Trace("Listing replicas")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.replicaList(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkReplicaList(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -176,20 +176,20 @@ func (p *Proxy) spdkReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest
 
 func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.Address,
-		"engineName":         req.EngineName,
-		"volumeName":         req.VolumeName,
-		"backendStoreDriver": req.BackendStoreDriver,
+		"serviceURL": req.Address,
+		"engineName": req.EngineName,
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
 	})
 	log.Trace("Getting replica rebuilding status")
 
-	switch req.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		return p.replicaRebuildingStatus(ctx, req)
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		return p.spdkReplicaRebuildingStatus(ctx, req)
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
 	}
 }
 
@@ -255,17 +255,17 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 	})
 	log.Info("Removing replica")
 
-	switch req.ProxyEngineRequest.BackendStoreDriver {
-	case rpc.BackendStoreDriver_v1:
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
 		if err := p.replicaDelete(ctx, req); err != nil {
 			return nil, err
 		}
-	case rpc.BackendStoreDriver_v2:
+	case rpc.DataEngine_DATA_ENGINE_V2:
 		if err := p.spdkReplicaDelete(ctx, req); err != nil {
 			return nil, err
 		}
 	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown backend store driver %v", req.ProxyEngineRequest.BackendStoreDriver)
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 
 	return &emptypb.Empty{}, nil
