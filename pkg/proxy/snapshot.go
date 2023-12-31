@@ -23,17 +23,11 @@ func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapsho
 	})
 	log.Infof("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeSnapshot(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeSnapshot(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsVolumeSnapshot, req.ProxyEngineRequest.DataEngine, req)
+	return v.(*rpc.EngineVolumeSnapshotProxyResponse), err
 }
 
-func (p *Proxy) volumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
+func volumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -53,7 +47,7 @@ func (p *Proxy) volumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapsho
 	}, nil
 }
 
-func (p *Proxy) spdkVolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
+func spdkVolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -66,17 +60,12 @@ func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (
 	})
 	log.Trace("Listing snapshots")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotList(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotList(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotList, req.DataEngine, req)
+	return v.(*rpc.EngineSnapshotListProxyResponse), err
+
 }
 
-func (p *Proxy) snapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
+func snapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -112,7 +101,7 @@ func (p *Proxy) snapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (
 	return resp, nil
 }
 
-func (p *Proxy) spdkSnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
+func spdkSnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineSnapshotListProxyResponse{
 		Disks: map[string]*rpc.EngineSnapshotDiskInfo{},
@@ -128,17 +117,11 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	})
 	log.Infof("Cloning snapshot from %v to %v", req.FromEngineAddress, req.ProxyEngineRequest.Address)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotClone(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotClone(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotClone, req.ProxyEngineRequest.DataEngine, req)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
+func snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
 	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.FromVolumeName, req.FromEngineName)
 	if err != nil {
 		return nil, err
@@ -161,7 +144,7 @@ func (p *Proxy) snapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
+func spdkSnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -174,17 +157,11 @@ func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	})
 	log.Trace("Getting snapshot clone status")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotCloneStatus(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotCloneStatus(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotCloneStatus, req.DataEngine, req)
+	return v.(*rpc.EngineSnapshotCloneStatusProxyResponse), err
 }
 
-func (p *Proxy) snapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
+func snapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -213,7 +190,7 @@ func (p *Proxy) snapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	return resp, nil
 }
 
-func (p *Proxy) spdkSnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
+func spdkSnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineSnapshotCloneStatusProxyResponse{
 		Status: map[string]*eptypes.SnapshotCloneStatusResponse{},
@@ -229,17 +206,11 @@ func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 	})
 	log.Infof("Reverting snapshot %v", req.Name)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotRevert(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotRevert(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotRevert, req.ProxyEngineRequest.DataEngine, req)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) snapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
+func snapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -254,7 +225,7 @@ func (p *Proxy) snapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
+func spdkSnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -267,17 +238,11 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 	})
 	log.Info("Purging snapshots")
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotPurge(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotPurge(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotPurge, req.ProxyEngineRequest.DataEngine, req)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) snapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
+func snapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -291,7 +256,7 @@ func (p *Proxy) snapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
+func spdkSnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
 	/* TODO: implement this */
 	return &emptypb.Empty{}, nil
 }
@@ -305,17 +270,11 @@ func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	})
 	log.Trace("Getting snapshot purge status")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotPurgeStatus(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotPurgeStatus(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotPurgeStatus, req.DataEngine, req)
+	return v.(*rpc.EngineSnapshotPurgeStatusProxyResponse), err
 }
 
-func (p *Proxy) snapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
+func snapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
 	task, err := esync.NewTask(ctx, req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -341,7 +300,7 @@ func (p *Proxy) snapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	return resp, nil
 }
 
-func (p *Proxy) spdkSnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
+func spdkSnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineSnapshotPurgeStatusProxyResponse{
 		Status: map[string]*eptypes.SnapshotPurgeStatusResponse{},
@@ -357,17 +316,11 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 	})
 	log.Infof("Removing snapshots %v", req.Names)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotRemove(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotRemove(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotRemove, req.ProxyEngineRequest.DataEngine, req)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) snapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
+func snapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -385,7 +338,8 @@ func (p *Proxy) snapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 	return &emptypb.Empty{}, lastErr
 }
 
-func (p *Proxy) spdkSnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
+func spdkSnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
+	/* TODO: implement this */
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -398,17 +352,11 @@ func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashReq
 	})
 	log.Infof("Hashing snapshot %v with rehash %v", req.SnapshotName, req.Rehash)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotHash(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotHash(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotHash, req.ProxyEngineRequest.DataEngine, req)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) snapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
+func snapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -422,7 +370,8 @@ func (p *Proxy) snapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashReq
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkSnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
+func spdkSnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
+	/* TODO: implement this */
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -435,17 +384,11 @@ func (p *Proxy) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotH
 	})
 	log.Trace("Getting snapshot hash status")
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.snapshotHashStatus(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkSnapshotHashStatus(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsSnapshotHashStatus, req.ProxyEngineRequest.DataEngine, req)
+	return v.(*rpc.EngineSnapshotHashStatusProxyResponse), err
 }
 
-func (p *Proxy) snapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
+func snapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -472,6 +415,7 @@ func (p *Proxy) snapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotH
 	return resp, nil
 }
 
-func (p *Proxy) spdkSnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
+func spdkSnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
+	/* TODO: implement this */
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }

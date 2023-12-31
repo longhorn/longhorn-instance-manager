@@ -23,17 +23,11 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	})
 	log.Trace("Getting volume")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeGet(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeGet(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsVolumeGet, req.DataEngine, req)
+	return v.(*rpc.EngineVolumeGetProxyResponse), err
 }
 
-func (p *Proxy) volumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
+func volumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -63,8 +57,8 @@ func (p *Proxy) volumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	}, nil
 }
 
-func (p *Proxy) spdkVolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
-	c, err := spdkclient.NewSPDKClient(p.spdkServiceAddress)
+func spdkVolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest, spdkServiceAddress string) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
+	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -100,17 +94,11 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	})
 	log.Infof("Expanding volume to size %v", req.Expand.Size)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeExpand(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeExpand(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsVolumeExpand, req.ProxyEngineRequest.DataEngine, req.ProxyEngineRequest)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
+func volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -126,7 +114,7 @@ func (p *Proxy) volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
+func spdkVolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -139,17 +127,11 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	})
 	log.Infof("Starting volume frontend %v", req.FrontendStart.Frontend)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeFrontendStart(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeFrontendStart(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsVolumeFrontendStart, req.ProxyEngineRequest.DataEngine, req.ProxyEngineRequest)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
+func volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -165,7 +147,7 @@ func (p *Proxy) volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
+func spdkVolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
 	return &emptypb.Empty{}, nil
 }
@@ -179,17 +161,11 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	})
 	log.Info("Shutting down volume frontend")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeFrontendShutdown(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeFrontendShutdown(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
-	}
+	v, err := executeProxyOp(ctx, ProxyOpsVolumeFrontendShutdown, req.DataEngine, req)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
+func volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -204,7 +180,7 @@ func (p *Proxy) volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
+func spdkVolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
 	return &emptypb.Empty{}, nil
 }
@@ -218,18 +194,11 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 	})
 	log.Infof("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeUnmapMarkSnapChainRemovedSet(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeUnmapMarkSnapChainRemovedSet(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
-
+	v, err := executeProxyOp(ctx, ProxyOpsVolumeUnmapMarkSnapChainRemovedSet, req.ProxyEngineRequest.DataEngine, req.ProxyEngineRequest)
+	return v.(*emptypb.Empty), err
 }
 
-func (p *Proxy) volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
+func volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -245,7 +214,7 @@ func (p *Proxy) volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
+func spdkVolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
 	return &emptypb.Empty{}, nil
 }

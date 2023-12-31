@@ -4,11 +4,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
-	"github.com/longhorn/longhorn-instance-manager/pkg/types"
-
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
+
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 type Proxy struct {
