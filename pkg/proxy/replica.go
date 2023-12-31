@@ -32,11 +32,14 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 	})
 	log.Info("Adding replica")
 
-	v, err := executeProxyOp(ctx, ProxyOpsReplicaAdd, req.ProxyEngineRequest.DataEngine, req)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.ReplicaAdd(ctx, req, p.spdkServiceAddress)
 }
 
-func replicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest, unused string) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -56,7 +59,7 @@ func replicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *em
 	return &emptypb.Empty{}, nil
 }
 
-func spdkReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest, spdkServiceAddress string) (resp *emptypb.Empty, err error) {
+func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest, spdkServiceAddress string) (resp *emptypb.Empty, err error) {
 	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
 	if err != nil {
 		return nil, err
@@ -69,7 +72,6 @@ func spdkReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest, spdkS
 	if err != nil {
 		return nil, err
 	}
-
 	return &emptypb.Empty{}, nil
 }
 
@@ -82,11 +84,14 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 	})
 	log.Trace("Listing replicas")
 
-	v, err := executeProxyOp(ctx, ProxyOpsReplicaList, req.DataEngine, req)
-	return v.(*rpc.EngineReplicaListProxyResponse), err
+	op, ok := p.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return op.ReplicaList(ctx, req, p.spdkServiceAddress)
 }
 
-func replicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest, ununsed string) (resp *rpc.EngineReplicaListProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -128,7 +133,7 @@ func replicaModeToGRPCReplicaMode(mode spdktypes.Mode) eptypes.ReplicaMode {
 	return eptypes.ReplicaMode_ERR
 }
 
-func spdkReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest, spdkServiceAddress string) (resp *rpc.EngineReplicaListProxyResponse, err error) {
+func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest, spdkServiceAddress string) (resp *rpc.EngineReplicaListProxyResponse, err error) {
 	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
 	if err != nil {
 		return nil, err
@@ -171,11 +176,14 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 	})
 	log.Trace("Getting replica rebuilding status")
 
-	v, err := executeProxyOp(ctx, ProxyOpsReplicaRebuildingStatus, req.DataEngine, req)
-	return v.(*rpc.EngineReplicaRebuildStatusProxyResponse), err
+	op, ok := p.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return op.ReplicaRebuildingStatus(ctx, req)
 }
 
-func replicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
 	task, err := esync.NewTask(ctx, req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -202,7 +210,7 @@ func replicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (
 	return resp, nil
 }
 
-func spdkReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
+func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineReplicaRebuildStatusProxyResponse{
 		Status: make(map[string]*eptypes.ReplicaRebuildStatusResponse),
@@ -215,11 +223,14 @@ func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplica
 	})
 	log.Infof("Verifying replica %v rebuild", req.ReplicaAddress)
 
-	v, err := executeProxyOp(ctx, ProxyOpsReplicaVerifyRebuild, req.ProxyEngineRequest.DataEngine, req)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.ReplicaVerifyRebuild(ctx, req)
 }
 
-func replicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -234,7 +245,7 @@ func replicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebui
 	return &emptypb.Empty{}, nil
 }
 
-func spdkReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *emptypb.Empty, err error) {
+func (ops V2DataEngineProxyOps) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *emptypb.Empty, err error) {
 	/* TODO: implement this */
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
@@ -249,11 +260,14 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 	})
 	log.Info("Removing replica")
 
-	v, err := executeProxyOp(ctx, ProxyOpsReplicaRemove, req.ProxyEngineRequest.DataEngine, req)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.ReplicaRemove(ctx, req, p.spdkServiceAddress)
 }
 
-func replicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error) {
+func (ops V1DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest, unused string) (*emptypb.Empty, error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -264,7 +278,7 @@ func replicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (*e
 	return nil, c.ReplicaDelete(req.ReplicaAddress)
 }
 
-func spdkReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest, spdkServiceAddress string) (*emptypb.Empty, error) {
+func (ops V2DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest, spdkServiceAddress string) (*emptypb.Empty, error) {
 	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
 	if err != nil {
 		return nil, err
@@ -280,11 +294,15 @@ func (p *Proxy) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaMod
 	})
 	log.Infof("Updating replica mode to %v", req.Mode)
 
-	v, err := executeProxyOp(ctx, ProxyOpsReplicaModeUpdate, req.ProxyEngineRequest.DataEngine, req)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+
+	return op.ReplicaModeUpdate(ctx, req)
 }
 
-func replicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{"serviceURL": req.ProxyEngineRequest.Address})
 	log.Infof("Updating replica mode to %v", req.Mode)
 
@@ -302,7 +320,7 @@ func replicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequ
 	return &emptypb.Empty{}, nil
 }
 
-func spdkReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *emptypb.Empty, err error) {
+func (ops V2DataEngineProxyOps) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *emptypb.Empty, err error) {
 	/* TODO: implement this */
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }

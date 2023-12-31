@@ -43,7 +43,7 @@ func (c *ProxyClient) SnapshotBackup(dataEngine, engineName, volumeName, service
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
 			Address:    serviceAddress,
 			EngineName: engineName,
-			// Deprecated
+			// nolint:all replaced with DataEngine
 			BackendStoreDriver: rpc.BackendStoreDriver(driver),
 			DataEngine:         rpc.DataEngine(driver),
 			VolumeName:         volumeName,
@@ -92,7 +92,7 @@ func (c *ProxyClient) SnapshotBackupStatus(dataEngine, engineName, volumeName, s
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
 			Address:    serviceAddress,
 			EngineName: engineName,
-			// Deprecated
+			// nolint:all replaced with DataEngine
 			BackendStoreDriver: rpc.BackendStoreDriver(driver),
 			DataEngine:         rpc.DataEngine(driver),
 			VolumeName:         volumeName,
@@ -150,7 +150,7 @@ func (c *ProxyClient) BackupRestore(dataEngine, engineName, volumeName, serviceA
 		ProxyEngineRequest: &rpc.ProxyEngineRequest{
 			Address:    serviceAddress,
 			EngineName: engineName,
-			// Deprecated
+			// nolint:all replaced with DataEngine
 			BackendStoreDriver: rpc.BackendStoreDriver(driver),
 			DataEngine:         rpc.DataEngine(driver),
 			// This is the name we will use for validation when communicating with the restoring engine.
@@ -204,7 +204,7 @@ func (c *ProxyClient) BackupRestoreStatus(dataEngine, engineName, volumeName,
 
 	req := &rpc.ProxyEngineRequest{
 		Address: serviceAddress,
-		// Deprecated
+		// nolint:all replaced with DataEngine
 		BackendStoreDriver: rpc.BackendStoreDriver(driver),
 		DataEngine:         rpc.DataEngine(driver),
 		EngineName:         engineName,

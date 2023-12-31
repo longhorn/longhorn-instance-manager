@@ -40,11 +40,14 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 	})
 	log.Infof("Backing up snapshot %v to backup %v", req.SnapshotName, req.BackupName)
 
-	v, err := executeProxyOp(ctx, ProxyOpsSnapshotBackup, req.ProxyEngineRequest.DataEngine, req)
-	return v.(*rpc.EngineSnapshotBackupProxyResponse), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.SnapshotBackup(ctx, req)
 }
 
-func snapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
 	for _, env := range req.Envs {
 		part := strings.SplitN(env, "=", 2)
 		if len(part) < 2 {
@@ -95,7 +98,7 @@ func snapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (
 	}, nil
 }
 
-func spdkSnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
+func (ops V2DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
 	// TODO: implement this
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
@@ -109,11 +112,14 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 	})
 	log.Tracef("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
 
-	v, err := executeProxyOp(ctx, ProxyOpsSnapshotBackupStatus, req.ProxyEngineRequest.DataEngine, req)
-	return v.(*rpc.EngineSnapshotBackupStatusProxyResponse), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.SnapshotBackupStatus(ctx, req)
 }
 
-func snapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -121,7 +127,7 @@ func snapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStat
 	}
 	defer c.Close()
 
-	replicas, err := replicaList(ctx, req.ProxyEngineRequest)
+	replicas, err := ops.ReplicaList(ctx, req.ProxyEngineRequest, "")
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +196,7 @@ func snapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStat
 	}, nil
 }
 
-func spdkSnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
+func (ops V2DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
 	// TODO: implement this
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
@@ -204,11 +210,14 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 	})
 	log.Infof("Restoring backup %v to %v", req.Url, req.VolumeName)
 
-	v, err := executeProxyOp(ctx, ProxyOpsBackupRestore, req.ProxyEngineRequest.DataEngine, req)
-	return v.(*rpc.EngineBackupRestoreProxyResponse), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.BackupRestore(ctx, req)
 }
 
-func backupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL": req.ProxyEngineRequest.Address,
 		"engineName": req.ProxyEngineRequest.EngineName,
@@ -258,7 +267,7 @@ func backupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (re
 	return resp, nil
 }
 
-func spdkBackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
+func (ops V2DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -271,11 +280,14 @@ func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	})
 	log.Trace("Getting backup restore status")
 
-	v, err := executeProxyOp(ctx, ProxyOpsBackupRestoreStatus, req.DataEngine, req)
-	return v.(*rpc.EngineBackupRestoreStatusProxyResponse), err
+	op, ok := p.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return op.BackupRestoreStatus(ctx, req)
 }
 
-func backupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
 	task, err := esync.NewTask(ctx, req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -305,7 +317,7 @@ func backupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp
 	return resp, nil
 }
 
-func spdkBackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
+func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineBackupRestoreStatusProxyResponse{
 		Status: map[string]*rpc.EngineBackupRestoreStatus{},
