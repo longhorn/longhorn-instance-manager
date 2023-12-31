@@ -125,6 +125,11 @@ class ProxyEngineServiceStub(object):
         request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.ProxyEngineRequest.SerializeToString,
         response_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineBackupRestoreStatusProxyResponse.FromString,
         )
+    self.BackupRestoreFinish = channel.unary_unary(
+        '/imrpc.ProxyEngineService/BackupRestoreFinish',
+        request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineBackupRestoreFinishRequest.SerializeToString,
+        response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+        )
     self.CleanupBackupMountPoints = channel.unary_unary(
         '/imrpc.ProxyEngineService/CleanupBackupMountPoints',
         request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
@@ -325,6 +330,13 @@ class ProxyEngineServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def BackupRestoreFinish(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
   def CleanupBackupMountPoints(self, request, context):
     # missing associated documentation comment in .proto file
     pass
@@ -493,6 +505,11 @@ def add_ProxyEngineServiceServicer_to_server(servicer, server):
           servicer.BackupRestoreStatus,
           request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.ProxyEngineRequest.FromString,
           response_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineBackupRestoreStatusProxyResponse.SerializeToString,
+      ),
+      'BackupRestoreFinish': grpc.unary_unary_rpc_method_handler(
+          servicer.BackupRestoreFinish,
+          request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineBackupRestoreFinishRequest.FromString,
+          response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
       ),
       'CleanupBackupMountPoints': grpc.unary_unary_rpc_method_handler(
           servicer.CleanupBackupMountPoints,
