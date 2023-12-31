@@ -1,12 +1,16 @@
 package proxy
 
 import (
+	"net"
+	"strconv"
+
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
+	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
-	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 
@@ -14,16 +18,16 @@ import (
 )
 
 type ProxyOps interface {
-	VolumeGet(context.Context, *rpc.ProxyEngineRequest, string) (*rpc.EngineVolumeGetProxyResponse, error)
+	VolumeGet(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineVolumeGetProxyResponse, error)
 	VolumeExpand(context.Context, *rpc.EngineVolumeExpandRequest) (*emptypb.Empty, error)
 	VolumeFrontendStart(context.Context, *rpc.EngineVolumeFrontendStartRequest) (*emptypb.Empty, error)
 	VolumeFrontendShutdown(context.Context, *rpc.ProxyEngineRequest) (*emptypb.Empty, error)
 	VolumeUnmapMarkSnapChainRemovedSet(context.Context, *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (*emptypb.Empty, error)
 
-	ReplicaAdd(context.Context, *rpc.EngineReplicaAddRequest, string) (*emptypb.Empty, error)
-	ReplicaList(context.Context, *rpc.ProxyEngineRequest, string) (*rpc.EngineReplicaListProxyResponse, error)
+	ReplicaAdd(context.Context, *rpc.EngineReplicaAddRequest) (*emptypb.Empty, error)
+	ReplicaList(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineReplicaListProxyResponse, error)
 	ReplicaRebuildingStatus(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineReplicaRebuildStatusProxyResponse, error)
-	ReplicaRemove(context.Context, *rpc.EngineReplicaRemoveRequest, string) (*emptypb.Empty, error)
+	ReplicaRemove(context.Context, *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error)
 	ReplicaVerifyRebuild(context.Context, *rpc.EngineReplicaVerifyRebuildRequest) (*emptypb.Empty, error)
 	ReplicaModeUpdate(context.Context, *rpc.EngineReplicaModeUpdateRequest) (*emptypb.Empty, error)
 
@@ -38,9 +42,10 @@ type ProxyOps interface {
 	SnapshotHash(context.Context, *rpc.EngineSnapshotHashRequest) (*emptypb.Empty, error)
 	SnapshotHashStatus(context.Context, *rpc.EngineSnapshotHashStatusRequest) (*rpc.EngineSnapshotHashStatusProxyResponse, error)
 
-	SnapshotBackup(context.Context, *rpc.EngineSnapshotBackupRequest) (*rpc.EngineSnapshotBackupProxyResponse, error)
+	SnapshotBackup(context.Context, *rpc.EngineSnapshotBackupRequest, map[string]string, []string) (*rpc.EngineSnapshotBackupProxyResponse, error)
 	SnapshotBackupStatus(context.Context, *rpc.EngineSnapshotBackupStatusRequest) (*rpc.EngineSnapshotBackupStatusProxyResponse, error)
-	BackupRestore(context.Context, *rpc.EngineBackupRestoreRequest) (*rpc.EngineBackupRestoreProxyResponse, error)
+	BackupRestore(context.Context, *rpc.EngineBackupRestoreRequest, map[string]string) error
+	BackupRestoreFinish(context.Context, *rpc.EngineBackupRestoreFinishRequest) (*emptypb.Empty, error)
 	BackupRestoreStatus(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineBackupRestoreStatusProxyResponse, error)
 }
 
@@ -52,11 +57,7 @@ type Proxy struct {
 	logsDir       string
 	shutdownCh    chan error
 	HealthChecker HealthChecker
-
-	diskServiceAddress string
-	spdkServiceAddress string
-
-	ops map[rpc.DataEngine]ProxyOps
+	ops           map[rpc.DataEngine]ProxyOps
 }
 
 func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddress string) (*Proxy, error) {
@@ -65,12 +66,10 @@ func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddre
 		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineProxyOps{},
 	}
 	p := &Proxy{
-		ctx:                ctx,
-		logsDir:            logsDir,
-		HealthChecker:      &GRPCHealthChecker{},
-		diskServiceAddress: diskServiceAddress,
-		spdkServiceAddress: spdkServiceAddress,
-		ops:                ops,
+		ctx:           ctx,
+		logsDir:       logsDir,
+		HealthChecker: &GRPCHealthChecker{},
+		ops:           ops,
 	}
 
 	go p.startMonitoring()
@@ -120,4 +119,18 @@ func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineReques
 			DataFormatMinVersion:    int64(recv.DataFormatMinVersion),
 		},
 	}, nil
+}
+
+func getSPDKClientFromEngineAddress(address string) (*spdkclient.SPDKClient, error) {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, err
+	}
+
+	spdkServiceAddress := net.JoinHostPort(host, strconv.Itoa(types.InstanceManagerSpdkServiceDefaultPort))
+	if err != nil {
+		return nil, err
+	}
+
+	return spdkclient.NewSPDKClient(spdkServiceAddress)
 }
