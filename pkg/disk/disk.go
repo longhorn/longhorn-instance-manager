@@ -248,7 +248,6 @@ func spdkDiskToDisk(disk *spdkrpc.Disk) *rpc.Disk {
 func replicaToReplicaInstance(r *api.Replica) *rpc.ReplicaInstance {
 	return &rpc.ReplicaInstance{
 		Name:       r.Name,
-		Uuid:       r.UUID,
 		DiskName:   r.LvsName,
 		DiskUuid:   r.LvsUUID,
 		SpecSize:   r.SpecSize,

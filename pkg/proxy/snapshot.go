@@ -1,6 +1,9 @@
 package proxy
 
 import (
+	"strconv"
+
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
@@ -10,6 +13,9 @@ import (
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
+
+	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
@@ -51,7 +57,26 @@ func (ops V1DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
+	}
+	defer c.Close()
+
+	snapshotName := req.SnapshotVolume.Name
+	if snapshotName == "" {
+		snapshotName = util.UUID()
+	}
+
+	_, err = c.EngineSnapshotCreate(req.ProxyEngineRequest.EngineName, snapshotName)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to create snapshot %v", snapshotName).Error())
+	}
+	return &rpc.EngineVolumeSnapshotProxyResponse{
+		Snapshot: &eptypes.VolumeSnapshotReply{
+			Name: snapshotName,
+		},
+	}, nil
 }
 
 func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
@@ -107,10 +132,87 @@ func (ops V1DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 }
 
 func (ops V2DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
-	/* TODO: implement this */
-	return &rpc.EngineSnapshotListProxyResponse{
+	disks, err := getSpdkSnapshotsInfo(req.EngineName, req.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get snapshots info for engine %v", req.EngineName).Error())
+	}
+
+	resp = &rpc.EngineSnapshotListProxyResponse{
 		Disks: map[string]*rpc.EngineSnapshotDiskInfo{},
-	}, nil
+	}
+	for k, v := range disks {
+		resp.Disks[k] = &rpc.EngineSnapshotDiskInfo{
+			Name:        v.Name,
+			Parent:      v.Parent,
+			Children:    v.Children,
+			Removed:     v.Removed,
+			UserCreated: v.UserCreated,
+			Created:     v.Created,
+			Size:        v.Size,
+			Labels:      v.Labels,
+		}
+	}
+	return resp, nil
+}
+
+func getSpdkSnapshotsInfo(engineName, address string) (map[string]*rpc.EngineSnapshotDiskInfo, error) {
+	c, err := getSPDKClientFromEngineAddress(address)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get SPDK client from engine address %v", address)
+	}
+	defer c.Close()
+
+	engine, err := c.EngineGet(engineName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get engine %v", engineName)
+	}
+
+	recv, err := c.EngineReplicaList(engineName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get replica list from engine %v", engineName)
+	}
+	replicas := recv.Replicas
+
+	disks := map[string]*rpc.EngineSnapshotDiskInfo{}
+	for replicaName, replicaMode := range engine.ReplicaModeMap {
+		if replicaMode != types.ModeRW {
+			continue
+		}
+		replica, ok := replicas[replicaName]
+		if !ok {
+			continue
+		}
+
+		newDisks := map[string]*rpc.EngineSnapshotDiskInfo{}
+
+		for name, snapshot := range replica.Snapshots {
+			children := map[string]bool{}
+
+			for child, value := range snapshot.Children {
+				children[child] = value
+			}
+
+			newDisks[name] = &rpc.EngineSnapshotDiskInfo{
+				Name:        name,
+				Parent:      snapshot.Parent,
+				Children:    children,
+				Removed:     false,
+				UserCreated: true,
+				Created:     snapshot.CreationTime,
+				Size:        strconv.FormatUint(snapshot.SpecSize, 10),
+				Labels:      map[string]string{},
+			}
+		}
+
+		// we treat the healthy replica with the most snapshots as the
+		// source of the truth, since that means something are still in
+		// progress and haven't completed yet.
+		if len(newDisks) > len(disks) {
+			disks = newDisks
+		}
+	}
+
+	return disks, nil
 }
 
 func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {

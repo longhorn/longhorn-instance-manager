@@ -3,6 +3,7 @@ package proxy
 import (
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
@@ -12,7 +13,6 @@ import (
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
-	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
@@ -36,10 +36,10 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.ReplicaAdd(ctx, req, p.spdkServiceAddress)
+	return op.ReplicaAdd(ctx, req)
 }
 
-func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest, unused string) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *emptypb.Empty, err error) {
 	task, err := esync.NewTask(ctx, req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -59,10 +59,10 @@ func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 	return &emptypb.Empty{}, nil
 }
 
-func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest, spdkServiceAddress string) (resp *emptypb.Empty, err error) {
-	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
+func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *emptypb.Empty, err error) {
+	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
 	if err != nil {
-		return nil, err
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
 	}
 	defer c.Close()
 
@@ -70,7 +70,7 @@ func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 
 	err = c.EngineReplicaAdd(req.ProxyEngineRequest.EngineName, req.ReplicaName, replicaAddress)
 	if err != nil {
-		return nil, err
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to add replica %v", replicaAddress).Error())
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -88,10 +88,10 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.ReplicaList(ctx, req, p.spdkServiceAddress)
+	return op.ReplicaList(ctx, req)
 }
 
-func (ops V1DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest, ununsed string) (resp *rpc.EngineReplicaListProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -133,16 +133,16 @@ func replicaModeToGRPCReplicaMode(mode spdktypes.Mode) eptypes.ReplicaMode {
 	return eptypes.ReplicaMode_ERR
 }
 
-func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest, spdkServiceAddress string) (resp *rpc.EngineReplicaListProxyResponse, err error) {
-	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
+func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
+	c, err := getSPDKClientFromEngineAddress(req.Address)
 	if err != nil {
-		return nil, err
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address).Error())
 	}
 	defer c.Close()
 
 	recv, err := c.EngineGet(req.EngineName)
 	if err != nil {
-		return nil, err
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
 	}
 
 	replicas := []*eptypes.ControllerReplica{}
@@ -264,10 +264,10 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.ReplicaRemove(ctx, req, p.spdkServiceAddress)
+	return op.ReplicaRemove(ctx, req)
 }
 
-func (ops V1DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest, unused string) (*emptypb.Empty, error) {
+func (ops V1DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -278,10 +278,10 @@ func (ops V1DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.Engi
 	return nil, c.ReplicaDelete(req.ReplicaAddress)
 }
 
-func (ops V2DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest, spdkServiceAddress string) (*emptypb.Empty, error) {
-	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
+func (ops V2DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error) {
+	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
 	if err != nil {
-		return nil, err
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
 	}
 	defer c.Close()
 

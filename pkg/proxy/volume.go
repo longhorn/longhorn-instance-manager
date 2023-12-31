@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
@@ -9,7 +10,6 @@ import (
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
-	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
@@ -27,10 +27,10 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.VolumeGet(ctx, req, p.spdkServiceAddress)
+	return op.VolumeGet(ctx, req)
 }
 
-func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest, ununsed string) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -60,16 +60,16 @@ func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	}, nil
 }
 
-func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest, spdkServiceAddress string) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
-	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
+func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
+	c, err := getSPDKClientFromEngineAddress(req.Address)
 	if err != nil {
-		return nil, err
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address).Error())
 	}
 	defer c.Close()
 
 	recv, err := c.EngineGet(req.EngineName)
 	if err != nil {
-		return nil, err
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
 	}
 
 	return &rpc.EngineVolumeGetProxyResponse{
