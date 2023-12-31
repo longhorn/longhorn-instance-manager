@@ -23,11 +23,14 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	})
 	log.Trace("Getting volume")
 
-	v, err := executeProxyOp(ctx, ProxyOpsVolumeGet, req.DataEngine, req)
-	return v.(*rpc.EngineVolumeGetProxyResponse), err
+	op, ok := p.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return op.VolumeGet(ctx, req, p.spdkServiceAddress)
 }
 
-func volumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
+func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest, ununsed string) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -57,7 +60,7 @@ func volumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.Engi
 	}, nil
 }
 
-func spdkVolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest, spdkServiceAddress string) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
+func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest, spdkServiceAddress string) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
 	c, err := spdkclient.NewSPDKClient(spdkServiceAddress)
 	if err != nil {
 		return nil, err
@@ -94,11 +97,14 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	})
 	log.Infof("Expanding volume to size %v", req.Expand.Size)
 
-	v, err := executeProxyOp(ctx, ProxyOpsVolumeExpand, req.ProxyEngineRequest.DataEngine, req.ProxyEngineRequest)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.VolumeExpand(ctx, req)
 }
 
-func volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -114,7 +120,8 @@ func volumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp
 	return &emptypb.Empty{}, nil
 }
 
-func spdkVolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
+func (ops V2DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
+	// TODO: Implement this
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
 
@@ -127,11 +134,14 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	})
 	log.Infof("Starting volume frontend %v", req.FrontendStart.Frontend)
 
-	v, err := executeProxyOp(ctx, ProxyOpsVolumeFrontendStart, req.ProxyEngineRequest.DataEngine, req.ProxyEngineRequest)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.VolumeFrontendStart(ctx, req)
 }
 
-func volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -147,7 +157,7 @@ func volumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStart
 	return &emptypb.Empty{}, nil
 }
 
-func spdkVolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
+func (ops V2DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
 	return &emptypb.Empty{}, nil
 }
@@ -161,11 +171,14 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	})
 	log.Info("Shutting down volume frontend")
 
-	v, err := executeProxyOp(ctx, ProxyOpsVolumeFrontendShutdown, req.DataEngine, req)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return op.VolumeFrontendShutdown(ctx, req)
 }
 
-func volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.Address, req.VolumeName, req.EngineName)
 	if err != nil {
 		return nil, err
@@ -180,7 +193,7 @@ func volumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 	return &emptypb.Empty{}, nil
 }
 
-func spdkVolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
+func (ops V2DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
 	return &emptypb.Empty{}, nil
 }
@@ -194,11 +207,14 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 	})
 	log.Infof("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
 
-	v, err := executeProxyOp(ctx, ProxyOpsVolumeUnmapMarkSnapChainRemovedSet, req.ProxyEngineRequest.DataEngine, req.ProxyEngineRequest)
-	return v.(*emptypb.Empty), err
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return op.VolumeUnmapMarkSnapChainRemovedSet(ctx, req)
 }
 
-func volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -214,7 +230,7 @@ func volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolu
 	return &emptypb.Empty{}, nil
 }
 
-func spdkVolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
+func (ops V2DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
 	return &emptypb.Empty{}, nil
 }
