@@ -20,10 +20,6 @@ RUN zypper refresh && \
     zypper -n --gpg-auto-import-keys ref
 
 # Install packages
-RUN if [ ${ARCH} == "amd64" ]; then \
-    zypper -n install autoconf libtool libunwind-devel; \
-    fi
-
 RUN zypper -n install cmake wget curl git less file \
     libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
     psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
