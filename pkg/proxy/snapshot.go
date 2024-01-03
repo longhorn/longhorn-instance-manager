@@ -456,7 +456,7 @@ func (ops V1DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.Eng
 	for _, name := range req.Names {
 		if err := task.DeleteSnapshot(name); err != nil {
 			lastErr = err
-			logrus.WithError(err).Warnf("Failed to delete %s", name)
+			logrus.WithError(err).Warnf("Failed to delete snapshot %s", name)
 		}
 	}
 
@@ -464,8 +464,20 @@ func (ops V1DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.Eng
 }
 
 func (ops V2DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: implement this */
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
+	}
+	defer c.Close()
+
+	var lastErr error
+	for _, name := range req.Names {
+		err = c.EngineSnapshotDelete(req.ProxyEngineRequest.EngineName, name)
+		lastErr = err
+		logrus.WithError(err).Warnf("Failed to delete snapshot %s", name)
+	}
+
+	return &emptypb.Empty{}, lastErr
 }
 
 func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
