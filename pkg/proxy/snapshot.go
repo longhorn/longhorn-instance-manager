@@ -199,7 +199,7 @@ func getSpdkSnapshotsInfo(engineName, address string) (map[string]*rpc.EngineSna
 				Removed:     false,
 				UserCreated: true,
 				Created:     snapshot.CreationTime,
-				Size:        strconv.FormatUint(snapshot.SpecSize, 10),
+				Size:        strconv.FormatUint(snapshot.ActualSize, 10),
 				Labels:      map[string]string{},
 			}
 		}
