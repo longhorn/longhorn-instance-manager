@@ -342,7 +342,18 @@ func (ops V1DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.Eng
 }
 
 func (ops V2DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
+	}
+	defer c.Close()
+
+	err = c.EngineSnapshotRevert(req.ProxyEngineRequest.EngineName, req.Name)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to create snapshot %v", req.Name).Error())
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
