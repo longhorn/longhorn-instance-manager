@@ -45,6 +45,16 @@ class ProxyEngineServiceStub(object):
                 request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeUnmapMarkSnapChainRemovedSetRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
+        self.VolumeSnapshotMaxCountSet = channel.unary_unary(
+                '/imrpc.ProxyEngineService/VolumeSnapshotMaxCountSet',
+                request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeSnapshotMaxCountSetRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.VolumeSnapshotMaxSizeSet = channel.unary_unary(
+                '/imrpc.ProxyEngineService/VolumeSnapshotMaxSizeSet',
+                request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeSnapshotMaxSizeSetRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
         self.VolumeSnapshot = channel.unary_unary(
                 '/imrpc.ProxyEngineService/VolumeSnapshot',
                 request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeSnapshotRequest.SerializeToString,
@@ -191,6 +201,18 @@ class ProxyEngineServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def VolumeUnmapMarkSnapChainRemovedSet(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def VolumeSnapshotMaxCountSet(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def VolumeSnapshotMaxSizeSet(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -359,6 +381,16 @@ def add_ProxyEngineServiceServicer_to_server(servicer, server):
             'VolumeUnmapMarkSnapChainRemovedSet': grpc.unary_unary_rpc_method_handler(
                     servicer.VolumeUnmapMarkSnapChainRemovedSet,
                     request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeUnmapMarkSnapChainRemovedSetRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'VolumeSnapshotMaxCountSet': grpc.unary_unary_rpc_method_handler(
+                    servicer.VolumeSnapshotMaxCountSet,
+                    request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeSnapshotMaxCountSetRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'VolumeSnapshotMaxSizeSet': grpc.unary_unary_rpc_method_handler(
+                    servicer.VolumeSnapshotMaxSizeSet,
+                    request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeSnapshotMaxSizeSetRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'VolumeSnapshot': grpc.unary_unary_rpc_method_handler(
@@ -579,6 +611,40 @@ class ProxyEngineService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/imrpc.ProxyEngineService/VolumeUnmapMarkSnapChainRemovedSet',
             github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeUnmapMarkSnapChainRemovedSetRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def VolumeSnapshotMaxCountSet(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/imrpc.ProxyEngineService/VolumeSnapshotMaxCountSet',
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeSnapshotMaxCountSetRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def VolumeSnapshotMaxSizeSet(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/imrpc.ProxyEngineService/VolumeSnapshotMaxSizeSet',
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineVolumeSnapshotMaxSizeSetRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
