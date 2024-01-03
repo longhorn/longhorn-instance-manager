@@ -2,6 +2,8 @@ package spdk
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"sync"
 	"time"
 
@@ -12,11 +14,14 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/longhorn/backupstore"
+	butil "github.com/longhorn/backupstore/util"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 
+	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster"
@@ -37,6 +42,8 @@ type Server struct {
 
 	replicaMap map[string]*Replica
 	engineMap  map[string]*Engine
+
+	backupMap map[string]*Backup
 
 	broadcasters map[types.InstanceType]*broadcaster.Broadcaster
 	broadcastChs map[types.InstanceType]chan interface{}
@@ -74,6 +81,8 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 
 		replicaMap: map[string]*Replica{},
 		engineMap:  map[string]*Engine{},
+
+		backupMap: map[string]*Backup{},
 
 		broadcasters: broadcasters,
 		broadcastChs: broadcastChs,
@@ -226,7 +235,8 @@ func (s *Server) verify() (err error) {
 		}
 		lvsUUID := bdev.DriverSpecific.Lvol.LvolStoreUUID
 		specSize := bdev.NumBlocks * uint64(bdev.BlockSize)
-		replicaMap[lvolName] = NewReplica(s.ctx, lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, s.updateChs[types.InstanceTypeReplica])
+		actualSize := bdev.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
+		replicaMap[lvolName] = NewReplica(s.ctx, lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, actualSize, s.updateChs[types.InstanceTypeReplica])
 		replicaMapForSync[lvolName] = replicaMap[lvolName]
 	}
 	s.replicaMap = replicaMap
@@ -316,7 +326,7 @@ func (s *Server) newReplica(req *spdkrpc.ReplicaCreateRequest) (*Replica, error)
 		if err != nil || !ready {
 			return nil, err
 		}
-		s.replicaMap[req.Name] = NewReplica(s.ctx, req.Name, req.LvsName, req.LvsUuid, req.SpecSize, s.updateChs[types.InstanceTypeReplica])
+		s.replicaMap[req.Name] = NewReplica(s.ctx, req.Name, req.LvsName, req.LvsUuid, req.SpecSize, 0, s.updateChs[types.InstanceTypeReplica])
 	}
 
 	return s.replicaMap[req.Name], nil
@@ -461,6 +471,24 @@ func (s *Server) ReplicaSnapshotDelete(ctx context.Context, req *spdkrpc.Snapsho
 	return &emptypb.Empty{}, err
 }
 
+func (s *Server) ReplicaSnapshotRevert(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" || req.SnapshotName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name and snapshot name are required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during snapshot revert", req.Name)
+	}
+
+	_, err = r.SnapshotRevert(spdkClient, req.SnapshotName)
+	return &emptypb.Empty{}, err
+}
+
 func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcStartRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
@@ -472,13 +500,14 @@ func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.Rep
 	s.RLock()
 	r := s.replicaMap[req.Name]
 	spdkClient := s.spdkClient
+	replicaLvsNameMap := s.getLocalReplicaLvsNameMap(map[string]string{req.DstReplicaName: ""})
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src start", req.Name)
 	}
 
-	if err = r.RebuildingSrcStart(spdkClient, s.getLocalReplicaLvsNameMap(map[string]string{req.DstReplicaName: ""}), req.DstReplicaName, req.DstRebuildingLvolAddress); err != nil {
+	if err = r.RebuildingSrcStart(spdkClient, replicaLvsNameMap, req.DstReplicaName, req.DstRebuildingLvolAddress); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
@@ -609,9 +638,10 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine])
 	e := s.engineMap[req.Name]
 	spdkClient := s.spdkClient
+	replicaLvsNameMap := s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap)
 	s.Unlock()
 
-	return e.Create(spdkClient, req.ReplicaAddressMap, s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap), req.PortCount, s.portAllocator)
+	return e.Create(spdkClient, req.ReplicaAddressMap, replicaLvsNameMap, req.PortCount, s.portAllocator)
 }
 
 func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replicaLvsNameMap map[string]string) {
@@ -724,7 +754,7 @@ func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplic
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for replica %s with address %s add", req.EngineName, req.ReplicaName, req.ReplicaAddress)
 	}
 
-	if err := e.ReplicaAddStart(req.ReplicaName, req.ReplicaAddress); err != nil {
+	if err := e.ReplicaAddStart(spdkClient, req.ReplicaName, req.ReplicaAddress); err != nil {
 		return nil, err
 	}
 
@@ -738,6 +768,31 @@ func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplic
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineReplicaList(ctx context.Context, req *spdkrpc.EngineReplicaListRequest) (ret *spdkrpc.EngineReplicaListResponse, err error) {
+	s.RLock()
+	e := s.engineMap[req.EngineName]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for replica list", req.EngineName)
+	}
+
+	replicas, err := e.ReplicaList(s.spdkClient)
+	if err != nil {
+		return nil, err
+	}
+
+	ret = &spdkrpc.EngineReplicaListResponse{
+		Replicas: map[string]*spdkrpc.Replica{},
+	}
+
+	for _, r := range replicas {
+		ret.Replicas[r.Name] = api.ReplicaToProtoReplica(r)
+	}
+
+	return ret, nil
 }
 
 func (s *Server) EngineReplicaDelete(ctx context.Context, req *spdkrpc.EngineReplicaDeleteRequest) (ret *emptypb.Empty, err error) {
@@ -757,20 +812,22 @@ func (s *Server) EngineReplicaDelete(ctx context.Context, req *spdkrpc.EngineRep
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) EngineSnapshotCreate(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *spdkrpc.Engine, err error) {
-	if req.Name == "" || req.SnapshotName == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name and snapshot name are required")
+func (s *Server) EngineSnapshotCreate(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *spdkrpc.SnapshotResponse, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name are required")
 	}
 
 	s.RLock()
 	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if e == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot creation", req.Name)
 	}
 
-	return e.SnapshotCreate(req.SnapshotName)
+	snapshotName, err := e.SnapshotCreate(spdkClient, req.SnapshotName)
+	return &spdkrpc.SnapshotResponse{SnapshotName: snapshotName}, err
 }
 
 func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
@@ -780,17 +837,271 @@ func (s *Server) EngineSnapshotDelete(ctx context.Context, req *spdkrpc.Snapshot
 
 	s.RLock()
 	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if e == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot deletion", req.Name)
 	}
 
-	if _, err := e.SnapshotDelete(req.SnapshotName); err != nil {
+	if err := e.SnapshotDelete(spdkClient, req.SnapshotName); err != nil {
 		return nil, err
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineSnapshotRevert(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" || req.SnapshotName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name and snapshot name are required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot revert", req.Name)
+	}
+
+	if err := e.SnapshotRevert(spdkClient, req.SnapshotName); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineBackupCreate(ctx context.Context, req *spdkrpc.BackupCreateRequest) (ret *spdkrpc.BackupCreateResponse, err error) {
+	s.RLock()
+	e := s.engineMap[req.EngineName]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for backup creation", req.EngineName)
+	}
+
+	recv, err := e.BackupCreate(req.BackupName, req.VolumeName, req.EngineName, req.SnapshotName, req.BackingImageName, req.BackingImageChecksum,
+		req.Labels, req.BackupTarget, req.Credential, req.ConcurrentLimit, req.CompressionMethod, req.StorageClassName, e.SpecSize)
+	if err != nil {
+		return nil, err
+	}
+	return &spdkrpc.BackupCreateResponse{
+		Backup:         recv.BackupName,
+		IsIncremental:  recv.IsIncremental,
+		ReplicaAddress: recv.ReplicaAddress,
+	}, nil
+}
+
+func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCreateRequest) (ret *spdkrpc.BackupCreateResponse, err error) {
+	backupName := req.BackupName
+
+	backupType, err := butil.CheckBackupType(req.BackupTarget)
+	if err != nil {
+		return nil, err
+	}
+
+	err = butil.SetupCredential(backupType, req.Credential)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to setup credential of backup target %v for backup %v", req.BackupTarget, backupName)
+		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+	}
+
+	var labelMap map[string]string
+	if req.Labels != nil {
+		labelMap, err = util.ParseLabels(req.Labels)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to parse backup labels for backup %v", backupName)
+			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, err.Error())
+		}
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	if _, ok := s.backupMap[backupName]; ok {
+		return nil, grpcstatus.Errorf(grpccodes.AlreadyExists, "backup %v already exists", backupName)
+	}
+
+	replica, ok := s.replicaMap[req.ReplicaName]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v for volume %v backup creation", req.ReplicaName, req.VolumeName)
+	}
+
+	backup, err := NewBackup(s.spdkClient, backupName, req.VolumeName, req.SnapshotName, replica, s.portAllocator)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to create backup instance %v for volume %v", backupName, req.VolumeName)
+		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+	}
+
+	config := &backupstore.DeltaBackupConfig{
+		BackupName:      backupName,
+		ConcurrentLimit: req.ConcurrentLimit,
+		Volume: &backupstore.Volume{
+			Name:                 req.VolumeName,
+			Size:                 req.Size,
+			Labels:               labelMap,
+			BackingImageName:     req.BackingImageName,
+			BackingImageChecksum: req.BackingImageChecksum,
+			CompressionMethod:    req.CompressionMethod,
+			StorageClassName:     req.StorageClassName,
+			CreatedTime:          util.Now(),
+			DataEngine:           string(backupstore.DataEngineV2),
+		},
+		Snapshot: &backupstore.Snapshot{
+			Name:        req.SnapshotName,
+			CreatedTime: util.Now(),
+		},
+		DestURL:  req.BackupTarget,
+		DeltaOps: backup,
+		Labels:   labelMap,
+	}
+
+	s.backupMap[backupName] = backup
+	if err := backup.BackupCreate(config); err != nil {
+		delete(s.backupMap, backupName)
+		err = errors.Wrapf(err, "failed to create backup %v for volume %v", backupName, req.VolumeName)
+		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+	}
+
+	return &spdkrpc.BackupCreateResponse{
+		Backup:        backup.Name,
+		IsIncremental: backup.IsIncremental,
+	}, nil
+}
+
+func (s *Server) EngineBackupStatus(ctx context.Context, req *spdkrpc.BackupStatusRequest) (*spdkrpc.BackupStatusResponse, error) {
+	s.RLock()
+	e := s.engineMap[req.EngineName]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for backup creation", req.EngineName)
+	}
+
+	return e.BackupStatus(req.Backup, req.ReplicaAddress)
+}
+
+func (s *Server) ReplicaBackupStatus(ctx context.Context, req *spdkrpc.BackupStatusRequest) (ret *spdkrpc.BackupStatusResponse, err error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	backup, ok := s.backupMap[req.Backup]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find backup %v", req.Backup)
+	}
+
+	return &spdkrpc.BackupStatusResponse{
+		Progress:     int32(backup.Progress),
+		BackupUrl:    backup.BackupURL,
+		Error:        backup.Error,
+		SnapshotName: backup.SnapshotName,
+		State:        string(backup.State),
+	}, nil
+}
+
+func (s *Server) EngineBackupRestore(ctx context.Context, req *spdkrpc.EngineBackupRestoreRequest) (ret *spdkrpc.EngineBackupRestoreResponse, err error) {
+	logrus.WithFields(logrus.Fields{
+		"backup":       req.BackupUrl,
+		"engine":       req.EngineName,
+		"snapshotName": req.SnapshotName,
+		"concurrent":   req.ConcurrentLimit,
+	}).Info("Restoring backup")
+
+	s.RLock()
+	e := s.engineMap[req.EngineName]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for restoring backup", req.EngineName)
+	}
+
+	return e.BackupRestore(s.spdkClient, req.BackupUrl, req.EngineName, req.SnapshotName, req.Credential, req.ConcurrentLimit)
+}
+
+func (s *Server) ReplicaBackupRestore(ctx context.Context, req *spdkrpc.ReplicaBackupRestoreRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	replica := s.replicaMap[req.ReplicaName]
+	defer s.RUnlock()
+
+	if replica == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v for restoring backup %v", req.ReplicaName, req.BackupUrl)
+	}
+
+	err = replica.BackupRestore(s.spdkClient, req.BackupUrl, req.SnapshotName, req.Credential, req.ConcurrentLimit)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineBackupRestoreFinish(ctx context.Context, req *spdkrpc.EngineBackupRestoreFinishRequest) (ret *emptypb.Empty, err error) {
+	logrus.WithFields(logrus.Fields{
+		"engine": req.EngineName,
+	}).Info("Finishing backup restoration")
+
+	s.RLock()
+	e := s.engineMap[req.EngineName]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for finishing backup restoration", req.EngineName)
+	}
+
+	err = e.BackupRestoreFinish(s.spdkClient)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to finish backup restoration for engine %v", req.EngineName)
+		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreStatusRequest) (*spdkrpc.RestoreStatusResponse, error) {
+	s.RLock()
+	e := s.engineMap[req.EngineName]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for backup creation", req.EngineName)
+	}
+
+	resp, err := e.RestoreStatus()
+	if err != nil {
+		err = errors.Wrapf(err, "failed to get restore status for engine %v", req.EngineName)
+		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+	}
+	return resp, nil
+}
+
+func (s *Server) ReplicaRestoreStatus(ctx context.Context, req *spdkrpc.ReplicaRestoreStatusRequest) (ret *spdkrpc.ReplicaRestoreStatusResponse, err error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	replica, ok := s.replicaMap[req.ReplicaName]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v", req.ReplicaName)
+	}
+
+	if replica.restore == nil {
+		return &spdkrpc.ReplicaRestoreStatusResponse{
+			ReplicaName:    replica.Name,
+			ReplicaAddress: net.JoinHostPort(replica.restore.ip, strconv.Itoa(int(replica.restore.port))),
+			IsRestoring:    false,
+		}, nil
+	}
+
+	return &spdkrpc.ReplicaRestoreStatusResponse{
+		ReplicaName:            replica.Name,
+		ReplicaAddress:         net.JoinHostPort(replica.restore.ip, strconv.Itoa(int(replica.restore.port))),
+		IsRestoring:            replica.isRestoring,
+		LastRestored:           replica.restore.LastRestored,
+		Progress:               int32(replica.restore.Progress),
+		Error:                  replica.restore.Error,
+		DestFileName:           replica.restore.LvolName,
+		State:                  string(replica.restore.State),
+		BackupUrl:              replica.restore.BackupURL,
+		CurrentRestoringBackup: replica.restore.CurrentRestoringBackup,
+	}, nil
 }
 
 func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest) (ret *spdkrpc.Disk, err error) {

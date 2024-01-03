@@ -17,6 +17,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.uber.org/multierr"
 
+	"k8s.io/apimachinery/pkg/util/validation"
+
 	"github.com/longhorn/go-common-libs/proc"
 )
 
@@ -100,7 +102,7 @@ func StopSPDKTgtDaemon(timeout time.Duration) error {
 	var errs error
 	for _, process := range processes {
 		if err := process.Signal(syscall.SIGTERM); err != nil {
-			multierr.Append(errs, errors.Wrapf(err, "failed to send SIGTERM to spdk_tgt %v", process.Pid))
+			errs = multierr.Append(errs, errors.Wrapf(err, "failed to send SIGTERM to spdk_tgt %v", process.Pid))
 		} else {
 			done := make(chan error, 1)
 			go func() {
@@ -112,10 +114,13 @@ func StopSPDKTgtDaemon(timeout time.Duration) error {
 			select {
 			case <-time.After(timeout):
 				logrus.Warnf("spdk_tgt %v failed to exit in time, sending SIGKILL", process.Pid)
-				process.Signal(syscall.SIGKILL)
+				err = process.Signal(syscall.SIGKILL)
+				if err != nil {
+					errs = multierr.Append(errs, errors.Wrapf(err, "failed to send SIGKILL to spdk_tgt %v", process.Pid))
+				}
 			case err := <-done:
 				if err != nil {
-					multierr.Append(errs, errors.Wrapf(err, "spdk_tgt %v exited with error", process.Pid))
+					errs = multierr.Append(errs, errors.Wrapf(err, "spdk_tgt %v exited with error", process.Pid))
 				} else {
 					logrus.Infof("spdk_tgt %v exited successfully", process.Pid)
 				}
@@ -143,4 +148,107 @@ func GetFileChunkChecksum(filePath string, start, size int64) (string, error) {
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+func ParseLabels(labels []string) (map[string]string, error) {
+	result := map[string]string{}
+	for _, label := range labels {
+		kv := strings.SplitN(label, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("invalid label not in <key>=<value> format %v", label)
+		}
+		key := kv[0]
+		value := kv[1]
+		if errList := validation.IsQualifiedName(key); len(errList) > 0 {
+			return nil, fmt.Errorf("invalid key %v for label: %v", key, errList[0])
+		}
+		// We don't need to validate the Label value since we're allowing for any form of data to be stored, similar
+		// to Kubernetes Annotations. Of course, we should make sure it isn't empty.
+		if value == "" {
+			return nil, fmt.Errorf("invalid empty value for label with key %v", key)
+		}
+		result[key] = value
+	}
+	return result, nil
+}
+
+func Now() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}
+
+func UnescapeURL(url string) string {
+	// Deal with escape in url inputted from bash
+	result := strings.Replace(url, "\\u0026", "&", 1)
+	result = strings.Replace(result, "u0026", "&", 1)
+	result = strings.TrimLeft(result, "\"'")
+	result = strings.TrimRight(result, "\"'")
+	return result
+}
+
+func CombineErrors(errorList ...error) (retErr error) {
+	for _, err := range errorList {
+		if err != nil {
+			if retErr != nil {
+				retErr = fmt.Errorf("%v, %v", retErr, err)
+			} else {
+				retErr = err
+			}
+		}
+	}
+	return retErr
+}
+
+func Min(x, y uint64) uint64 {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+type ReplicaError struct {
+	Address string
+	Message string
+}
+
+func NewReplicaError(address string, err error) ReplicaError {
+	return ReplicaError{
+		Address: address,
+		Message: err.Error(),
+	}
+}
+
+func (e ReplicaError) Error() string {
+	return fmt.Sprintf("%v: %v", e.Address, e.Message)
+}
+
+type TaskError struct {
+	ReplicaErrors []ReplicaError
+}
+
+func NewTaskError(res ...ReplicaError) *TaskError {
+	return &TaskError{
+		ReplicaErrors: append([]ReplicaError{}, res...),
+	}
+}
+
+func (t *TaskError) Error() string {
+	var errs []string
+	for _, re := range t.ReplicaErrors {
+		errs = append(errs, re.Error())
+	}
+
+	if errs == nil {
+		return "Unknown"
+	}
+	if len(errs) == 1 {
+		return errs[0]
+	}
+	return strings.Join(errs, "; ")
+}
+
+func (t *TaskError) Append(re ReplicaError) {
+	t.ReplicaErrors = append(t.ReplicaErrors, re)
+}
+
+func (t *TaskError) HasError() bool {
+	return len(t.ReplicaErrors) != 0
 }
