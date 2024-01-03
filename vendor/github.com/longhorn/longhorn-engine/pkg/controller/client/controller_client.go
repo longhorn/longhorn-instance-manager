@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-engine/pkg/meta"
 	"github.com/longhorn/longhorn-engine/pkg/types"
@@ -83,6 +83,8 @@ func GetVolumeInfo(v *ptypes.Volume) *types.VolumeInfo {
 		LastExpansionError:        v.LastExpansionError,
 		LastExpansionFailedAt:     v.LastExpansionFailedAt,
 		UnmapMarkSnapChainRemoved: v.UnmapMarkSnapChainRemoved,
+		SnapshotMaxCount:          int(v.SnapshotMaxCount),
+		SnapshotMaxSize:           v.SnapshotMaxSize,
 	}
 }
 
@@ -123,7 +125,7 @@ func (c *ControllerClient) VolumeGet() (*types.VolumeInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	volume, err := controllerServiceClient.VolumeGet(ctx, &empty.Empty{})
+	volume, err := controllerServiceClient.VolumeGet(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get volume %v", c.serviceURL)
 	}
@@ -210,7 +212,7 @@ func (c *ControllerClient) VolumeFrontendShutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	if _, err := controllerServiceClient.VolumeFrontendShutdown(ctx, &empty.Empty{}); err != nil {
+	if _, err := controllerServiceClient.VolumeFrontendShutdown(ctx, &emptypb.Empty{}); err != nil {
 		return errors.Wrapf(err, "failed to shutdown frontend for volume %v", c.serviceURL)
 	}
 
@@ -231,12 +233,40 @@ func (c *ControllerClient) VolumeUnmapMarkSnapChainRemovedSet(enabled bool) erro
 	return nil
 }
 
+func (c *ControllerClient) VolumeSnapshotMaxCountSet(count int) error {
+	controllerServiceClient := c.getControllerServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	if _, err := controllerServiceClient.VolumeSnapshotMaxCountSet(ctx, &ptypes.VolumeSnapshotMaxCountSetRequest{
+		Count: int32(count),
+	}); err != nil {
+		return errors.Wrapf(err, "failed to set SnapshotMaxCount to %d for volume %s", count, c.serviceURL)
+	}
+
+	return nil
+}
+
+func (c *ControllerClient) VolumeSnapshotMaxSizeSet(size int64) error {
+	controllerServiceClient := c.getControllerServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	if _, err := controllerServiceClient.VolumeSnapshotMaxSizeSet(ctx, &ptypes.VolumeSnapshotMaxSizeSetRequest{
+		Size: size,
+	}); err != nil {
+		return errors.Wrapf(err, "failed to set SnapshotMaxSize to %d for volume %s", size, c.serviceURL)
+	}
+
+	return nil
+}
+
 func (c *ControllerClient) ReplicaList() ([]*types.ControllerReplicaInfo, error) {
 	controllerServiceClient := c.getControllerServiceClient()
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	reply, err := controllerServiceClient.ReplicaList(ctx, &empty.Empty{})
+	reply, err := controllerServiceClient.ReplicaList(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list replicas for volume %v", c.serviceURL)
 	}
@@ -361,7 +391,7 @@ func (c *ControllerClient) VersionDetailGet() (*meta.VersionOutput, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	reply, err := controllerServiceClient.VersionDetailGet(ctx, &empty.Empty{})
+	reply, err := controllerServiceClient.VersionDetailGet(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version detail")
 	}
@@ -411,7 +441,7 @@ func (c *ControllerClient) MetricsGet() (*types.Metrics, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
 	defer cancel()
 
-	reply, err := controllerServiceClient.MetricsGet(ctx, &empty.Empty{})
+	reply, err := controllerServiceClient.MetricsGet(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get metrics for volume %v", c.serviceURL)
 	}
