@@ -4,9 +4,9 @@ go 1.21
 
 require (
 	github.com/RoaringBitmap/roaring v1.2.3
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/longhorn/backupstore v0.0.0-20231229024807-ccb82ae17a0e
-	github.com/longhorn/go-common-libs v0.0.0-20231228082901-99ebd3318e18
+	github.com/longhorn/go-common-libs v0.0.0-20240103081802-3993c5908447
 	github.com/longhorn/go-spdk-helper v0.0.0-20231222092128-dd4eb991eecb
 	github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20231229031622-5efed2b8a02f
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20231222082603-3a141da3f5c0
@@ -14,8 +14,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.12
 	golang.org/x/net v0.17.0
-	golang.org/x/sync v0.3.0
-	google.golang.org/grpc v1.58.3
+	golang.org/x/sync v0.4.0
+	google.golang.org/grpc v1.60.1
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.27.1
@@ -63,7 +63,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
 	k8s.io/apimachinery v0.27.1 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
