@@ -57,6 +57,8 @@ func (p *Proxy) volumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 			LastExpansionError:        recv.LastExpansionError,
 			LastExpansionFailedAt:     recv.LastExpansionFailedAt,
 			UnmapMarkSnapChainRemoved: recv.UnmapMarkSnapChainRemoved,
+			SnapshotMaxCount:          int32(recv.SnapshotMaxCount),
+			SnapshotMaxSize:           recv.SnapshotMaxSize,
 		},
 	}, nil
 }
@@ -244,6 +246,86 @@ func (p *Proxy) volumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 }
 
 func (p *Proxy) spdkVolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
+	/* Not implemented */
+	return &emptypb.Empty{}, nil
+}
+
+func (p *Proxy) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
+	})
+	log.Infof("Setting volume flag SnapshotMaxCount to %v", req.Count.Count)
+
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
+		return p.volumeSnapshotMaxCountSet(ctx, req)
+	case rpc.DataEngine_DATA_ENGINE_V2:
+		return p.spdkVolumeSnapshotMaxCountSet(ctx, req)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+}
+
+func (p *Proxy) volumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	err = c.VolumeSnapshotMaxCountSet(int(req.Count.Count))
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (p *Proxy) spdkVolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
+	/* Not implemented */
+	return &emptypb.Empty{}, nil
+}
+
+func (p *Proxy) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
+	})
+	log.Infof("Setting volume flag SnapshotMaxSize to %v", req.Size.Size)
+
+	switch req.ProxyEngineRequest.DataEngine {
+	case rpc.DataEngine_DATA_ENGINE_V1:
+		return p.volumeSnapshotMaxSizeSet(ctx, req)
+	case rpc.DataEngine_DATA_ENGINE_V2:
+		return p.spdkVolumeSnapshotMaxSizeSet(ctx, req)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+}
+
+func (p *Proxy) volumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	err = c.VolumeSnapshotMaxSizeSet(req.Size.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (p *Proxy) spdkVolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
 	/* Not implemented */
 	return &emptypb.Empty{}, nil
 }
