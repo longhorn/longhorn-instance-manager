@@ -111,10 +111,12 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localR
 
 			ret = e.getWithoutLock()
 			err = nil
+		} else {
+			if e.State != types.InstanceStateError {
+				e.ErrorMsg = ""
+			}
 		}
 	}()
-
-	e.ErrorMsg = ""
 
 	podIP, err := commonNet.GetIPForPod()
 	if err != nil {
@@ -247,11 +249,17 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 	e.Lock()
 	defer func() {
 		// Considering that there may be still pending validations, it's better to update the state after the deletion.
-		if err != nil && e.State != types.InstanceStateError {
-			e.State = types.InstanceStateError
-			e.ErrorMsg = err.Error()
-			e.log.WithError(err).Error("Failed to delete engine")
-			requireUpdate = true
+		if err != nil {
+			if e.State != types.InstanceStateError {
+				e.State = types.InstanceStateError
+				e.ErrorMsg = err.Error()
+				e.log.WithError(err).Error("Failed to delete engine")
+				requireUpdate = true
+			}
+		} else {
+			if e.State != types.InstanceStateError {
+				e.ErrorMsg = ""
+			}
 		}
 		if e.State == types.InstanceStateRunning {
 			e.State = types.InstanceStateTerminating
@@ -264,8 +272,6 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 			e.UpdateCh <- nil
 		}
 	}()
-
-	e.ErrorMsg = ""
 
 	if e.Endpoint != "" {
 		nqn := helpertypes.GetNQN(e.Name)
@@ -407,10 +413,12 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 				updateRequired = true
 			}
 			e.ErrorMsg = err.Error()
+		} else {
+			if e.State != types.InstanceStateError {
+				e.ErrorMsg = ""
+			}
 		}
 	}()
-
-	e.ErrorMsg = ""
 
 	podIP, err := commonNet.GetIPForPod()
 	if err != nil {
@@ -658,10 +666,12 @@ func (e *Engine) ReplicaAddStart(spdkClient *spdkclient.Client, replicaName, rep
 				updateRequired = true
 			}
 			e.ErrorMsg = err.Error()
+		} else {
+			if e.State != types.InstanceStateError {
+				e.ErrorMsg = ""
+			}
 		}
 	}()
-
-	e.ErrorMsg = ""
 
 	// TODO: For online rebuilding, the IO should be paused first
 	snapshotName := GenerateRebuildingSnapshotName()
@@ -736,10 +746,12 @@ func (e *Engine) ReplicaAddFinish(spdkClient *spdkclient.Client, replicaName, re
 				updateRequired = true
 			}
 			e.ErrorMsg = err.Error()
+		} else {
+			if e.State != types.InstanceStateError {
+				e.ErrorMsg = ""
+			}
 		}
 	}()
-
-	e.ErrorMsg = ""
 
 	if _, err := spdkClient.BdevRaidDelete(e.Name); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 		return err
@@ -979,10 +991,12 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 				updateRequired = true
 			}
 			e.ErrorMsg = err.Error()
+		} else {
+			if e.State != types.InstanceStateError {
+				e.ErrorMsg = ""
+			}
 		}
 	}()
-
-	e.ErrorMsg = ""
 
 	if updateRequired, err = e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, snapshotOp); err != nil {
 		return "", err
