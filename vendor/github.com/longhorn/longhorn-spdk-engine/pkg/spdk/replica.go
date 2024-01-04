@@ -231,10 +231,12 @@ func (r *Replica) construct(bdevLvolMap map[string]*spdktypes.BdevInfo) (err err
 		if err != nil {
 			r.State = types.InstanceStateError
 			r.ErrorMsg = err.Error()
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	switch r.State {
 	case types.InstanceStatePending:
@@ -279,10 +281,12 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 				r.log.WithError(err).Error("Found error during validation and update")
 			}
 			r.ErrorMsg = err.Error()
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	// Stop syncing with the SPDK TGT server if the replica does not contain any valid SPDK components.
 	if r.State != types.InstanceStateRunning && r.State != types.InstanceStateStopped {
@@ -563,10 +567,12 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, exposeRequired bool, por
 
 			ret = ServiceReplicaToProtoReplica(r)
 			err = nil
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica creation", r.ChainLength)
@@ -645,11 +651,17 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 	r.Lock()
 	defer func() {
 		// Considering that there may be still pending validations, it's better to update the state after the deletion.
-		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			r.ErrorMsg = err.Error()
-			r.log.WithError(err).Errorf("Failed to delete replica with cleanup flag %v", cleanupRequired)
-			updateRequired = true
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+				r.ErrorMsg = err.Error()
+				r.log.WithError(err).Errorf("Failed to delete replica with cleanup flag %v", cleanupRequired)
+				updateRequired = true
+			}
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 		if r.State == types.InstanceStateRunning {
 			if cleanupRequired {
@@ -666,8 +678,6 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 			r.UpdateCh <- nil
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	// TODO: Need to stop all in-progress rebuilding first
 	// if err := r.rebuildingDstCleanup(spdkClient); err != nil {
@@ -768,10 +778,12 @@ func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName str
 				updateRequired = true
 			}
 			r.ErrorMsg = err.Error()
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica snapshot creation", r.ChainLength)
@@ -844,10 +856,12 @@ func (r *Replica) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName str
 				updateRequired = true
 			}
 			r.ErrorMsg = err.Error()
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	if r.ChainLength < 2 {
 		return nil, fmt.Errorf("invalid chain length %d for replica snapshot delete", r.ChainLength)
@@ -1141,10 +1155,12 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, exposeRequir
 				updateRequired = true
 			}
 			r.ErrorMsg = err.Error()
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	// TODO: When online rebuilding related APIs are ready, we need to create a separate and temporary lvol for snapshot lvol rebuilding
 	// lvolName := GetReplicaRebuildingLvolName(r.Name)
@@ -1222,11 +1238,13 @@ func (r *Replica) RebuildingDstFinish(spdkClient *spdkclient.Client, unexposeReq
 				updateRequired = true
 			}
 			r.ErrorMsg = err.Error()
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 		r.isRebuilding = false
 	}()
-
-	r.ErrorMsg = ""
 
 	// TODO: For the online rebuilding, Remove the temporary rebuilding lvol and release ports for r.portAllocator
 	// if err := r.rebuildingDstCleanup(spdkClient); err != nil {
@@ -1308,10 +1326,12 @@ func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *spdkclient.Client, sna
 				updateRequired = true
 			}
 			r.ErrorMsg = err.Error()
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
 		}
 	}()
-
-	r.ErrorMsg = ""
 
 	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
 	snapUUID, err := spdkClient.BdevLvolSnapshot(r.rebuildingLvol.UUID, snapLvolName)
