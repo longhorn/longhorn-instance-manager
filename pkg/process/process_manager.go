@@ -503,8 +503,10 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
 
-		UUID:  util.UUID(),
-		State: StateStarting,
+		UUID: util.UUID(),
+
+		State:      StateStarting,
+		Conditions: make(map[string]bool),
 
 		lock: &sync.RWMutex{},
 
