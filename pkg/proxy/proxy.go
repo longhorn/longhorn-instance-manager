@@ -41,6 +41,8 @@ type ProxyOps interface {
 	SnapshotRemove(context.Context, *rpc.EngineSnapshotRemoveRequest) (*emptypb.Empty, error)
 	SnapshotHash(context.Context, *rpc.EngineSnapshotHashRequest) (*emptypb.Empty, error)
 	SnapshotHashStatus(context.Context, *rpc.EngineSnapshotHashStatusRequest) (*rpc.EngineSnapshotHashStatusProxyResponse, error)
+	VolumeSnapshotMaxCountSet(context.Context, *rpc.EngineVolumeSnapshotMaxCountSetRequest) (*emptypb.Empty, error)
+	VolumeSnapshotMaxSizeSet(context.Context, *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (*emptypb.Empty, error)
 
 	SnapshotBackup(context.Context, *rpc.EngineSnapshotBackupRequest, map[string]string, []string) (*rpc.EngineSnapshotBackupProxyResponse, error)
 	SnapshotBackupStatus(context.Context, *rpc.EngineSnapshotBackupStatusRequest) (*rpc.EngineSnapshotBackupStatusProxyResponse, error)
