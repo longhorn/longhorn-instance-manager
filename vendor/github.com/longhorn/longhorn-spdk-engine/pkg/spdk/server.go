@@ -122,9 +122,9 @@ func (s *Server) monitoring() {
 			logrus.WithError(err).Errorf("spdk gRPC server: failed to verify and update replica cache, will retry later")
 
 			if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) || jsonrpc.IsJSONRPCRespErrorInvalidCharacter(err) {
-				err = s.tryEnsureSPDKTgtHealthy()
+				err = s.tryEnsureSPDKTgtConnectionHealthy()
 				if err != nil {
-					logrus.WithError(err).Error("spdk gRPC server: failed to ensure spdk_tgt is healthy")
+					logrus.WithError(err).Error("spdk gRPC server: failed to ensure spdk_tgt connection healthy")
 				}
 			}
 		}
@@ -134,19 +134,17 @@ func (s *Server) monitoring() {
 	}
 }
 
-func (s *Server) tryEnsureSPDKTgtHealthy() error {
+func (s *Server) tryEnsureSPDKTgtConnectionHealthy() error {
 	running, err := util.IsSPDKTargetProcessRunning()
 	if err != nil {
 		return errors.Wrap(err, "failed to check spdk_tgt is running")
 	}
-
-	if running {
-		logrus.Info("spdk gRPC server: reconnecting to spdk_tgt")
-		return s.clientReconnect()
+	if !running {
+		return errors.New("spdk_tgt is not running")
 	}
 
-	logrus.Info("spdk gRPC server: restarting spdk_tgt")
-	return util.StartSPDKTgtDaemon()
+	logrus.Info("spdk gRPC server: reconnecting to spdk_tgt")
+	return s.clientReconnect()
 }
 
 func (s *Server) clientReconnect() error {
