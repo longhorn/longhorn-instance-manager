@@ -158,7 +158,7 @@ func (ops V1DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rp
 }
 
 func (ops V2DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
-	/* Not implemented */
+	/* TODO: Implement this */
 	return &emptypb.Empty{}, nil
 }
 
@@ -194,7 +194,7 @@ func (ops V1DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req 
 }
 
 func (ops V2DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
-	/* Not implemented */
+	/* TODO: Implement this */
 	return &emptypb.Empty{}, nil
 }
 
@@ -231,7 +231,7 @@ func (ops V1DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.C
 }
 
 func (ops V2DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
-	/* Not implemented */
+	/* TODO: Implement this */
 	return &emptypb.Empty{}, nil
 }
 
@@ -244,17 +244,14 @@ func (p *Proxy) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVo
 	})
 	log.Infof("Setting volume flag SnapshotMaxCount to %v", req.Count.Count)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeSnapshotMaxCountSet(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeSnapshotMaxCountSet(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
+	return op.VolumeSnapshotMaxCountSet(ctx, req)
 }
 
-func (p *Proxy) volumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -270,8 +267,8 @@ func (p *Proxy) volumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVo
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
-	/* Not implemented */
+func (ops V2DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
+	/* TODO: Implement this */
 	return &emptypb.Empty{}, nil
 }
 
@@ -284,17 +281,14 @@ func (p *Proxy) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVol
 	})
 	log.Infof("Setting volume flag SnapshotMaxSize to %v", req.Size.Size)
 
-	switch req.ProxyEngineRequest.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return p.volumeSnapshotMaxSizeSet(ctx, req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return p.spdkVolumeSnapshotMaxSizeSet(ctx, req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.ProxyEngineRequest.DataEngine)
+	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
+	return op.VolumeSnapshotMaxSizeSet(ctx, req)
 }
 
-func (p *Proxy) volumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
+func (ops V1DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
@@ -310,7 +304,7 @@ func (p *Proxy) volumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVol
 	return &emptypb.Empty{}, nil
 }
 
-func (p *Proxy) spdkVolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
-	/* Not implemented */
+func (ops V2DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
+	/* TODO: Implement this */
 	return &emptypb.Empty{}, nil
 }
