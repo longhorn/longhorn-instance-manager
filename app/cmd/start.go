@@ -238,10 +238,9 @@ func start(c *cli.Context) (err error) {
 	// Start instance server
 	instanceGRPCServer, instanceRPCListener, err := setupInstanceGRPCServer(ctx, logsDir,
 		addresses[types.InstanceGrpcService], addresses[types.ProcessManagerGrpcService],
-		addresses[types.DiskGrpcService], addresses[types.SpdkGrpcService],
-		tlsConfig, spdkEnabled)
+		addresses[types.SpdkGrpcService], tlsConfig, spdkEnabled)
 	if err != nil {
-		logrus.WithError(err).Errorf("Failed to setup %s", types.InstanceGrpcService)
+		logrus.WithError(err).Errorf("Failed to set up %s", types.InstanceGrpcService)
 		return err
 	}
 	servers[types.InstanceGrpcService] = instanceGRPCServer
@@ -251,7 +250,7 @@ func start(c *cli.Context) (err error) {
 	proxyGRPCServer, proxyGRPCListener, err := setupProxyGRPCServer(ctx, logsDir,
 		addresses[types.ProxyGRPCService], addresses[types.DiskGrpcService], addresses[types.SpdkGrpcService], tlsConfig)
 	if err != nil {
-		logrus.WithError(err).Errorf("Failed to setup %s", types.ProxyGRPCService)
+		logrus.WithError(err).Errorf("Failed to set up %s", types.ProxyGRPCService)
 		return err
 	}
 	servers[types.ProxyGRPCService] = proxyGRPCServer
@@ -260,7 +259,7 @@ func start(c *cli.Context) (err error) {
 	// Start process-manager server
 	pm, pmGRPCServer, pmGRPCListener, err := setupProcessManagerGRPCServer(ctx, processPortRange, logsDir, addresses[types.ProcessManagerGrpcService])
 	if err != nil {
-		logrus.WithError(err).Errorf("Failed to setup %s", types.ProcessManagerGrpcService)
+		logrus.WithError(err).Errorf("Failed to set up %s", types.ProcessManagerGrpcService)
 		return err
 	}
 	servers[types.ProcessManagerGrpcService] = pmGRPCServer
@@ -270,7 +269,7 @@ func start(c *cli.Context) (err error) {
 	if spdkEnabled {
 		spdkGRPCServer, spdkGRPCListener, err := setupSPDKGRPCServer(ctx, spdkPortRange, addresses[types.SpdkGrpcService])
 		if err != nil {
-			logrus.WithError(err).Errorf("Failed to setup %s", types.SpdkGrpcService)
+			logrus.WithError(err).Errorf("Failed to set up %s", types.SpdkGrpcService)
 			return err
 		}
 		servers[types.SpdkGrpcService] = spdkGRPCServer
@@ -450,8 +449,8 @@ func setupProcessManagerGRPCServer(ctx context.Context, portRange, logsDir, list
 	return srv, grpcServer, grpcListener, nil
 }
 
-func setupInstanceGRPCServer(ctx context.Context, logsDir, listen, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
-	srv, err := instance.NewServer(ctx, logsDir, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress, spdkEnabled)
+func setupInstanceGRPCServer(ctx context.Context, logsDir, listen, processManagerServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
+	srv, err := instance.NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, spdkEnabled)
 	if err != nil {
 		return nil, nil, err
 	}
