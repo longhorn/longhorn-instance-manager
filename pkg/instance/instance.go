@@ -17,9 +17,10 @@ import (
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/client"
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
+
+	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 const (
@@ -27,25 +28,47 @@ const (
 	monitorRetryPollInterval = 1 * time.Second
 )
 
-type Server struct {
-	ctx                          context.Context
-	logsDir                      string
-	processManagerServiceAddress string
-	diskServiceAddress           string
-	spdkServiceAddress           string
-	spdkEnabled                  bool
-	HealthChecker                HealthChecker
+type InstanceOps interface {
+	InstanceCreate(*rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error)
+	InstanceDelete(*rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error)
+	InstanceGet(*rpc.InstanceGetRequest) (*rpc.InstanceResponse, error)
+	InstanceList(map[string]*rpc.InstanceResponse) error
+	InstanceReplace(*rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error)
+	InstanceLog(*rpc.InstanceLogRequest, rpc.InstanceService_InstanceLogServer) error
 }
 
-func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, diskServiceAddress, spdkServiceAddress string, spdkEnabled bool) (*Server, error) {
+type V1DataEngineInstanceOps struct {
+	processManagerServiceAddress string
+}
+type V2DataEngineInstanceOps struct {
+	spdkServiceAddress string
+}
+
+type Server struct {
+	ctx           context.Context
+	logsDir       string
+	HealthChecker HealthChecker
+
+	v2DataEngineEnabled bool
+	ops                 map[rpc.DataEngine]InstanceOps
+}
+
+func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkServiceAddress string, v2DataEngineEnabled bool) (*Server, error) {
+	ops := map[rpc.DataEngine]InstanceOps{
+		rpc.DataEngine_DATA_ENGINE_V1: V1DataEngineInstanceOps{
+			processManagerServiceAddress: processManagerServiceAddress,
+		},
+		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineInstanceOps{
+			spdkServiceAddress: spdkServiceAddress,
+		},
+	}
+
 	s := &Server{
-		ctx:                          ctx,
-		logsDir:                      logsDir,
-		processManagerServiceAddress: processManagerServiceAddress,
-		diskServiceAddress:           diskServiceAddress,
-		spdkServiceAddress:           spdkServiceAddress,
-		spdkEnabled:                  spdkEnabled,
-		HealthChecker:                &GRPCHealthChecker{},
+		ctx:                 ctx,
+		logsDir:             logsDir,
+		v2DataEngineEnabled: v2DataEngineEnabled,
+		HealthChecker:       &GRPCHealthChecker{},
+		ops:                 ops,
 	}
 
 	go s.startMonitoring()
@@ -89,22 +112,19 @@ func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequ
 		"dataEngine": req.Spec.DataEngine,
 	}).Info("Creating instance")
 
-	switch req.Spec.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return s.processInstanceCreate(req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return s.spdkInstanceCreate(req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.Spec.DataEngine)
+	ops, ok := s.ops[req.Spec.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.Spec.DataEngine)
 	}
+	return ops.InstanceCreate(req)
 }
 
-func (s *Server) processInstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
+func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
 	if req.Spec.ProcessInstanceSpec == nil {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn data engine")
 	}
 
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	pmClient, err := client.NewProcessManagerClient("tcp://"+ops.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -117,8 +137,8 @@ func (s *Server) processInstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.Ins
 	return processResponseToInstanceResponse(process), nil
 }
 
-func (s *Server) spdkInstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
-	c, err := spdkclient.NewSPDKClient(s.spdkServiceAddress)
+func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -151,18 +171,15 @@ func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequ
 		"cleanupRequired": req.CleanupRequired,
 	}).Info("Deleting instance")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return s.processInstanceDelete(req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return s.spdkInstanceDelete(req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
+	return ops.InstanceDelete(req)
 }
 
-func (s *Server) processInstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
+	pmClient, err := client.NewProcessManagerClient("tcp://"+ops.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -175,8 +192,8 @@ func (s *Server) processInstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.Ins
 	return processResponseToInstanceResponse(process), nil
 }
 
-func (s *Server) spdkInstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
-	c, err := spdkclient.NewSPDKClient(s.spdkServiceAddress)
+func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -214,18 +231,15 @@ func (s *Server) InstanceGet(ctx context.Context, req *rpc.InstanceGetRequest) (
 		"dataEngine": req.DataEngine,
 	}).Trace("Getting instance")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return s.processInstanceGet(req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return s.spdkInstanceGet(req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
+	return ops.InstanceGet(req)
 }
 
-func (s *Server) processInstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+func (ops V1DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
+	pmClient, err := client.NewProcessManagerClient("tcp://"+ops.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -238,8 +252,8 @@ func (s *Server) processInstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceR
 	return processResponseToInstanceResponse(process), nil
 }
 
-func (s *Server) spdkInstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
-	c, err := spdkclient.NewSPDKClient(s.spdkServiceAddress)
+func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -268,13 +282,13 @@ func (s *Server) InstanceList(ctx context.Context, req *emptypb.Empty) (*rpc.Ins
 
 	instances := map[string]*rpc.InstanceResponse{}
 
-	err := s.processInstanceList(instances)
+	err := s.ops[rpc.DataEngine_DATA_ENGINE_V1].InstanceList(instances)
 	if err != nil {
 		return nil, err
 	}
 
-	if s.spdkEnabled {
-		err := s.spdkInstanceList(instances)
+	if s.v2DataEngineEnabled {
+		err := s.ops[rpc.DataEngine_DATA_ENGINE_V2].InstanceList(instances)
 		if err != nil {
 			return nil, err
 		}
@@ -285,8 +299,8 @@ func (s *Server) InstanceList(ctx context.Context, req *emptypb.Empty) (*rpc.Ins
 	}, nil
 }
 
-func (s *Server) processInstanceList(instances map[string]*rpc.InstanceResponse) error {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+func (ops V1DataEngineInstanceOps) InstanceList(instances map[string]*rpc.InstanceResponse) error {
+	pmClient, err := client.NewProcessManagerClient("tcp://"+ops.processManagerServiceAddress, nil)
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -302,8 +316,8 @@ func (s *Server) processInstanceList(instances map[string]*rpc.InstanceResponse)
 	return nil
 }
 
-func (s *Server) spdkInstanceList(instances map[string]*rpc.InstanceResponse) error {
-	c, err := spdkclient.NewSPDKClient(s.spdkServiceAddress)
+func (ops V2DataEngineInstanceOps) InstanceList(instances map[string]*rpc.InstanceResponse) error {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -334,22 +348,19 @@ func (s *Server) InstanceReplace(ctx context.Context, req *rpc.InstanceReplaceRe
 		"dataEngine": req.Spec.DataEngine,
 	}).Info("Replacing instance")
 
-	switch req.Spec.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return s.processInstanceReplace(req)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return s.spdkInstanceReplace(req)
-	default:
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.Spec.DataEngine)
+	ops, ok := s.ops[req.Spec.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.Spec.DataEngine)
 	}
+	return ops.InstanceReplace(req)
 }
 
-func (s *Server) processInstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
+func (ops V1DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
 	if req.Spec.ProcessInstanceSpec == nil {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn data engine")
 	}
 
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	pmClient, err := client.NewProcessManagerClient("tcp://"+ops.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -364,8 +375,8 @@ func (s *Server) processInstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.I
 	return processResponseToInstanceResponse(process), nil
 }
 
-func (s *Server) spdkInstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
-	return nil, grpcstatus.Error(grpccodes.Unimplemented, "spdk instance replace is not supported")
+func (ops V2DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v2 data engine instance replace is not supported")
 }
 
 func (s *Server) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
@@ -375,18 +386,15 @@ func (s *Server) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceServic
 		"dataEngine": req.DataEngine,
 	}).Info("Getting instance log")
 
-	switch req.DataEngine {
-	case rpc.DataEngine_DATA_ENGINE_V1:
-		return s.processInstanceLog(req, srv)
-	case rpc.DataEngine_DATA_ENGINE_V2:
-		return s.spdkInstanceLog(req, srv)
-	default:
-		return grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown data engine %v", req.DataEngine)
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
+	return ops.InstanceLog(req, srv)
 }
 
-func (s *Server) processInstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+func (ops V1DataEngineInstanceOps) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
+	pmClient, err := client.NewProcessManagerClient("tcp://"+ops.processManagerServiceAddress, nil)
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -412,8 +420,8 @@ func (s *Server) processInstanceLog(req *rpc.InstanceLogRequest, srv rpc.Instanc
 	return nil
 }
 
-func (s *Server) spdkInstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
-	return grpcstatus.Error(grpccodes.Unimplemented, "spdk instance log is not supported")
+func (ops V2DataEngineInstanceOps) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
+	return grpcstatus.Error(grpccodes.Unimplemented, "v2 data engine instance log is not supported")
 }
 
 func (s *Server) handleNotify(ctx context.Context, notifyChan chan struct{}, srv rpc.InstanceService_InstanceWatchServer) error {
@@ -455,7 +463,8 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 	}()
 
 	// Create a client for watching processes
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ops := s.ops[rpc.DataEngine_DATA_ENGINE_V1].(V1DataEngineInstanceOps)
+	pmClient, err := client.NewProcessManagerClient("tcp://"+ops.processManagerServiceAddress, nil)
 	if err != nil {
 		done <- struct{}{}
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
@@ -463,9 +472,10 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 	clients["processManagerClient"] = pmClient
 
 	var spdkClient *spdkclient.SPDKClient
-	if s.spdkEnabled {
+	if s.v2DataEngineEnabled {
 		// Create a client for watching SPDK engines and replicas
-		spdkClient, err = spdkclient.NewSPDKClient(s.spdkServiceAddress)
+		ops := s.ops[rpc.DataEngine_DATA_ENGINE_V2].(V2DataEngineInstanceOps)
+		spdkClient, err = spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 		if err != nil {
 			done <- struct{}{}
 			return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
@@ -490,7 +500,7 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 		return s.watchProcess(ctx, req, pmClient, notifyChan)
 	})
 
-	if s.spdkEnabled {
+	if s.v2DataEngineEnabled {
 		g.Go(func() error {
 			return s.watchSPDKEngine(ctx, req, spdkClient, notifyChan)
 		})
