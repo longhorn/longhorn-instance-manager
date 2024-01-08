@@ -185,7 +185,7 @@ func parseNumber(str string) (int, error) {
 // GetDeviceSectorSize returns the sector size of the given device
 func GetDeviceSectorSize(devPath string, executor *commonNs.Executor) (int64, error) {
 	opts := []string{
-		"--getsize", devPath,
+		"--getsz", devPath,
 	}
 
 	output, err := executor.Execute(BlockdevBinary, opts, types.ExecuteTimeout)

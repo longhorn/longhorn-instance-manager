@@ -70,12 +70,12 @@ github.com/longhorn/backupstore v0.0.0-20231229024807-ccb82ae17a0e h1:JuR7tTd4lX
 github.com/longhorn/backupstore v0.0.0-20231229024807-ccb82ae17a0e/go.mod h1:4cbJWtlrD2cGTQxQLtdlPTYopiJiusXH7CpOBrn/s3k=
 github.com/longhorn/go-common-libs v0.0.0-20240103081802-3993c5908447 h1:NwR+xCGLpAORmB1UwNfDkQj3vPNIVikJe/hZe9+BQe0=
 github.com/longhorn/go-common-libs v0.0.0-20240103081802-3993c5908447/go.mod h1:nIECQARppamt2zwFSdzADRTVKo/7izFwWIS3VWi7D/s=
-github.com/longhorn/go-spdk-helper v0.0.0-20240103085800-6ac35f37b3a7 h1:xfJN+zZ+giI65qy6jgMdzwuF1kQHEFYPL5wTQTzgE3c=
-github.com/longhorn/go-spdk-helper v0.0.0-20240103085800-6ac35f37b3a7/go.mod h1:9nZ5HbwviggK6l792X4l9fTivEWmiK3sXFaroiRp2yw=
+github.com/longhorn/go-spdk-helper v0.0.0-20240107081652-89d49f81392b h1:t6Rr7YzYwJFQ05X97wcRqT1CJYarKqtVNL/nTJxuKwQ=
+github.com/longhorn/go-spdk-helper v0.0.0-20240107081652-89d49f81392b/go.mod h1:9nZ5HbwviggK6l792X4l9fTivEWmiK3sXFaroiRp2yw=
 github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20240103105254-12e92e847462 h1:5zHxDud6RazYlUqOCDI5n97bZgyxGsbTwqfTaMM23r8=
 github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20240103105254-12e92e847462/go.mod h1:EJs9hAdSRGS5CeC8ZYtEpUIOZmKu+3Tear8/oKO/oHw=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240105052330-3115b0d371bf h1:mQK/Ja29T1AZ45ZMNdy1MGKODkhUDlJBi9dFKn579/M=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240105052330-3115b0d371bf/go.mod h1:pVzrKnI7lN6ByMqheLiflBNhpFj7fNQeecErasKRZoA=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240108064505-38b1ef7c74d5 h1:NSVAS/A9rlNX1uQ2B/hYRDc9X3ZdB70krAPs17YWGVE=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240108064505-38b1ef7c74d5/go.mod h1:PzjYC6s13WBOatCMYC6oYd6xoXBVyf4m+50AWk94Dm0=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHTxp6HcC++/vN17LfeuDmozHI2j6DoZf5E=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c h1:EAE/cBOWZUL9CDiI4xbOr1IudQUa2e6u/pdScytEcvo=

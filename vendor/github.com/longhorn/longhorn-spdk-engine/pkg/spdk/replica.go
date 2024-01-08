@@ -1407,21 +1407,24 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 	if restore.LastRestored == "" && restore.State == "" {
 		r.log.Infof("Starting a new restore for backup %v", backupUrl)
 		lvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
-		r.restore, err = NewRestore(spdkClient, lvolName, backupUrl, backupName, r)
+		r.restore, err = NewRestore(spdkClient, lvolName, snapshotName, backupUrl, backupName, r)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to start new restore")
 			return grpcstatus.Errorf(grpccodes.Internal, err.Error())
 		}
 	} else {
 		var lvolName string
+		var snapshotNameToBeRestored string
 
 		validLastRestoredBackup := r.canDoIncrementalRestore(restore, backupUrl, backupName)
 		if validLastRestoredBackup {
 			lvolName = GetReplicaSnapshotLvolName(r.Name, restore.LastRestored)
+			snapshotNameToBeRestored = restore.LastRestored
 		} else {
 			lvolName = GetReplicaSnapshotLvolName(r.Name, snapshotName)
+			snapshotNameToBeRestored = snapshotName
 		}
-		r.restore.StartNewRestore(backupUrl, backupName, lvolName, validLastRestoredBackup)
+		r.restore.StartNewRestore(backupUrl, backupName, lvolName, snapshotNameToBeRestored, validLastRestoredBackup)
 	}
 
 	// Initiate restore
@@ -1505,15 +1508,15 @@ func (r *Replica) waitForRestoreComplete() error {
 }
 
 func (r *Replica) postFullRestoreOperations(spdkClient *spdkclient.Client, restore *Restore) error {
-	r.log.Infof("Taking snapshot %v of the restored volume", restore.LvolName)
+	r.log.Infof("Taking snapshot %v of the restored volume", restore.SnapshotName)
 
-	_, err := r.SnapshotCreate(spdkClient, restore.LvolName)
+	_, err := r.SnapshotCreate(spdkClient, restore.SnapshotName)
 	if err != nil {
 		r.log.WithError(err).Error("Failed to take snapshot of the restored volume")
 		return errors.Wrapf(err, "failed to take snapshot of the restored volume")
 	}
 
-	r.log.Infof("Done running full restore %v to %v", restore.BackupURL, restore.LvolName)
+	r.log.Infof("Done running full restore %v to lvol %v (snapshot %v)", restore.BackupURL, restore.LvolName, restore.SnapshotName)
 	return nil
 }
 
