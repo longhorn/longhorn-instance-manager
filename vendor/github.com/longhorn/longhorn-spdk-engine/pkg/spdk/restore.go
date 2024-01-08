@@ -14,12 +14,10 @@ import (
 	butil "github.com/longhorn/backupstore/util"
 	commonNs "github.com/longhorn/go-common-libs/ns"
 	commonTypes "github.com/longhorn/go-common-libs/types"
-
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
-	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
-
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
+	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 type Restore struct {
@@ -34,7 +32,8 @@ type Restore struct {
 	State     btypes.ProgressState
 
 	// The snapshot file that stores the restored data in the end.
-	LvolName string
+	LvolName     string
+	SnapshotName string
 
 	LastRestored           string
 	CurrentRestoringBackup string
@@ -52,11 +51,12 @@ type Restore struct {
 	log logrus.FieldLogger
 }
 
-func NewRestore(spdkClient *spdkclient.Client, lvolName, backupUrl, backupName string, replica *Replica) (*Restore, error) {
+func NewRestore(spdkClient *spdkclient.Client, lvolName, snapshotName, backupUrl, backupName string, replica *Replica) (*Restore, error) {
 	log := logrus.WithFields(logrus.Fields{
-		"lvolName":   lvolName,
-		"backupUrl":  backupUrl,
-		"backupName": backupName,
+		"lvolName":     lvolName,
+		"snapshotName": snapshotName,
+		"backupUrl":    backupUrl,
+		"backupName":   backupName,
 	})
 
 	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
@@ -70,6 +70,7 @@ func NewRestore(spdkClient *spdkclient.Client, lvolName, backupUrl, backupName s
 		BackupURL:              backupUrl,
 		CurrentRestoringBackup: backupName,
 		LvolName:               lvolName,
+		SnapshotName:           snapshotName,
 		ip:                     replica.IP,
 		port:                   replica.PortStart,
 		executor:               executor,
@@ -80,11 +81,12 @@ func NewRestore(spdkClient *spdkclient.Client, lvolName, backupUrl, backupName s
 	}, nil
 }
 
-func (r *Restore) StartNewRestore(backupUrl, currentRestoringBackup, lvolName string, validLastRestoredBackup bool) {
+func (r *Restore) StartNewRestore(backupUrl, currentRestoringBackup, lvolName, snapshotName string, validLastRestoredBackup bool) {
 	r.Lock()
 	defer r.Unlock()
 
 	r.LvolName = lvolName
+	r.SnapshotName = snapshotName
 
 	r.Progress = 0
 	r.Error = ""
@@ -102,6 +104,7 @@ func (r *Restore) DeepCopy() *Restore {
 
 	return &Restore{
 		LvolName:               r.LvolName,
+		SnapshotName:           r.SnapshotName,
 		LastRestored:           r.LastRestored,
 		BackupURL:              r.BackupURL,
 		CurrentRestoringBackup: r.CurrentRestoringBackup,
