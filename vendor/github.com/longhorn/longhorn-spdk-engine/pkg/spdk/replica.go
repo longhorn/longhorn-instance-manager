@@ -343,7 +343,7 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 			return err
 		}
 		// Then update the actual size for the head lvol
-		if svcLvol.Name == r.Name && svcLvol.ActualSize != newSvcLvol.ActualSize {
+		if svcLvol.Name == r.Name {
 			svcLvol.ActualSize = newSvcLvol.ActualSize
 		}
 	}
@@ -401,8 +401,12 @@ func compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSize bool) error
 			}
 		}
 	}
+
+	// TODO:
+	// When deleting a snapshot lvol, the merge of lvols results in a change of actual size. Do not return error to prevent a false alarm.
+	// Need to revisit the actual size check.
 	if checkActualSize && prev.ActualSize != cur.ActualSize {
-		return fmt.Errorf("found mismatching lvol actual size %v with recorded prev lvol actual size %v when validating lvol %s", cur.ActualSize, prev.ActualSize, prev.Name)
+		logrus.Warnf("Found mismatching lvol actual size %v with recorded prev lvol actual size %v when validating lvol %s", cur.ActualSize, prev.ActualSize, prev.Name)
 	}
 
 	return nil
