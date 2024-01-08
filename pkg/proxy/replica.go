@@ -29,6 +29,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 		"size":           req.Size,
 		"currentSize":    req.CurrentSize,
 		"fastSync":       req.FastSync,
+		"localSync":      req.LocalSync,
 	})
 	log.Info("Adding replica")
 
@@ -51,8 +52,15 @@ func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 			return nil, err
 		}
 	} else {
+		var localSync *etypes.FileLocalSync
+		if req.LocalSync != nil {
+			localSync = &etypes.FileLocalSync{
+				SourcePath: req.LocalSync.SourcePath,
+				TargetPath: req.LocalSync.TargetPath,
+			}
+		}
 		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, req.ReplicaName,
-			int(req.FileSyncHttpClientTimeout), req.FastSync, req.GrpcTimeoutSeconds); err != nil {
+			int(req.FileSyncHttpClientTimeout), req.FastSync, localSync, req.GrpcTimeoutSeconds); err != nil {
 			return nil, err
 		}
 	}
