@@ -809,7 +809,6 @@ func (e *Engine) ReplicaShallowCopy(dstReplicaName, dstReplicaAddress string) (e
 		return err
 	}
 
-	// snapLvol.Name is the snapshot lvol name "<REPLICA NAME>-snap-<SNAPSHOT NAME>" rather than the snapshot name
 	ancestorSnapshotName, latestSnapshotName := "", ""
 	for snapshotName, rpcSnapLvol := range rpcSrcReplica.Snapshots {
 		if rpcSnapLvol.Parent == "" {
@@ -843,28 +842,46 @@ func (e *Engine) ReplicaShallowCopy(dstReplicaName, dstReplicaAddress string) (e
 		return err
 	}
 
-	// Reverse the src replica snapshot tree with a DFS way and do shallow copy one by one
-	stack := []string{ancestorSnapshotName}
-	for currentSnapshotName := stack[len(stack)-1]; len(stack) > 0; {
-		currentSnapshotName = stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
+	// Traverse the src replica snapshot tree with a DFS way and do shallow copy one by one
+	rebuildingSnapshotList := []string{}
+	rebuildingSnapshotList = getRebuildingSnapshotList(rpcSrcReplica, ancestorSnapshotName, rebuildingSnapshotList)
+	currentSnapshotName, prevSnapshotName := "", ""
+	for idx := 0; idx < len(rebuildingSnapshotList); idx++ {
+		currentSnapshotName = rebuildingSnapshotList[idx]
+		if prevSnapshotName != "" && rpcSrcReplica.Snapshots[currentSnapshotName].Parent != prevSnapshotName {
+			if err = srcReplicaServiceCli.ReplicaRebuildingSrcDetach(srcReplicaName, dstReplicaName); err != nil {
+				return err
+			}
+			if err = dstReplicaServiceCli.ReplicaRebuildingDstSnapshotRevert(dstReplicaName, rpcSrcReplica.Snapshots[currentSnapshotName].Parent); err != nil {
+				return err
+			}
+			if err = srcReplicaServiceCli.ReplicaRebuildingSrcAttach(srcReplicaName, dstReplicaName, dstRebuildingLvolAddress); err != nil {
+				return err
+			}
+		}
 		if err = srcReplicaServiceCli.ReplicaSnapshotShallowCopy(srcReplicaName, currentSnapshotName); err != nil {
 			return err
 		}
 		if err = dstReplicaServiceCli.ReplicaRebuildingDstSnapshotCreate(dstReplicaName, currentSnapshotName); err != nil {
 			return err
 		}
+		prevSnapshotName = currentSnapshotName
+	}
 
-		hasChildSnap := false
-		for childSnapshotName := range rpcSrcReplica.Snapshots[currentSnapshotName].Children {
-			if childSnapshotName == types.VolumeHead {
+	// TODO: The rebuilding lvol of the dst replica is actually the head. Need to make sure the head stands behind to the correct snapshot.
+	//  Once we start to use a separate rebuilding lvol rather than the head, we can remove the below code.
+	if !rpcSrcReplica.Snapshots[prevSnapshotName].Children[types.VolumeHead] {
+		for snapshotName, snapshotLvol := range rpcSrcReplica.Snapshots {
+			if !snapshotLvol.Children[types.VolumeHead] {
 				continue
 			}
-			stack = append(stack, childSnapshotName)
-			hasChildSnap = true
-		}
-		if !hasChildSnap {
-			// TODO: Ask the dst replica to do snapshot revert
+			if err = srcReplicaServiceCli.ReplicaRebuildingSrcDetach(srcReplicaName, dstReplicaName); err != nil {
+				return err
+			}
+			if err = dstReplicaServiceCli.ReplicaRebuildingDstSnapshotRevert(dstReplicaName, snapshotName); err != nil {
+				return err
+			}
+			break
 		}
 	}
 
@@ -878,6 +895,17 @@ func (e *Engine) ReplicaShallowCopy(dstReplicaName, dstReplicaAddress string) (e
 	}
 
 	return nil
+}
+
+func getRebuildingSnapshotList(rpcSrcReplica *api.Replica, currentSnapshotName string, rebuildingSnapshotList []string) []string {
+	if currentSnapshotName == "" || currentSnapshotName == types.VolumeHead {
+		return rebuildingSnapshotList
+	}
+	rebuildingSnapshotList = append(rebuildingSnapshotList, currentSnapshotName)
+	for childSnapshotName := range rpcSrcReplica.Snapshots[currentSnapshotName].Children {
+		rebuildingSnapshotList = getRebuildingSnapshotList(rpcSrcReplica, childSnapshotName, rebuildingSnapshotList)
+	}
+	return rebuildingSnapshotList
 }
 
 func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, replicaAddress string) (err error) {

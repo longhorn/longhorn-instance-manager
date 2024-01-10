@@ -4,19 +4,19 @@ go 1.21
 
 require (
 	github.com/RoaringBitmap/roaring v1.2.3
-	github.com/google/uuid v1.4.0
-	github.com/longhorn/backupstore v0.0.0-20231229024807-ccb82ae17a0e
-	github.com/longhorn/go-common-libs v0.0.0-20240103081802-3993c5908447
+	github.com/google/uuid v1.5.0
+	github.com/longhorn/backupstore v0.0.0-20240110081942-bd231cfb0c7b
+	github.com/longhorn/go-common-libs v0.0.0-20240109042507-23627e6416b7
 	github.com/longhorn/go-spdk-helper v0.0.0-20240107081652-89d49f81392b
-	github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20240103105254-12e92e847462
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240108150520-71e569aca8ef
+	github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240110095344-deb8b18a1558
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240110101736-1e5d74b6ee5c
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.12
-	golang.org/x/net v0.17.0
+	golang.org/x/net v0.20.0
 	golang.org/x/sync v0.4.0
 	google.golang.org/grpc v1.60.1
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.27.1
 )
@@ -62,9 +62,9 @@ require (
 	github.com/slok/goresilience v0.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
 	k8s.io/apimachinery v0.27.1 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect

@@ -534,6 +534,52 @@ func (s *Server) ReplicaRebuildingSrcFinish(ctx context.Context, req *spdkrpc.Re
 	return &emptypb.Empty{}, nil
 }
 
+func (s *Server) ReplicaRebuildingSrcAttach(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcAttachRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
+	}
+	if req.DstReplicaName == "" || req.DstRebuildingLvolAddress == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "dst replica name and dst rebuilding lvol address are required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src attach", req.Name)
+	}
+
+	if err = r.RebuildingSrcAttach(spdkClient, req.DstReplicaName, req.DstRebuildingLvolAddress); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) ReplicaRebuildingSrcDetach(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcDetachRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
+	}
+	if req.DstReplicaName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "dst replica name is required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src detach", req.Name)
+	}
+
+	if err = r.RebuildingSrcDetach(spdkClient, req.DstReplicaName); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Server) ReplicaSnapshotShallowCopy(ctx context.Context, req *spdkrpc.ReplicaSnapshotShallowCopyRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" || req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica snapshot name is required")
@@ -611,6 +657,26 @@ func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *sp
 	}
 
 	if err = r.RebuildingDstSnapshotCreate(spdkClient, req.SnapshotName); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) ReplicaRebuildingDstSnapshotRevert(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" || req.SnapshotName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name and snapshot name are required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding dst snapshot revert", req.Name)
+	}
+
+	if err = r.RebuildingDstSnapshotRevert(spdkClient, req.SnapshotName); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
