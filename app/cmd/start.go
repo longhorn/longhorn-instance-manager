@@ -140,19 +140,18 @@ func cleanupStaledNvmeAndDmDevices() error {
 	for _, sys := range subsystems {
 		logrus.Infof("Found NVMe subsystem %+v", sys)
 		if strings.HasPrefix(sys.NQN, helpertypes.NQNPrefix) {
-			logrus.Infof("Cleaning up NVMe subsystem %v: NQN %v", sys.Name, sys.NQN)
-
-			if err := helpernvme.DisconnectTarget(sys.NQN, executor); err != nil {
-				return errors.Wrapf(err, "failed to disconnect NVMe subsystem %v: NQN %v", sys.Name, sys.NQN)
-			}
-
 			dmDeviceName, err := getVolumeNameFromNQN(sys.NQN)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get volume name from NQN %v", sys.NQN)
 			}
 			logrus.Infof("Removing dm device %v", dmDeviceName)
 			if err := helperutil.DmsetupRemove(dmDeviceName, true, true, executor); err != nil {
-				return errors.Wrapf(err, "failed to remove dm device %v", dmDeviceName)
+				logrus.WithError(err).Warnf("Failed to remove dm device %v, will continue the cleanup", dmDeviceName)
+			}
+
+			logrus.Infof("Cleaning up NVMe subsystem %v: NQN %v", sys.Name, sys.NQN)
+			if err := helpernvme.DisconnectTarget(sys.NQN, executor); err != nil {
+				logrus.WithError(err).Warnf("Failed to disconnect NVMe subsystem %v: NQN %v, will continue the cleanup", sys.Name, sys.NQN)
 			}
 		}
 	}
