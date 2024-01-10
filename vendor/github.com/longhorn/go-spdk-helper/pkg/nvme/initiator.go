@@ -213,7 +213,7 @@ func (i *Initiator) stopWithoutLock(dmDeviceCleanupRequired bool) error {
 	}
 
 	if dmDeviceCleanupRequired {
-		if err := i.removeLinearDmDevice(true, true); err != nil {
+		if err := i.removeLinearDmDevice(false, true); err != nil {
 			return err
 		}
 	}
