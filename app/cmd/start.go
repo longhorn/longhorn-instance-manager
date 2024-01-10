@@ -145,7 +145,7 @@ func cleanupStaledNvmeAndDmDevices() error {
 				return errors.Wrapf(err, "failed to get volume name from NQN %v", sys.NQN)
 			}
 			logrus.Infof("Removing dm device %v", dmDeviceName)
-			if err := helperutil.DmsetupRemove(dmDeviceName, true, true, executor); err != nil {
+			if err := helperutil.DmsetupRemove(dmDeviceName, false, true, executor); err != nil {
 				logrus.WithError(err).Warnf("Failed to remove dm device %v, will continue the cleanup", dmDeviceName)
 			}
 
