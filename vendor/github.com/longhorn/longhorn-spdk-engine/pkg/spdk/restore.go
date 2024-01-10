@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/longhorn/backupstore"
 	btypes "github.com/longhorn/backupstore/types"
-	butil "github.com/longhorn/backupstore/util"
 	commonNs "github.com/longhorn/go-common-libs/ns"
 	commonTypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
@@ -114,23 +113,6 @@ func (r *Restore) DeepCopy() *Restore {
 	}
 }
 
-func BackupRestore(backupURL, snapshotLvolName string, concurrentLimit int32, restoreObj *Restore) error {
-	backupURL = butil.UnescapeURL(backupURL)
-
-	logrus.WithFields(logrus.Fields{
-		"backupURL":        backupURL,
-		"snapshotLvolName": snapshotLvolName,
-		"concurrentLimit":  concurrentLimit,
-	}).Info("Start restoring backup")
-
-	return backupstore.RestoreDeltaBlockBackup(&backupstore.DeltaRestoreConfig{
-		BackupURL:       backupURL,
-		DeltaOps:        restoreObj,
-		Filename:        snapshotLvolName,
-		ConcurrentLimit: int32(concurrentLimit),
-	})
-}
-
 func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 	lvolName := r.replica.Name
 
@@ -203,14 +185,24 @@ func (r *Restore) UpdateRestoreStatus(snapshotLvolName string, progress int, err
 
 	r.LvolName = snapshotLvolName
 	r.Progress = progress
+
 	if err != nil {
-		if r.Error != "" {
-			r.Error = fmt.Sprintf("%v: %v", err.Error(), r.Error)
-		} else {
-			r.Error = err.Error()
-		}
-		r.State = btypes.ProgressStateError
 		r.CurrentRestoringBackup = ""
+
+		// No need to mark restore as error if it's cancelled.
+		// The restoration will be restarted after the engine is restarted.
+		if strings.Contains(err.Error(), btypes.ErrorMsgRestoreCancelled) {
+			r.log.WithError(err).Warn("Backup restoration is cancelled")
+			r.State = btypes.ProgressStateCanceled
+		} else {
+			r.log.WithError(err).Error("Backup restoration is failed")
+			r.State = btypes.ProgressStateError
+			if r.Error != "" {
+				r.Error = fmt.Sprintf("%v: %v", err.Error(), r.Error)
+			} else {
+				r.Error = err.Error()
+			}
+		}
 	}
 }
 
@@ -218,7 +210,7 @@ func (r *Restore) FinishRestore() {
 	r.Lock()
 	defer r.Unlock()
 
-	if r.State != btypes.ProgressStateError {
+	if r.State != btypes.ProgressStateError && r.State != btypes.ProgressStateCanceled {
 		r.State = btypes.ProgressStateComplete
 		r.LastRestored = r.CurrentRestoringBackup
 		r.CurrentRestoringBackup = ""
