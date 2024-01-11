@@ -22,10 +22,19 @@ func DmsetupCreate(dmDeviceName, table string, executor *commonNs.Executor) erro
 }
 
 // DmsetupSuspend suspends the device mapper device with the given name
-func DmsetupSuspend(dmDeviceName string, executor *commonNs.Executor) error {
+func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, executor *commonNs.Executor) error {
 	opts := []string{
 		"suspend", dmDeviceName,
 	}
+
+	if noflush {
+		opts = append(opts, "--noflush")
+	}
+
+	if nolockfs {
+		opts = append(opts, "--nolockfs")
+	}
+
 	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
