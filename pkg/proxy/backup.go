@@ -54,11 +54,11 @@ func (p *Proxy) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBacku
 
 	labels := getLabels(req.Labels)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotBackup(ctx, req, credential, labels)
+	return ops.SnapshotBackup(ctx, req, credential, labels)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest, credential map[string]string, labels []string) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
@@ -136,11 +136,11 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 	})
 	log.Tracef("Getting %v backup status from replica %v", req.BackupName, req.ReplicaAddress)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotBackupStatus(ctx, req)
+	return ops.SnapshotBackupStatus(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
@@ -264,11 +264,11 @@ func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreR
 		TaskError: []byte{},
 	}
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	err = op.BackupRestore(ctx, req, credential)
+	err = ops.BackupRestore(ctx, req, credential)
 	if err != nil {
 		errInfo, jsonErr := json.Marshal(err)
 		if jsonErr != nil {
@@ -318,11 +318,11 @@ func (p *Proxy) BackupRestoreFinish(ctx context.Context, req *rpc.EngineBackupRe
 	})
 	log.Info("Finishing backup restoration")
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.BackupRestoreFinish(ctx, req)
+	return ops.BackupRestoreFinish(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) BackupRestoreFinish(ctx context.Context, req *rpc.EngineBackupRestoreFinishRequest) (*emptypb.Empty, error) {
@@ -353,11 +353,11 @@ func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	})
 	log.Trace("Getting backup restore status")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.BackupRestoreStatus(ctx, req)
+	return ops.BackupRestoreStatus(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {

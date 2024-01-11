@@ -32,11 +32,11 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 	})
 	log.Info("Adding replica")
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.ReplicaAdd(ctx, req)
+	return ops.ReplicaAdd(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *emptypb.Empty, err error) {
@@ -84,11 +84,11 @@ func (p *Proxy) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (r
 	})
 	log.Trace("Listing replicas")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.ReplicaList(ctx, req)
+	return ops.ReplicaList(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
@@ -176,11 +176,11 @@ func (p *Proxy) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngin
 	})
 	log.Trace("Getting replica rebuilding status")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.ReplicaRebuildingStatus(ctx, req)
+	return ops.ReplicaRebuildingStatus(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
@@ -223,11 +223,11 @@ func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplica
 	})
 	log.Infof("Verifying replica %v rebuild", req.ReplicaAddress)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.ReplicaVerifyRebuild(ctx, req)
+	return ops.ReplicaVerifyRebuild(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *emptypb.Empty, err error) {
@@ -260,11 +260,11 @@ func (p *Proxy) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveR
 	})
 	log.Info("Removing replica")
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.ReplicaRemove(ctx, req)
+	return ops.ReplicaRemove(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error) {
@@ -294,12 +294,12 @@ func (p *Proxy) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaMod
 	})
 	log.Infof("Updating replica mode to %v", req.Mode)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
 
-	return op.ReplicaModeUpdate(ctx, req)
+	return ops.ReplicaModeUpdate(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *emptypb.Empty, err error) {
