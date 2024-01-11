@@ -13,7 +13,7 @@ import (
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
-	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
+	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 
@@ -175,7 +175,7 @@ func getSpdkSnapshotsInfo(engineName, address string) (map[string]*rpc.EngineSna
 
 	disks := map[string]*rpc.EngineSnapshotDiskInfo{}
 	for replicaName, replicaMode := range engine.ReplicaModeMap {
-		if replicaMode != types.ModeRW {
+		if replicaMode != spdktypes.ModeRW {
 			continue
 		}
 		replica, ok := replicas[replicaName]
@@ -184,6 +184,22 @@ func getSpdkSnapshotsInfo(engineName, address string) (map[string]*rpc.EngineSna
 		}
 
 		newDisks := map[string]*rpc.EngineSnapshotDiskInfo{}
+
+		if replica.Head == nil {
+			logrus.WithError(err).Warnf("Failed to get head for replica %v", replicaName)
+			continue
+		}
+
+		newDisks[spdktypes.VolumeHead] = &rpc.EngineSnapshotDiskInfo{
+			Name:        spdktypes.VolumeHead,
+			Parent:      "",
+			Children:    replica.Head.Children,
+			Removed:     false,
+			UserCreated: true,
+			Created:     replica.Head.CreationTime,
+			Size:        strconv.FormatUint(replica.Head.ActualSize, 10),
+			Labels:      map[string]string{},
+		}
 
 		for name, snapshot := range replica.Snapshots {
 			children := map[string]bool{}
@@ -201,6 +217,12 @@ func getSpdkSnapshotsInfo(engineName, address string) (map[string]*rpc.EngineSna
 				Created:     snapshot.CreationTime,
 				Size:        strconv.FormatUint(snapshot.ActualSize, 10),
 				Labels:      map[string]string{},
+			}
+
+			if newDisks[name].Children != nil {
+				if _, ok := newDisks[name].Children[spdktypes.VolumeHead]; ok {
+					newDisks[spdktypes.VolumeHead].Parent = name
+				}
 			}
 		}
 
