@@ -29,11 +29,11 @@ func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapsho
 	})
 	log.Infof("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.VolumeSnapshot(ctx, req)
+	return ops.VolumeSnapshot(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
@@ -88,11 +88,11 @@ func (p *Proxy) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (
 	})
 	log.Trace("Listing snapshots")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.SnapshotList(ctx, req)
+	return ops.SnapshotList(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
@@ -246,11 +246,11 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 	})
 	log.Infof("Cloning snapshot from %v to %v", req.FromEngineAddress, req.ProxyEngineRequest.Address)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotClone(ctx, req)
+	return ops.SnapshotClone(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
@@ -289,11 +289,11 @@ func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	})
 	log.Trace("Getting snapshot clone status")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.SnapshotCloneStatus(ctx, req)
+	return ops.SnapshotCloneStatus(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
@@ -341,11 +341,11 @@ func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 	})
 	log.Infof("Reverting snapshot %v", req.Name)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotRevert(ctx, req)
+	return ops.SnapshotRevert(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
@@ -387,11 +387,11 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 	})
 	log.Info("Purging snapshots")
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotPurge(ctx, req)
+	return ops.SnapshotPurge(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
@@ -422,11 +422,11 @@ func (p *Proxy) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineReq
 	})
 	log.Trace("Getting snapshot purge status")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.SnapshotPurgeStatus(ctx, req)
+	return ops.SnapshotPurgeStatus(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
@@ -471,11 +471,11 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 	})
 	log.Infof("Removing snapshots %v", req.Names)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotRemove(ctx, req)
+	return ops.SnapshotRemove(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
@@ -522,11 +522,11 @@ func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashReq
 	})
 	log.Infof("Hashing snapshot %v with rehash %v", req.SnapshotName, req.Rehash)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotHash(ctx, req)
+	return ops.SnapshotHash(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
@@ -557,11 +557,11 @@ func (p *Proxy) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotH
 	})
 	log.Trace("Getting snapshot hash status")
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.SnapshotHashStatus(ctx, req)
+	return ops.SnapshotHashStatus(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {

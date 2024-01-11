@@ -23,11 +23,11 @@ func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (res
 	})
 	log.Trace("Getting volume")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.VolumeGet(ctx, req)
+	return ops.VolumeGet(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
@@ -97,11 +97,11 @@ func (p *Proxy) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandReq
 	})
 	log.Infof("Expanding volume to size %v", req.Expand.Size)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.VolumeExpand(ctx, req)
+	return ops.VolumeExpand(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
@@ -134,11 +134,11 @@ func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFr
 	})
 	log.Infof("Starting volume frontend %v", req.FrontendStart.Frontend)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.VolumeFrontendStart(ctx, req)
+	return ops.VolumeFrontendStart(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
@@ -171,11 +171,11 @@ func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngine
 	})
 	log.Info("Shutting down volume frontend")
 
-	op, ok := p.ops[req.DataEngine]
+	ops, ok := p.ops[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
-	return op.VolumeFrontendShutdown(ctx, req)
+	return ops.VolumeFrontendShutdown(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
@@ -207,11 +207,11 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 	})
 	log.Infof("Setting volume flag UnmapMarkSnapChainRemoved to %v", req.UnmapMarkSnap.Enabled)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.VolumeUnmapMarkSnapChainRemovedSet(ctx, req)
+	return ops.VolumeUnmapMarkSnapChainRemovedSet(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
@@ -244,11 +244,11 @@ func (p *Proxy) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVo
 	})
 	log.Infof("Setting volume flag SnapshotMaxCount to %v", req.Count.Count)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.VolumeSnapshotMaxCountSet(ctx, req)
+	return ops.VolumeSnapshotMaxCountSet(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
@@ -281,11 +281,11 @@ func (p *Proxy) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVol
 	})
 	log.Infof("Setting volume flag SnapshotMaxSize to %v", req.Size.Size)
 
-	op, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
 	}
-	return op.VolumeSnapshotMaxSizeSet(ctx, req)
+	return ops.VolumeSnapshotMaxSizeSet(ctx, req)
 }
 
 func (ops V1DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
