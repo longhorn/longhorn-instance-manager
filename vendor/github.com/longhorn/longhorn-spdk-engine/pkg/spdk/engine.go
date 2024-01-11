@@ -43,6 +43,8 @@ type Engine struct {
 	Frontend           string
 	Endpoint           string
 
+	dmDeviceBusy bool
+
 	State    types.InstanceState
 	ErrorMsg string
 
@@ -234,9 +236,11 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 	if err != nil {
 		return err
 	}
-	if err = initiator.Start(e.IP, portStr, true); err != nil {
+	dmDeviceBusy, err := initiator.Start(e.IP, portStr, true)
+	if err != nil {
 		return err
 	}
+	e.dmDeviceBusy = dmDeviceBusy
 	e.Endpoint = initiator.GetEndpoint()
 	e.log = e.log.WithField("endpoint", e.Endpoint)
 
@@ -280,7 +284,7 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 		if err != nil {
 			return err
 		}
-		if err := initiator.Stop(true); err != nil {
+		if _, err := initiator.Stop(true, true); err != nil {
 			return err
 		}
 
@@ -565,7 +569,7 @@ func (e *Engine) validateAndUpdateFrontend(subsystemMap map[string]*spdktypes.Nv
 			}
 			return err
 		}
-		if err := initiator.LoadEndpoint(); err != nil {
+		if err := initiator.LoadEndpoint(e.dmDeviceBusy); err != nil {
 			return err
 		}
 		blockDevEndpoint := initiator.GetEndpoint()
