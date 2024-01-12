@@ -13,8 +13,6 @@ import (
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
-	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
-
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
@@ -132,109 +130,37 @@ func (ops V1DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 }
 
 func (ops V2DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
-	disks, err := getSpdkSnapshotsInfo(req.EngineName, req.Address)
+	c, err := getSPDKClientFromEngineAddress(req.Address)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get snapshots info for engine %v", req.EngineName).Error())
+		return nil, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address)
+	}
+	defer c.Close()
+
+	engine, err := c.EngineGet(req.EngineName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get engine %v", req.EngineName)
+	}
+	disks := engine.Snapshots
+	if engine.Head != nil {
+		disks[engine.Head.Name] = engine.Head
 	}
 
 	resp = &rpc.EngineSnapshotListProxyResponse{
 		Disks: map[string]*rpc.EngineSnapshotDiskInfo{},
 	}
-	for k, v := range disks {
-		resp.Disks[k] = &rpc.EngineSnapshotDiskInfo{
-			Name:        v.Name,
-			Parent:      v.Parent,
-			Children:    v.Children,
-			Removed:     v.Removed,
-			UserCreated: v.UserCreated,
-			Created:     v.Created,
-			Size:        v.Size,
-			Labels:      v.Labels,
+	for snapshotName, snapshot := range disks {
+		resp.Disks[snapshotName] = &rpc.EngineSnapshotDiskInfo{
+			Name:        snapshot.Name,
+			Parent:      snapshot.Parent,
+			Children:    snapshot.Children,
+			Removed:     false,
+			UserCreated: true,
+			Created:     snapshot.CreationTime,
+			Size:        strconv.FormatUint(snapshot.ActualSize, 10),
+			Labels:      map[string]string{},
 		}
 	}
 	return resp, nil
-}
-
-func getSpdkSnapshotsInfo(engineName, address string) (map[string]*rpc.EngineSnapshotDiskInfo, error) {
-	c, err := getSPDKClientFromEngineAddress(address)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get SPDK client from engine address %v", address)
-	}
-	defer c.Close()
-
-	engine, err := c.EngineGet(engineName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get engine %v", engineName)
-	}
-
-	recv, err := c.EngineReplicaList(engineName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get replica list from engine %v", engineName)
-	}
-	replicas := recv.Replicas
-
-	disks := map[string]*rpc.EngineSnapshotDiskInfo{}
-	for replicaName, replicaMode := range engine.ReplicaModeMap {
-		if replicaMode != spdktypes.ModeRW {
-			continue
-		}
-		replica, ok := replicas[replicaName]
-		if !ok {
-			continue
-		}
-
-		newDisks := map[string]*rpc.EngineSnapshotDiskInfo{}
-
-		if replica.Head == nil {
-			logrus.WithError(err).Warnf("Failed to get head for replica %v", replicaName)
-			continue
-		}
-
-		newDisks[spdktypes.VolumeHead] = &rpc.EngineSnapshotDiskInfo{
-			Name:        spdktypes.VolumeHead,
-			Parent:      "",
-			Children:    replica.Head.Children,
-			Removed:     false,
-			UserCreated: true,
-			Created:     replica.Head.CreationTime,
-			Size:        strconv.FormatUint(replica.Head.ActualSize, 10),
-			Labels:      map[string]string{},
-		}
-
-		for name, snapshot := range replica.Snapshots {
-			children := map[string]bool{}
-
-			for child, value := range snapshot.Children {
-				children[child] = value
-			}
-
-			newDisks[name] = &rpc.EngineSnapshotDiskInfo{
-				Name:        name,
-				Parent:      snapshot.Parent,
-				Children:    children,
-				Removed:     false,
-				UserCreated: true,
-				Created:     snapshot.CreationTime,
-				Size:        strconv.FormatUint(snapshot.ActualSize, 10),
-				Labels:      map[string]string{},
-			}
-
-			if newDisks[name].Children != nil {
-				if _, ok := newDisks[name].Children[spdktypes.VolumeHead]; ok {
-					newDisks[spdktypes.VolumeHead].Parent = name
-				}
-			}
-		}
-
-		// we treat the healthy replica with the most snapshots as the
-		// source of the truth, since that means something are still in
-		// progress and haven't completed yet.
-		if len(newDisks) > len(disks) {
-			disks = newDisks
-		}
-	}
-
-	return disks, nil
 }
 
 func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
