@@ -615,12 +615,15 @@ func (c *Client) BdevNvmeGetControllers(name string) (controllerInfoList []spdkt
 // "fastIOFailTimeoutSec": Fast I/O failure timeout in seconds
 //
 // "transportAckTimeout": Time to wait ack until retransmission for RDMA or connection close for TCP. Range 0-31 where 0 means use default
-func (c *Client) BdevNvmeSetOptions(ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec, transportAckTimeout int32) (result bool, err error) {
+//
+// "keepAliveTimeoutMs": Keep alive timeout in milliseconds.
+func (c *Client) BdevNvmeSetOptions(ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec, transportAckTimeout, keepAliveTimeoutMs int32) (result bool, err error) {
 	req := spdktypes.BdevNvmeSetOptionsRequest{
 		CtrlrLossTimeoutSec:  ctrlrLossTimeoutSec,
 		ReconnectDelaySec:    reconnectDelaySec,
 		FastIOFailTimeoutSec: fastIOFailTimeoutSec,
 		TransportAckTimeout:  transportAckTimeout,
+		KeepAliveTimeoutMs:   keepAliveTimeoutMs,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_set_options", req)
@@ -843,7 +846,7 @@ func (c *Client) NvmfSubsystemsGetNss(nqn, bdevName string, nsid uint32) (nsList
 //
 //		"trtype": Required. NVMe-oF target trtype: "tcp", "rdma" or "pcie". "tcp" by default.
 //
-//	 	"adrfam": Required. Address family ("IPv4", "IPv6", "IB", or "FC"). "IPv4" by default.
+//	 	"adrfam": Required. Address family ("ipv4", "ipv6", "ib", or "fc"). "ipv4" by default.
 func (c *Client) NvmfSubsystemAddListener(nqn, traddr, trsvcid string, trtype spdktypes.NvmeTransportType, adrfam spdktypes.NvmeAddressFamily) (created bool, err error) {
 	req := spdktypes.NvmfSubsystemAddListenerRequest{
 		Nqn: nqn,

@@ -15,6 +15,9 @@ const (
 	nvmeBinary = "nvme"
 
 	DefaultTransportType = "tcp"
+
+	// Set short ctrlLossTimeoutSec for quick response to the controller loss.
+	defaultCtrlLossTimeoutSec = 30
 )
 
 type Device struct {
@@ -303,6 +306,7 @@ func connect(hostID, hostNQN, nqn, transpotType, ip, port string, executor *comm
 		"connect",
 		"-t", transpotType,
 		"--nqn", nqn,
+		"--ctrl-loss-tmo", strconv.Itoa(defaultCtrlLossTimeoutSec),
 		"-o", "json",
 	}
 

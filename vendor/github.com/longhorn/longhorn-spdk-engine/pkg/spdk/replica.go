@@ -677,8 +677,8 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 	r.Lock()
 	defer func() {
 		// Considering that there may be still pending validations, it's better to update the state after the deletion.
+		prevState := r.State
 		if err != nil {
-			updateRequired = true
 			r.log.WithError(err).Errorf("Failed to delete replica with cleanupRequired flag %v", cleanupRequired)
 			if r.isRestoring {
 				// This is not a real error. No need to update the state.
@@ -686,17 +686,22 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 				r.State = types.InstanceStateError
 				r.ErrorMsg = err.Error()
 			}
-		} else if r.State != types.InstanceStateError {
+		} else {
+			if !r.isRestoring {
+				if cleanupRequired {
+					r.State = types.InstanceStateTerminating
+				} else {
+					r.State = types.InstanceStateStopped
+				}
+			}
+		}
+
+		if r.State != types.InstanceStateError {
 			r.ErrorMsg = ""
 		}
 
-		if !r.isRestoring && r.State == types.InstanceStateRunning {
+		if prevState != r.State {
 			updateRequired = true
-			if cleanupRequired {
-				r.State = types.InstanceStateTerminating
-			} else {
-				r.State = types.InstanceStateStopped
-			}
 		}
 
 		r.Unlock()
