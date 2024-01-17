@@ -292,7 +292,7 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 		if err != nil {
 			return err
 		}
-		if _, err := initiator.Stop(true, true); err != nil {
+		if _, err := initiator.Stop(true, true, true); err != nil {
 			return err
 		}
 

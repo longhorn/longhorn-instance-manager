@@ -149,7 +149,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, needDmDev
 	}
 
 	i.logger.Infof("Stopping NVMe initiator blindly before starting")
-	dmDeviceBusy, err = i.stopWithoutLock(needDmDeviceCleanup, false)
+	dmDeviceBusy, err = i.stopWithoutLock(needDmDeviceCleanup, false, false)
 	if err != nil {
 		return dmDeviceBusy, errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
 	}
@@ -226,7 +226,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, needDmDev
 	return dmDeviceBusy, nil
 }
 
-func (i *Initiator) Stop(needDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
+func (i *Initiator) Stop(needDmDeviceCleanup, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -235,11 +235,11 @@ func (i *Initiator) Stop(needDmDeviceCleanup, errOnBusyDmDevice bool) (bool, err
 		defer lock.Unlock()
 	}
 
-	return i.stopWithoutLock(needDmDeviceCleanup, errOnBusyDmDevice)
+	return i.stopWithoutLock(needDmDeviceCleanup, deferDmDeviceCleanup, errOnBusyDmDevice)
 }
 
-func (i *Initiator) removeDmDeviceAndEndpoint(errOnBusyDmDevice bool) (bool, error) {
-	if err := i.removeLinearDmDevice(false, false); err != nil {
+func (i *Initiator) removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
+	if err := i.removeLinearDmDevice(false, deferDmDeviceCleanup); err != nil {
 		if strings.Contains(err.Error(), "Device or resource busy") {
 			if errOnBusyDmDevice {
 				return true, err
@@ -254,11 +254,11 @@ func (i *Initiator) removeDmDeviceAndEndpoint(errOnBusyDmDevice bool) (bool, err
 	return false, nil
 }
 
-func (i *Initiator) stopWithoutLock(needDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
+func (i *Initiator) stopWithoutLock(needDmDeviceCleanup, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
 	dmDeviceBusy := false
 	if needDmDeviceCleanup {
 		var err error
-		dmDeviceBusy, err = i.removeDmDeviceAndEndpoint(errOnBusyDmDevice)
+		dmDeviceBusy, err = i.removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmDevice)
 		if err != nil {
 			return false, err
 		}

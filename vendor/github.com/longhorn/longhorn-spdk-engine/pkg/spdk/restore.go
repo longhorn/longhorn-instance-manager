@@ -162,7 +162,7 @@ func (r *Restore) CloseVolumeDev(volDev *os.File) error {
 	}
 
 	r.log.Info("Stopping NVMe initiator")
-	if _, err := r.initiator.Stop(false, false); err != nil {
+	if _, err := r.initiator.Stop(false, false, false); err != nil {
 		return errors.Wrapf(err, "failed to stop NVMe initiator")
 	}
 
