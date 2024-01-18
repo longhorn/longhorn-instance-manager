@@ -60,7 +60,8 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 		helpertypes.DefaultCtrlrLossTimeoutSec,
 		helpertypes.DefaultReconnectDelaySec,
 		helpertypes.DefaultFastIOFailTimeoutSec,
-		helpertypes.DefaultTransportAckTimeout); err != nil {
+		helpertypes.DefaultTransportAckTimeout,
+		helpertypes.DefaultKeepAliveTimeoutMs); err != nil {
 		return nil, errors.Wrap(err, "failed to set nvme options")
 	}
 

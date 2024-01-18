@@ -114,6 +114,7 @@ type BdevNvmeSetOptionsRequest struct {
 	ReconnectDelaySec    int32 `json:"reconnect_delay_sec"`
 	FastIOFailTimeoutSec int32 `json:"fast_io_fail_timeout_sec"`
 	TransportAckTimeout  int32 `json:"transport_ack_timeout"`
+	KeepAliveTimeoutMs   int32 `json:"keep_alive_timeout_ms"`
 }
 
 type BdevNvmeGetControllersRequest struct {
