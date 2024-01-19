@@ -1130,7 +1130,7 @@ func (r *Replica) RebuildingSrcFinish(spdkClient *spdkclient.Client, dstReplicaN
 		}
 	case spdktypes.BdevTypeNvme:
 		if err = r.RebuildingSrcDetach(spdkClient, dstReplicaName); err != nil {
-			r.log.WithError(err).Errorf("Failed to unexpose rebuilding dst dev %s for dst replica %s, will do nothing but just clean up rebuilding dst info", r.rebuildingDstBdevName, r.rebuildingDstReplicaName)
+			r.log.WithError(err).Errorf("Failed to detach rebuilding dst dev %s for dst replica %s, will do nothing but just clean up rebuilding dst info", r.rebuildingDstBdevName, r.rebuildingDstReplicaName)
 		}
 	default:
 		r.log.Errorf("Found unknown rebuilding dst bdev type %s with name %s for replica %s rebuilding src finish, will do nothing but just clean up rebuilding dst info", r.rebuildingDstBdevType, r.rebuildingDstBdevName, r.Name)
@@ -1154,7 +1154,7 @@ func (r *Replica) RebuildingSrcAttach(spdkClient *spdkclient.Client, dstReplicaN
 	if r.rebuildingDstBdevName != "" {
 		controllerName := helperutil.GetNvmeControllerNameFromNamespaceName(r.rebuildingDstBdevName)
 		if dstRebuildingLvolName != controllerName {
-			return fmt.Errorf("found mismatching between the required dst bdev nvme controller name %s and the expected dst controller name %s for replica %s rebuilding src unexpose", dstRebuildingLvolName, controllerName, r.Name)
+			return fmt.Errorf("found mismatching between the required dst bdev nvme controller name %s and the expected dst controller name %s for replica %s rebuilding src attach", dstRebuildingLvolName, controllerName, r.Name)
 		}
 		return nil
 	}
@@ -1193,7 +1193,7 @@ func (r *Replica) RebuildingSrcDetach(spdkClient *spdkclient.Client, dstReplicaN
 	dstRebuildingLvolName := dstReplicaName
 	controllerName := helperutil.GetNvmeControllerNameFromNamespaceName(r.rebuildingDstBdevName)
 	if dstRebuildingLvolName != controllerName {
-		return fmt.Errorf("found mismatching between the required dst bdev nvme controller name %s and the expected dst controller name %s for replica %s rebuilding src unexpose", dstRebuildingLvolName, controllerName, r.Name)
+		return fmt.Errorf("found mismatching between the required dst bdev nvme controller name %s and the expected dst controller name %s for replica %s rebuilding src detach", dstRebuildingLvolName, controllerName, r.Name)
 	}
 
 	if _, err := spdkClient.BdevNvmeDetachController(controllerName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {

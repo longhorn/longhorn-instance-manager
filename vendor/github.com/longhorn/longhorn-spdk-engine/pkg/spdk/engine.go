@@ -938,6 +938,10 @@ func (e *Engine) ReplicaShallowCopy(dstReplicaName, dstReplicaAddress string) (e
 	defer func() {
 		// Blindly mark the rebuilding replica as mode ERR now.
 		if err != nil {
+			// Blindly send rebuilding finish for src replica.
+			if srcReplicaErr := srcReplicaServiceCli.ReplicaRebuildingSrcFinish(srcReplicaName, dstReplicaName); srcReplicaErr != nil {
+				e.log.WithError(srcReplicaErr).Errorf("Failed to finish rebuilding for src replica %s with address %s after rebuilding failure, will do nothing", srcReplicaName, srcReplicaAddress)
+			}
 			e.Lock()
 			if e.ReplicaModeMap[dstReplicaName] != types.ModeERR {
 				e.ReplicaModeMap[dstReplicaName] = types.ModeERR
