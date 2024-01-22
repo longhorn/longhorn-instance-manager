@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\nCgithub.com/longhorn/longhorn-instance-manager/pkg/imrpc/imrpc.proto\x1a\x1bgoogle/protobuf/empty.proto\"`\n\x0bProcessSpec\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x03 \x03(\t\x12\x12\n\nport_count\x18\x04 \x01(\x05\x12\x11\n\tport_args\x18\x05 \x03(\t\"W\n\rProcessStatus\x12\r\n\x05state\x18\x01 \x01(\t\x12\x11\n\terror_msg\x18\x02 \x01(\t\x12\x12\n\nport_start\x18\x03 \x01(\x05\x12\x10\n\x08port_end\x18\x04 \x01(\x05\"2\n\x14ProcessCreateRequest\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\"$\n\x14ProcessDeleteRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"!\n\x11ProcessGetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"^\n\x0fProcessResponse\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\x12\x1e\n\x06status\x18\x02 \x01(\x0b\x32\x0e.ProcessStatus\x12\x0f\n\x07\x64\x65leted\x18\x03 \x01(\x08\"\x14\n\x12ProcessListRequest\"\x91\x01\n\x13ProcessListResponse\x12\x36\n\tprocesses\x18\x01 \x03(\x0b\x32#.ProcessListResponse.ProcessesEntry\x1a\x42\n\x0eProcessesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1f\n\x05value\x18\x02 \x01(\x0b\x32\x10.ProcessResponse:\x02\x38\x01\"\x1a\n\nLogRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"M\n\x15ProcessReplaceRequest\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\x12\x18\n\x10terminate_signal\x18\x02 \x01(\t\"\x1b\n\x0bLogResponse\x12\x0c\n\x04line\x18\x02 \x01(\t\"\xe4\x01\n\x0fVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x11\n\tgitCommit\x18\x02 \x01(\t\x12\x11\n\tbuildDate\x18\x03 \x01(\t\x12!\n\x19instanceManagerAPIVersion\x18\x04 \x01(\x03\x12$\n\x1cinstanceManagerAPIMinVersion\x18\x05 \x01(\x03\x12&\n\x1einstanceManagerProxyAPIVersion\x18\x06 \x01(\x03\x12)\n!instanceManagerProxyAPIMinVersion\x18\x07 \x01(\x03\x32\xe2\x03\n\x15ProcessManagerService\x12:\n\rProcessCreate\x12\x15.ProcessCreateRequest\x1a\x10.ProcessResponse\"\x00\x12:\n\rProcessDelete\x12\x15.ProcessDeleteRequest\x1a\x10.ProcessResponse\"\x00\x12\x34\n\nProcessGet\x12\x12.ProcessGetRequest\x1a\x10.ProcessResponse\"\x00\x12:\n\x0bProcessList\x12\x13.ProcessListRequest\x1a\x14.ProcessListResponse\"\x00\x12+\n\nProcessLog\x12\x0b.LogRequest\x1a\x0c.LogResponse\"\x00\x30\x01\x12<\n\x0cProcessWatch\x12\x16.google.protobuf.Empty\x1a\x10.ProcessResponse\"\x00\x30\x01\x12<\n\x0eProcessReplace\x12\x16.ProcessReplaceRequest\x1a\x10.ProcessResponse\"\x00\x12\x36\n\nVersionGet\x12\x16.google.protobuf.Empty\x1a\x10.VersionResponseb\x06proto3')
+  serialized_pb=_b('\nCgithub.com/longhorn/longhorn-instance-manager/pkg/imrpc/imrpc.proto\x1a\x1bgoogle/protobuf/empty.proto\"`\n\x0bProcessSpec\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x03 \x03(\t\x12\x12\n\nport_count\x18\x04 \x01(\x05\x12\x11\n\tport_args\x18\x05 \x03(\t\"\xbe\x01\n\rProcessStatus\x12\r\n\x05state\x18\x01 \x01(\t\x12\x11\n\terror_msg\x18\x02 \x01(\t\x12\x12\n\nport_start\x18\x03 \x01(\x05\x12\x10\n\x08port_end\x18\x04 \x01(\x05\x12\x32\n\nconditions\x18\x05 \x03(\x0b\x32\x1e.ProcessStatus.ConditionsEntry\x1a\x31\n\x0f\x43onditionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\"2\n\x14ProcessCreateRequest\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\"$\n\x14ProcessDeleteRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"!\n\x11ProcessGetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"^\n\x0fProcessResponse\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\x12\x1e\n\x06status\x18\x02 \x01(\x0b\x32\x0e.ProcessStatus\x12\x0f\n\x07\x64\x65leted\x18\x03 \x01(\x08\"\x14\n\x12ProcessListRequest\"\x91\x01\n\x13ProcessListResponse\x12\x36\n\tprocesses\x18\x01 \x03(\x0b\x32#.ProcessListResponse.ProcessesEntry\x1a\x42\n\x0eProcessesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1f\n\x05value\x18\x02 \x01(\x0b\x32\x10.ProcessResponse:\x02\x38\x01\"\x1a\n\nLogRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"M\n\x15ProcessReplaceRequest\x12\x1a\n\x04spec\x18\x01 \x01(\x0b\x32\x0c.ProcessSpec\x12\x18\n\x10terminate_signal\x18\x02 \x01(\t\"\x1b\n\x0bLogResponse\x12\x0c\n\x04line\x18\x02 \x01(\t\"\xe4\x01\n\x0fVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x11\n\tgitCommit\x18\x02 \x01(\t\x12\x11\n\tbuildDate\x18\x03 \x01(\t\x12!\n\x19instanceManagerAPIVersion\x18\x04 \x01(\x03\x12$\n\x1cinstanceManagerAPIMinVersion\x18\x05 \x01(\x03\x12&\n\x1einstanceManagerProxyAPIVersion\x18\x06 \x01(\x03\x12)\n!instanceManagerProxyAPIMinVersion\x18\x07 \x01(\x03\x32\xe2\x03\n\x15ProcessManagerService\x12:\n\rProcessCreate\x12\x15.ProcessCreateRequest\x1a\x10.ProcessResponse\"\x00\x12:\n\rProcessDelete\x12\x15.ProcessDeleteRequest\x1a\x10.ProcessResponse\"\x00\x12\x34\n\nProcessGet\x12\x12.ProcessGetRequest\x1a\x10.ProcessResponse\"\x00\x12:\n\x0bProcessList\x12\x13.ProcessListRequest\x1a\x14.ProcessListResponse\"\x00\x12+\n\nProcessLog\x12\x0b.LogRequest\x1a\x0c.LogResponse\"\x00\x30\x01\x12<\n\x0cProcessWatch\x12\x16.google.protobuf.Empty\x1a\x10.ProcessResponse\"\x00\x30\x01\x12<\n\x0eProcessReplace\x12\x16.ProcessReplaceRequest\x1a\x10.ProcessResponse\"\x00\x12\x36\n\nVersionGet\x12\x16.google.protobuf.Empty\x1a\x10.VersionResponseb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
@@ -87,6 +87,43 @@ _PROCESSSPEC = _descriptor.Descriptor(
 )
 
 
+_PROCESSSTATUS_CONDITIONSENTRY = _descriptor.Descriptor(
+  name='ConditionsEntry',
+  full_name='ProcessStatus.ConditionsEntry',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='ProcessStatus.ConditionsEntry.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='ProcessStatus.ConditionsEntry.value', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=_b('8\001'),
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=340,
+  serialized_end=389,
+)
+
 _PROCESSSTATUS = _descriptor.Descriptor(
   name='ProcessStatus',
   full_name='ProcessStatus',
@@ -122,10 +159,17 @@ _PROCESSSTATUS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='conditions', full_name='ProcessStatus.conditions', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
-  nested_types=[],
+  nested_types=[_PROCESSSTATUS_CONDITIONSENTRY, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -134,8 +178,8 @@ _PROCESSSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=198,
-  serialized_end=285,
+  serialized_start=199,
+  serialized_end=389,
 )
 
 
@@ -165,8 +209,8 @@ _PROCESSCREATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=287,
-  serialized_end=337,
+  serialized_start=391,
+  serialized_end=441,
 )
 
 
@@ -196,8 +240,8 @@ _PROCESSDELETEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=339,
-  serialized_end=375,
+  serialized_start=443,
+  serialized_end=479,
 )
 
 
@@ -227,8 +271,8 @@ _PROCESSGETREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=377,
-  serialized_end=410,
+  serialized_start=481,
+  serialized_end=514,
 )
 
 
@@ -272,8 +316,8 @@ _PROCESSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=412,
-  serialized_end=506,
+  serialized_start=516,
+  serialized_end=610,
 )
 
 
@@ -296,8 +340,8 @@ _PROCESSLISTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=508,
-  serialized_end=528,
+  serialized_start=612,
+  serialized_end=632,
 )
 
 
@@ -334,8 +378,8 @@ _PROCESSLISTRESPONSE_PROCESSESENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=610,
-  serialized_end=676,
+  serialized_start=714,
+  serialized_end=780,
 )
 
 _PROCESSLISTRESPONSE = _descriptor.Descriptor(
@@ -364,8 +408,8 @@ _PROCESSLISTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=531,
-  serialized_end=676,
+  serialized_start=635,
+  serialized_end=780,
 )
 
 
@@ -395,8 +439,8 @@ _LOGREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=678,
-  serialized_end=704,
+  serialized_start=782,
+  serialized_end=808,
 )
 
 
@@ -433,8 +477,8 @@ _PROCESSREPLACEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=706,
-  serialized_end=783,
+  serialized_start=810,
+  serialized_end=887,
 )
 
 
@@ -464,8 +508,8 @@ _LOGRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=785,
-  serialized_end=812,
+  serialized_start=889,
+  serialized_end=916,
 )
 
 
@@ -537,10 +581,12 @@ _VERSIONRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=815,
-  serialized_end=1043,
+  serialized_start=919,
+  serialized_end=1147,
 )
 
+_PROCESSSTATUS_CONDITIONSENTRY.containing_type = _PROCESSSTATUS
+_PROCESSSTATUS.fields_by_name['conditions'].message_type = _PROCESSSTATUS_CONDITIONSENTRY
 _PROCESSCREATEREQUEST.fields_by_name['spec'].message_type = _PROCESSSPEC
 _PROCESSRESPONSE.fields_by_name['spec'].message_type = _PROCESSSPEC
 _PROCESSRESPONSE.fields_by_name['status'].message_type = _PROCESSSTATUS
@@ -570,11 +616,19 @@ ProcessSpec = _reflection.GeneratedProtocolMessageType('ProcessSpec', (_message.
 _sym_db.RegisterMessage(ProcessSpec)
 
 ProcessStatus = _reflection.GeneratedProtocolMessageType('ProcessStatus', (_message.Message,), {
+
+  'ConditionsEntry' : _reflection.GeneratedProtocolMessageType('ConditionsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _PROCESSSTATUS_CONDITIONSENTRY,
+    '__module__' : 'github.com.longhorn.longhorn_instance_manager.pkg.imrpc.imrpc_pb2'
+    # @@protoc_insertion_point(class_scope:ProcessStatus.ConditionsEntry)
+    })
+  ,
   'DESCRIPTOR' : _PROCESSSTATUS,
   '__module__' : 'github.com.longhorn.longhorn_instance_manager.pkg.imrpc.imrpc_pb2'
   # @@protoc_insertion_point(class_scope:ProcessStatus)
   })
 _sym_db.RegisterMessage(ProcessStatus)
+_sym_db.RegisterMessage(ProcessStatus.ConditionsEntry)
 
 ProcessCreateRequest = _reflection.GeneratedProtocolMessageType('ProcessCreateRequest', (_message.Message,), {
   'DESCRIPTOR' : _PROCESSCREATEREQUEST,
@@ -655,6 +709,7 @@ VersionResponse = _reflection.GeneratedProtocolMessageType('VersionResponse', (_
 _sym_db.RegisterMessage(VersionResponse)
 
 
+_PROCESSSTATUS_CONDITIONSENTRY._options = None
 _PROCESSLISTRESPONSE_PROCESSESENTRY._options = None
 
 _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
@@ -663,8 +718,8 @@ _PROCESSMANAGERSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=1046,
-  serialized_end=1528,
+  serialized_start=1150,
+  serialized_end=1632,
   methods=[
   _descriptor.MethodDescriptor(
     name='ProcessCreate',

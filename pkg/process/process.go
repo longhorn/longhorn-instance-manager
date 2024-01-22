@@ -29,11 +29,12 @@ type Process struct {
 	PortCount int32
 	PortArgs  []string
 
-	UUID      string
-	State     State
-	ErrorMsg  string
-	PortStart int32
-	PortEnd   int32
+	UUID       string
+	State      State
+	ErrorMsg   string
+	Conditions map[string]bool
+	PortStart  int32
+	PortEnd    int32
 
 	lock     *sync.RWMutex
 	cmd      Command
@@ -122,10 +123,11 @@ func (p *Process) RPCResponse() *rpc.ProcessResponse {
 		},
 
 		Status: &rpc.ProcessStatus{
-			State:     string(p.State),
-			ErrorMsg:  p.ErrorMsg,
-			PortStart: p.PortStart,
-			PortEnd:   p.PortEnd,
+			State:      string(p.State),
+			ErrorMsg:   p.ErrorMsg,
+			PortStart:  p.PortStart,
+			PortEnd:    p.PortEnd,
+			Conditions: p.Conditions,
 		},
 	}
 }

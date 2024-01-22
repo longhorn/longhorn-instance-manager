@@ -632,10 +632,11 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse) *rpc.InstanceResp
 			PortArgs:  p.Spec.PortArgs,
 		},
 		Status: &rpc.InstanceStatus{
-			State:     p.Status.State,
-			PortStart: p.Status.PortStart,
-			PortEnd:   p.Status.PortEnd,
-			ErrorMsg:  p.Status.ErrorMsg,
+			State:      p.Status.State,
+			PortStart:  p.Status.PortStart,
+			PortEnd:    p.Status.PortEnd,
+			ErrorMsg:   p.Status.ErrorMsg,
+			Conditions: p.Status.Conditions,
 		},
 		Deleted: p.Deleted,
 	}
@@ -649,10 +650,11 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 			BackendStoreDriver: rpc.BackendStoreDriver_v2,
 		},
 		Status: &rpc.InstanceStatus{
-			State:     r.State,
-			ErrorMsg:  "",
-			PortStart: r.PortStart,
-			PortEnd:   r.PortEnd,
+			State:      r.State,
+			ErrorMsg:   "",
+			PortStart:  r.PortStart,
+			PortEnd:    r.PortEnd,
+			Conditions: make(map[string]bool),
 		},
 	}
 }
@@ -665,10 +667,11 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			BackendStoreDriver: rpc.BackendStoreDriver_v2,
 		},
 		Status: &rpc.InstanceStatus{
-			State:     e.State,
-			ErrorMsg:  "",
-			PortStart: e.Port,
-			PortEnd:   e.Port,
+			State:      e.State,
+			ErrorMsg:   "",
+			PortStart:  e.Port,
+			PortEnd:    e.Port,
+			Conditions: make(map[string]bool),
 		},
 	}
 }
