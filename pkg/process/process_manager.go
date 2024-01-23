@@ -1,6 +1,8 @@
 package process
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -15,11 +17,18 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/mount-utils"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util/broadcaster"
+)
+
+const (
+	MountCheckInterval = 10 * time.Second
+
+	DefaultEnginePortCount = 1
 )
 
 /* Lock order
@@ -78,6 +87,7 @@ func NewManager(portRange string, logsDir string, shutdownCh chan error) (*Manag
 		return nil, err
 	}
 	go pm.startMonitoring()
+	go pm.startInstanceConditionCheck()
 	return pm, nil
 }
 
@@ -103,6 +113,64 @@ func (pm *Manager) startMonitoring() {
 			break
 		}
 	}
+}
+
+func (pm *Manager) startInstanceConditionCheck() {
+	done := false
+
+	ticker := time.NewTicker(MountCheckInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-pm.shutdownCh:
+			logrus.Info("Process Manager is shutting down")
+			done = true
+		case <-ticker.C:
+			pm.checkMountPointStatusForEngine()
+		}
+		if done {
+			break
+		}
+	}
+}
+
+func (pm *Manager) checkMountPointStatusForEngine() {
+	volumeMountPointMap, err := util.GetVolumeMountPointMap()
+	if err != nil {
+		logrus.WithError(err).Warn("Failed to get all volume mount points")
+	}
+
+	pm.lock.RLock()
+	defer pm.lock.RUnlock()
+
+	processToUpdate := pm.getProcessToUpdateConditions(volumeMountPointMap)
+	for _, p := range processToUpdate {
+		p.UpdateCh <- p
+	}
+}
+
+func (pm *Manager) getProcessToUpdateConditions(volumeMountPointMap map[string]mount.MountPoint) []*Process {
+	var processToUpdate []*Process
+	for _, p := range pm.processes {
+		p.lock.Lock()
+		if isEngineProcess(p) && p.State == StateRunning {
+			volumeName := util.ProcessNameToVolumeName(p.Name)
+			volumeNameSHA := sha256.Sum256([]byte(volumeName))
+			volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
+
+			if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
+				p.Conditions[types.EngineConditionFilesystemReadOnly] = util.IsMountPointReadOnly(mp)
+				processToUpdate = append(processToUpdate, p)
+			}
+		}
+		p.lock.Unlock()
+	}
+	return processToUpdate
+}
+
+func isEngineProcess(p *Process) bool {
+	return p.PortCount == DefaultEnginePortCount
 }
 
 func (pm *Manager) Shutdown() {
@@ -177,7 +245,8 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 
 		UUID: util.UUID(),
 
-		State: StateStarting,
+		State:      StateStarting,
+		Conditions: make(map[string]bool),
 
 		lock: &sync.RWMutex{},
 
@@ -441,8 +510,9 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
 
-		UUID:  util.UUID(),
-		State: StateStarting,
+		UUID:       util.UUID(),
+		State:      StateStarting,
+		Conditions: make(map[string]bool),
 
 		lock: &sync.RWMutex{},
 
