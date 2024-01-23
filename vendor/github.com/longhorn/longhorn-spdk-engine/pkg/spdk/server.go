@@ -344,7 +344,9 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 		return nil, err
 	}
 
+	s.RLock()
 	spdkClient := s.spdkClient
+	s.RUnlock()
 
 	return r.Create(spdkClient, req.ExposeRequired, req.PortCount, s.portAllocator)
 }
