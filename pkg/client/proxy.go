@@ -3,17 +3,13 @@ package client
 import (
 	"crypto/tls"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/keepalive"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
@@ -67,18 +63,7 @@ type ProxyClient struct {
 
 func NewProxyClient(ctx context.Context, ctxCancel context.CancelFunc, address string, port int, tlsConfig *tls.Config) (*ProxyClient, error) {
 	getServiceCtx := func(serviceUrl string) (ServiceContext, error) {
-		dialOptions := []grpc.DialOption{
-			grpc.WithKeepaliveParams(keepalive.ClientParameters{
-				Time:                time.Second * 10,
-				PermitWithoutStream: true,
-			}),
-		}
-		if tlsConfig != nil {
-			dialOptions = append(dialOptions, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-		} else {
-			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		}
-		connection, err := grpc.Dial(serviceUrl, dialOptions...)
+		connection, err := util.Connect(serviceUrl, tlsConfig)
 		if err != nil {
 			return ServiceContext{}, errors.Wrapf(err, "cannot connect to ProxyService %v", serviceUrl)
 		}
