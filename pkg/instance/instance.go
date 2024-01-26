@@ -101,7 +101,9 @@ func (s *Server) processInstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.Ins
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn backend store driver")
 	}
 
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+s.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -159,7 +161,9 @@ func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequ
 }
 
 func (s *Server) processInstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+s.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -222,7 +226,9 @@ func (s *Server) InstanceGet(ctx context.Context, req *rpc.InstanceGetRequest) (
 }
 
 func (s *Server) processInstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+s.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -283,7 +289,9 @@ func (s *Server) InstanceList(ctx context.Context, req *empty.Empty) (*rpc.Insta
 }
 
 func (s *Server) processInstanceList(instances map[string]*rpc.InstanceResponse) error {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+s.processManagerServiceAddress, nil)
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -346,7 +354,9 @@ func (s *Server) processInstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.I
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn backend store driver")
 	}
 
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+s.processManagerServiceAddress, nil)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -383,7 +393,9 @@ func (s *Server) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceServic
 }
 
 func (s *Server) processInstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+s.processManagerServiceAddress, nil)
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -452,7 +464,9 @@ func (s *Server) InstanceWatch(req *empty.Empty, srv rpc.InstanceService_Instanc
 	}()
 
 	// Create a client for watching processes
-	pmClient, err := client.NewProcessManagerClient("tcp://"+s.processManagerServiceAddress, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+s.processManagerServiceAddress, nil)
 	if err != nil {
 		done <- struct{}{}
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
@@ -473,7 +487,6 @@ func (s *Server) InstanceWatch(req *empty.Empty, srv rpc.InstanceService_Instanc
 	notifyChan := make(chan struct{}, 1024)
 	defer close(notifyChan)
 
-	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
