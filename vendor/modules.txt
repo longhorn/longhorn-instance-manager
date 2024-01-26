@@ -137,7 +137,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20240110081942-bd231cfb0c7b
+# github.com/longhorn/backupstore v0.0.0-20240126140439-9c90a8728ca2
 ## explicit; go 1.21
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -169,7 +169,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/client
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240110095344-deb8b18a1558
+# github.com/longhorn/longhorn-engine v1.6.0-rc2.0.20240126142034-cbafbcbc32be
 ## explicit; go 1.21
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
