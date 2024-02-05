@@ -55,7 +55,7 @@ func createProcess(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cli, err := getProcessManagerClient(c, ctx, cancel)
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -89,7 +89,7 @@ func deleteProcess(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cli, err := getProcessManagerClient(c, ctx, cancel)
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -121,7 +121,7 @@ func ProcessGetCmd() cli.Command {
 func getProcess(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	cli, err := getProcessManagerClient(c, ctx, cancel)
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -149,7 +149,7 @@ func ProcessListCmd() cli.Command {
 func listProcess(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	cli, err := getProcessManagerClient(c, ctx, cancel)
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -196,7 +196,7 @@ func ProcessReplaceCmd() cli.Command {
 func replaceProcess(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	cli, err := getProcessManagerClient(c, ctx, cancel)
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -210,7 +210,7 @@ func replaceProcess(c *cli.Context) error {
 	return util.PrintJSON(process)
 }
 
-func getProcessManagerClient(c *cli.Context, ctx context.Context, ctxCancel context.CancelFunc) (*client.ProcessManagerClient, error) {
+func getProcessManagerClient(ctx context.Context, ctxCancel context.CancelFunc, c *cli.Context) (*client.ProcessManagerClient, error) {
 	url := c.GlobalString("url")
 	tlsDir := c.GlobalString("tls-dir")
 

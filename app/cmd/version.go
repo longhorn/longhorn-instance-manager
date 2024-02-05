@@ -41,7 +41,7 @@ func version(c *cli.Context) error {
 	defer cancel()
 
 	if !c.Bool("client-only") {
-		cli, err := getProcessManagerClient(c, ctx, cancel)
+		cli, err := getProcessManagerClient(ctx, cancel, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize client")
 		}
