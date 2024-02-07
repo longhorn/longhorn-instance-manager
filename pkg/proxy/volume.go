@@ -1,11 +1,19 @@
 package proxy
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"os/exec"
+
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
@@ -112,4 +120,25 @@ func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc
 	}
 
 	return &empty.Empty{}, nil
+}
+
+func (p *Proxy) RemountReadOnlyVolume(ctx context.Context, req *rpc.RemountVolumeRequest) (resp *emptypb.Empty, err error) {
+	volumeName := req.VolumeName
+	volumeNameSHA := sha256.Sum256([]byte(volumeName))
+	volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
+
+	volumeMountPointMap, err := util.GetVolumeMountPointMap()
+	if err != nil {
+		logrus.WithError(err).Warn("Failed to get all volume mount points")
+	}
+
+	if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
+		cmd := exec.CommandContext(ctx, "mount", "-o", "remount,rw", mp.Path)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "remount failed with output: %v", out)
+		}
+
+	}
+
+	return &emptypb.Empty{}, nil
 }
