@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -36,8 +37,11 @@ func version(c *cli.Context) error {
 	clientVersion := meta.GetVersion()
 	v := VersionOutput{ClientVersion: &clientVersion}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if !c.Bool("client-only") {
-		cli, err := getProcessManagerClient(c)
+		cli, err := getProcessManagerClient(ctx, cancel, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize client")
 		}
