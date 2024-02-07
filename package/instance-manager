@@ -29,7 +29,7 @@ function generate_nvme_hostid_and_hostnqn() {
     mkdir -p /etc/nvme
 
     local hostnqn=$(nvme gen-hostnqn)
-    # hostnqn is generated from /sys/class/dmi/id/product_uuid according to the implemetation of libnvme
+    # hostnqn is generated from /sys/class/dmi/id/product_uuid according to the implementation of libnvme
     echo "$hostnqn" > /etc/nvme/hostnqn
     # Always generate the same hostid for the same hostnqn
     cat /sys/class/dmi/id/product_uuid > /etc/nvme/hostid
