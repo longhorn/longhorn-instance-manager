@@ -155,6 +155,11 @@ class ProxyEngineServiceStub(object):
         request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.ProxyEngineRequest.SerializeToString,
         response_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineMetricsGetProxyResponse.FromString,
         )
+    self.RemountReadOnlyVolume = channel.unary_unary(
+        '/imrpc.ProxyEngineService/RemountReadOnlyVolume',
+        request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.RemountVolumeRequest.SerializeToString,
+        response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+        )
 
 
 class ProxyEngineServiceServicer(object):
@@ -357,6 +362,13 @@ class ProxyEngineServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def RemountReadOnlyVolume(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_ProxyEngineServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -499,6 +511,11 @@ def add_ProxyEngineServiceServicer_to_server(servicer, server):
           servicer.MetricsGet,
           request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.ProxyEngineRequest.FromString,
           response_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.EngineMetricsGetProxyResponse.SerializeToString,
+      ),
+      'RemountReadOnlyVolume': grpc.unary_unary_rpc_method_handler(
+          servicer.RemountReadOnlyVolume,
+          request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_proxy__pb2.RemountVolumeRequest.FromString,
+          response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
