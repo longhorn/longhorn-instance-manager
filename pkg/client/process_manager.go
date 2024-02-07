@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/api"
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
@@ -17,15 +18,24 @@ import (
 )
 
 type ProcessManagerServiceContext struct {
-	cc      *grpc.ClientConn
+	cc *grpc.ClientConn
+
+	ctx  context.Context
+	quit context.CancelFunc
+
 	service rpc.ProcessManagerServiceClient
+	health  healthpb.HealthClient
 }
 
 func (c ProcessManagerServiceContext) Close() error {
+	c.quit()
 	if c.cc == nil {
 		return nil
 	}
-	return c.cc.Close()
+	if err := c.cc.Close(); err != nil {
+		return errors.Wrap(err, "failed to close process manager gRPC connection")
+	}
+	return nil
 }
 
 func (c *ProcessManagerClient) getControllerServiceClient() rpc.ProcessManagerServiceClient {
@@ -38,7 +48,7 @@ type ProcessManagerClient struct {
 	ProcessManagerServiceContext
 }
 
-func NewProcessManagerClient(serviceURL string, tlsConfig *tls.Config) (*ProcessManagerClient, error) {
+func NewProcessManagerClient(ctx context.Context, ctxCancel context.CancelFunc, serviceURL string, tlsConfig *tls.Config) (*ProcessManagerClient, error) {
 	getProcessManagerServiceContext := func(serviceUrl string, tlsConfig *tls.Config) (ProcessManagerServiceContext, error) {
 		connection, err := util.Connect(serviceUrl, tlsConfig)
 		if err != nil {
@@ -47,7 +57,10 @@ func NewProcessManagerClient(serviceURL string, tlsConfig *tls.Config) (*Process
 
 		return ProcessManagerServiceContext{
 			cc:      connection,
+			ctx:     ctx,
+			quit:    ctxCancel,
 			service: rpc.NewProcessManagerServiceClient(connection),
+			health:  healthpb.NewHealthClient(connection),
 		}, nil
 	}
 
@@ -63,13 +76,13 @@ func NewProcessManagerClient(serviceURL string, tlsConfig *tls.Config) (*Process
 	}, nil
 }
 
-func NewProcessManagerClientWithTLS(serviceURL, caFile, certFile, keyFile, peerName string) (*ProcessManagerClient, error) {
+func NewProcessManagerClientWithTLS(ctx context.Context, ctxCancel context.CancelFunc, serviceURL, caFile, certFile, keyFile, peerName string) (*ProcessManagerClient, error) {
 	tlsConfig, err := util.LoadClientTLS(caFile, certFile, keyFile, peerName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load tls key pair from file")
 	}
 
-	return NewProcessManagerClient(serviceURL, tlsConfig)
+	return NewProcessManagerClient(ctx, ctxCancel, serviceURL, tlsConfig)
 }
 
 func (c *ProcessManagerClient) ProcessCreate(name, binary string, portCount int, args, portArgs []string) (*api.Process, error) {
@@ -220,4 +233,10 @@ func (c *ProcessManagerClient) VersionGet() (*meta.VersionOutput, error) {
 		InstanceManagerProxyAPIVersion:    int(resp.InstanceManagerProxyAPIVersion),
 		InstanceManagerProxyAPIMinVersion: int(resp.InstanceManagerProxyAPIMinVersion),
 	}, nil
+}
+
+func (c *ProcessManagerClient) CheckConnection() error {
+	req := &healthpb.HealthCheckRequest{}
+	_, err := c.health.Check(getContextWithGRPCTimeout(c.ctx), req)
+	return err
 }

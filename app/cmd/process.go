@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -51,7 +52,10 @@ func ProcessCreateCmd() cli.Command {
 }
 
 func createProcess(c *cli.Context) error {
-	cli, err := getProcessManagerClient(c)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -82,7 +86,10 @@ func ProcessDeleteCmd() cli.Command {
 }
 
 func deleteProcess(c *cli.Context) error {
-	cli, err := getProcessManagerClient(c)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -112,7 +119,9 @@ func ProcessGetCmd() cli.Command {
 }
 
 func getProcess(c *cli.Context) error {
-	cli, err := getProcessManagerClient(c)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -138,7 +147,9 @@ func ProcessListCmd() cli.Command {
 }
 
 func listProcess(c *cli.Context) error {
-	cli, err := getProcessManagerClient(c)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -183,7 +194,9 @@ func ProcessReplaceCmd() cli.Command {
 }
 
 func replaceProcess(c *cli.Context) error {
-	cli, err := getProcessManagerClient(c)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cli, err := getProcessManagerClient(ctx, cancel, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize client")
 	}
@@ -197,12 +210,12 @@ func replaceProcess(c *cli.Context) error {
 	return util.PrintJSON(process)
 }
 
-func getProcessManagerClient(c *cli.Context) (*client.ProcessManagerClient, error) {
+func getProcessManagerClient(ctx context.Context, ctxCancel context.CancelFunc, c *cli.Context) (*client.ProcessManagerClient, error) {
 	url := c.GlobalString("url")
 	tlsDir := c.GlobalString("tls-dir")
 
 	if tlsDir != "" {
-		imClient, err := client.NewProcessManagerClientWithTLS(url,
+		imClient, err := client.NewProcessManagerClientWithTLS(ctx, ctxCancel, url,
 			filepath.Join(tlsDir, "ca.crt"),
 			filepath.Join(tlsDir, "tls.crt"),
 			filepath.Join(tlsDir, "tls.key"),
@@ -213,5 +226,5 @@ func getProcessManagerClient(c *cli.Context) (*client.ProcessManagerClient, erro
 		logrus.WithError(err).Info("Falling back to non tls client")
 	}
 
-	return client.NewProcessManagerClient(url, nil)
+	return client.NewProcessManagerClient(ctx, ctxCancel, url, nil)
 }
