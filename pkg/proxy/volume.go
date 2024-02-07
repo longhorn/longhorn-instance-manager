@@ -1,6 +1,9 @@
 package proxy
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -8,10 +11,12 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	lhns "github.com/longhorn/go-common-libs/ns"
+	lhtypes "github.com/longhorn/go-common-libs/types"
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
-
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
 
 func (p *Proxy) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
@@ -306,5 +311,35 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, re
 
 func (ops V2DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
 	/* TODO: Implement this */
+	return &emptypb.Empty{}, nil
+}
+
+func (p *Proxy) RemountReadOnlyVolume(ctx context.Context, req *rpc.RemountVolumeRequest) (resp *emptypb.Empty, err error) {
+	volumeName := req.VolumeName
+	volumeNameSHA := sha256.Sum256([]byte(volumeName))
+	volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
+
+	volumeMountPointMap, err := util.GetVolumeMountPointMap()
+	if err != nil {
+		return &emptypb.Empty{}, err
+	}
+
+	namespaces := []lhtypes.Namespace{lhtypes.NamespaceMnt, lhtypes.NamespaceNet}
+	nsexec, err := lhns.NewNamespaceExecutor(lhtypes.ProcessNone, lhtypes.ProcDirectory, namespaces)
+	if err != nil {
+		return &emptypb.Empty{}, err
+	}
+
+	if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
+		opts := []string{
+			"-o",
+			"remount,rw",
+			mp.Path,
+		}
+		if _, err := nsexec.Execute("mount", opts, lhtypes.ExecuteDefaultTimeout); err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "remount failed with error: %v", err)
+		}
+	}
+
 	return &emptypb.Empty{}, nil
 }
