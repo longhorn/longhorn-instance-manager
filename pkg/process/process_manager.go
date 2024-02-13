@@ -139,18 +139,19 @@ func (pm *Manager) checkMountPointStatusForEngine() {
 	if err != nil {
 		logrus.WithError(err).Warn("Failed to get all volume mount points")
 	}
-
-	pm.lock.RLock()
-	defer pm.lock.RUnlock()
-
-	processToUpdate := pm.getProcessToUpdateConditions(volumeMountPointMap)
-	for _, p := range processToUpdate {
+	// Locking is handled inside getProcessesToUpdateConditions.
+	processesToUpdate := pm.getProcessesToUpdateConditions(volumeMountPointMap)
+	for _, p := range processesToUpdate {
 		p.UpdateCh <- p
 	}
 }
 
-func (pm *Manager) getProcessToUpdateConditions(volumeMountPointMap map[string]mount.MountPoint) []*Process {
-	var processToUpdate []*Process
+func (pm *Manager) getProcessesToUpdateConditions(volumeMountPointMap map[string]mount.MountPoint) []*Process {
+	var processesToUpdate []*Process
+
+	pm.lock.RLock()
+	defer pm.lock.RUnlock()
+
 	for _, p := range pm.processes {
 		p.lock.Lock()
 		if isEngineProcess(p) && p.State == StateRunning {
@@ -160,12 +161,12 @@ func (pm *Manager) getProcessToUpdateConditions(volumeMountPointMap map[string]m
 
 			if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
 				p.Conditions[types.EngineConditionFilesystemReadOnly] = util.IsMountPointReadOnly(mp)
-				processToUpdate = append(processToUpdate, p)
+				processesToUpdate = append(processesToUpdate, p)
 			}
 		}
 		p.lock.Unlock()
 	}
-	return processToUpdate
+	return processesToUpdate
 }
 
 func isEngineProcess(p *Process) bool {
