@@ -51,11 +51,11 @@ RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     git submodule update --init && \
     ./scripts/pkgdep.sh && \
     if [ ${ARCH} = "amd64" ]; then \
-        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples && \
+        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples --enable-debug && \
         make -j$(nproc) && \
         make install; \
     elif [ ${ARCH} = "arm64" ]; then \
-        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples && \
+        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples --enable-debug && \
         DPDKBUILD_FLAGS="-Dplatform=generic" make -j$(nproc) && \
         make install; \
     else \
