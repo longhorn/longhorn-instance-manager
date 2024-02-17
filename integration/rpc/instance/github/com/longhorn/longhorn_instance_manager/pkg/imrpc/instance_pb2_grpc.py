@@ -51,6 +51,26 @@ class InstanceServiceStub(object):
                 request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.InstanceReplaceRequest.SerializeToString,
                 response_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.InstanceResponse.FromString,
                 )
+        self.LogSetLevel = channel.unary_unary(
+                '/imrpc.InstanceService/LogSetLevel',
+                request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogSetLevelRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.LogSetFlags = channel.unary_unary(
+                '/imrpc.InstanceService/LogSetFlags',
+                request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogSetFlagsRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.LogGetLevel = channel.unary_unary(
+                '/imrpc.InstanceService/LogGetLevel',
+                request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetLevelRequest.SerializeToString,
+                response_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetLevelResponse.FromString,
+                )
+        self.LogGetFlags = channel.unary_unary(
+                '/imrpc.InstanceService/LogGetFlags',
+                request_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetFlagsRequest.SerializeToString,
+                response_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetFlagsResponse.FromString,
+                )
         self.VersionGet = channel.unary_unary(
                 '/imrpc.InstanceService/VersionGet',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
@@ -103,6 +123,30 @@ class InstanceServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def LogSetLevel(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def LogSetFlags(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def LogGetLevel(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def LogGetFlags(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def VersionGet(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -146,6 +190,26 @@ def add_InstanceServiceServicer_to_server(servicer, server):
                     servicer.InstanceReplace,
                     request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.InstanceReplaceRequest.FromString,
                     response_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.InstanceResponse.SerializeToString,
+            ),
+            'LogSetLevel': grpc.unary_unary_rpc_method_handler(
+                    servicer.LogSetLevel,
+                    request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogSetLevelRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'LogSetFlags': grpc.unary_unary_rpc_method_handler(
+                    servicer.LogSetFlags,
+                    request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogSetFlagsRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'LogGetLevel': grpc.unary_unary_rpc_method_handler(
+                    servicer.LogGetLevel,
+                    request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetLevelRequest.FromString,
+                    response_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetLevelResponse.SerializeToString,
+            ),
+            'LogGetFlags': grpc.unary_unary_rpc_method_handler(
+                    servicer.LogGetFlags,
+                    request_deserializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetFlagsRequest.FromString,
+                    response_serializer=github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetFlagsResponse.SerializeToString,
             ),
             'VersionGet': grpc.unary_unary_rpc_method_handler(
                     servicer.VersionGet,
@@ -278,6 +342,74 @@ class InstanceService(object):
         return grpc.experimental.unary_unary(request, target, '/imrpc.InstanceService/InstanceReplace',
             github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.InstanceReplaceRequest.SerializeToString,
             github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.InstanceResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def LogSetLevel(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/imrpc.InstanceService/LogSetLevel',
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogSetLevelRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def LogSetFlags(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/imrpc.InstanceService/LogSetFlags',
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogSetFlagsRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def LogGetLevel(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/imrpc.InstanceService/LogGetLevel',
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetLevelRequest.SerializeToString,
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetLevelResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def LogGetFlags(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/imrpc.InstanceService/LogGetFlags',
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetFlagsRequest.SerializeToString,
+            github_dot_com_dot_longhorn_dot_longhorn__instance__manager_dot_pkg_dot_imrpc_dot_instance__pb2.LogGetFlagsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
