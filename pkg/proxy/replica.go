@@ -12,6 +12,7 @@ import (
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
+	etypes "github.com/longhorn/longhorn-engine/pkg/types"
 	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 
@@ -29,6 +30,7 @@ func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest
 		"size":           req.Size,
 		"currentSize":    req.CurrentSize,
 		"fastSync":       req.FastSync,
+		"localSync":      req.LocalSync,
 	})
 	log.Info("Adding replica")
 
@@ -51,8 +53,15 @@ func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 			return nil, err
 		}
 	} else {
+		var localSync *etypes.FileLocalSync
+		if req.LocalSync != nil {
+			localSync = &etypes.FileLocalSync{
+				Source: req.LocalSync.Source,
+				Target: req.LocalSync.Target,
+			}
+		}
 		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, req.ReplicaName,
-			int(req.FileSyncHttpClientTimeout), req.FastSync); err != nil {
+			int(req.FileSyncHttpClientTimeout), req.FastSync, localSync); err != nil {
 			return nil, err
 		}
 	}
