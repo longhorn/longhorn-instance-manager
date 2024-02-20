@@ -103,12 +103,13 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper netcat && \
+    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper netcat kmod jq util-linux && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
-COPY --from=builder /usr/src/spdk/scripts /spdk/scripts/
-RUN bash /spdk/scripts/pkgdep.sh && rm -rf /spdk
+COPY --from=builder /usr/src/spdk/scripts /usr/src/spdk/scripts
+COPY --from=builder /usr/src/spdk/include /usr/src/spdk/include
+RUN sh /usr/src/spdk/scripts/pkgdep.sh
 
 # Copy pre-built binaries from builder
 COPY --from=builder \
