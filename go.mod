@@ -6,13 +6,13 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20231114103026-af339bb498d3
+	github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
 	github.com/longhorn/go-spdk-helper v0.0.0-20231113055029-9acddd184246
 	github.com/longhorn/longhorn-engine v1.5.4-rc3
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli v1.22.12
+	github.com/urfave/cli v1.22.14
 	golang.org/x/net v0.20.0
 	golang.org/x/sync v0.5.0
 	google.golang.org/grpc v1.61.0
