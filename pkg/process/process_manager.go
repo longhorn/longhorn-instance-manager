@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/mount-utils"
 
-	commonUtils "github.com/longhorn/go-common-libs/utils"
+	lhUtils "github.com/longhorn/go-common-libs/utils"
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
@@ -155,23 +155,19 @@ func (pm *Manager) getProcessesToUpdateConditions(volumeMountPointMap map[string
 
 	for _, p := range pm.processes {
 		p.lock.Lock()
-		if isEngineProcess(p) && p.State == StateRunning {
+		if lhUtils.IsEngineProcess(p.Name) && p.State == StateRunning {
 			volumeName := util.ProcessNameToVolumeName(p.Name)
 			volumeNameSHA := sha256.Sum256([]byte(volumeName))
 			volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
 
 			if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
-				p.Conditions[types.EngineConditionFilesystemReadOnly] = commonUtils.IsMountPointReadOnly(mp)
+				p.Conditions[types.EngineConditionFilesystemReadOnly] = lhUtils.IsMountPointReadOnly(mp)
 				processesToUpdate = append(processesToUpdate, p)
 			}
 		}
 		p.lock.Unlock()
 	}
 	return processesToUpdate
-}
-
-func isEngineProcess(p *Process) bool {
-	return p.PortCount == DefaultEnginePortCount
 }
 
 // ProcessCreate will create a process according to the request.
