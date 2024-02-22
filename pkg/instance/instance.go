@@ -13,6 +13,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	lhutils "github.com/longhorn/go-common-libs/utils"
 	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 
@@ -141,7 +142,7 @@ func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	if err != nil {
 		return nil, err
 	}
-	return processResponseToInstanceResponse(process), nil
+	return processResponseToInstanceResponse(process, req.Spec.Type), nil
 }
 
 func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
@@ -198,7 +199,7 @@ func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 	if err != nil {
 		return nil, err
 	}
-	return processResponseToInstanceResponse(process), nil
+	return processResponseToInstanceResponse(process, req.Type), nil
 }
 
 func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
@@ -260,7 +261,7 @@ func (ops V1DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 	if err != nil {
 		return nil, err
 	}
-	return processResponseToInstanceResponse(process), nil
+	return processResponseToInstanceResponse(process, req.Type), nil
 }
 
 func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
@@ -324,7 +325,11 @@ func (ops V1DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 		return err
 	}
 	for _, process := range processes {
-		instances[process.Spec.Name] = processResponseToInstanceResponse(process)
+		processType := types.InstanceTypeReplica
+		if lhutils.IsEngineProcess(process.Spec.Name) {
+			processType = types.InstanceTypeEngine
+		}
+		instances[process.Spec.Name] = processResponseToInstanceResponse(process, processType)
 	}
 	return nil
 }
@@ -387,7 +392,7 @@ func (ops V1DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceReque
 		return nil, err
 	}
 
-	return processResponseToInstanceResponse(process), nil
+	return processResponseToInstanceResponse(process, req.Spec.Type), nil
 }
 
 func (ops V2DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
@@ -648,12 +653,11 @@ func (s *Server) watchProcess(ctx context.Context, req *emptypb.Empty, client *c
 	}
 }
 
-func processResponseToInstanceResponse(p *rpc.ProcessResponse) *rpc.InstanceResponse {
+func processResponseToInstanceResponse(p *rpc.ProcessResponse, processType string) *rpc.InstanceResponse {
 	return &rpc.InstanceResponse{
 		Spec: &rpc.InstanceSpec{
 			Name: p.Spec.Name,
-			// Leave Type empty. It will be determined in longhorn manager.
-			Type: "",
+			Type: processType,
 			// Deprecated
 			BackendStoreDriver: rpc.BackendStoreDriver_v1,
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V1,
