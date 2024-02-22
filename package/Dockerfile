@@ -18,7 +18,7 @@ RUN wget -O - https://storage.googleapis.com/golang/go1.21.3.linux-${!GOLANG_ARC
     go install golang.org/x/lint/golint@latest
 
 ENV GO_SPDK_HELPER_DIR /usr/src/go-spdk-helper
-ENV GO_SPDK_HELPER_COMMIT_ID 5fe20e7f754283634c71d422778773be2d13439c
+ENV GO_SPDK_HELPER_COMMIT_ID d05637da59788eeeb8927c663f0eec7c958d3f97
 RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DIR} && \
     cd ${GO_SPDK_HELPER_DIR} && \
     git checkout ${GO_SPDK_HELPER_COMMIT_ID} && \
@@ -109,7 +109,7 @@ RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
 # Install SPDK dependencies
 COPY --from=builder /usr/src/spdk/scripts /usr/src/spdk/scripts
 COPY --from=builder /usr/src/spdk/include /usr/src/spdk/include
-RUN sh /usr/src/spdk/scripts/pkgdep.sh
+RUN bash /usr/src/spdk/scripts/pkgdep.sh
 
 # Copy pre-built binaries from builder
 COPY --from=builder \
