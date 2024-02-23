@@ -1098,7 +1098,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 			} else {
 				e.log.Infof("Requesting system sync %v before snapshot", devicePath)
 				// TODO: only sync the device path rather than all filesystems
-				if _, err := ne.Execute("sync", []string{}, SyncTimeout); err != nil {
+				if _, err := ne.Execute(nil, "sync", []string{}, SyncTimeout); err != nil {
 					// sync should never fail though, so it more like due to the nsenter
 					e.log.WithError(err).Errorf("WARNING: failed to sync for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
 				}
