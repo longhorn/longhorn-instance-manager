@@ -728,3 +728,49 @@ func (c *SPDKClient) DiskDelete(diskName, diskUUID string) error {
 	})
 	return err
 }
+
+func (c *SPDKClient) LogSetLevel(level string) error {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.LogSetLevel(ctx, &spdkrpc.LogSetLevelRequest{
+		Level: level,
+	})
+	return err
+}
+
+func (c *SPDKClient) LogSetFlags(flags string) error {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.LogSetFlags(ctx, &spdkrpc.LogSetFlagsRequest{
+		Flags: flags,
+	})
+	return err
+}
+
+func (c *SPDKClient) LogGetLevel() (string, error) {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.LogGetLevel(ctx, &emptypb.Empty{})
+	if err != nil {
+		return "", err
+	}
+	return resp.Level, nil
+}
+
+func (c *SPDKClient) LogGetFlags() (string, error) {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.LogGetFlags(ctx, &emptypb.Empty{})
+	if err != nil {
+		return "", err
+	}
+	return resp.Flags, nil
+}
