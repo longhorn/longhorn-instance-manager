@@ -1140,6 +1140,21 @@ func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreSt
 	return resp, nil
 }
 
+func (s *Server) EngineVolumeResize(ctx context.Context, req *spdkrpc.EngineVolumeResizeRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	e := s.engineMap[req.EngineName]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for volume resize", req.EngineName)
+	}
+
+	if err := e.resizeVolume(s.spdkClient, req.Size); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Server) ReplicaRestoreStatus(ctx context.Context, req *spdkrpc.ReplicaRestoreStatusRequest) (ret *spdkrpc.ReplicaRestoreStatusResponse, err error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -1193,6 +1208,60 @@ func (s *Server) DiskGet(ctx context.Context, req *spdkrpc.DiskGetRequest) (ret 
 	s.RUnlock()
 
 	return svcDiskGet(spdkClient, req.DiskName)
+}
+
+func (s *Server) LogSetLevel(ctx context.Context, req *spdkrpc.LogSetLevelRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	err = svcLogSetLevel(spdkClient, req.Level)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) LogSetFlags(ctx context.Context, req *spdkrpc.LogSetFlagsRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	err = svcLogSetFlags(spdkClient, req.Flags)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) LogGetLevel(ctx context.Context, req *emptypb.Empty) (ret *spdkrpc.LogGetLevelResponse, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	level, err := svcLogGetLevel(spdkClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spdkrpc.LogGetLevelResponse{
+		Level: level,
+	}, nil
+}
+
+func (s *Server) LogGetFlags(ctx context.Context, req *emptypb.Empty) (ret *spdkrpc.LogGetFlagsResponse, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	flags, err := svcLogGetFlags(spdkClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spdkrpc.LogGetFlagsResponse{
+		Flags: flags,
+	}, nil
 }
 
 func (s *Server) VersionDetailGet(context.Context, *emptypb.Empty) (*spdkrpc.VersionDetailGetReply, error) {

@@ -5,9 +5,9 @@ go 1.21
 require (
 	github.com/RoaringBitmap/roaring v1.9.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240126140439-9c90a8728ca2
-	github.com/longhorn/go-common-libs v0.0.0-20240109042507-23627e6416b7
-	github.com/longhorn/go-spdk-helper v0.0.0-20240117135122-26f8acb2a13d
+	github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
+	github.com/longhorn/go-common-libs v0.0.0-20240219094750-e7176c332156
+	github.com/longhorn/go-spdk-helper v0.0.0-20240222125115-a6f538717427
 	github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240123044045-c5f14845bd83
 	github.com/pkg/errors v0.9.1
@@ -69,3 +69,5 @@ require (
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
+
+replace github.com/longhorn/longhorn-spdk-engine => github.com/nirvati/longhorn-spdk-engine v0.0.0-20240224230411-48b5ce1f7748

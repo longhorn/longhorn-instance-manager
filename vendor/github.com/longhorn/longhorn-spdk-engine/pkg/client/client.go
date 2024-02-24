@@ -539,6 +539,22 @@ func (c *SPDKClient) EngineReplicaDelete(engineName, replicaName, replicaAddress
 	return errors.Wrapf(err, "failed to delete replica %s with address %s to engine %s", replicaName, replicaAddress, engineName)
 }
 
+func (c* SPDKClient) EngineVolumeResize(engineName string, size uint64) error {
+	if engineName == "" {
+		return fmt.Errorf("failed to resize volume for SPDK engine: missing required parameter engine name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineVolumeResize(ctx, &spdkrpc.EngineVolumeResizeRequest{
+		EngineName: engineName,
+		Size:       size,
+	})
+	return errors.Wrapf(err, "failed to resize volume for engine %s", engineName)
+}
+
 func (c *SPDKClient) EngineBackupCreate(req *BackupCreateRequest) (*spdkrpc.BackupCreateResponse, error) {
 	client := c.getSPDKServiceClient()
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
@@ -727,4 +743,50 @@ func (c *SPDKClient) DiskDelete(diskName, diskUUID string) error {
 		DiskUuid: diskUUID,
 	})
 	return err
+}
+
+func (c *SPDKClient) LogSetLevel(level string) error {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.LogSetLevel(ctx, &spdkrpc.LogSetLevelRequest{
+		Level: level,
+	})
+	return err
+}
+
+func (c *SPDKClient) LogSetFlags(flags string) error {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.LogSetFlags(ctx, &spdkrpc.LogSetFlagsRequest{
+		Flags: flags,
+	})
+	return err
+}
+
+func (c *SPDKClient) LogGetLevel() (string, error) {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.LogGetLevel(ctx, &emptypb.Empty{})
+	if err != nil {
+		return "", err
+	}
+	return resp.Level, nil
+}
+
+func (c *SPDKClient) LogGetFlags() (string, error) {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.LogGetFlags(ctx, &emptypb.Empty{})
+	if err != nil {
+		return "", err
+	}
+	return resp.Flags, nil
 }

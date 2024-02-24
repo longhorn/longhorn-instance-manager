@@ -169,6 +169,63 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localR
 	return e.getWithoutLock(), nil
 }
 
+func (e *Engine) resizeVolume(spdkClient *spdkclient.Client, size uint64) (err error) {
+	e.Lock()
+	defer e.Unlock()
+
+	if e.State != types.InstanceStateRunning {
+		return fmt.Errorf("invalid state %s for engine %s resize bdev", e.State, e.Name)
+	}
+
+	roundedSize := util.RoundUp(size, helpertypes.MiB)
+	if roundedSize != size {
+		e.log.Infof("Rounded up spec size from %v to %v since the spec size should be multiple of MiB", size, roundedSize)
+	}
+	e.log.WithField("specSize", size)
+
+	if e.SpecSize == roundedSize {
+		return nil
+	}
+
+	if roundedSize < e.ActualSize {
+		return fmt.Errorf("cannot shrink the engine %s bdev size from %d to %d", e.Name, e.ActualSize, size)
+	}
+	
+	// Now, we need to resize each replica
+	for replicaName, replicaAddress := range e.ReplicaAddressMap {
+		if e.ReplicaModeMap[replicaName] != types.ModeRW {
+			continue
+		}
+		if err := e.resizeReplica(spdkClient, replicaName, replicaAddress, roundedSize); err != nil {
+			return err
+		}
+	}
+	
+	e.SpecSize = roundedSize
+	e.log.Infof("Resized engine %s bdev size to %d", e.Name, e.SpecSize)
+	return nil
+}
+
+func (e *Engine) resizeReplica(spdkClient *spdkclient.Client, replicaName, replicaAddress string, size uint64) (err error) {
+	replicaIP, _, err := net.SplitHostPort(replicaAddress)
+	if err != nil {
+		return err
+	}
+	if replicaIP == e.IP {
+		return nil
+	}
+
+	bdevName := e.ReplicaBdevNameMap[replicaName]
+	if bdevName == "" {
+		return nil
+	}
+	if _, err := spdkClient.BdevLvolResize(bdevName, size); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (e *Engine) getBdevNameForReplica(spdkClient *spdkclient.Client, localReplicaLvsNameMap map[string]string, replicaName, replicaAddress, podIP string) (bdevName string, err error) {
 	replicaIP, _, err := net.SplitHostPort(replicaAddress)
 	if err != nil {
@@ -1098,7 +1155,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 			} else {
 				e.log.Infof("Requesting system sync %v before snapshot", devicePath)
 				// TODO: only sync the device path rather than all filesystems
-				if _, err := ne.Execute("sync", []string{}, SyncTimeout); err != nil {
+				if _, err := ne.Execute(nil, "sync", []string{}, SyncTimeout); err != nil {
 					// sync should never fail though, so it more like due to the nsenter
 					e.log.WithError(err).Errorf("WARNING: failed to sync for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
 				}
