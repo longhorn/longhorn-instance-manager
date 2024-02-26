@@ -23,11 +23,11 @@ import (
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
+	"github.com/longhorn/types/pkg/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
-	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
 
 const (
@@ -524,7 +524,7 @@ func constructActiveChainFromSnapshotLvolMap(replicaName string, snapshotLvolMap
 	if IsReplicaSnapshotLvol(replicaName, headParentSnapshotName) {
 		headParentSnapSvcLvol := snapshotLvolMap[headParentSnapshotName]
 		if headParentSnapSvcLvol == nil {
-			fmt.Errorf("cannot find the parent snapshot %s of the head for replica %s", headParentSnapshotName, replicaName)
+			return nil, fmt.Errorf("cannot find the parent snapshot %s of the head for replica %s", headParentSnapshotName, replicaName)
 		}
 		headSvcLvol = headParentSnapSvcLvol.Children[replicaName]
 	} else { // The parent of the head is nil or a backing image

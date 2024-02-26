@@ -1,6 +1,6 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.21
+go 1.21.7
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.3
@@ -10,6 +10,7 @@ require (
 	github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189
 	github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240329092432-8326ea00b711
+	github.com/longhorn/types v0.0.0-20240417064442-e7df610ea802
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.14
@@ -69,3 +70,7 @@ require (
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
+
+replace github.com/longhorn/longhorn-engine => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240417073238-aa16170763b1
+
+replace github.com/longhorn/longhorn-spdk-engine => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240417073406-34fc89a744a4

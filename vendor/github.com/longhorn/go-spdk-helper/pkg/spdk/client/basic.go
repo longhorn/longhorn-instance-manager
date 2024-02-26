@@ -3,8 +3,11 @@ package client
 import (
 	"encoding/json"
 	"strings"
+<<<<<<< HEAD
 
 	"github.com/pkg/errors"
+=======
+>>>>>>> 74b76bd (feat: add longhorn/types)
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
@@ -270,11 +273,19 @@ func (c *Client) BdevLvolGet(name string, timeout uint64) (bdevLvolInfoList []sp
 		}
 
 		b.DriverSpecific.Lvol.Xattrs = make(map[string]string)
+<<<<<<< HEAD
 		user_created, err := c.BdevLvolGetXattr(b.Name, UserCreated)
 		if err == nil {
 			b.DriverSpecific.Lvol.Xattrs[UserCreated] = user_created
 		}
 		snapshot_timestamp, err := c.BdevLvolGetXattr(b.Name, SnapshotTimestamp)
+=======
+		user_created, err := c.BdevLvolGetXattr(name, UserCreated)
+		if err == nil {
+			b.DriverSpecific.Lvol.Xattrs[UserCreated] = user_created
+		}
+		snapshot_timestamp, err := c.BdevLvolGetXattr(name, SnapshotTimestamp)
+>>>>>>> 74b76bd (feat: add longhorn/types)
 		if err == nil {
 			b.DriverSpecific.Lvol.Xattrs[SnapshotTimestamp] = snapshot_timestamp
 		}
@@ -1047,6 +1058,7 @@ func (c *Client) LogGetPrintLevel() (string, error) {
 
 	return strings.Trim(string(level), "\"\n"), nil
 }
+<<<<<<< HEAD
 
 // BdevVirtioAttachController creates new initiator Virtio SCSI or Virtio Block and expose all found bdevs.
 //
@@ -1094,3 +1106,5 @@ func (c *Client) BdevVirtioDetachController(name string) (deleted bool, err erro
 
 	return deleted, json.Unmarshal(cmdOutput, &deleted)
 }
+=======
+>>>>>>> 74b76bd (feat: add longhorn/types)

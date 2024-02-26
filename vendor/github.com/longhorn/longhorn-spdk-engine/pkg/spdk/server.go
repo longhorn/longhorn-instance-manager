@@ -20,12 +20,12 @@ import (
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
+	"github.com/longhorn/types/pkg/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster"
-	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
 
 const (
@@ -33,6 +33,7 @@ const (
 )
 
 type Server struct {
+	spdkrpc.UnimplementedSPDKServiceServer
 	sync.RWMutex
 
 	ctx context.Context
@@ -1197,6 +1198,60 @@ func (s *Server) DiskGet(ctx context.Context, req *spdkrpc.DiskGetRequest) (ret 
 	s.RUnlock()
 
 	return svcDiskGet(spdkClient, req.DiskName, req.DiskPath, req.DiskDriver)
+}
+
+func (s *Server) LogSetLevel(ctx context.Context, req *spdkrpc.LogSetLevelRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	err = svcLogSetLevel(spdkClient, req.Level)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) LogSetFlags(ctx context.Context, req *spdkrpc.LogSetFlagsRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	err = svcLogSetFlags(spdkClient, req.Flags)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) LogGetLevel(ctx context.Context, req *emptypb.Empty) (ret *spdkrpc.LogGetLevelResponse, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	level, err := svcLogGetLevel(spdkClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spdkrpc.LogGetLevelResponse{
+		Level: level,
+	}, nil
+}
+
+func (s *Server) LogGetFlags(ctx context.Context, req *emptypb.Empty) (ret *spdkrpc.LogGetFlagsResponse, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	flags, err := svcLogGetFlags(spdkClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spdkrpc.LogGetFlagsResponse{
+		Flags: flags,
+	}, nil
 }
 
 func (s *Server) LogSetLevel(ctx context.Context, req *spdkrpc.LogSetLevelRequest) (ret *emptypb.Empty, err error) {
