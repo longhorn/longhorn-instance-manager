@@ -17,7 +17,7 @@ func DmsetupCreate(dmDeviceName, table string, executor *commonNs.Executor) erro
 	opts := []string{
 		"create", dmDeviceName, "--table", table,
 	}
-	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
@@ -35,7 +35,7 @@ func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, executor *commo
 		opts = append(opts, "--nolockfs")
 	}
 
-	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
@@ -44,7 +44,7 @@ func DmsetupResume(dmDeviceName string, executor *commonNs.Executor) error {
 	opts := []string{
 		"resume", dmDeviceName,
 	}
-	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
@@ -53,7 +53,7 @@ func DmsetupReload(dmDeviceName, table string, executor *commonNs.Executor) erro
 	opts := []string{
 		"reload", dmDeviceName, "--table", table,
 	}
-	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
@@ -68,7 +68,7 @@ func DmsetupRemove(dmDeviceName string, force, deferred bool, executor *commonNs
 	if deferred {
 		opts = append(opts, "--deferred")
 	}
-	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
@@ -78,7 +78,7 @@ func DmsetupDeps(dmDeviceName string, executor *commonNs.Executor) ([]string, er
 		"deps", dmDeviceName, "-o", "devname",
 	}
 
-	outputStr, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return nil, err
 	}

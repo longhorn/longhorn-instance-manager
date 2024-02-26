@@ -6,14 +6,15 @@ import (
 )
 
 type BdevDriverSpecificLvol struct {
-	LvolStoreUUID        string   `json:"lvol_store_uuid"`
-	BaseBdev             string   `json:"base_bdev"`
-	BaseSnapshot         string   `json:"base_snapshot,omitempty"`
-	ThinProvision        bool     `json:"thin_provision"`
-	NumAllocatedClusters uint64   `json:"num_allocated_clusters"`
-	Snapshot             bool     `json:"snapshot"`
-	Clone                bool     `json:"clone"`
-	Clones               []string `json:"clones,omitempty"`
+	LvolStoreUUID        string            `json:"lvol_store_uuid"`
+	BaseBdev             string            `json:"base_bdev"`
+	BaseSnapshot         string            `json:"base_snapshot,omitempty"`
+	ThinProvision        bool              `json:"thin_provision"`
+	NumAllocatedClusters uint64            `json:"num_allocated_clusters"`
+	Snapshot             bool              `json:"snapshot"`
+	Clone                bool              `json:"clone"`
+	Clones               []string          `json:"clones,omitempty"`
+	Xattrs               map[string]string `json:"xattrs,omitempty"`
 }
 
 type LvstoreInfo struct {
@@ -92,8 +93,9 @@ type BdevLvolDeleteRequest struct {
 }
 
 type BdevLvolSnapshotRequest struct {
-	LvolName     string `json:"lvol_name"`
-	SnapshotName string `json:"snapshot_name"`
+	LvolName     string            `json:"lvol_name"`
+	SnapshotName string            `json:"snapshot_name"`
+	Xattrs       map[string]string `json:"xattrs,omitempty"`
 }
 
 type BdevLvolCloneRequest struct {
