@@ -15,8 +15,10 @@ import (
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	spdkutil "github.com/longhorn/go-spdk-helper/pkg/util"
+	"github.com/longhorn/types/pkg/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
+<<<<<<< HEAD
 	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk"
@@ -24,6 +26,8 @@ import (
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/nvme"
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/virtio-blk"
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/virtio-scsi"
+=======
+>>>>>>> 74b76bd (feat: add longhorn/types)
 )
 
 const (

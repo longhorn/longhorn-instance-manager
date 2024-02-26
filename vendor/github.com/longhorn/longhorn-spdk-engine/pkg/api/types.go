@@ -1,10 +1,10 @@
 package api
 
 import (
+	"github.com/longhorn/types/pkg/spdkrpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
-	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
 
 type SnapshotOptions struct {
@@ -151,7 +151,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		ErrorMsg:          e.ErrorMsg,
 	}
 	for rName, mode := range e.ReplicaModeMap {
-		res.ReplicaModeMap[rName] = spdkrpc.GRPCReplicaModeToReplicaMode(mode)
+		res.ReplicaModeMap[rName] = types.GRPCReplicaModeToReplicaMode(mode)
 	}
 	for snapshotName, snapProtoLvol := range e.Snapshots {
 		res.Snapshots[snapshotName] = ProtoLvolToLvol(snapProtoLvol)
