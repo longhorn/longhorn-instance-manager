@@ -9,7 +9,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake curl wget git gcc tar gzip xsltproc docbook-xsl-stylesheets python3 meson ninja python3-pip
+RUN zypper -n install cmake curl wget git gcc tar gzip xsltproc docbook-xsl-stylesheets python3 meson ninja python3-pip libnuma-devel
 
 # Build go-spdk-helper
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
@@ -82,7 +82,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iputils iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel && \
+    iputils iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel libnuma-devel && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
