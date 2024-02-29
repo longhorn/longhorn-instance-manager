@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.24.3
-// source: enginerpc/replica.proto
+// source: ptypes/replica.proto
 
 package enginerpc
 
@@ -20,24 +20,24 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ReplicaService_ReplicaCreate_FullMethodName                = "/enginerpc.ReplicaService/ReplicaCreate"
-	ReplicaService_ReplicaDelete_FullMethodName                = "/enginerpc.ReplicaService/ReplicaDelete"
-	ReplicaService_ReplicaGet_FullMethodName                   = "/enginerpc.ReplicaService/ReplicaGet"
-	ReplicaService_ReplicaOpen_FullMethodName                  = "/enginerpc.ReplicaService/ReplicaOpen"
-	ReplicaService_ReplicaClose_FullMethodName                 = "/enginerpc.ReplicaService/ReplicaClose"
-	ReplicaService_ReplicaReload_FullMethodName                = "/enginerpc.ReplicaService/ReplicaReload"
-	ReplicaService_ReplicaRevert_FullMethodName                = "/enginerpc.ReplicaService/ReplicaRevert"
-	ReplicaService_ReplicaSnapshot_FullMethodName              = "/enginerpc.ReplicaService/ReplicaSnapshot"
-	ReplicaService_ReplicaExpand_FullMethodName                = "/enginerpc.ReplicaService/ReplicaExpand"
-	ReplicaService_DiskRemove_FullMethodName                   = "/enginerpc.ReplicaService/DiskRemove"
-	ReplicaService_DiskReplace_FullMethodName                  = "/enginerpc.ReplicaService/DiskReplace"
-	ReplicaService_DiskPrepareRemove_FullMethodName            = "/enginerpc.ReplicaService/DiskPrepareRemove"
-	ReplicaService_DiskMarkAsRemoved_FullMethodName            = "/enginerpc.ReplicaService/DiskMarkAsRemoved"
-	ReplicaService_RebuildingSet_FullMethodName                = "/enginerpc.ReplicaService/RebuildingSet"
-	ReplicaService_RevisionCounterSet_FullMethodName           = "/enginerpc.ReplicaService/RevisionCounterSet"
-	ReplicaService_UnmapMarkDiskChainRemovedSet_FullMethodName = "/enginerpc.ReplicaService/UnmapMarkDiskChainRemovedSet"
-	ReplicaService_SnapshotMaxCountSet_FullMethodName          = "/enginerpc.ReplicaService/SnapshotMaxCountSet"
-	ReplicaService_SnapshotMaxSizeSet_FullMethodName           = "/enginerpc.ReplicaService/SnapshotMaxSizeSet"
+	ReplicaService_ReplicaCreate_FullMethodName                = "/ptypes.ReplicaService/ReplicaCreate"
+	ReplicaService_ReplicaDelete_FullMethodName                = "/ptypes.ReplicaService/ReplicaDelete"
+	ReplicaService_ReplicaGet_FullMethodName                   = "/ptypes.ReplicaService/ReplicaGet"
+	ReplicaService_ReplicaOpen_FullMethodName                  = "/ptypes.ReplicaService/ReplicaOpen"
+	ReplicaService_ReplicaClose_FullMethodName                 = "/ptypes.ReplicaService/ReplicaClose"
+	ReplicaService_ReplicaReload_FullMethodName                = "/ptypes.ReplicaService/ReplicaReload"
+	ReplicaService_ReplicaRevert_FullMethodName                = "/ptypes.ReplicaService/ReplicaRevert"
+	ReplicaService_ReplicaSnapshot_FullMethodName              = "/ptypes.ReplicaService/ReplicaSnapshot"
+	ReplicaService_ReplicaExpand_FullMethodName                = "/ptypes.ReplicaService/ReplicaExpand"
+	ReplicaService_DiskRemove_FullMethodName                   = "/ptypes.ReplicaService/DiskRemove"
+	ReplicaService_DiskReplace_FullMethodName                  = "/ptypes.ReplicaService/DiskReplace"
+	ReplicaService_DiskPrepareRemove_FullMethodName            = "/ptypes.ReplicaService/DiskPrepareRemove"
+	ReplicaService_DiskMarkAsRemoved_FullMethodName            = "/ptypes.ReplicaService/DiskMarkAsRemoved"
+	ReplicaService_RebuildingSet_FullMethodName                = "/ptypes.ReplicaService/RebuildingSet"
+	ReplicaService_RevisionCounterSet_FullMethodName           = "/ptypes.ReplicaService/RevisionCounterSet"
+	ReplicaService_UnmapMarkDiskChainRemovedSet_FullMethodName = "/ptypes.ReplicaService/UnmapMarkDiskChainRemovedSet"
+	ReplicaService_SnapshotMaxCountSet_FullMethodName          = "/ptypes.ReplicaService/SnapshotMaxCountSet"
+	ReplicaService_SnapshotMaxSizeSet_FullMethodName           = "/ptypes.ReplicaService/SnapshotMaxSizeSet"
 )
 
 // ReplicaServiceClient is the client API for ReplicaService service.
@@ -658,7 +658,7 @@ func _ReplicaService_SnapshotMaxSizeSet_Handler(srv interface{}, ctx context.Con
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ReplicaService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "enginerpc.ReplicaService",
+	ServiceName: "ptypes.ReplicaService",
 	HandlerType: (*ReplicaServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -735,5 +735,5 @@ var ReplicaService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "enginerpc/replica.proto",
+	Metadata: "ptypes/replica.proto",
 }

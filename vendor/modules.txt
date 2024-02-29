@@ -165,7 +165,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/client
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8 => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240226082746-c4b2e7719179
+# github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8 => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240229044952-9aeb9ab6d680
 ## explicit; go 1.21.7
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -178,7 +178,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240123044045-c5f14845bd83 => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240226083109-32e4aa7d2926
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240123044045-c5f14845bd83 => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240229045057-52a52b7a5bb3
 ## explicit; go 1.21.7
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -194,7 +194,7 @@ github.com/longhorn/nsfilelock
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-incompatible => github.com/FrankYang0529/types v0.0.0-20240226082618-dfa00a212729
+# github.com/longhorn/types v0.0.0-incompatible => github.com/FrankYang0529/types v0.0.0-20240229024041-25f1b5bbec5b
 ## explicit; go 1.21.7
 github.com/longhorn/types/pkg/enginerpc
 github.com/longhorn/types/pkg/imrpc
@@ -424,6 +424,6 @@ k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/io
 k8s.io/utils/keymutex
 k8s.io/utils/net
-# github.com/longhorn/types => github.com/FrankYang0529/types v0.0.0-20240226082618-dfa00a212729
-# github.com/longhorn/longhorn-engine => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240226082746-c4b2e7719179
-# github.com/longhorn/longhorn-spdk-engine => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240226083109-32e4aa7d2926
+# github.com/longhorn/types => github.com/FrankYang0529/types v0.0.0-20240229024041-25f1b5bbec5b
+# github.com/longhorn/longhorn-engine => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240229044952-9aeb9ab6d680
+# github.com/longhorn/longhorn-spdk-engine => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240229045057-52a52b7a5bb3

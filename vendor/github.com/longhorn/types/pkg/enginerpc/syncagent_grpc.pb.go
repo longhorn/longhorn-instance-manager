@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.24.3
-// source: enginerpc/syncagent.proto
+// source: ptypes/syncagent.proto
 
 package enginerpc
 
@@ -20,27 +20,27 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SyncAgentService_FileRemove_FullMethodName            = "/enginerpc.SyncAgentService/FileRemove"
-	SyncAgentService_FileRename_FullMethodName            = "/enginerpc.SyncAgentService/FileRename"
-	SyncAgentService_FileSend_FullMethodName              = "/enginerpc.SyncAgentService/FileSend"
-	SyncAgentService_FilesSync_FullMethodName             = "/enginerpc.SyncAgentService/FilesSync"
-	SyncAgentService_SnapshotClone_FullMethodName         = "/enginerpc.SyncAgentService/SnapshotClone"
-	SyncAgentService_VolumeExport_FullMethodName          = "/enginerpc.SyncAgentService/VolumeExport"
-	SyncAgentService_ReceiverLaunch_FullMethodName        = "/enginerpc.SyncAgentService/ReceiverLaunch"
-	SyncAgentService_BackupCreate_FullMethodName          = "/enginerpc.SyncAgentService/BackupCreate"
-	SyncAgentService_BackupRemove_FullMethodName          = "/enginerpc.SyncAgentService/BackupRemove"
-	SyncAgentService_BackupRestore_FullMethodName         = "/enginerpc.SyncAgentService/BackupRestore"
-	SyncAgentService_BackupStatus_FullMethodName          = "/enginerpc.SyncAgentService/BackupStatus"
-	SyncAgentService_Reset_FullMethodName                 = "/enginerpc.SyncAgentService/Reset"
-	SyncAgentService_RestoreStatus_FullMethodName         = "/enginerpc.SyncAgentService/RestoreStatus"
-	SyncAgentService_SnapshotPurge_FullMethodName         = "/enginerpc.SyncAgentService/SnapshotPurge"
-	SyncAgentService_SnapshotPurgeStatus_FullMethodName   = "/enginerpc.SyncAgentService/SnapshotPurgeStatus"
-	SyncAgentService_ReplicaRebuildStatus_FullMethodName  = "/enginerpc.SyncAgentService/ReplicaRebuildStatus"
-	SyncAgentService_SnapshotCloneStatus_FullMethodName   = "/enginerpc.SyncAgentService/SnapshotCloneStatus"
-	SyncAgentService_SnapshotHash_FullMethodName          = "/enginerpc.SyncAgentService/SnapshotHash"
-	SyncAgentService_SnapshotHashStatus_FullMethodName    = "/enginerpc.SyncAgentService/SnapshotHashStatus"
-	SyncAgentService_SnapshotHashCancel_FullMethodName    = "/enginerpc.SyncAgentService/SnapshotHashCancel"
-	SyncAgentService_SnapshotHashLockState_FullMethodName = "/enginerpc.SyncAgentService/SnapshotHashLockState"
+	SyncAgentService_FileRemove_FullMethodName            = "/ptypes.SyncAgentService/FileRemove"
+	SyncAgentService_FileRename_FullMethodName            = "/ptypes.SyncAgentService/FileRename"
+	SyncAgentService_FileSend_FullMethodName              = "/ptypes.SyncAgentService/FileSend"
+	SyncAgentService_FilesSync_FullMethodName             = "/ptypes.SyncAgentService/FilesSync"
+	SyncAgentService_SnapshotClone_FullMethodName         = "/ptypes.SyncAgentService/SnapshotClone"
+	SyncAgentService_VolumeExport_FullMethodName          = "/ptypes.SyncAgentService/VolumeExport"
+	SyncAgentService_ReceiverLaunch_FullMethodName        = "/ptypes.SyncAgentService/ReceiverLaunch"
+	SyncAgentService_BackupCreate_FullMethodName          = "/ptypes.SyncAgentService/BackupCreate"
+	SyncAgentService_BackupRemove_FullMethodName          = "/ptypes.SyncAgentService/BackupRemove"
+	SyncAgentService_BackupRestore_FullMethodName         = "/ptypes.SyncAgentService/BackupRestore"
+	SyncAgentService_BackupStatus_FullMethodName          = "/ptypes.SyncAgentService/BackupStatus"
+	SyncAgentService_Reset_FullMethodName                 = "/ptypes.SyncAgentService/Reset"
+	SyncAgentService_RestoreStatus_FullMethodName         = "/ptypes.SyncAgentService/RestoreStatus"
+	SyncAgentService_SnapshotPurge_FullMethodName         = "/ptypes.SyncAgentService/SnapshotPurge"
+	SyncAgentService_SnapshotPurgeStatus_FullMethodName   = "/ptypes.SyncAgentService/SnapshotPurgeStatus"
+	SyncAgentService_ReplicaRebuildStatus_FullMethodName  = "/ptypes.SyncAgentService/ReplicaRebuildStatus"
+	SyncAgentService_SnapshotCloneStatus_FullMethodName   = "/ptypes.SyncAgentService/SnapshotCloneStatus"
+	SyncAgentService_SnapshotHash_FullMethodName          = "/ptypes.SyncAgentService/SnapshotHash"
+	SyncAgentService_SnapshotHashStatus_FullMethodName    = "/ptypes.SyncAgentService/SnapshotHashStatus"
+	SyncAgentService_SnapshotHashCancel_FullMethodName    = "/ptypes.SyncAgentService/SnapshotHashCancel"
+	SyncAgentService_SnapshotHashLockState_FullMethodName = "/ptypes.SyncAgentService/SnapshotHashLockState"
 )
 
 // SyncAgentServiceClient is the client API for SyncAgentService service.
@@ -757,7 +757,7 @@ func _SyncAgentService_SnapshotHashLockState_Handler(srv interface{}, ctx contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SyncAgentService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "enginerpc.SyncAgentService",
+	ServiceName: "ptypes.SyncAgentService",
 	HandlerType: (*SyncAgentServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -846,5 +846,5 @@ var SyncAgentService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "enginerpc/syncagent.proto",
+	Metadata: "ptypes/syncagent.proto",
 }

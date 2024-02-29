@@ -20,14 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ProcessManagerService_ProcessCreate_FullMethodName  = "/imrpc.ProcessManagerService/ProcessCreate"
-	ProcessManagerService_ProcessDelete_FullMethodName  = "/imrpc.ProcessManagerService/ProcessDelete"
-	ProcessManagerService_ProcessGet_FullMethodName     = "/imrpc.ProcessManagerService/ProcessGet"
-	ProcessManagerService_ProcessList_FullMethodName    = "/imrpc.ProcessManagerService/ProcessList"
-	ProcessManagerService_ProcessLog_FullMethodName     = "/imrpc.ProcessManagerService/ProcessLog"
-	ProcessManagerService_ProcessWatch_FullMethodName   = "/imrpc.ProcessManagerService/ProcessWatch"
-	ProcessManagerService_ProcessReplace_FullMethodName = "/imrpc.ProcessManagerService/ProcessReplace"
-	ProcessManagerService_VersionGet_FullMethodName     = "/imrpc.ProcessManagerService/VersionGet"
+	ProcessManagerService_ProcessCreate_FullMethodName  = "/ProcessManagerService/ProcessCreate"
+	ProcessManagerService_ProcessDelete_FullMethodName  = "/ProcessManagerService/ProcessDelete"
+	ProcessManagerService_ProcessGet_FullMethodName     = "/ProcessManagerService/ProcessGet"
+	ProcessManagerService_ProcessList_FullMethodName    = "/ProcessManagerService/ProcessList"
+	ProcessManagerService_ProcessLog_FullMethodName     = "/ProcessManagerService/ProcessLog"
+	ProcessManagerService_ProcessWatch_FullMethodName   = "/ProcessManagerService/ProcessWatch"
+	ProcessManagerService_ProcessReplace_FullMethodName = "/ProcessManagerService/ProcessReplace"
+	ProcessManagerService_VersionGet_FullMethodName     = "/ProcessManagerService/VersionGet"
 )
 
 // ProcessManagerServiceClient is the client API for ProcessManagerService service.
@@ -380,7 +380,7 @@ func _ProcessManagerService_VersionGet_Handler(srv interface{}, ctx context.Cont
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ProcessManagerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "imrpc.ProcessManagerService",
+	ServiceName: "ProcessManagerService",
 	HandlerType: (*ProcessManagerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

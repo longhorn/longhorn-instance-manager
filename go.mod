@@ -71,8 +71,8 @@ require (
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
 
-replace github.com/longhorn/types => github.com/FrankYang0529/types v0.0.0-20240226082618-dfa00a212729
+replace github.com/longhorn/types => github.com/FrankYang0529/types v0.0.0-20240229024041-25f1b5bbec5b
 
-replace github.com/longhorn/longhorn-engine => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240226082746-c4b2e7719179
+replace github.com/longhorn/longhorn-engine => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240229044952-9aeb9ab6d680
 
-replace github.com/longhorn/longhorn-spdk-engine => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240226083109-32e4aa7d2926
+replace github.com/longhorn/longhorn-spdk-engine => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240229045057-52a52b7a5bb3
