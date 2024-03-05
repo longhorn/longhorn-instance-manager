@@ -255,6 +255,20 @@ func (c *Client) BdevLvolGet(name string, timeout uint64) (bdevLvolInfoList []sp
 		if spdktypes.GetBdevType(&b) != spdktypes.BdevTypeLvol {
 			continue
 		}
+<<<<<<< HEAD
+=======
+
+		b.DriverSpecific.Lvol.Xattrs = make(map[string]string)
+		user_created, err := c.BdevLvolGetXattr(b.Name, UserCreated)
+		if err == nil {
+			b.DriverSpecific.Lvol.Xattrs[UserCreated] = user_created
+		}
+		snapshot_timestamp, err := c.BdevLvolGetXattr(b.Name, SnapshotTimestamp)
+		if err == nil {
+			b.DriverSpecific.Lvol.Xattrs[SnapshotTimestamp] = snapshot_timestamp
+		}
+
+>>>>>>> 9ad8b7a (refactor(utils): move is mount read only function to common lib)
 		bdevLvolInfoList = append(bdevLvolInfoList, b)
 	}
 

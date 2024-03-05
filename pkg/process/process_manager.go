@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/mount-utils"
 
+	commonUtils "github.com/longhorn/go-common-libs/utils"
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
@@ -160,7 +161,7 @@ func (pm *Manager) getProcessesToUpdateConditions(volumeMountPointMap map[string
 			volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
 
 			if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
-				p.Conditions[types.EngineConditionFilesystemReadOnly] = util.IsMountPointReadOnly(mp)
+				p.Conditions[types.EngineConditionFilesystemReadOnly] = commonUtils.IsMountPointReadOnly(mp)
 				processesToUpdate = append(processesToUpdate, p)
 			}
 		}
