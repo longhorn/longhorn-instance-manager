@@ -145,7 +145,11 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
+<<<<<<< HEAD
 # github.com/longhorn/go-common-libs v0.0.0-20240305104227-2dc630b0df92
+=======
+# github.com/longhorn/go-common-libs v0.0.0-20240307063052-6e77996eda29
+>>>>>>> 9ad8b7a (refactor(utils): move is mount read only function to common lib)
 ## explicit; go 1.21
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
@@ -156,7 +160,7 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
-# github.com/longhorn/go-spdk-helper v0.0.0-20240222125115-a6f538717427
+# github.com/longhorn/go-spdk-helper v0.0.0-20240301101140-6eb6aa5fc09d
 ## explicit; go 1.21
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
@@ -268,7 +272,11 @@ github.com/yusufpapurcu/wmi
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
+<<<<<<< HEAD
 # golang.org/x/net v0.20.0
+=======
+# golang.org/x/net v0.21.0
+>>>>>>> 9ad8b7a (refactor(utils): move is mount read only function to common lib)
 ## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
@@ -295,7 +303,7 @@ golang.org/x/text/unicode/norm
 # google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.62.0
+# google.golang.org/grpc v1.62.1
 ## explicit; go 1.19
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -391,8 +399,8 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 ## explicit; go 1.11
 gopkg.in/check.v1
-# k8s.io/apimachinery v0.27.1
-## explicit; go 1.20
+# k8s.io/apimachinery v0.29.2
+## explicit; go 1.21
 k8s.io/apimachinery/pkg/util/errors
 k8s.io/apimachinery/pkg/util/runtime
 k8s.io/apimachinery/pkg/util/sets
