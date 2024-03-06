@@ -822,7 +822,7 @@ func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName str
 	}
 	headSvcLvol := r.ActiveChain[r.ChainLength-1]
 
-	snapUUID, err := spdkClient.BdevLvolSnapshot(headSvcLvol.UUID, snapLvolName)
+	snapUUID, err := spdkClient.BdevLvolSnapshot(headSvcLvol.UUID, snapLvolName, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1427,7 +1427,7 @@ func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *spdkclient.Client, sna
 	}()
 
 	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
-	snapUUID, err := spdkClient.BdevLvolSnapshot(r.rebuildingLvol.UUID, snapLvolName)
+	snapUUID, err := spdkClient.BdevLvolSnapshot(r.rebuildingLvol.UUID, snapLvolName, nil)
 	if err != nil {
 		return err
 	}
