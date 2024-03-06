@@ -485,7 +485,7 @@ func (i *Initiator) reloadLinearDmDevice() error {
 	opts := []string{
 		"--getsize", devPath,
 	}
-	output, err := i.executor.Execute(util.BlockdevBinary, opts, types.ExecuteTimeout)
+	output, err := i.executor.Execute(nil, util.BlockdevBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return err
 	}

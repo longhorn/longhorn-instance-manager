@@ -2,8 +2,19 @@ package client
 
 import (
 	"encoding/json"
+	"strings"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+)
+
+type Xattr struct {
+	Name  string
+	Value string
+}
+
+const (
+	UserCreated       = "user_created"
+	SnapshotTimestamp = "snapshot_timestamp"
 )
 
 // BdevGetBdevs get information about block devices (bdevs).
@@ -255,6 +266,17 @@ func (c *Client) BdevLvolGet(name string, timeout uint64) (bdevLvolInfoList []sp
 		if spdktypes.GetBdevType(&b) != spdktypes.BdevTypeLvol {
 			continue
 		}
+
+		b.DriverSpecific.Lvol.Xattrs = make(map[string]string)
+		user_created, err := c.BdevLvolGetXattr(name, UserCreated)
+		if err == nil {
+			b.DriverSpecific.Lvol.Xattrs[UserCreated] = user_created
+		}
+		snapshot_timestamp, err := c.BdevLvolGetXattr(name, SnapshotTimestamp)
+		if err == nil {
+			b.DriverSpecific.Lvol.Xattrs[SnapshotTimestamp] = snapshot_timestamp
+		}
+
 		bdevLvolInfoList = append(bdevLvolInfoList, b)
 	}
 
@@ -266,10 +288,15 @@ func (c *Client) BdevLvolGet(name string, timeout uint64) (bdevLvolInfoList []sp
 //	"name": Required. UUID or alias of the logical volume to create a snapshot from. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>.
 //
 //	"snapshotName": Required. the logical volume name for the newly created snapshot.
-func (c *Client) BdevLvolSnapshot(name, snapshotName string) (uuid string, err error) {
+func (c *Client) BdevLvolSnapshot(name, snapshotName string, xattrs []Xattr) (uuid string, err error) {
 	req := spdktypes.BdevLvolSnapshotRequest{
 		LvolName:     name,
 		SnapshotName: snapshotName,
+	}
+
+	req.Xattrs = make(map[string]string)
+	for _, s := range xattrs {
+		req.Xattrs[s.Name] = s.Value
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_snapshot", req)
@@ -917,4 +944,104 @@ func (c *Client) NvmfSubsystemGetListeners(nqn, tgtName string) (listenerList []
 	}
 
 	return listenerList, json.Unmarshal(cmdOutput, &listenerList)
+}
+
+// LogSetFlag sets the log flag.
+//
+// "flag": Required. Log flag to set.
+func (c *Client) LogSetFlag(flag string) (result bool, err error) {
+	req := spdktypes.LogSetFlagRequest{
+		Flag: flag,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_set_flag", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogClearFlag clears the log flag.
+//
+// "flag": Required. Log flag to clear.
+func (c *Client) LogClearFlag(flag string) (result bool, err error) {
+	req := spdktypes.LogClearFlagRequest{
+		Flag: flag,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_clear_flag", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogGetFlags gets the log flags.
+func (c *Client) LogGetFlags() (flags map[string]bool, err error) {
+	req := spdktypes.LogGetFlagsRequest{}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_get_flags", req)
+	if err != nil {
+		return nil, err
+	}
+
+	return flags, json.Unmarshal(cmdOutput, &flags)
+}
+
+// LogSetLevel sets the log level.
+//
+// "level": Required. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
+func (c *Client) LogSetLevel(level string) (result bool, err error) {
+	req := spdktypes.LogSetLevelRequest{
+		Level: level,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_set_level", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogGetLevel gets the log level.
+func (c *Client) LogGetLevel() (string, error) {
+	req := spdktypes.LogGetLevelRequest{}
+
+	level, err := c.jsonCli.SendCommand("log_get_level", req)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Trim(string(level), "\"\n"), nil
+}
+
+// LogSetPrintLevel sets the log print level. The log print level is the level at which log messages are printed to the console.
+//
+// "level": Required. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
+func (c *Client) LogSetPrintLevel(level string) (result bool, err error) {
+	req := spdktypes.LogSetPrintLevelRequest{
+		Level: level,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_set_print_level", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogGetPrintLevel gets the log print level. The log print level is the level at which log messages are printed to the console.
+func (c *Client) LogGetPrintLevel() (string, error) {
+	req := spdktypes.LogGetPrintLevelRequest{}
+
+	level, err := c.jsonCli.SendCommand("log_get_print_level", req)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Trim(string(level), "\"\n"), nil
 }
