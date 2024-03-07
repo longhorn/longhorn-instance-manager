@@ -336,7 +336,7 @@ func (p *Proxy) RemountReadOnlyVolume(ctx context.Context, req *rpc.RemountVolum
 			"remount,rw",
 			mp.Path,
 		}
-		if _, err := nsexec.Execute("mount", opts, lhtypes.ExecuteDefaultTimeout); err != nil {
+		if _, err := nsexec.Execute(nil, "mount", opts, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return nil, grpcstatus.Errorf(grpccodes.Internal, "remount failed with error: %v", err)
 		}
 	}
