@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
-	github.com/longhorn/go-common-libs v0.0.0-20240305104227-2dc630b0df92
+	github.com/longhorn/go-common-libs v0.0.0-20240307063052-6e77996eda29
 	github.com/longhorn/go-spdk-helper v0.0.0-20240222125115-a6f538717427
 	github.com/longhorn/longhorn-engine v1.6.0
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240220053426-96fd7d20ed31
@@ -15,10 +15,10 @@ require (
 	github.com/urfave/cli v1.22.14
 	golang.org/x/net v0.20.0
 	golang.org/x/sync v0.6.0
-	google.golang.org/grpc v1.62.0
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/grpc v1.62.1
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.27.1
+	k8s.io/mount-utils v0.29.2
 )
 
 require (
@@ -35,7 +35,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gammazero/workerpool v1.1.3 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
+	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -66,6 +66,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	k8s.io/apimachinery v0.27.1 // indirect
-	k8s.io/klog/v2 v2.100.1 // indirect
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
+	k8s.io/klog/v2 v2.110.1 // indirect
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
