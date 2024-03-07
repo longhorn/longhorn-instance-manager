@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	rpc "github.com/longhorn/types/pkg/imrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -19,7 +20,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/mount-utils"
 
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util/broadcaster"
@@ -37,6 +37,7 @@ const (
 */
 
 type Manager struct {
+	rpc.UnimplementedProcessManagerServiceServer
 	ctx context.Context
 
 	portRangeMin int32

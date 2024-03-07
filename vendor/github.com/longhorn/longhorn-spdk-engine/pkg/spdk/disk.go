@@ -17,9 +17,9 @@ import (
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	spdkutil "github.com/longhorn/go-spdk-helper/pkg/util"
+	"github.com/longhorn/types/pkg/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
-	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
 
 const (

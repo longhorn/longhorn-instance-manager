@@ -69,7 +69,7 @@ func GetKnownDevices(executor *commonNs.Executor) (map[string]*KernelDevice, err
 		"-l", "-n", "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(lsblkBinary, opts, types.ExecuteTimeout)
+	output, err := executor.Execute(nil, lsblkBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return knownDevices, err
 	}
@@ -105,7 +105,7 @@ func DetectDevice(path string, executor *commonNs.Executor) (*KernelDevice, erro
 		"-l", "-n", path, "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(lsblkBinary, opts, types.ExecuteTimeout)
+	output, err := executor.Execute(nil, lsblkBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func GetDeviceSectorSize(devPath string, executor *commonNs.Executor) (int64, er
 		"--getsz", devPath,
 	}
 
-	output, err := executor.Execute(BlockdevBinary, opts, types.ExecuteTimeout)
+	output, err := executor.Execute(nil, BlockdevBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return -1, err
 	}
@@ -201,7 +201,7 @@ func GetDeviceNumbers(devPath string, executor *commonNs.Executor) (int, int, er
 	opts := []string{
 		"-l", "-J", "-n", "-o", "MAJ:MIN", devPath,
 	}
-	output, err := executor.Execute(lsblkBinary, opts, types.ExecuteTimeout)
+	output, err := executor.Execute(nil, lsblkBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return -1, -1, err
 	}

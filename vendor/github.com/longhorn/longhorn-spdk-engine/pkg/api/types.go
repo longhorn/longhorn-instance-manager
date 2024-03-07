@@ -1,11 +1,15 @@
 package api
 
 import (
+	"github.com/longhorn/types/pkg/spdkrpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
-	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
+
+type SnapshotOptions struct {
+	UserCreated bool
+}
 
 type Replica struct {
 	Name       string           `json:"name"`
@@ -31,6 +35,7 @@ type Lvol struct {
 	Parent       string          `json:"parent"`
 	Children     map[string]bool `json:"children"`
 	CreationTime string          `json:"creation_time"`
+	UserCreated  bool            `json:"user_created"`
 }
 
 func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
@@ -45,6 +50,7 @@ func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
 		Parent:       l.Parent,
 		Children:     l.Children,
 		CreationTime: l.CreationTime,
+		UserCreated:  l.UserCreated,
 	}
 }
 
@@ -60,6 +66,7 @@ func LvolToProtoLvol(l *Lvol) *spdkrpc.Lvol {
 		Parent:       l.Parent,
 		Children:     l.Children,
 		CreationTime: l.CreationTime,
+		UserCreated:  l.UserCreated,
 	}
 }
 
@@ -144,7 +151,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		ErrorMsg:          e.ErrorMsg,
 	}
 	for rName, mode := range e.ReplicaModeMap {
-		res.ReplicaModeMap[rName] = spdkrpc.GRPCReplicaModeToReplicaMode(mode)
+		res.ReplicaModeMap[rName] = types.GRPCReplicaModeToReplicaMode(mode)
 	}
 	for snapshotName, snapProtoLvol := range e.Snapshots {
 		res.Snapshots[snapshotName] = ProtoLvolToLvol(snapProtoLvol)

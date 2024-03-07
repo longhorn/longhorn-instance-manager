@@ -19,7 +19,7 @@ const (
 )
 
 func GetBdevType(bdev *BdevInfo) BdevType {
-	if bdev == nil {
+	if bdev == nil || bdev.DriverSpecific == nil {
 		return ""
 	}
 	if bdev.ProductName == BdevProductNameAio && bdev.DriverSpecific.Aio != nil {

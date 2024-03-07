@@ -69,7 +69,7 @@ func cliVersion(executor *commonNs.Executor) (major, minor int, err error) {
 	opts := []string{
 		"--version",
 	}
-	outputStr, err := executor.Execute(nvmeBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -108,7 +108,7 @@ func showHostNQN(executor *commonNs.Executor) (string, error) {
 		"--show-hostnqn",
 	}
 
-	outputStr, err := executor.Execute(nvmeBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -137,7 +137,7 @@ func listSubsystems(devicePath string, executor *commonNs.Executor) ([]Subsystem
 		opts = append(opts, devicePath)
 	}
 
-	outputStr, err := executor.Execute(nvmeBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func listControllers(executor *commonNs.Executor) ([]CliDevice, error) {
 		"list",
 		"-o", "json",
 	}
-	outputStr, err := executor.Execute(nvmeBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -217,12 +217,12 @@ func listControllers(executor *commonNs.Executor) ([]CliDevice, error) {
 }
 
 func getHostID(executor *commonNs.Executor) (string, error) {
-	outputStr, err := executor.Execute("cat", []string{"/etc/nvme/hostid"}, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, "cat", []string{"/etc/nvme/hostid"}, types.ExecuteTimeout)
 	if err == nil {
 		return strings.TrimSpace(string(outputStr)), nil
 	}
 
-	outputStr, err = executor.Execute("cat", []string{"/sys/class/dmi/id/product_uuid"}, types.ExecuteTimeout)
+	outputStr, err = executor.Execute(nil, "cat", []string{"/sys/class/dmi/id/product_uuid"}, types.ExecuteTimeout)
 	if err == nil {
 		return strings.TrimSpace(string(outputStr)), nil
 	}
@@ -277,7 +277,7 @@ func discovery(hostID, hostNQN, ip, port string, executor *commonNs.Executor) ([
 	//	  }
 
 	// nvme discover does not respect the -s option, so we need to filter the output
-	outputStr, err := executor.Execute(nvmeBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +327,7 @@ func connect(hostID, hostNQN, nqn, transpotType, ip, port string, executor *comm
 	// {
 	//  "device" : "nvme0"
 	// }
-	outputStr, err := executor.Execute(nvmeBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -355,7 +355,7 @@ func disconnect(nqn string, executor *commonNs.Executor) error {
 	// NQN:nqn.2023-01.io.spdk:raid01 disconnected 1 controller(s)
 	//
 	// And trying to disconnect a non-existing target would return exit code 0
-	_, err := executor.Execute(nvmeBinary, opts, types.ExecuteTimeout)
+	_, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	return err
 }
 

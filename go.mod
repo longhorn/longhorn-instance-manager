@@ -1,15 +1,16 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.21
+go 1.21.7
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240126140439-9c90a8728ca2
-	github.com/longhorn/go-common-libs v0.0.0-20240109042507-23627e6416b7
-	github.com/longhorn/go-spdk-helper v0.0.0-20240117135122-26f8acb2a13d
+	github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
+	github.com/longhorn/go-common-libs v0.0.0-20240219094750-e7176c332156
+	github.com/longhorn/go-spdk-helper v0.0.0-20240222125115-a6f538717427
 	github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240123044045-c5f14845bd83
+	github.com/longhorn/types v0.0.0-incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.12
@@ -65,7 +66,13 @@ require (
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
-	k8s.io/apimachinery v0.27.1 // indirect
+	k8s.io/apimachinery v0.29.2 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
+
+replace github.com/longhorn/types => github.com/FrankYang0529/types v0.0.0-20240229024041-25f1b5bbec5b
+
+replace github.com/longhorn/longhorn-engine => github.com/FrankYang0529/longhorn-engine v1.2.1-0.20240229044952-9aeb9ab6d680
+
+replace github.com/longhorn/longhorn-spdk-engine => github.com/FrankYang0529/longhorn-spdk-engine v0.0.0-20240229045057-52a52b7a5bb3
