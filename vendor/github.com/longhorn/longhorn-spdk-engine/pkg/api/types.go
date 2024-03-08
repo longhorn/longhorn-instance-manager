@@ -7,6 +7,10 @@ import (
 	"github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
 
+type SnapshotOptions struct {
+	UserCreated bool
+}
+
 type Replica struct {
 	Name       string           `json:"name"`
 	LvsName    string           `json:"lvs_name"`
@@ -31,6 +35,7 @@ type Lvol struct {
 	Parent       string          `json:"parent"`
 	Children     map[string]bool `json:"children"`
 	CreationTime string          `json:"creation_time"`
+	UserCreated  bool            `json:"user_created"`
 }
 
 func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
@@ -45,6 +50,7 @@ func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
 		Parent:       l.Parent,
 		Children:     l.Children,
 		CreationTime: l.CreationTime,
+		UserCreated:  l.UserCreated,
 	}
 }
 
@@ -60,6 +66,7 @@ func LvolToProtoLvol(l *Lvol) *spdkrpc.Lvol {
 		Parent:       l.Parent,
 		Children:     l.Children,
 		CreationTime: l.CreationTime,
+		UserCreated:  l.UserCreated,
 	}
 }
 

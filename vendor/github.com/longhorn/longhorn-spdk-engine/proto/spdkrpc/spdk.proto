@@ -66,6 +66,7 @@ message Lvol {
     string parent = 5;
     map<string, bool> children = 6;
     string creation_time = 7;
+    bool user_created = 8;
 }
 
 message Replica {
@@ -215,6 +216,7 @@ message EngineReplicaDeleteRequest {
 message SnapshotRequest {
     string name = 1;
     string snapshot_name = 2;
+    bool user_created = 3;
 }
 
 message SnapshotResponse {
