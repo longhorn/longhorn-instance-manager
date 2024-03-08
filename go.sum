@@ -74,8 +74,8 @@ github.com/longhorn/go-spdk-helper v0.0.0-20240301101140-6eb6aa5fc09d h1:vajqcFl
 github.com/longhorn/go-spdk-helper v0.0.0-20240301101140-6eb6aa5fc09d/go.mod h1:Zv0UpwuqZpijy5/vSW2PvR8zVPBX8CJPF3XeZAuc4Ek=
 github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8 h1:Oj5bAlKBzS+qPxA8lfpUcbllrVjnHVCuhPcQv/V98xw=
 github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8/go.mod h1:Snkv3gy4AUOhZSYMI7g7lVX/OOB8DTo28eJwsEfbAwM=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240222133636-8ded920ee144 h1:B6IuGFiAOq3oBP9pfQqN9gWu5Ahpqo1yEE2kC2GbT30=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240222133636-8ded920ee144/go.mod h1:YBfCONov4UINPahOKmnuVBRGPhfVHOuEgJnhDtQfYt4=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240308061103-33861f26f36e h1:OPtYaSleQOlf+VsCF3hzS96nYj1F+X0dwky+LvsLh1M=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240308061103-33861f26f36e/go.mod h1:mgXCx3ZJpaObXmOUgczwzuYySs5Wc7SQK6sJtIRR8Ho=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHTxp6HcC++/vN17LfeuDmozHI2j6DoZf5E=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c h1:EAE/cBOWZUL9CDiI4xbOr1IudQUa2e6u/pdScytEcvo=
@@ -164,8 +164,6 @@ golang.org/x/net v0.0.0-20210610132358-84b48f89b13b/go.mod h1:9nx3DQGgdP8bBQD5qx
 golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20220722155237-a158d28d115b/go.mod h1:XRhObCWvk6IyKnWLug+ECip1KBveYUHfp+8e9klMJ9c=
 golang.org/x/net v0.1.0/go.mod h1:Cx3nUiGt4eDBEyega/BKRp+/AlGL8hYe7U9odMt2Cco=
-golang.org/x/net v0.21.0 h1:AQyQV4dYCvJ7vGmJyKki9+PBdyvhkSd8EIx/qb0AYv4=
-golang.org/x/net v0.21.0/go.mod h1:bIjVDfnllIU7BJ2DNgfnXvpSvtn8VRwhlsaeUTyUS44=
 golang.org/x/net v0.22.0 h1:9sGLhx7iRIHEiX0oAJ3MRZMUCElJgy7Br1nO+AMN3Tc=
 golang.org/x/net v0.22.0/go.mod h1:JKghWKKOSdJwpW2GEx0Ja7fmaKnMsbu+MWVZTokSYmg=
 golang.org/x/sync v0.0.0-20181108010431-42b317875d0f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
