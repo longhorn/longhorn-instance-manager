@@ -451,7 +451,7 @@ func (s *Server) ReplicaSnapshotCreate(ctx context.Context, req *spdkrpc.Snapsho
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during snapshot create", req.Name)
 	}
 
-	return r.SnapshotCreate(spdkClient, req.SnapshotName)
+	return r.SnapshotCreate(spdkClient, req.SnapshotName, &api.SnapshotOptions{UserCreated: req.UserCreated})
 }
 
 func (s *Server) ReplicaSnapshotDelete(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
@@ -659,7 +659,7 @@ func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *sp
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding dst snapshot create", req.Name)
 	}
 
-	if err = r.RebuildingDstSnapshotCreate(spdkClient, req.SnapshotName); err != nil {
+	if err = r.RebuildingDstSnapshotCreate(spdkClient, req.SnapshotName, &api.SnapshotOptions{UserCreated: req.UserCreated}); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
@@ -893,7 +893,11 @@ func (s *Server) EngineSnapshotCreate(ctx context.Context, req *spdkrpc.Snapshot
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot creation", req.Name)
 	}
 
-	snapshotName, err := e.SnapshotCreate(spdkClient, req.SnapshotName)
+	opts := api.SnapshotOptions{
+		UserCreated: req.UserCreated,
+	}
+
+	snapshotName, err := e.SnapshotCreate(spdkClient, req.SnapshotName, &opts)
 	return &spdkrpc.SnapshotResponse{SnapshotName: snapshotName}, err
 }
 
@@ -1193,6 +1197,60 @@ func (s *Server) DiskGet(ctx context.Context, req *spdkrpc.DiskGetRequest) (ret 
 	s.RUnlock()
 
 	return svcDiskGet(spdkClient, req.DiskName)
+}
+
+func (s *Server) LogSetLevel(ctx context.Context, req *spdkrpc.LogSetLevelRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	err = svcLogSetLevel(spdkClient, req.Level)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) LogSetFlags(ctx context.Context, req *spdkrpc.LogSetFlagsRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	err = svcLogSetFlags(spdkClient, req.Flags)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) LogGetLevel(ctx context.Context, req *emptypb.Empty) (ret *spdkrpc.LogGetLevelResponse, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	level, err := svcLogGetLevel(spdkClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spdkrpc.LogGetLevelResponse{
+		Level: level,
+	}, nil
+}
+
+func (s *Server) LogGetFlags(ctx context.Context, req *emptypb.Empty) (ret *spdkrpc.LogGetFlagsResponse, err error) {
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	flags, err := svcLogGetFlags(spdkClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spdkrpc.LogGetFlagsResponse{
+		Flags: flags,
+	}, nil
 }
 
 func (s *Server) VersionDetailGet(context.Context, *emptypb.Empty) (*spdkrpc.VersionDetailGetReply, error) {
