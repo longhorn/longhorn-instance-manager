@@ -8,9 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -21,8 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	iutil "github.com/longhorn/go-iscsi-helper/util"
-
 	"github.com/longhorn/longhorn-engine/pkg/types"
 )
 
@@ -30,13 +26,13 @@ var (
 	MaximumVolumeNameSize = 64
 	validVolumeName       = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]+$`)
 
-	HostProc = "/host/proc"
-
 	unixDomainSocketDirectoryInContainer = "/host/var/lib/longhorn/unix-domain-socket/"
 )
 
 const (
 	BlockSizeLinux = 512
+
+	randomIDLenth = 8
 )
 
 func ParseAddresses(name string) (string, string, string, int, error) {
@@ -87,10 +83,6 @@ func GetPortFromAddress(address string) (int, error) {
 	return port, nil
 }
 
-func UUID() string {
-	return uuid.New().String()
-}
-
 func Filter(list []string, check func(string) bool) []string {
 	result := make([]string, 0, len(list))
 	for _, i := range list {
@@ -99,15 +91,6 @@ func Filter(list []string, check func(string) bool) []string {
 		}
 	}
 	return result
-}
-
-func Contains(arr []string, val string) bool {
-	for _, a := range arr {
-		if a == val {
-			return true
-		}
-	}
-	return false
 }
 
 type filteredLoggingHandler struct {
@@ -292,18 +275,6 @@ func ResolveBackingFilepath(fileOrDirpath string) (string, error) {
 	return fileOrDirpath, nil
 }
 
-func GetInitiatorNS() string {
-	return iutil.GetHostNamespacePath(HostProc)
-}
-
-func GetFunctionName(i interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
-}
-
-func RandomID(randomIDLenth int) string {
-	return UUID()[:randomIDLenth]
-}
-
 func GetAddresses(volumeName, address string, dataServerProtocol types.DataServerProtocol) (string, string, string, int, error) {
 	switch dataServerProtocol {
 	case types.DataServerProtocolTCP:
@@ -315,4 +286,12 @@ func GetAddresses(volumeName, address string, dataServerProtocol types.DataServe
 	default:
 		return "", "", "", -1, fmt.Errorf("unsupported protocol: %v", dataServerProtocol)
 	}
+}
+
+func UUID() string {
+	return uuid.New().String()
+}
+
+func RandomID() string {
+	return UUID()[:randomIDLenth]
 }

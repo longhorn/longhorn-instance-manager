@@ -41,9 +41,8 @@ require (
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20230802055236-4ec8edae3fad // indirect
 	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 // indirect
-	github.com/longhorn/sparse-tools v0.0.0-20240222053258-01fc48087406 // indirect
+	github.com/longhorn/sparse-tools v0.0.0-20240228120902-ce8c4c2e71ca // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
@@ -66,3 +65,5 @@ require (
 )
 
 replace golang.org/x/text v0.3.2 => golang.org/x/text v0.3.3
+
+replace github.com/longhorn/longhorn-engine v1.5.4 => github.com/ChanYiLin/longhorn-engine v1.4.0-rc1.0.20240311091244-3365ed4916a7
