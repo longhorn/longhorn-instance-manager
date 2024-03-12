@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -175,44 +174,6 @@ func isEngineProcess(p *Process) bool {
 	return p.PortCount == DefaultEnginePortCount
 }
 
-func decodeProcessPath(path string) (dir, image, binary string) {
-	path, binary = filepath.Split(filepath.Clean(path))
-	dir, image = filepath.Split(filepath.Clean(path))
-	return dir, image, binary
-}
-
-func isValidBinary(binary string) bool {
-	switch binary {
-	case "longhorn":
-		return true
-	default:
-		return false
-	}
-}
-
-func isValidDirectory(dir string) bool {
-	switch dir {
-	case "/engine-binaries/", "/host/var/lib/longhorn/engine-binaries/":
-		return true
-	default:
-		return false
-	}
-}
-
-func ensureValidProcessPath(path string) (string, error) {
-	dir, image, binary := decodeProcessPath(path)
-	logrus.Debugf("Process Manager: validate process path: %v dir: %v image: %v binary: %v", path, dir, image, binary)
-	if !isValidBinary(binary) {
-		return "", fmt.Errorf("unsupported binary %v", binary)
-	}
-
-	if !isValidDirectory(dir) {
-		return "", fmt.Errorf("unsupported process path %v", path)
-	}
-
-	return filepath.Join(dir, image, binary), nil
-}
-
 // ProcessCreate will create a process according to the request.
 // If the specified process name exists already, the creation will fail.
 func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequest) (ret *rpc.ProcessResponse, err error) {
@@ -226,14 +187,9 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 		return nil, err
 	}
 
-	processPath, err := ensureValidProcessPath(req.Spec.Binary)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	p := &Process{
 		Name:      req.Spec.Name,
-		Binary:    processPath,
+		Binary:    req.Spec.Binary,
 		Args:      req.Spec.Args,
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
@@ -487,11 +443,6 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 	}
 	terminateSignal := syscall.SIGHUP
 
-	processPath, err := ensureValidProcessPath(req.Spec.Binary)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	logrus.Infof("Process Manager: prepare to replace process %v", req.Spec.Name)
 	logger, err := util.NewLonghornWriter(req.Spec.Name, pm.logsDir)
 	if err != nil {
@@ -500,7 +451,7 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 
 	p := &Process{
 		Name:      req.Spec.Name,
-		Binary:    processPath,
+		Binary:    req.Spec.Binary,
 		Args:      req.Spec.Args,
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
