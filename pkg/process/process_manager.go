@@ -217,6 +217,7 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 		// this is to be consistent with the prior implementation
 		logrus.WithError(err).Errorf("Process Manager: failed to init new process %v", req.Spec.Name)
 		p.UpdateCh <- p
+		pm.unregisterProcess(p)
 	} else {
 		logrus.Infof("Process Manager: created process %v", req.Spec.Name)
 	}
