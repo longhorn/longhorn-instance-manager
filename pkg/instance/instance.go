@@ -35,6 +35,11 @@ type InstanceOps interface {
 	InstanceList(map[string]*rpc.InstanceResponse) error
 	InstanceReplace(*rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error)
 	InstanceLog(*rpc.InstanceLogRequest, rpc.InstanceService_InstanceLogServer) error
+
+	LogSetLevel(context.Context, *rpc.LogSetLevelRequest) (*emptypb.Empty, error)
+	LogSetFlags(context.Context, *rpc.LogSetFlagsRequest) (*emptypb.Empty, error)
+	LogGetLevel(context.Context, *rpc.LogGetLevelRequest) (*rpc.LogGetLevelResponse, error)
+	LogGetFlags(context.Context, *rpc.LogGetFlagsRequest) (*rpc.LogGetFlagsResponse, error)
 }
 
 type V1DataEngineInstanceOps struct {

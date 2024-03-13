@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/mount-utils"
 
+	commonUtils "github.com/longhorn/go-common-libs/utils"
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
@@ -161,7 +161,7 @@ func (pm *Manager) getProcessesToUpdateConditions(volumeMountPointMap map[string
 			volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
 
 			if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
-				p.Conditions[types.EngineConditionFilesystemReadOnly] = util.IsMountPointReadOnly(mp)
+				p.Conditions[types.EngineConditionFilesystemReadOnly] = commonUtils.IsMountPointReadOnly(mp)
 				processesToUpdate = append(processesToUpdate, p)
 			}
 		}
@@ -172,44 +172,6 @@ func (pm *Manager) getProcessesToUpdateConditions(volumeMountPointMap map[string
 
 func isEngineProcess(p *Process) bool {
 	return p.PortCount == DefaultEnginePortCount
-}
-
-func decodeProcessPath(path string) (dir, image, binary string) {
-	path, binary = filepath.Split(filepath.Clean(path))
-	dir, image = filepath.Split(filepath.Clean(path))
-	return dir, image, binary
-}
-
-func isValidBinary(binary string) bool {
-	switch binary {
-	case "longhorn":
-		return true
-	default:
-		return false
-	}
-}
-
-func isValidDirectory(dir string) bool {
-	switch dir {
-	case "/engine-binaries/", "/host/var/lib/longhorn/engine-binaries/":
-		return true
-	default:
-		return false
-	}
-}
-
-func ensureValidProcessPath(path string) (string, error) {
-	dir, image, binary := decodeProcessPath(path)
-	logrus.Debugf("Process Manager: validate process path: %v dir: %v image: %v binary: %v", path, dir, image, binary)
-	if !isValidBinary(binary) {
-		return "", fmt.Errorf("unsupported binary %v", binary)
-	}
-
-	if !isValidDirectory(dir) {
-		return "", fmt.Errorf("unsupported process path %v", path)
-	}
-
-	return filepath.Join(dir, image, binary), nil
 }
 
 // ProcessCreate will create a process according to the request.
@@ -225,14 +187,9 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 		return nil, err
 	}
 
-	processPath, err := ensureValidProcessPath(req.Spec.Binary)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	p := &Process{
 		Name:      req.Spec.Name,
-		Binary:    processPath,
+		Binary:    req.Spec.Binary,
 		Args:      req.Spec.Args,
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
@@ -486,11 +443,6 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 	}
 	terminateSignal := syscall.SIGHUP
 
-	processPath, err := ensureValidProcessPath(req.Spec.Binary)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	logrus.Infof("Process Manager: prepare to replace process %v", req.Spec.Name)
 	logger, err := util.NewLonghornWriter(req.Spec.Name, pm.logsDir)
 	if err != nil {
@@ -499,7 +451,7 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 
 	p := &Process{
 		Name:      req.Spec.Name,
-		Binary:    processPath,
+		Binary:    req.Spec.Binary,
 		Args:      req.Spec.Args,
 		PortCount: req.Spec.PortCount,
 		PortArgs:  req.Spec.PortArgs,
