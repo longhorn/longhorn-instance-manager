@@ -46,7 +46,7 @@ RUN cd /usr/src && \
 
 # Build SPDK
 ENV SPDK_DIR /usr/src/spdk
-ENV SPDK_COMMIT_ID 72b7762674cc35262086b185a455a8a30f46432d
+ENV SPDK_COMMIT_ID 086836c8d1ee2d622c86965dfb0245d966420309
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     cd ${SPDK_DIR} && \
     git checkout ${SPDK_COMMIT_ID} && \
