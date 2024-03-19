@@ -115,8 +115,8 @@ github.com/go-ole/go-ole/oleutil
 # github.com/gofrs/flock v0.8.1
 ## explicit
 github.com/gofrs/flock
-# github.com/golang/protobuf v1.5.3
-## explicit; go 1.9
+# github.com/golang/protobuf v1.5.4
+## explicit; go 1.17
 github.com/golang/protobuf/proto
 # github.com/google/uuid v1.6.0
 ## explicit
@@ -146,7 +146,7 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62
+# github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc
 ## explicit; go 1.21
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
@@ -157,7 +157,7 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
-# github.com/longhorn/go-spdk-helper v0.0.0-20240315133419-fd71aaab4a11
+# github.com/longhorn/go-spdk-helper v0.0.0-20240319142717-116729b98b89
 ## explicit; go 1.21
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
@@ -178,7 +178,7 @@ github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
 github.com/longhorn/longhorn-engine/proto/ptypes
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240315010143-da2a02e86462
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240319114738-c9046e18cf8c
 ## explicit; go 1.21
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -394,7 +394,7 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 ## explicit; go 1.11
 gopkg.in/check.v1
-# k8s.io/apimachinery v0.29.2
+# k8s.io/apimachinery v0.29.3
 ## explicit; go 1.21
 k8s.io/apimachinery/pkg/util/errors
 k8s.io/apimachinery/pkg/util/runtime
