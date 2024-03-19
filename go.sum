@@ -70,6 +70,8 @@ github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77 h1:iJRq59kA22
 github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77/go.mod h1:4cbJWtlrD2cGTQxQLtdlPTYopiJiusXH7CpOBrn/s3k=
 github.com/longhorn/go-common-libs v0.0.0-20240307063052-6e77996eda29 h1:tyzIDCMjQGQzhqAtdJaeEMAaNUZJD/sHERXp+tYc+ms=
 github.com/longhorn/go-common-libs v0.0.0-20240307063052-6e77996eda29/go.mod h1:ePLGb2r/PJBUIVoVhLOt4bLOeu0S72ZB+fWDWwC8H28=
+github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62 h1:ovotrq4HvaSRFgLozlNyUAvJp2eykdOwfpz4VIYZGIY=
+github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62/go.mod h1:ePLGb2r/PJBUIVoVhLOt4bLOeu0S72ZB+fWDWwC8H28=
 github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250 h1:bc9BtfvSuXvmztYiBCebvPWPxakbiCWBvydbeqat+Ek=
 github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250/go.mod h1:re2QHb6FUU9G/CL3AnXDbzFjLNPwmweBvnTfeVpkZ1E=
 github.com/longhorn/longhorn-engine v1.6.0 h1:6CH2vvwCgFBIGW4TegcI79CL1Ego1nvLZIC3ioRjjdM=
@@ -229,5 +231,7 @@ k8s.io/klog/v2 v2.110.1 h1:U/Af64HJf7FcwMcXyKm2RPM22WZzyR7OSpYj5tg3cL0=
 k8s.io/klog/v2 v2.110.1/go.mod h1:YGtd1984u+GgbuZ7e08/yBuAfKLSO0+uR1Fhi6ExXjo=
 k8s.io/mount-utils v0.29.2 h1:FrUfgvOo63nqJRPXKoqN/DW1lMnR/y0pzpFErKh6p2o=
 k8s.io/mount-utils v0.29.2/go.mod h1:9IWJTMe8tG0MYMLEp60xK9GYVeCdA3g4LowmnVi+t9Y=
+k8s.io/mount-utils v0.29.3 h1:iEcqPP7Vv8UClH8nnMfovtmy/04fIloRW9JuSXykoZ0=
+k8s.io/mount-utils v0.29.3/go.mod h1:9IWJTMe8tG0MYMLEp60xK9GYVeCdA3g4LowmnVi+t9Y=
 k8s.io/utils v0.0.0-20230726121419-3b25d923346b h1:sgn3ZU783SCgtaSJjpcVVlRqd6GSnlTLKgpAAttJvpI=
 k8s.io/utils v0.0.0-20230726121419-3b25d923346b/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
