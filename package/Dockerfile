@@ -46,7 +46,7 @@ RUN cd /usr/src && \
 
 # Build SPDK
 ENV SPDK_DIR /usr/src/spdk
-ENV SPDK_COMMIT_ID 086836c8d1ee2d622c86965dfb0245d966420309
+ENV SPDK_COMMIT_ID 880cd9cb41a47481e46743082057781e1063dd1c
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     cd ${SPDK_DIR} && \
     git checkout ${SPDK_COMMIT_ID} && \
@@ -107,8 +107,8 @@ RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
-COPY --from=builder /usr/src/spdk/scripts /spdk/
-RUN sh /spdk/pkgdep.sh && rm -rf /spdk
+COPY --from=builder /usr/src/spdk/scripts /spdk/scripts/
+RUN bash /spdk/scripts/pkgdep.sh && rm -rf /spdk
 
 # Copy pre-built binaries from builder
 COPY --from=builder \
