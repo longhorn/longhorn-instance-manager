@@ -29,12 +29,13 @@ type Process struct {
 	PortCount int32
 	PortArgs  []string
 
-	UUID       string
-	State      State
-	ErrorMsg   string
-	Conditions map[string]bool
-	PortStart  int32
-	PortEnd    int32
+	UUID              string
+	State             State
+	ErrorMsg          string
+	Conditions        map[string]bool
+	PortStart         int32
+	PortEnd           int32
+	DeletionTimestamp *time.Time
 
 	lock     *sync.RWMutex
 	cmd      Command
@@ -137,15 +138,26 @@ func (p *Process) Stop() {
 }
 
 func (p *Process) StopWithSignal(signal syscall.Signal) {
-	needStop := false
+	needStop, needTimeoutKill := false, false
+	now := time.Now()
+
 	p.lock.Lock()
 	if p.State != StateStopping && p.State != StateStopped && p.State != StateError {
 		p.State = StateStopping
+		p.DeletionTimestamp = &now
 		needStop = true
+	}
+	// Retry the deletion if the process is not stopped in 30 seconds
+	if p.DeletionTimestamp != nil && !needStop {
+		deleteTimeout := time.Duration(int64(types.WaitInterval) * int64(types.WaitCount))
+		if p.DeletionTimestamp.Add(deleteTimeout).Before(now) {
+			logrus.Infof("Process Manager: process %v deletion takes more than %vs, will retry it", p.Name, deleteTimeout.Seconds())
+			needTimeoutKill = true
+		}
 	}
 	p.lock.Unlock()
 
-	if !needStop {
+	if !needStop && !needTimeoutKill {
 		return
 	}
 	p.UpdateCh <- p
@@ -170,16 +182,20 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 		}
 
 		// no need for lock
-		logrus.Infof("Process Manager: trying to stop process %v", p.Name)
-		cmd.StopWithSignal(signal)
-		for i := 0; i < types.WaitCount; i++ {
-			if p.IsStopped() {
-				return
+		if needStop {
+			logrus.Infof("Process Manager: trying to stop process %v", p.Name)
+			cmd.StopWithSignal(signal)
+			for i := 0; i < types.WaitCount; i++ {
+				if p.IsStopped() {
+					return
+				}
+				logrus.Infof("Wait for process %v to shutdown", p.Name)
+				time.Sleep(types.WaitInterval)
 			}
-			logrus.Infof("Wait for process %v to shutdown", p.Name)
-			time.Sleep(types.WaitInterval)
+			logrus.Warnf("Process Manager: cannot graceful stop process %v in %v, will kill the process", p.Name, time.Duration(types.WaitCount)*types.WaitInterval)
+		} else if needTimeoutKill {
+			logrus.Warnf("Process Manager: somehow timeout stopping process %v, will retry killing the process", p.Name)
 		}
-		logrus.Warnf("Process Manager: cannot graceful stop process %v in %v, will kill the process", p.Name, time.Duration(types.WaitCount)*types.WaitInterval)
 		cmd.Kill()
 	}()
 }
