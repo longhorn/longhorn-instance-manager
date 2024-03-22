@@ -161,8 +161,11 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 			}
 		}()
 
-		if cmd == nil || !cmd.Started() {
-			logrus.Errorf("Process Manager: cmd of %v hasn't started, no need to stop", p.Name)
+		if cmd == nil || !cmd.IsRunning() {
+			logrus.Errorf("Process Manager: cmd of %v is not running anymore, no need to stop", p.Name)
+			if p.State != StateStopped && p.State != StateError {
+				p.State = StateStopped
+			}
 			return
 		}
 
