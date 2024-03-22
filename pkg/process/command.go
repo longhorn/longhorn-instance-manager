@@ -15,7 +15,7 @@ type Executor interface {
 type Command interface {
 	Run() error
 	SetOutput(io.Writer)
-	Started() bool
+	IsRunning() bool
 	Stop()
 	StopWithSignal(signal syscall.Signal)
 	Kill()
@@ -62,10 +62,10 @@ func (bc *BinaryCommand) SetOutput(writer io.Writer) {
 	bc.Stderr = writer
 }
 
-func (bc *BinaryCommand) Started() bool {
+func (bc *BinaryCommand) IsRunning() bool {
 	bc.RLock()
 	defer bc.RUnlock()
-	return bc.Process != nil
+	return bc.Process != nil && bc.ProcessState == nil
 }
 
 func (bc *BinaryCommand) StopWithSignal(signal syscall.Signal) {
@@ -112,8 +112,8 @@ type MockCommand struct {
 
 	stopCh chan error
 
-	started bool
-	stopped bool
+	isRunning bool
+	stopped   bool
 }
 
 func NewMockCommand(name string, arg ...string) *MockCommand {
@@ -125,14 +125,14 @@ func NewMockCommand(name string, arg ...string) *MockCommand {
 
 		stopCh: make(chan error),
 
-		started: false,
-		stopped: false,
+		isRunning: false,
+		stopped:   false,
 	}
 }
 
 func (mc *MockCommand) Run() error {
 	mc.Lock()
-	mc.started = true
+	mc.isRunning = true
 	mc.Unlock()
 
 	return <-mc.stopCh
@@ -141,10 +141,10 @@ func (mc *MockCommand) Run() error {
 func (mc *MockCommand) SetOutput(writer io.Writer) {
 }
 
-func (mc *MockCommand) Started() bool {
+func (mc *MockCommand) IsRunning() bool {
 	mc.RLock()
 	defer mc.RUnlock()
-	return mc.started
+	return mc.isRunning
 }
 
 func (mc *MockCommand) Stop() {
