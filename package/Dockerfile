@@ -18,7 +18,7 @@ RUN wget -O - https://storage.googleapis.com/golang/go1.21.3.linux-${!GOLANG_ARC
     go install golang.org/x/lint/golint@latest
 
 ENV GO_SPDK_HELPER_DIR /usr/src/go-spdk-helper
-ENV GO_SPDK_HELPER_COMMIT_ID 5fe20e7f754283634c71d422778773be2d13439c
+ENV GO_SPDK_HELPER_COMMIT_ID 8d33f2aada158a2b48f2b76e379851935a1818c2
 RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DIR} && \
     cd ${GO_SPDK_HELPER_DIR} && \
     git checkout ${GO_SPDK_HELPER_COMMIT_ID} && \
@@ -103,12 +103,13 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper netcat && \
+    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper netcat kmod jq util-linux && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
-COPY --from=builder /usr/src/spdk/scripts /spdk/scripts/
-RUN bash /spdk/scripts/pkgdep.sh && rm -rf /spdk
+COPY --from=builder /usr/src/spdk/scripts /usr/src/spdk/scripts
+COPY --from=builder /usr/src/spdk/include /usr/src/spdk/include
+RUN bash /usr/src/spdk/scripts/pkgdep.sh
 
 # Copy pre-built binaries from builder
 COPY --from=builder \

@@ -21,10 +21,11 @@ const (
 type BdevDriverSpecificNvme []NvmeNamespaceInfo
 
 type NvmeNamespaceInfo struct {
-	CtrlrData NvmeCtrlrData      `json:"ctrlr_data"`
-	NsData    NvmeNsData         `json:"ns_data"`
-	Trid      NvmeTransportID    `json:"trid"`
-	VS        NvmeVendorSpecific `json:"vs"`
+	PciAddress string             `json:"pci_address,omitempty"`
+	CtrlrData  NvmeCtrlrData      `json:"ctrlr_data"`
+	NsData     NvmeNsData         `json:"ns_data"`
+	Trid       NvmeTransportID    `json:"trid"`
+	VS         NvmeVendorSpecific `json:"vs"`
 }
 
 type NvmeCtrlrData struct {

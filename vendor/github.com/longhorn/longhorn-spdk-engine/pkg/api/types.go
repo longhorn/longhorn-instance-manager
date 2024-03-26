@@ -162,6 +162,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 
 type DiskInfo struct {
 	ID          string
+	Name        string
 	UUID        string
 	Path        string
 	Type        string
