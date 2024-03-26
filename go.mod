@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
-	github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62
+	github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc
 	github.com/longhorn/go-spdk-helper v0.0.0-20231113055029-9acddd184246
 	github.com/longhorn/longhorn-engine v1.5.5-0.20240319113652-9cdc0f5750a7
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47
