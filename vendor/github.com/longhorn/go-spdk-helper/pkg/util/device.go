@@ -102,7 +102,7 @@ func DetectDevice(path string, executor *commonNs.Executor) (*KernelDevice, erro
 	*/
 
 	opts := []string{
-		"-l", "-n", path, "-o", "NAME,MAJ:MIN",
+		path, "-n", "-o", "NAME,MAJ:MIN", "--nodeps",
 	}
 
 	output, err := executor.Execute(nil, lsblkBinary, opts, types.ExecuteTimeout)
