@@ -3,10 +3,10 @@ module github.com/longhorn/longhorn-instance-manager
 go 1.21
 
 require (
-	github.com/RoaringBitmap/roaring v1.9.0
+	github.com/RoaringBitmap/roaring v1.9.1
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
-	github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62
+	github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc
 	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
 	github.com/longhorn/longhorn-engine v1.6.0
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240308142500-8ac41e985506

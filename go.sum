@@ -9,6 +9,8 @@ github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0/go.mod h1:tPaiy8S5bQ
 github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/RoaringBitmap/roaring v1.9.0 h1:lwKhr90/j0jVXJyh5X+vQN1VVn77rQFfYnh6RDRGCcE=
 github.com/RoaringBitmap/roaring v1.9.0/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
+github.com/RoaringBitmap/roaring v1.9.1 h1:LXcSqGGGMKm+KAzUyWn7ZeREqoOkoMX+KwLOK1thc4I=
+github.com/RoaringBitmap/roaring v1.9.1/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
 github.com/aws/aws-sdk-go v1.46.1 h1:U26quvBWFZMQuultLw5tloW4GnmWaChEwMZNq8uYatw=
 github.com/aws/aws-sdk-go v1.46.1/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
@@ -72,6 +74,8 @@ github.com/longhorn/go-common-libs v0.0.0-20240307063052-6e77996eda29 h1:tyzIDCM
 github.com/longhorn/go-common-libs v0.0.0-20240307063052-6e77996eda29/go.mod h1:ePLGb2r/PJBUIVoVhLOt4bLOeu0S72ZB+fWDWwC8H28=
 github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62 h1:ovotrq4HvaSRFgLozlNyUAvJp2eykdOwfpz4VIYZGIY=
 github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62/go.mod h1:ePLGb2r/PJBUIVoVhLOt4bLOeu0S72ZB+fWDWwC8H28=
+github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc h1:Eh9Npc5yBcVD8E4zVQIGUtC62HcfqevrHjQ2kh7fJ/E=
+github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc/go.mod h1:ESTw7LYBF+dB5VndQNKXKrD6B9s/hF94lotGKXLovlM=
 github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250 h1:bc9BtfvSuXvmztYiBCebvPWPxakbiCWBvydbeqat+Ek=
 github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250/go.mod h1:re2QHb6FUU9G/CL3AnXDbzFjLNPwmweBvnTfeVpkZ1E=
 github.com/longhorn/longhorn-engine v1.6.0 h1:6CH2vvwCgFBIGW4TegcI79CL1Ego1nvLZIC3ioRjjdM=
