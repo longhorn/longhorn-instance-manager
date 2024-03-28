@@ -1,4 +1,4 @@
-FROM registry.suse.com/bci/bci-base:15.5 AS builder
+FROM registry.suse.com/bci/bci-base:15.6 AS builder
 
 ARG ARCH=amd64
 
@@ -91,7 +91,7 @@ RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
 RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.24/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
     chmod +x /usr/local/bin/grpc_health_probe
 
-FROM registry.suse.com/bci/bci-base:15.5 AS release
+FROM registry.suse.com/bci/bci-base:15.6 AS release
 
 ARG ARCH=amd64
 
