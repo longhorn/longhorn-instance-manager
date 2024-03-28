@@ -147,7 +147,7 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 		p.DeletionTimestamp = &now
 		needStop = true
 	}
-	// Retry the deletion if the process is not stopped in 30 seconds
+	// Retry the deletion if the process is not stopped in 60 seconds
 	if p.DeletionTimestamp != nil && !needStop {
 		deleteTimeout := time.Duration(int64(types.WaitInterval) * int64(types.WaitCount))
 		if p.DeletionTimestamp.Add(deleteTimeout).Before(now) {
