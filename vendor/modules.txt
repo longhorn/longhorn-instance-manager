@@ -27,8 +27,8 @@ github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/internal
 ## explicit; go 1.14
 github.com/RoaringBitmap/roaring
 github.com/RoaringBitmap/roaring/internal
-# github.com/aws/aws-sdk-go v1.46.1
-## explicit; go 1.11
+# github.com/aws/aws-sdk-go v1.51.10
+## explicit; go 1.19
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/arn
 github.com/aws/aws-sdk-go/aws/auth/bearer
@@ -83,7 +83,7 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
-# github.com/bits-and-blooms/bitset v1.12.0
+# github.com/bits-and-blooms/bitset v1.13.0
 ## explicit; go 1.16
 github.com/bits-and-blooms/bitset
 # github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
@@ -92,10 +92,10 @@ github.com/c9s/goprocinfo/linux
 # github.com/cespare/xxhash/v2 v2.2.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/cpuguy83/go-md2man/v2 v2.0.2
+# github.com/cpuguy83/go-md2man/v2 v2.0.4
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man
-# github.com/felixge/httpsnoop v1.0.1
+# github.com/felixge/httpsnoop v1.0.4
 ## explicit; go 1.13
 github.com/felixge/httpsnoop
 # github.com/gammazero/deque v0.2.1
@@ -104,10 +104,9 @@ github.com/gammazero/deque
 # github.com/gammazero/workerpool v1.1.3
 ## explicit; go 1.18
 github.com/gammazero/workerpool
-# github.com/go-logr/logr v1.3.0
+# github.com/go-logr/logr v1.4.1
 ## explicit; go 1.18
 github.com/go-logr/logr
-github.com/go-logr/logr/slogr
 # github.com/go-ole/go-ole v1.3.0
 ## explicit; go 1.12
 github.com/go-ole/go-ole
@@ -121,8 +120,8 @@ github.com/golang/protobuf/proto
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
-# github.com/gorilla/handlers v1.5.1
-## explicit; go 1.14
+# github.com/gorilla/handlers v1.5.2
+## explicit; go 1.20
 github.com/gorilla/handlers
 # github.com/jmespath/go-jmespath v0.4.0
 ## explicit; go 1.14
@@ -133,7 +132,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
+# github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77 => github.com/ChanYiLin/backupstore v0.0.0-20240402075357-cefced175927
 ## explicit; go 1.21
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -146,8 +145,9 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc
+# github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc => github.com/ChanYiLin/go-common-libs v0.0.0-20240329072435-638753f76305
 ## explicit; go 1.21
+github.com/longhorn/go-common-libs/backup
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
 github.com/longhorn/go-common-libs/net
@@ -165,7 +165,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/client
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8
+# github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8 => github.com/ChanYiLin/longhorn-engine v1.4.0-rc1.0.20240402075523-8a6504e92748
 ## explicit; go 1.21
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -190,7 +190,7 @@ github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc
 # github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003
 ## explicit
 github.com/longhorn/nsfilelock
-# github.com/longhorn/sparse-tools v0.0.0-20230408015858-c849def39d3c
+# github.com/longhorn/sparse-tools v0.0.0-20240228120902-ce8c4c2e71ca
 ## explicit; go 1.17
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
@@ -201,13 +201,13 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/go-ps v1.0.0
 ## explicit; go 1.13
 github.com/mitchellh/go-ps
-# github.com/moby/sys/mountinfo v0.6.2
+# github.com/moby/sys/mountinfo v0.7.1
 ## explicit; go 1.16
 github.com/moby/sys/mountinfo
 # github.com/mschoch/smat v0.2.0
 ## explicit; go 1.13
 github.com/mschoch/smat
-# github.com/pierrec/lz4/v4 v4.1.17
+# github.com/pierrec/lz4/v4 v4.1.21
 ## explicit; go 1.14
 github.com/pierrec/lz4/v4
 github.com/pierrec/lz4/v4/internal/lz4block
@@ -240,8 +240,8 @@ github.com/prometheus/procfs/internal/util
 # github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47
 ## explicit
 github.com/rancher/go-fibmap
-# github.com/rogpeppe/go-internal v1.10.0
-## explicit; go 1.19
+# github.com/rogpeppe/go-internal v1.12.0
+## explicit; go 1.20
 github.com/rogpeppe/go-internal/fmtsort
 # github.com/russross/blackfriday/v2 v2.1.0
 ## explicit
@@ -260,12 +260,16 @@ github.com/slok/goresilience
 github.com/slok/goresilience/errors
 github.com/slok/goresilience/metrics
 github.com/slok/goresilience/timeout
+# github.com/spf13/afero v1.10.0
+## explicit; go 1.16
 # github.com/urfave/cli v1.22.14
 ## explicit; go 1.11
 github.com/urfave/cli
 # github.com/yusufpapurcu/wmi v1.2.4
 ## explicit; go 1.16
 github.com/yusufpapurcu/wmi
+# go.uber.org/goleak v1.2.0
+## explicit; go 1.18
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
@@ -293,7 +297,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20240325203815-454cdb8f5daa
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.62.1
@@ -402,8 +406,8 @@ k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/validation/field
 k8s.io/apimachinery/pkg/util/wait
-# k8s.io/klog/v2 v2.110.1
-## explicit; go 1.13
+# k8s.io/klog/v2 v2.120.1
+## explicit; go 1.18
 k8s.io/klog/v2
 k8s.io/klog/v2/internal/buffer
 k8s.io/klog/v2/internal/clock
@@ -414,7 +418,7 @@ k8s.io/klog/v2/internal/sloghandler
 # k8s.io/mount-utils v0.29.3
 ## explicit; go 1.21
 k8s.io/mount-utils
-# k8s.io/utils v0.0.0-20230726121419-3b25d923346b
+# k8s.io/utils v0.0.0-20240310230437-4693a0247e57
 ## explicit; go 1.18
 k8s.io/utils/clock
 k8s.io/utils/exec
