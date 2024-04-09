@@ -35,6 +35,7 @@ type InstanceOps interface {
 	InstanceList(map[string]*rpc.InstanceResponse) error
 	InstanceReplace(*rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error)
 	InstanceLog(*rpc.InstanceLogRequest, rpc.InstanceService_InstanceLogServer) error
+	InstanceSuspend(*rpc.InstanceSuspendRequest) (*emptypb.Empty, error)
 
 	LogSetLevel(context.Context, *rpc.LogSetLevelRequest) (*emptypb.Empty, error)
 	LogSetFlags(context.Context, *rpc.LogSetFlagsRequest) (*emptypb.Empty, error)
@@ -113,9 +114,10 @@ func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.Versi
 
 func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
-		"name":       req.Spec.Name,
-		"type":       req.Spec.Type,
-		"dataEngine": req.Spec.DataEngine,
+		"name":            req.Spec.Name,
+		"type":            req.Spec.Type,
+		"dataEngine":      req.Spec.DataEngine,
+		"upgradeRequired": req.Spec.UpgradeRequired,
 	}).Info("Creating instance")
 
 	ops, ok := s.ops[req.Spec.DataEngine]
@@ -154,7 +156,9 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
-		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount)
+		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend,
+			req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount,
+			req.Spec.UpgradeRequired)
 		if err != nil {
 			return nil, err
 		}
@@ -714,5 +718,44 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			PortEnd:    e.Port,
 			Conditions: make(map[string]bool),
 		},
+	}
+}
+
+func (s *Server) InstanceSuspend(ctx context.Context, req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
+	logrus.WithFields(logrus.Fields{
+		"name":       req.Name,
+		"type":       req.Type,
+		"dataEngine": req.DataEngine,
+	}).Info("Suspending instance")
+
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return ops.InstanceSuspend(req)
+}
+
+func (ops V1DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v1 data engine instance suspend is not supported")
+}
+
+func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+	}
+	defer c.Close()
+
+	switch req.Type {
+	case types.InstanceTypeEngine:
+		err := c.EngineSuspend(req.Name)
+		if err != nil {
+			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to suspend engine %v", req.Name).Error())
+		}
+		return &emptypb.Empty{}, nil
+	case types.InstanceTypeReplica:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "suspend is not supported for instance type %v", req.Type)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
 }
