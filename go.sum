@@ -9,6 +9,8 @@ github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0/go.mod h1:tPaiy8S5bQ
 github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/RoaringBitmap/roaring v1.9.1 h1:LXcSqGGGMKm+KAzUyWn7ZeREqoOkoMX+KwLOK1thc4I=
 github.com/RoaringBitmap/roaring v1.9.1/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
+github.com/RoaringBitmap/roaring v1.9.3 h1:t4EbC5qQwnisr5PrP9nt0IRhRTb9gMUgQF4t4S2OByM=
+github.com/RoaringBitmap/roaring v1.9.3/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
 github.com/aws/aws-sdk-go v1.46.1 h1:U26quvBWFZMQuultLw5tloW4GnmWaChEwMZNq8uYatw=
 github.com/aws/aws-sdk-go v1.46.1/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
@@ -71,6 +73,8 @@ github.com/longhorn/go-common-libs v0.0.0-20240411093823-b8862efb8e03 h1:RN7mq4F
 github.com/longhorn/go-common-libs v0.0.0-20240411093823-b8862efb8e03/go.mod h1:7onp+E4hSg2DnB40dJU0Y7adrvykGg6jHxOb48imPGg=
 github.com/longhorn/go-spdk-helper v0.0.0-20240328085119-7ab2393959d9 h1:spgyLW1ND0GZJkzFyfJvbvcjVtAwBU2Msg+Jy2Yy02k=
 github.com/longhorn/go-spdk-helper v0.0.0-20240328085119-7ab2393959d9/go.mod h1:WGm84AyXymx7L0CqOw8KEr9okywD+Cj5xZi+eKeOoiU=
+github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189 h1:g4CoDfmj1rrJPNUJWPAp4LKa+9IGr+nQbQLOfOnxg4s=
+github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189/go.mod h1:99yD4ZjORUMmuxZRTDd9+AzTwc0mpKCWQJoTkKwEZJU=
 github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8 h1:Oj5bAlKBzS+qPxA8lfpUcbllrVjnHVCuhPcQv/V98xw=
 github.com/longhorn/longhorn-engine v1.6.0-dev-20240105.0.20240126141003-067f67803ee8/go.mod h1:Snkv3gy4AUOhZSYMI7g7lVX/OOB8DTo28eJwsEfbAwM=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20240329092432-8326ea00b711 h1:yVkjZgb3Kn16xZfZZQpi8noZwRaYln1X4bskcGVmXJk=
@@ -229,5 +233,7 @@ k8s.io/klog/v2 v2.110.1 h1:U/Af64HJf7FcwMcXyKm2RPM22WZzyR7OSpYj5tg3cL0=
 k8s.io/klog/v2 v2.110.1/go.mod h1:YGtd1984u+GgbuZ7e08/yBuAfKLSO0+uR1Fhi6ExXjo=
 k8s.io/mount-utils v0.29.3 h1:iEcqPP7Vv8UClH8nnMfovtmy/04fIloRW9JuSXykoZ0=
 k8s.io/mount-utils v0.29.3/go.mod h1:9IWJTMe8tG0MYMLEp60xK9GYVeCdA3g4LowmnVi+t9Y=
+k8s.io/mount-utils v0.29.4 h1:tW/URea4gtXlaVW7VObr52NQhS+z3SXTg1GUaFZjRL4=
+k8s.io/mount-utils v0.29.4/go.mod h1:SHUMR9n3b6tLgEmlyT36cL6fV6Sjwa5CJhc0guCXvb0=
 k8s.io/utils v0.0.0-20230726121419-3b25d923346b h1:sgn3ZU783SCgtaSJjpcVVlRqd6GSnlTLKgpAAttJvpI=
 k8s.io/utils v0.0.0-20230726121419-3b25d923346b/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
