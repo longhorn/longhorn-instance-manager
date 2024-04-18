@@ -31,15 +31,14 @@ import (
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 	spdk "github.com/longhorn/longhorn-spdk-engine/pkg/spdk"
 	spdkutil "github.com/longhorn/longhorn-spdk-engine/pkg/util"
-	spdkrpc "github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/disk"
 	"github.com/longhorn/longhorn-instance-manager/pkg/health"
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/instance"
 	"github.com/longhorn/longhorn-instance-manager/pkg/process"
 	"github.com/longhorn/longhorn-instance-manager/pkg/proxy"
-
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )

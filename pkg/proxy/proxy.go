@@ -5,16 +5,15 @@ import (
 	"strconv"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
-	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
-
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 type ProxyOps interface {
@@ -55,6 +54,7 @@ type V1DataEngineProxyOps struct{}
 type V2DataEngineProxyOps struct{}
 
 type Proxy struct {
+	rpc.UnimplementedProxyEngineServiceServer
 	ctx           context.Context
 	logsDir       string
 	shutdownCh    chan error
@@ -109,7 +109,7 @@ func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineReques
 	}
 
 	return &rpc.EngineVersionProxyResponse{
-		Version: &eptypes.VersionOutput{
+		Version: &enginerpc.VersionOutput{
 			Version:                 recv.Version,
 			GitCommit:               recv.GitCommit,
 			BuildDate:               recv.BuildDate,

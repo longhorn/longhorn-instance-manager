@@ -19,12 +19,11 @@ import (
 	rclient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
-	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
-
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 func (p *Proxy) CleanupBackupMountPoints(ctx context.Context, req *emptypb.Empty) (resp *emptypb.Empty, err error) {
@@ -160,7 +159,7 @@ func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *r
 	if replicaAddress == "" {
 		// find a replica which has the corresponding backup
 		for _, r := range replicas.ReplicaList.Replicas {
-			mode := eptypes.GRPCReplicaModeToReplicaMode(r.Mode)
+			mode := etypes.GRPCReplicaModeToReplicaMode(r.Mode)
 			if mode != etypes.RW {
 				continue
 			}
@@ -192,7 +191,7 @@ func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *r
 		if r.Address.Address != replicaAddress {
 			continue
 		}
-		mode := eptypes.GRPCReplicaModeToReplicaMode(r.Mode)
+		mode := etypes.GRPCReplicaModeToReplicaMode(r.Mode)
 		if mode != etypes.RW {
 			return nil, errors.Errorf("failed to get backup %v status on unknown replica %s", req.BackupName, replicaAddress)
 		}

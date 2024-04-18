@@ -12,10 +12,9 @@ import (
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
-	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
-
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
 
 func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
@@ -48,7 +47,7 @@ func (ops V1DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 	}
 
 	return &rpc.EngineVolumeSnapshotProxyResponse{
-		Snapshot: &eptypes.VolumeSnapshotReply{
+		Snapshot: &enginerpc.VolumeSnapshotReply{
 			Name: recv,
 		},
 	}, nil
@@ -71,7 +70,7 @@ func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to create snapshot %v", snapshotName).Error())
 	}
 	return &rpc.EngineVolumeSnapshotProxyResponse{
-		Snapshot: &eptypes.VolumeSnapshotReply{
+		Snapshot: &enginerpc.VolumeSnapshotReply{
 			Name: snapshotName,
 		},
 	}, nil
@@ -235,10 +234,10 @@ func (ops V1DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 	}
 
 	resp = &rpc.EngineSnapshotCloneStatusProxyResponse{
-		Status: map[string]*eptypes.SnapshotCloneStatusResponse{},
+		Status: map[string]*enginerpc.SnapshotCloneStatusResponse{},
 	}
 	for k, v := range recv {
-		resp.Status[k] = &eptypes.SnapshotCloneStatusResponse{
+		resp.Status[k] = &enginerpc.SnapshotCloneStatusResponse{
 			IsCloning:          v.IsCloning,
 			Error:              v.Error,
 			Progress:           int32(v.Progress),
@@ -254,7 +253,7 @@ func (ops V1DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineSnapshotCloneStatusProxyResponse{
-		Status: map[string]*eptypes.SnapshotCloneStatusResponse{},
+		Status: map[string]*enginerpc.SnapshotCloneStatusResponse{},
 	}, nil
 }
 
@@ -367,10 +366,10 @@ func (ops V1DataEngineProxyOps) SnapshotPurgeStatus(ctx context.Context, req *rp
 	}
 
 	resp = &rpc.EngineSnapshotPurgeStatusProxyResponse{
-		Status: map[string]*eptypes.SnapshotPurgeStatusResponse{},
+		Status: map[string]*enginerpc.SnapshotPurgeStatusResponse{},
 	}
 	for k, v := range recv {
-		resp.Status[k] = &eptypes.SnapshotPurgeStatusResponse{
+		resp.Status[k] = &enginerpc.SnapshotPurgeStatusResponse{
 			IsPurging: v.IsPurging,
 			Error:     v.Error,
 			Progress:  int32(v.Progress),
@@ -384,7 +383,7 @@ func (ops V1DataEngineProxyOps) SnapshotPurgeStatus(ctx context.Context, req *rp
 func (ops V2DataEngineProxyOps) SnapshotPurgeStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotPurgeStatusProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineSnapshotPurgeStatusProxyResponse{
-		Status: map[string]*eptypes.SnapshotPurgeStatusResponse{},
+		Status: map[string]*enginerpc.SnapshotPurgeStatusResponse{},
 	}, nil
 }
 
@@ -503,10 +502,10 @@ func (ops V1DataEngineProxyOps) SnapshotHashStatus(ctx context.Context, req *rpc
 	}
 
 	resp = &rpc.EngineSnapshotHashStatusProxyResponse{
-		Status: map[string]*eptypes.SnapshotHashStatusResponse{},
+		Status: map[string]*enginerpc.SnapshotHashStatusResponse{},
 	}
 	for k, v := range recv {
-		resp.Status[k] = &eptypes.SnapshotHashStatusResponse{
+		resp.Status[k] = &enginerpc.SnapshotHashStatusResponse{
 			State:             v.State,
 			Checksum:          v.Checksum,
 			Error:             v.Error,

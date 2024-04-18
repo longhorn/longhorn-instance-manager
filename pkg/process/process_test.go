@@ -10,15 +10,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
-	"github.com/longhorn/longhorn-instance-manager/pkg/types"
-
 	. "gopkg.in/check.v1"
+
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
 
 const (

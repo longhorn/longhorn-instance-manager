@@ -4,13 +4,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 
+	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
-
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 func (s *Server) LogSetLevel(ctx context.Context, req *rpc.LogSetLevelRequest) (resp *emptypb.Empty, err error) {

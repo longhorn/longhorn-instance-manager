@@ -6,19 +6,19 @@ import (
 	"sync"
 	"time"
 
+	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
+	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
-	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
-	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
-	spdkrpc "github.com/longhorn/longhorn-spdk-engine/proto/spdkrpc"
 )
 
 const (
@@ -39,6 +39,7 @@ type BlockDiskOps struct {
 }
 
 type Server struct {
+	rpc.UnimplementedDiskServiceServer
 	sync.RWMutex
 
 	ctx           context.Context
