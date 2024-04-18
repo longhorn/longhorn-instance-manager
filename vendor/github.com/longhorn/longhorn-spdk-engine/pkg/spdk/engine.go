@@ -21,7 +21,7 @@ import (
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
-	"github.com/longhorn/types/pkg/spdkrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/client"
@@ -1097,12 +1097,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 				e.log.WithError(err).Errorf("WARNING: failed to get the executor for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
 			} else {
 				e.log.Infof("Requesting system sync %v before snapshot", devicePath)
-<<<<<<< HEAD
 				if _, err := ne.Execute(nil, "sync", []string{devicePath}, SyncTimeout); err != nil {
-=======
-				// TODO: only sync the device path rather than all filesystems
-				if _, err := ne.Execute(nil, "sync", []string{}, SyncTimeout); err != nil {
->>>>>>> 74b76bd (feat: add longhorn/types)
 					// sync should never fail though, so it more like due to the nsenter
 					e.log.WithError(err).Errorf("WARNING: failed to sync for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
 				}

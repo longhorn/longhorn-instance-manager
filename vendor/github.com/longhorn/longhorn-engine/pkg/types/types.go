@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/longhorn/types/pkg/enginerpc"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
 )
 
 const (

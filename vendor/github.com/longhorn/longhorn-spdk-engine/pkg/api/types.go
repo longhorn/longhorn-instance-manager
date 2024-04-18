@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/longhorn/types/pkg/spdkrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"

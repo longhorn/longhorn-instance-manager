@@ -1,6 +1,6 @@
 package types
 
-import "github.com/longhorn/types/pkg/spdkrpc"
+import "github.com/longhorn/types/pkg/generated/spdkrpc"
 
 type Mode string
 
