@@ -4,10 +4,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
-
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
-	"github.com/longhorn/longhorn-engine/proto/ptypes"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
 
 func (p *Proxy) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineMetricsGetProxyResponse, err error) {
@@ -26,7 +25,7 @@ func (p *Proxy) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (re
 	}
 
 	return &rpc.EngineMetricsGetProxyResponse{
-		Metrics: &ptypes.Metrics{
+		Metrics: &enginerpc.Metrics{
 			ReadThroughput:  metrics.Throughput.Read,
 			WriteThroughput: metrics.Throughput.Write,
 			ReadLatency:     metrics.TotalLatency.Read,

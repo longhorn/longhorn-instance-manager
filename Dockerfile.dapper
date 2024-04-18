@@ -4,14 +4,12 @@ ARG DAPPER_HOST_ARCH=amd64
 ARG http_proxy
 ARG https_proxy
 ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
-ENV PROTOBUF_VER=24.3
-ENV PROTOBUF_VER_PY=4.24.3
 
 # Setup environment
 ENV PATH /go/bin:$PATH
 ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO DRONE_REPO DRONE_PULL_REQUEST DRONE_COMMIT_REF
-ENV DAPPER_OUTPUT bin coverage.out ./proto
+ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.venv:exec --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.tox:exec -v /dev:/host/dev -v /proc:/host/proc
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
 WORKDIR ${DAPPER_SOURCE}
@@ -22,13 +20,11 @@ RUN zypper refresh && \
     zypper -n --gpg-auto-import-keys ref
 
 # Install packages
-# TODO: use default python3 if SLE upgrade system python version to python3.11
 RUN zypper -n install cmake wget curl git less file \
-    python311 python311-pip python311-devel \
     libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
     psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
     bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
-    perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq unzip docker gcc gcc-c++ && \
+    perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
     rm -rf /var/cache/zypp/*
 
 # needed for ${!var} substitution
@@ -43,39 +39,6 @@ ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLA
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
 RUN wget -O - https://storage.googleapis.com/golang/go1.21.3.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
-
-# protoc
-ENV PROTOC_amd64=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-x86_64.zip \
-    PROTOC_arm64=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-aarch_64.zip \
-    PROTOC_s390x=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-s390_64.zip \
-    PROTOC=PROTOC_${ARCH}
-
-RUN cd /usr/src && \
-    wget ${!PROTOC} -O protoc_${ARCH}.zip && \
-    unzip protoc_${ARCH}.zip -d /usr/local/
-
-# protoc-gen-go
-RUN cd /go/src/github.com/ && \
-    mkdir golang/ && \
-    cd golang && \
-    git clone https://github.com/golang/protobuf.git && \
-    cd protobuf && \
-    git checkout v1.5.3 && \
-    cd protoc-gen-go && \
-    go build && \
-    cp protoc-gen-go /usr/local/bin
-
-# TODO: use default python3 if SLE upgrade system python version to python3.11
-RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 & \
-    ln -sf /usr/bin/pip3.11 /usr/bin/pip3
-
-# python grpc-tools
-RUN if [ "${ARCH}" == "s390x" ]; then \
-    zypper -n in libopenssl-devel && \
-    GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=True pip3 install grpcio==1.58.0 grpcio_tools==1.58.0 protobuf==${PROTOBUF_VER_PY}; \
-    else \
-    pip3 install grpcio==1.58.0 grpcio_tools==1.58.0 protobuf==${PROTOBUF_VER_PY}; \
-    fi
 
 # Install libqcow to resolve error:
 #   vendor/github.com/longhorn/longhorn-engine/pkg/qcow/libqcow.go:6:11: fatal error: libqcow.h: No such file or directory

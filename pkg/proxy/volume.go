@@ -4,6 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 
+	lhns "github.com/longhorn/go-common-libs/ns"
+	lhtypes "github.com/longhorn/go-common-libs/types"
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -11,11 +16,6 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	lhns "github.com/longhorn/go-common-libs/ns"
-	lhtypes "github.com/longhorn/go-common-libs/types"
-	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
-	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
 
@@ -48,7 +48,7 @@ func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	}
 
 	return &rpc.EngineVolumeGetProxyResponse{
-		Volume: &eptypes.Volume{
+		Volume: &enginerpc.Volume{
 			Name:                      recv.Name,
 			Size:                      recv.Size,
 			ReplicaCount:              int32(recv.ReplicaCount),
@@ -78,7 +78,7 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	}
 
 	return &rpc.EngineVolumeGetProxyResponse{
-		Volume: &eptypes.Volume{
+		Volume: &enginerpc.Volume{
 			Name:                      recv.Name,
 			Size:                      int64(recv.SpecSize),
 			ReplicaCount:              int32(len(recv.ReplicaAddressMap)),

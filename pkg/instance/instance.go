@@ -16,12 +16,11 @@ import (
 	lhutils "github.com/longhorn/go-common-libs/utils"
 	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/client"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
-
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 )
 
 const (
@@ -51,6 +50,7 @@ type V2DataEngineInstanceOps struct {
 }
 
 type Server struct {
+	rpc.UnimplementedInstanceServiceServer
 	ctx           context.Context
 	logsDir       string
 	HealthChecker HealthChecker

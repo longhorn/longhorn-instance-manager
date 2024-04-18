@@ -5,9 +5,9 @@ import (
 	"syscall"
 	"time"
 
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	"github.com/sirupsen/logrus"
 
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )

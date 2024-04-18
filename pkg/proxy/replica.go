@@ -12,10 +12,10 @@ import (
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
-	eptypes "github.com/longhorn/longhorn-engine/proto/ptypes"
+	etypes "github.com/longhorn/longhorn-engine/pkg/types"
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
-
-	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
 
 func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *emptypb.Empty, err error) {
@@ -103,34 +103,34 @@ func (ops V1DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyE
 		return nil, err
 	}
 
-	replicas := []*eptypes.ControllerReplica{}
+	replicas := []*enginerpc.ControllerReplica{}
 	for _, r := range recv {
-		replica := &eptypes.ControllerReplica{
-			Address: &eptypes.ReplicaAddress{
+		replica := &enginerpc.ControllerReplica{
+			Address: &enginerpc.ReplicaAddress{
 				Address: r.Address,
 			},
-			Mode: eptypes.ReplicaModeToGRPCReplicaMode(r.Mode),
+			Mode: etypes.ReplicaModeToGRPCReplicaMode(r.Mode),
 		}
 		replicas = append(replicas, replica)
 	}
 
 	return &rpc.EngineReplicaListProxyResponse{
-		ReplicaList: &eptypes.ReplicaListReply{
+		ReplicaList: &enginerpc.ReplicaListReply{
 			Replicas: replicas,
 		},
 	}, nil
 }
 
-func replicaModeToGRPCReplicaMode(mode spdktypes.Mode) eptypes.ReplicaMode {
+func replicaModeToGRPCReplicaMode(mode spdktypes.Mode) enginerpc.ReplicaMode {
 	switch mode {
 	case spdktypes.ModeWO:
-		return eptypes.ReplicaMode_WO
+		return enginerpc.ReplicaMode_WO
 	case spdktypes.ModeRW:
-		return eptypes.ReplicaMode_RW
+		return enginerpc.ReplicaMode_RW
 	case spdktypes.ModeERR:
-		return eptypes.ReplicaMode_ERR
+		return enginerpc.ReplicaMode_ERR
 	}
-	return eptypes.ReplicaMode_ERR
+	return enginerpc.ReplicaMode_ERR
 }
 
 func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
@@ -145,14 +145,14 @@ func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyE
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
 	}
 
-	replicas := []*eptypes.ControllerReplica{}
+	replicas := []*enginerpc.ControllerReplica{}
 	for replicaName, mode := range recv.ReplicaModeMap {
 		address, ok := recv.ReplicaAddressMap[replicaName]
 		if !ok {
 			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get replica address for %v", replicaName)
 		}
-		replica := &eptypes.ControllerReplica{
-			Address: &eptypes.ReplicaAddress{
+		replica := &enginerpc.ControllerReplica{
+			Address: &enginerpc.ReplicaAddress{
 				Address: address,
 			},
 			Mode: replicaModeToGRPCReplicaMode(mode),
@@ -161,7 +161,7 @@ func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyE
 	}
 
 	return &rpc.EngineReplicaListProxyResponse{
-		ReplicaList: &eptypes.ReplicaListReply{
+		ReplicaList: &enginerpc.ReplicaListReply{
 			Replicas: replicas,
 		},
 	}, nil
@@ -195,10 +195,10 @@ func (ops V1DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 	}
 
 	resp = &rpc.EngineReplicaRebuildStatusProxyResponse{
-		Status: make(map[string]*eptypes.ReplicaRebuildStatusResponse),
+		Status: make(map[string]*enginerpc.ReplicaRebuildStatusResponse),
 	}
 	for k, v := range recv {
-		resp.Status[k] = &eptypes.ReplicaRebuildStatusResponse{
+		resp.Status[k] = &enginerpc.ReplicaRebuildStatusResponse{
 			Error:              v.Error,
 			IsRebuilding:       v.IsRebuilding,
 			Progress:           int32(v.Progress),
@@ -213,7 +213,7 @@ func (ops V1DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
 	/* TODO: implement this */
 	return &rpc.EngineReplicaRebuildStatusProxyResponse{
-		Status: make(map[string]*eptypes.ReplicaRebuildStatusResponse),
+		Status: make(map[string]*enginerpc.ReplicaRebuildStatusResponse),
 	}, nil
 }
 
@@ -313,7 +313,7 @@ func (ops V1DataEngineProxyOps) ReplicaModeUpdate(ctx context.Context, req *rpc.
 	}
 	defer c.Close()
 
-	if _, err = c.ReplicaUpdate(req.ReplicaAddress, eptypes.GRPCReplicaModeToReplicaMode(req.Mode)); err != nil {
+	if _, err = c.ReplicaUpdate(req.ReplicaAddress, etypes.GRPCReplicaModeToReplicaMode(req.Mode)); err != nil {
 		return nil, err
 	}
 

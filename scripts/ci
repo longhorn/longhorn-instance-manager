@@ -3,8 +3,6 @@ set -e
 
 cd $(dirname $0)
 
-BUILDER_FLAG=1 ./generate-grpc
-
 SKIP_TASKS=${SKIP_TASKS:-}
 IFS=' ' read -ra skip_tasks <<<"$SKIP_TASKS"
 
