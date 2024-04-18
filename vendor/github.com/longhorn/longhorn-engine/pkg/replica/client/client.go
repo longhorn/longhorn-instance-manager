@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/longhorn/types/pkg/enginerpc"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

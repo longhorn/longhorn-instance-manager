@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.24.3
-// source: enginerpc/controller.proto
+// source: ptypes/controller.proto
 
 package enginerpc
 
@@ -20,27 +20,27 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ControllerService_VolumeGet_FullMethodName                          = "/enginerpc.ControllerService/VolumeGet"
-	ControllerService_VolumeStart_FullMethodName                        = "/enginerpc.ControllerService/VolumeStart"
-	ControllerService_VolumeShutdown_FullMethodName                     = "/enginerpc.ControllerService/VolumeShutdown"
-	ControllerService_VolumeSnapshot_FullMethodName                     = "/enginerpc.ControllerService/VolumeSnapshot"
-	ControllerService_VolumeRevert_FullMethodName                       = "/enginerpc.ControllerService/VolumeRevert"
-	ControllerService_VolumeExpand_FullMethodName                       = "/enginerpc.ControllerService/VolumeExpand"
-	ControllerService_VolumeFrontendStart_FullMethodName                = "/enginerpc.ControllerService/VolumeFrontendStart"
-	ControllerService_VolumeFrontendShutdown_FullMethodName             = "/enginerpc.ControllerService/VolumeFrontendShutdown"
-	ControllerService_VolumeUnmapMarkSnapChainRemovedSet_FullMethodName = "/enginerpc.ControllerService/VolumeUnmapMarkSnapChainRemovedSet"
-	ControllerService_VolumeSnapshotMaxCountSet_FullMethodName          = "/enginerpc.ControllerService/VolumeSnapshotMaxCountSet"
-	ControllerService_VolumeSnapshotMaxSizeSet_FullMethodName           = "/enginerpc.ControllerService/VolumeSnapshotMaxSizeSet"
-	ControllerService_ReplicaList_FullMethodName                        = "/enginerpc.ControllerService/ReplicaList"
-	ControllerService_ReplicaGet_FullMethodName                         = "/enginerpc.ControllerService/ReplicaGet"
-	ControllerService_ControllerReplicaCreate_FullMethodName            = "/enginerpc.ControllerService/ControllerReplicaCreate"
-	ControllerService_ReplicaDelete_FullMethodName                      = "/enginerpc.ControllerService/ReplicaDelete"
-	ControllerService_ReplicaUpdate_FullMethodName                      = "/enginerpc.ControllerService/ReplicaUpdate"
-	ControllerService_ReplicaPrepareRebuild_FullMethodName              = "/enginerpc.ControllerService/ReplicaPrepareRebuild"
-	ControllerService_ReplicaVerifyRebuild_FullMethodName               = "/enginerpc.ControllerService/ReplicaVerifyRebuild"
-	ControllerService_JournalList_FullMethodName                        = "/enginerpc.ControllerService/JournalList"
-	ControllerService_VersionDetailGet_FullMethodName                   = "/enginerpc.ControllerService/VersionDetailGet"
-	ControllerService_MetricsGet_FullMethodName                         = "/enginerpc.ControllerService/MetricsGet"
+	ControllerService_VolumeGet_FullMethodName                          = "/ptypes.ControllerService/VolumeGet"
+	ControllerService_VolumeStart_FullMethodName                        = "/ptypes.ControllerService/VolumeStart"
+	ControllerService_VolumeShutdown_FullMethodName                     = "/ptypes.ControllerService/VolumeShutdown"
+	ControllerService_VolumeSnapshot_FullMethodName                     = "/ptypes.ControllerService/VolumeSnapshot"
+	ControllerService_VolumeRevert_FullMethodName                       = "/ptypes.ControllerService/VolumeRevert"
+	ControllerService_VolumeExpand_FullMethodName                       = "/ptypes.ControllerService/VolumeExpand"
+	ControllerService_VolumeFrontendStart_FullMethodName                = "/ptypes.ControllerService/VolumeFrontendStart"
+	ControllerService_VolumeFrontendShutdown_FullMethodName             = "/ptypes.ControllerService/VolumeFrontendShutdown"
+	ControllerService_VolumeUnmapMarkSnapChainRemovedSet_FullMethodName = "/ptypes.ControllerService/VolumeUnmapMarkSnapChainRemovedSet"
+	ControllerService_VolumeSnapshotMaxCountSet_FullMethodName          = "/ptypes.ControllerService/VolumeSnapshotMaxCountSet"
+	ControllerService_VolumeSnapshotMaxSizeSet_FullMethodName           = "/ptypes.ControllerService/VolumeSnapshotMaxSizeSet"
+	ControllerService_ReplicaList_FullMethodName                        = "/ptypes.ControllerService/ReplicaList"
+	ControllerService_ReplicaGet_FullMethodName                         = "/ptypes.ControllerService/ReplicaGet"
+	ControllerService_ControllerReplicaCreate_FullMethodName            = "/ptypes.ControllerService/ControllerReplicaCreate"
+	ControllerService_ReplicaDelete_FullMethodName                      = "/ptypes.ControllerService/ReplicaDelete"
+	ControllerService_ReplicaUpdate_FullMethodName                      = "/ptypes.ControllerService/ReplicaUpdate"
+	ControllerService_ReplicaPrepareRebuild_FullMethodName              = "/ptypes.ControllerService/ReplicaPrepareRebuild"
+	ControllerService_ReplicaVerifyRebuild_FullMethodName               = "/ptypes.ControllerService/ReplicaVerifyRebuild"
+	ControllerService_JournalList_FullMethodName                        = "/ptypes.ControllerService/JournalList"
+	ControllerService_VersionDetailGet_FullMethodName                   = "/ptypes.ControllerService/VersionDetailGet"
+	ControllerService_MetricsGet_FullMethodName                         = "/ptypes.ControllerService/MetricsGet"
 )
 
 // ControllerServiceClient is the client API for ControllerService service.
@@ -757,7 +757,7 @@ func _ControllerService_MetricsGet_Handler(srv interface{}, ctx context.Context,
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ControllerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "enginerpc.ControllerService",
+	ServiceName: "ptypes.ControllerService",
 	HandlerType: (*ControllerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -846,5 +846,5 @@ var ControllerService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "enginerpc/controller.proto",
+	Metadata: "ptypes/controller.proto",
 }

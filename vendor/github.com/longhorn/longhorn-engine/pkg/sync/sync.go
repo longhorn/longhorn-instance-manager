@@ -15,7 +15,7 @@ import (
 	replicaClient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	"github.com/longhorn/longhorn-engine/pkg/types"
 	diskutil "github.com/longhorn/longhorn-engine/pkg/util/disk"
-	"github.com/longhorn/types/pkg/enginerpc"
+	"github.com/longhorn/types/pkg/generated/enginerpc"
 )
 
 type Task struct {

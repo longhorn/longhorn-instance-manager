@@ -27,6 +27,10 @@ const (
 	InstanceService_InstanceLog_FullMethodName     = "/imrpc.InstanceService/InstanceLog"
 	InstanceService_InstanceWatch_FullMethodName   = "/imrpc.InstanceService/InstanceWatch"
 	InstanceService_InstanceReplace_FullMethodName = "/imrpc.InstanceService/InstanceReplace"
+	InstanceService_LogSetLevel_FullMethodName     = "/imrpc.InstanceService/LogSetLevel"
+	InstanceService_LogSetFlags_FullMethodName     = "/imrpc.InstanceService/LogSetFlags"
+	InstanceService_LogGetLevel_FullMethodName     = "/imrpc.InstanceService/LogGetLevel"
+	InstanceService_LogGetFlags_FullMethodName     = "/imrpc.InstanceService/LogGetFlags"
 	InstanceService_VersionGet_FullMethodName      = "/imrpc.InstanceService/VersionGet"
 )
 
@@ -41,6 +45,10 @@ type InstanceServiceClient interface {
 	InstanceLog(ctx context.Context, in *InstanceLogRequest, opts ...grpc.CallOption) (InstanceService_InstanceLogClient, error)
 	InstanceWatch(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (InstanceService_InstanceWatchClient, error)
 	InstanceReplace(ctx context.Context, in *InstanceReplaceRequest, opts ...grpc.CallOption) (*InstanceResponse, error)
+	LogSetLevel(ctx context.Context, in *LogSetLevelRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	LogSetFlags(ctx context.Context, in *LogSetFlagsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	LogGetLevel(ctx context.Context, in *LogGetLevelRequest, opts ...grpc.CallOption) (*LogGetLevelResponse, error)
+	LogGetFlags(ctx context.Context, in *LogGetFlagsRequest, opts ...grpc.CallOption) (*LogGetFlagsResponse, error)
 	VersionGet(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VersionResponse, error)
 }
 
@@ -161,6 +169,42 @@ func (c *instanceServiceClient) InstanceReplace(ctx context.Context, in *Instanc
 	return out, nil
 }
 
+func (c *instanceServiceClient) LogSetLevel(ctx context.Context, in *LogSetLevelRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, InstanceService_LogSetLevel_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) LogSetFlags(ctx context.Context, in *LogSetFlagsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, InstanceService_LogSetFlags_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) LogGetLevel(ctx context.Context, in *LogGetLevelRequest, opts ...grpc.CallOption) (*LogGetLevelResponse, error) {
+	out := new(LogGetLevelResponse)
+	err := c.cc.Invoke(ctx, InstanceService_LogGetLevel_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) LogGetFlags(ctx context.Context, in *LogGetFlagsRequest, opts ...grpc.CallOption) (*LogGetFlagsResponse, error) {
+	out := new(LogGetFlagsResponse)
+	err := c.cc.Invoke(ctx, InstanceService_LogGetFlags_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *instanceServiceClient) VersionGet(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VersionResponse, error) {
 	out := new(VersionResponse)
 	err := c.cc.Invoke(ctx, InstanceService_VersionGet_FullMethodName, in, out, opts...)
@@ -181,6 +225,10 @@ type InstanceServiceServer interface {
 	InstanceLog(*InstanceLogRequest, InstanceService_InstanceLogServer) error
 	InstanceWatch(*emptypb.Empty, InstanceService_InstanceWatchServer) error
 	InstanceReplace(context.Context, *InstanceReplaceRequest) (*InstanceResponse, error)
+	LogSetLevel(context.Context, *LogSetLevelRequest) (*emptypb.Empty, error)
+	LogSetFlags(context.Context, *LogSetFlagsRequest) (*emptypb.Empty, error)
+	LogGetLevel(context.Context, *LogGetLevelRequest) (*LogGetLevelResponse, error)
+	LogGetFlags(context.Context, *LogGetFlagsRequest) (*LogGetFlagsResponse, error)
 	VersionGet(context.Context, *emptypb.Empty) (*VersionResponse, error)
 	mustEmbedUnimplementedInstanceServiceServer()
 }
@@ -209,6 +257,18 @@ func (UnimplementedInstanceServiceServer) InstanceWatch(*emptypb.Empty, Instance
 }
 func (UnimplementedInstanceServiceServer) InstanceReplace(context.Context, *InstanceReplaceRequest) (*InstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InstanceReplace not implemented")
+}
+func (UnimplementedInstanceServiceServer) LogSetLevel(context.Context, *LogSetLevelRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogSetLevel not implemented")
+}
+func (UnimplementedInstanceServiceServer) LogSetFlags(context.Context, *LogSetFlagsRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogSetFlags not implemented")
+}
+func (UnimplementedInstanceServiceServer) LogGetLevel(context.Context, *LogGetLevelRequest) (*LogGetLevelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogGetLevel not implemented")
+}
+func (UnimplementedInstanceServiceServer) LogGetFlags(context.Context, *LogGetFlagsRequest) (*LogGetFlagsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogGetFlags not implemented")
 }
 func (UnimplementedInstanceServiceServer) VersionGet(context.Context, *emptypb.Empty) (*VersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VersionGet not implemented")
@@ -358,6 +418,78 @@ func _InstanceService_InstanceReplace_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InstanceService_LogSetLevel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogSetLevelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).LogSetLevel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_LogSetLevel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).LogSetLevel(ctx, req.(*LogSetLevelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_LogSetFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogSetFlagsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).LogSetFlags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_LogSetFlags_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).LogSetFlags(ctx, req.(*LogSetFlagsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_LogGetLevel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogGetLevelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).LogGetLevel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_LogGetLevel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).LogGetLevel(ctx, req.(*LogGetLevelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_LogGetFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogGetFlagsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).LogGetFlags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_LogGetFlags_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).LogGetFlags(ctx, req.(*LogGetFlagsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _InstanceService_VersionGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
@@ -402,6 +534,22 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "InstanceReplace",
 			Handler:    _InstanceService_InstanceReplace_Handler,
+		},
+		{
+			MethodName: "LogSetLevel",
+			Handler:    _InstanceService_LogSetLevel_Handler,
+		},
+		{
+			MethodName: "LogSetFlags",
+			Handler:    _InstanceService_LogSetFlags_Handler,
+		},
+		{
+			MethodName: "LogGetLevel",
+			Handler:    _InstanceService_LogGetLevel_Handler,
+		},
+		{
+			MethodName: "LogGetFlags",
+			Handler:    _InstanceService_LogGetFlags_Handler,
 		},
 		{
 			MethodName: "VersionGet",
