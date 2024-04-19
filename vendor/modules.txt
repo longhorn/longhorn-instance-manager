@@ -157,7 +157,7 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
-# github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189
+# github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189 => github.com/derekbit/go-spdk-helper v0.0.0-20240419063405-ce5ff1bcd928
 ## explicit; go 1.21
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
@@ -179,7 +179,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240417162837-d96ef4ed8c28
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240417162837-d96ef4ed8c28 => github.com/derekbit/longhorn-spdk-engine v0.0.0-20240419152350-65393f9500c1
 ## explicit; go 1.21
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client

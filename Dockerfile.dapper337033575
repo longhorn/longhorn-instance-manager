@@ -1,0 +1,2 @@
+FROM longhorn-instance-manager:issue-8354
+COPY . /go/src/github.com/longhorn/longhorn-instance-manager/

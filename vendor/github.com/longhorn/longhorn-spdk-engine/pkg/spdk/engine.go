@@ -93,6 +93,8 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 }
 
 func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localReplicaLvsNameMap map[string]string, portCount int32, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Engine, err error) {
+	e.log.Infof("Creating engine with replicas %+v", replicaAddressMap)
+
 	requireUpdate := true
 
 	e.Lock()
@@ -195,8 +197,10 @@ func (e *Engine) connectReplica(spdkClient *spdkclient.Client, replicaName, repl
 		return "", nil
 	}
 
-	nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
-		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec)
+	nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName),
+		replicaIP, replicaPort, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
+		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec,
+		helpertypes.DefaultMultipath)
 	if err != nil {
 		return "", err
 	}
@@ -256,6 +260,8 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 }
 
 func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *util.Bitmap) (err error) {
+	e.log.Info("Deleting engine")
+
 	requireUpdate := false
 
 	e.Lock()
@@ -1026,6 +1032,8 @@ func getRebuildingSnapshotList(rpcSrcReplica *api.Replica, currentSnapshotName s
 }
 
 func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, replicaAddress string) (err error) {
+	e.log.Infof("Deleting replica %s with address %s from engine", replicaName, replicaAddress)
+
 	e.Lock()
 	defer e.Unlock()
 
@@ -1047,8 +1055,15 @@ func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, repli
 		return fmt.Errorf("replica %s recorded address %s does not match the input address %s for engine %s replica delete", replicaName, e.ReplicaAddressMap[replicaName], replicaAddress, e.Name)
 	}
 
+	e.log.Infof("Removing base bdev %v from engine", e.ReplicaBdevNameMap[replicaName])
 	if _, err := spdkClient.BdevRaidRemoveBaseBdev(e.ReplicaBdevNameMap[replicaName]); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-		return err
+		return errors.Wrapf(err, "failed to remove base bdev %s for deleting replica %s", e.ReplicaBdevNameMap[replicaName], replicaName)
+	}
+
+	controllerName := helperutil.GetNvmeControllerNameFromNamespaceName(replicaName)
+	e.log.Infof("Detaching controller %v", controllerName)
+	if _, err := spdkClient.BdevNvmeDetachController(controllerName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		return errors.Wrapf(err, "failed to detach controller %s for deleting replica %s", controllerName, replicaName)
 	}
 
 	delete(e.ReplicaAddressMap, replicaName)
@@ -1068,15 +1083,21 @@ const (
 )
 
 func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName string, opts *api.SnapshotOptions) (snapshotName string, err error) {
+	e.log.Infof("Creating snapshot %s", inputSnapshotName)
+
 	return e.snapshotOperation(spdkClient, inputSnapshotName, SnapshotOperationCreate, opts)
 }
 
 func (e *Engine) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName string) (err error) {
+	e.log.Infof("Deleting snapshot %s", snapshotName)
+
 	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationDelete, nil)
 	return err
 }
 
 func (e *Engine) SnapshotRevert(spdkClient *spdkclient.Client, snapshotName string) (err error) {
+	e.log.Infof("Reverting snapshot %s", snapshotName)
+
 	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationRevert, nil)
 	return err
 }
@@ -1328,6 +1349,7 @@ func (e *Engine) SetErrorState() {
 
 func (e *Engine) BackupCreate(backupName, volumeName, engineName, snapshotName, backingImageName, backingImageChecksum string,
 	labels []string, backupTarget string, credential map[string]string, concurrentLimit int32, compressionMethod, storageClassName string, size uint64) (*BackupCreateInfo, error) {
+	e.log.Infof("Creating backup %s", backupName)
 
 	e.Lock()
 	defer e.Unlock()
@@ -1402,6 +1424,8 @@ func (e *Engine) BackupStatus(backupName, replicaAddress string) (*spdkrpc.Backu
 }
 
 func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineName, snapshotName string, credential map[string]string, concurrentLimit int32) (*spdkrpc.EngineBackupRestoreResponse, error) {
+	e.log.Infof("Restoring backup %s", backupUrl)
+
 	e.Lock()
 	defer e.Unlock()
 
@@ -1476,7 +1500,7 @@ func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
 		}
 		e.log.Infof("Attaching replica %s with address %s before finishing restoration", replicaName, replicaAddress)
 		_, err = spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
-			helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec)
+			helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec, helpertypes.DefaultMultipath)
 		if err != nil {
 			return err
 		}
