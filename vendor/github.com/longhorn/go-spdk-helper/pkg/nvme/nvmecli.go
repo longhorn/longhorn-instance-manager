@@ -17,7 +17,9 @@ const (
 	DefaultTransportType = "tcp"
 
 	// Set short ctrlLossTimeoutSec for quick response to the controller loss.
-	defaultCtrlLossTimeoutSec = 30
+	defaultCtrlLossTmo    = 30
+	defaultKeepAliveTmo   = 5
+	defaultReconnectDelay = 10
 )
 
 type Device struct {
@@ -306,7 +308,9 @@ func connect(hostID, hostNQN, nqn, transpotType, ip, port string, executor *comm
 		"connect",
 		"-t", transpotType,
 		"--nqn", nqn,
-		"--ctrl-loss-tmo", strconv.Itoa(defaultCtrlLossTimeoutSec),
+		"--ctrl-loss-tmo", strconv.Itoa(defaultCtrlLossTmo),
+		"--keep-alive-tmo", strconv.Itoa(defaultKeepAliveTmo),
+		"--reconnect-delay", strconv.Itoa(defaultReconnectDelay),
 		"-o", "json",
 	}
 

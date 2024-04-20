@@ -71,6 +71,8 @@ require (
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
 
-replace github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189 => github.com/derekbit/go-spdk-helper v0.0.0-20240419063405-ce5ff1bcd928
+replace github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189 => github.com/derekbit/go-spdk-helper v0.0.0-20240419161558-f5d18bf0962a
 
-replace github.com/longhorn/longhorn-spdk-engine v0.0.0-20240417162837-d96ef4ed8c28 => github.com/derekbit/longhorn-spdk-engine v0.0.0-20240419152350-65393f9500c1
+replace github.com/longhorn/longhorn-spdk-engine v0.0.0-20240417162837-d96ef4ed8c28 => github.com/derekbit/longhorn-spdk-engine v0.0.0-20240420045704-ff80ab17de39
+
+replace github.com/longhorn/types v0.0.0-20240417112740-a0d8514936b8 => github.com/derekbit/longhorn-types v0.0.0-20240420062442-035497cf812f

@@ -709,7 +709,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	replicaLvsNameMap := s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap)
 	s.Unlock()
 
-	return e.Create(spdkClient, req.ReplicaAddressMap, replicaLvsNameMap, req.PortCount, s.portAllocator)
+	return e.Create(spdkClient, req.ReplicaAddressMap, replicaLvsNameMap, req.PortCount, s.portAllocator, req.UpgradeRequired)
 }
 
 func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replicaLvsNameMap map[string]string) {
@@ -743,6 +743,27 @@ func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequ
 		if err := e.Delete(spdkClient, s.portAllocator); err != nil {
 			return nil, err
 		}
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineSuspend(ctx context.Context, req *spdkrpc.EngineSuspendRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name is required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for suspension", req.Name)
+	}
+
+	err = e.Suspend(s.spdkClient, s.portAllocator)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to suspend engine %v", req.Name).Error())
 	}
 
 	return &emptypb.Empty{}, nil

@@ -24,6 +24,7 @@ const (
 	InstanceStateRunning     = "running"
 	InstanceStateTerminating = "terminating"
 	InstanceStateError       = "error"
+	InstanceStateSuspended   = "suspended"
 )
 
 type InstanceType string

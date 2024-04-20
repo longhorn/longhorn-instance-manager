@@ -1628,6 +1628,7 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 	defer func() {
 		if err != nil {
 			// TODO: Support snapshot revert for incremental restore
+			r.log.WithError(err).Error("Failed to start backup restore")
 		}
 	}()
 
@@ -1641,7 +1642,11 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 		return fmt.Errorf("incremental restore is not supported yet")
 	}
 
-	go r.completeBackupRestore(spdkClient)
+	go func() {
+		if err := r.completeBackupRestore(spdkClient); err != nil {
+			r.log.WithError(err).Error("Failed to complete backup restore")
+		}
+	}()
 
 	return nil
 

@@ -110,13 +110,34 @@ func (i *Initiator) replaceDmDeviceTarget() error {
 	return nil
 }
 
+func (i *Initiator) isCleanUpDmDeviceRequired(upgradeRequired bool) (bool, error) {
+	if !upgradeRequired {
+		return true, nil
+	}
+
+	dmDeviceExists, err := i.isLinearDmDeviceExist()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check linear dm device for NVMe initiator %s", i.Name)
+	}
+	if !dmDeviceExists {
+		return false, fmt.Errorf("linear dm device doesn't exist for NVMe initiator %s", i.Name)
+	}
+
+	return false, nil
+}
+
 // Start starts the NVMe initiator with the given transportAddress and transportServiceID
-func (i *Initiator) Start(transportAddress, transportServiceID string, needDmDeviceCleanup bool) (dmDeviceBusy bool, err error) {
+func (i *Initiator) Start(transportAddress, transportServiceID string, upgradeRequired bool) (dmDeviceBusy bool, err error) {
 	defer func() {
 		if err != nil {
 			err = errors.Wrapf(err, "failed to start NVMe initiator %s", i.Name)
 		}
 	}()
+
+	dmDeviceCleanupRequired, err := i.isCleanUpDmDeviceRequired(upgradeRequired)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check if cleaning up linear device is required for NVMe initiator %s", i.Name)
+	}
 
 	if transportAddress == "" || transportServiceID == "" {
 		return false, fmt.Errorf("invalid TransportAddress %s and TransportServiceID %s for initiator %s start", transportAddress, transportServiceID, i.Name)
@@ -149,9 +170,13 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, needDmDev
 	}
 
 	i.logger.Infof("Stopping NVMe initiator blindly before starting")
-	dmDeviceBusy, err = i.stopWithoutLock(needDmDeviceCleanup, false, false)
+	dmDeviceBusy, err = i.stopWithoutLock(dmDeviceCleanupRequired, false, false)
 	if err != nil {
 		return dmDeviceBusy, errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
+	}
+	if upgradeRequired {
+		i.logger.Info("Linear dm device is busy, since upgrade is required")
+		dmDeviceBusy = true
 	}
 
 	i.logger.WithFields(logrus.Fields{
@@ -192,11 +217,11 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, needDmDev
 	}
 
 	needMakeEndpoint := true
-	if needDmDeviceCleanup {
+	if dmDeviceCleanupRequired {
 		if dmDeviceBusy {
 			// Endpoint is already created, just replace the target device
 			needMakeEndpoint = false
-			i.logger.Infof("Linear dm device %s is busy, trying the best to replace the target device for NVMe initiator %s", i.Name, i.Name)
+			i.logger.Infof("Linear dm device is busy, trying the best to replace the target device for NVMe initiator %s", i.Name)
 			if err := i.replaceDmDeviceTarget(); err != nil {
 				i.logger.WithError(err).Warnf("Failed to replace the target device for NVMe initiator %s", i.Name)
 			} else {
@@ -210,7 +235,16 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, needDmDev
 			}
 		}
 	} else {
-		i.logger.Infof("Skipping creating linear dm device for NVMe initiator %s", i.Name)
+		if upgradeRequired {
+			needMakeEndpoint = false
+			i.logger.Info("Replacing target device of linear dm device for NVMe initiator")
+			if err := i.replaceDmDeviceTarget(); err != nil {
+				return dmDeviceBusy, errors.Wrapf(err, "failed to reload linear dm device for NVMe initiator %s", i.Name)
+			}
+		} else {
+			i.logger.Infof("Skipping creating linear dm device for NVMe initiator %s", i.Name)
+		}
+
 		i.dev.Export = i.dev.Nvme
 	}
 
@@ -220,13 +254,11 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, needDmDev
 			return dmDeviceBusy, err
 		}
 	}
-
 	i.logger.Infof("Launched NVMe initiator: %+v", i)
-
 	return dmDeviceBusy, nil
 }
 
-func (i *Initiator) Stop(needDmDeviceCleanup, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
+func (i *Initiator) Stop(dmDeviceCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -235,7 +267,7 @@ func (i *Initiator) Stop(needDmDeviceCleanup, deferDmDeviceCleanup, errOnBusyDmD
 		defer lock.Unlock()
 	}
 
-	return i.stopWithoutLock(needDmDeviceCleanup, deferDmDeviceCleanup, errOnBusyDmDevice)
+	return i.stopWithoutLock(dmDeviceCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice)
 }
 
 func (i *Initiator) removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
@@ -254,9 +286,9 @@ func (i *Initiator) removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmD
 	return false, nil
 }
 
-func (i *Initiator) stopWithoutLock(needDmDeviceCleanup, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
+func (i *Initiator) stopWithoutLock(dmDeviceCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
 	dmDeviceBusy := false
-	if needDmDeviceCleanup {
+	if dmDeviceCleanupRequired {
 		var err error
 		dmDeviceBusy, err = i.removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmDevice)
 		if err != nil {
@@ -499,6 +531,17 @@ func (i *Initiator) reloadLinearDmDevice() error {
 	logrus.Infof("Reloading linear dm device %s with table %s", i.Name, table)
 
 	return util.DmsetupReload(i.Name, table, i.executor)
+}
+
+func (i *Initiator) isLinearDmDeviceExist() (bool, error) {
+	dmDevPath := getDmDevicePath(i.Name)
+	if _, err := os.Stat(dmDevPath); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func getDmDevicePath(name string) string {
