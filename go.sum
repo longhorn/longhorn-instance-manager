@@ -59,6 +59,8 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77 h1:iJRq59kA22f9HIjFtY/lz5rKCorZJrrYXju70XoWdmE=
 github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77/go.mod h1:4cbJWtlrD2cGTQxQLtdlPTYopiJiusXH7CpOBrn/s3k=
+github.com/longhorn/backupstore v0.0.0-20240417071544-3bd377eeefeb h1:GkAG0P7QI32PYgjLBV6VvaEAM/Z9dKyPohccU1js+Uk=
+github.com/longhorn/backupstore v0.0.0-20240417071544-3bd377eeefeb/go.mod h1:4cbJWtlrD2cGTQxQLtdlPTYopiJiusXH7CpOBrn/s3k=
 github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62 h1:ovotrq4HvaSRFgLozlNyUAvJp2eykdOwfpz4VIYZGIY=
 github.com/longhorn/go-common-libs v0.0.0-20240315062830-5aa0ac1dac62/go.mod h1:ePLGb2r/PJBUIVoVhLOt4bLOeu0S72ZB+fWDWwC8H28=
 github.com/longhorn/go-common-libs v0.0.0-20240319112414-b75404dc7fbc h1:Eh9Npc5yBcVD8E4zVQIGUtC62HcfqevrHjQ2kh7fJ/E=
@@ -71,6 +73,8 @@ github.com/longhorn/longhorn-engine v1.5.5-0.20240319113652-9cdc0f5750a7 h1:s7jc
 github.com/longhorn/longhorn-engine v1.5.5-0.20240319113652-9cdc0f5750a7/go.mod h1:JV0Wi1gcrttjzt/QmX2pyJJ5Pn3lm7woD2L9pk8GZFM=
 github.com/longhorn/longhorn-engine v1.5.5-rc2 h1:6s9grMcBK/+rXRt57D3sM63oSuaHNBY2rllfrhIwxC8=
 github.com/longhorn/longhorn-engine v1.5.5-rc2/go.mod h1:Z5+e6Q9udMmTiNpDzeS+NCdBKn7CrofJZM9XVjNEY2M=
+github.com/longhorn/longhorn-engine v1.5.5 h1:44p9Iyp4boKSHgMAl8iD4nY/EQRnF/e7hPSmqqIqvIk=
+github.com/longhorn/longhorn-engine v1.5.5/go.mod h1:/QEAmYu1ZNsKR22d8wdqssbz1ja7Yyj/GyPu8BYkTEk=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47 h1:hadV15fSF+akBFZ8dMQFscTsJUVpEC1t6Go3B28ZNYw=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47/go.mod h1:mx8AOJWxLvWr+w4WtFirIPsEW88RajimS/pOEsw8A2k=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHTxp6HcC++/vN17LfeuDmozHI2j6DoZf5E=
