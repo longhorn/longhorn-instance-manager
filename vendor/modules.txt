@@ -104,10 +104,9 @@ github.com/gammazero/deque
 # github.com/gammazero/workerpool v1.1.3
 ## explicit; go 1.18
 github.com/gammazero/workerpool
-# github.com/go-logr/logr v1.3.0
+# github.com/go-logr/logr v1.4.1
 ## explicit; go 1.18
 github.com/go-logr/logr
-github.com/go-logr/logr/slogr
 # github.com/go-ole/go-ole v1.2.6
 ## explicit; go 1.12
 github.com/go-ole/go-ole
@@ -133,7 +132,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20240219094812-3a87ee02df77
+# github.com/longhorn/backupstore v0.0.0-20240417071544-3bd377eeefeb
 ## explicit; go 1.21
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -146,8 +145,8 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-common-libs v0.0.0-20240411093823-b8862efb8e03
-## explicit; go 1.21
+# github.com/longhorn/go-common-libs v0.0.0-20240422073843-1578e42a50bd
+## explicit; go 1.22
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
 github.com/longhorn/go-common-libs/net
@@ -402,8 +401,8 @@ k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/validation/field
 k8s.io/apimachinery/pkg/util/wait
-# k8s.io/klog/v2 v2.110.1
-## explicit; go 1.13
+# k8s.io/klog/v2 v2.120.1
+## explicit; go 1.18
 k8s.io/klog/v2
 k8s.io/klog/v2/internal/buffer
 k8s.io/klog/v2/internal/clock
@@ -411,8 +410,8 @@ k8s.io/klog/v2/internal/dbg
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
 k8s.io/klog/v2/internal/sloghandler
-# k8s.io/mount-utils v0.29.4
-## explicit; go 1.21
+# k8s.io/mount-utils v0.30.0
+## explicit; go 1.22.0
 k8s.io/mount-utils
 # k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 ## explicit; go 1.18
