@@ -1,13 +1,15 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.21
+go 1.22.0
+
+toolchain go1.22.2
 
 require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240417071544-3bd377eeefeb
-	github.com/longhorn/go-common-libs v0.0.0-20240411093823-b8862efb8e03
+	github.com/longhorn/go-common-libs v0.0.0-20240422073843-1578e42a50bd
 	github.com/longhorn/go-spdk-helper v0.0.0-20231113055029-9acddd184246
 	github.com/longhorn/longhorn-engine v1.5.5
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20231005170812-e9b634e07e47
@@ -19,7 +21,7 @@ require (
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.29.4
+	k8s.io/mount-utils v0.30.0
 )
 
 require (
@@ -35,7 +37,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gammazero/workerpool v1.1.3 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gorilla/handlers v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
@@ -60,7 +62,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de // indirect
 	k8s.io/apimachinery v0.27.1 // indirect
-	k8s.io/klog/v2 v2.110.1 // indirect
+	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
 
