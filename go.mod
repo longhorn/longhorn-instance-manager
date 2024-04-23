@@ -8,10 +8,10 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.3
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240417071544-3bd377eeefeb
-	github.com/longhorn/go-common-libs v0.0.0-20240411093823-b8862efb8e03
-	github.com/longhorn/go-spdk-helper v0.0.0-20240415074119-eb1e91922189
+	github.com/longhorn/go-common-libs v0.0.0-20240422073843-1578e42a50bd
+	github.com/longhorn/go-spdk-helper v0.0.0-20240422131908-185e91a748ad
 	github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20240418025706-519598108463
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240417162837-d96ef4ed8c28
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240423045523-73fd7e6f9745
 	github.com/longhorn/types v0.0.0-20240417112740-a0d8514936b8
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -68,7 +68,7 @@ require (
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de // indirect
-	k8s.io/apimachinery v0.29.4 // indirect
+	k8s.io/apimachinery v0.30.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )

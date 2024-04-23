@@ -576,7 +576,10 @@ func (c *Client) BdevRaidRemoveBaseBdev(name string) (removed bool, err error) {
 // "reconnectDelaySec": Controller reconnect delay in seconds
 //
 // "fastIOFailTimeoutSec": Fast I/O failure timeout in seconds
-func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, trtype spdktypes.NvmeTransportType, adrfam spdktypes.NvmeAddressFamily, ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec int32) (bdevNameList []string, err error) {
+//
+// "multipath": Multipathing behavior: disable, failover, multipath. Default is failover
+func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, trtype spdktypes.NvmeTransportType, adrfam spdktypes.NvmeAddressFamily,
+	ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec int32, multipath string) (bdevNameList []string, err error) {
 	req := spdktypes.BdevNvmeAttachControllerRequest{
 		Name: name,
 		NvmeTransportID: spdktypes.NvmeTransportID{
@@ -589,6 +592,7 @@ func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, 
 		CtrlrLossTimeoutSec:  ctrlrLossTimeoutSec,
 		ReconnectDelaySec:    reconnectDelaySec,
 		FastIOFailTimeoutSec: fastIOFailTimeoutSec,
+		Multipath:            multipath,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_attach_controller", req)
