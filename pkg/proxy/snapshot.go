@@ -41,7 +41,7 @@ func (ops V1DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 	}
 	defer c.Close()
 
-	recv, err := c.VolumeSnapshot(req.SnapshotVolume.Name, req.SnapshotVolume.Labels)
+	recv, err := c.VolumeSnapshot(req.SnapshotVolume.Name, req.SnapshotVolume.Labels, req.SnapshotVolume.FreezeFilesystem)
 	if err != nil {
 		return nil, err
 	}
