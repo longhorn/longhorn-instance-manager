@@ -153,6 +153,13 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
+# github.com/longhorn/go-iscsi-helper v0.0.0-20240427164656-e9439c0018ce
+## explicit; go 1.22
+github.com/longhorn/go-iscsi-helper/iscsi
+github.com/longhorn/go-iscsi-helper/iscsidev
+github.com/longhorn/go-iscsi-helper/longhorndev
+github.com/longhorn/go-iscsi-helper/types
+github.com/longhorn/go-iscsi-helper/util
 # github.com/longhorn/go-spdk-helper v0.0.0-20240514082311-4069f4804017
 ## explicit; go 1.22.0
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
@@ -162,7 +169,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240509154612-5fdc92a2d526
+# github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240514224711-e39b7f0313b2
 ## explicit; go 1.22.2
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client

@@ -24,11 +24,13 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
+	"k8s.io/mount-utils"
 
 	commonTypes "github.com/longhorn/go-common-libs/types"
 	helpernvme "github.com/longhorn/go-spdk-helper/pkg/nvme"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
+	engineutil "github.com/longhorn/longhorn-engine/pkg/util"
 	spdk "github.com/longhorn/longhorn-spdk-engine/pkg/spdk"
 	spdkutil "github.com/longhorn/longhorn-spdk-engine/pkg/util"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
@@ -159,6 +161,34 @@ func cleanupStaledNvmeAndDmDevices() error {
 	return nil
 }
 
+func unfreezeFilesystems() error {
+	// We do not need to switch to the host mount namespace to get mount points here. Usually, longhorn-engine runs in a
+	// container that has / bind mounted to /host with at least HostToContainer (rslave) propagation.
+	// - If it does not, we likely can't do a namespace swap anyway, since we don't have access to /host/proc.
+	// - If it does, we just need to know where in the container we can access the mount points to unfreeze the file
+	//   system.
+	mounter := mount.New("")
+	mountPoints, err := mounter.List()
+	if err != nil {
+		return errors.Wrap(err, "failed to list mount points while starting up")
+	}
+
+	for _, mountPoint := range mountPoints {
+		if strings.Contains(mountPoint.Device, engineutil.DevicePathPrefix) {
+			// We do not actually expect any filesystems to be frozen. This is a best effort attempt to unfreeze them
+			// if somehow instance manager crashed at the wrong moment during a snapshot.
+			unfroze, err := engineutil.UnfreezeFilesystem(mountPoint.Path, nil)
+			if err != nil {
+				logrus.WithError(err).Warnf("Failed to unfreeze filesystem mounted at %v", mountPoint)
+			}
+			if unfroze {
+				logrus.Warnf("Unfroze filesystem mounted at %v", mountPoint)
+			}
+		}
+	}
+	return nil
+}
+
 func start(c *cli.Context) (err error) {
 	listen := c.String("listen")
 	logsDir := c.String("logs-dir")
@@ -181,6 +211,10 @@ func start(c *cli.Context) (err error) {
 
 	if spdkEnabled {
 		if err := cleanupStaledNvmeAndDmDevices(); err != nil {
+			return err
+		}
+	} else {
+		if err := unfreezeFilesystems(); err != nil {
 			return err
 		}
 	}
