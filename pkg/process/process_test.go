@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -37,10 +36,6 @@ type TestSuite struct {
 }
 
 var _ = Suite(&TestSuite{})
-
-func generateUUID() string {
-	return uuid.New().String()
-}
 
 type ProcessWatcher struct {
 	grpc.ServerStream
@@ -85,18 +80,21 @@ func (s *TestSuite) TestCRUD(c *C) {
 		go func(i int) {
 			defer wg.Done()
 			name := "test_crud_process-" + strconv.Itoa(i)
-			go s.pm.ProcessWatch(nil, pw)
+			go func() {
+				err := s.pm.ProcessWatch(nil, pw)
+				c.Assert(err, IsNil)
+			}()
 
 			createReq := &rpc.ProcessCreateRequest{
 				Spec: createProcessSpec(name, TestBinary),
 			}
-			createResp, err := s.pm.ProcessCreate(nil, createReq)
+			createResp, err := s.pm.ProcessCreate(context.TODO(), createReq)
 			c.Assert(err, IsNil)
 			c.Assert(createResp.Status.State, Not(Equals), types.ProcessStateStopping)
 			c.Assert(createResp.Status.State, Not(Equals), types.ProcessStateStopped)
 			c.Assert(createResp.Status.State, Not(Equals), types.ProcessStateError)
 
-			getResp, err := s.pm.ProcessGet(nil, &rpc.ProcessGetRequest{
+			getResp, err := s.pm.ProcessGet(context.TODO(), &rpc.ProcessGetRequest{
 				Name: name,
 			})
 			c.Assert(err, IsNil)
@@ -105,7 +103,7 @@ func (s *TestSuite) TestCRUD(c *C) {
 			c.Assert(getResp.Status.State, Not(Equals), types.ProcessStateStopped)
 			c.Assert(getResp.Status.State, Not(Equals), types.ProcessStateError)
 
-			listResp, err := s.pm.ProcessList(nil, &rpc.ProcessListRequest{})
+			listResp, err := s.pm.ProcessList(context.TODO(), &rpc.ProcessListRequest{})
 			c.Assert(err, IsNil)
 			c.Assert(listResp.Processes[name], NotNil)
 			c.Assert(listResp.Processes[name].Spec.Name, Equals, name)
@@ -115,7 +113,7 @@ func (s *TestSuite) TestCRUD(c *C) {
 
 			running := false
 			for j := 0; j < RetryCount; j++ {
-				getResp, err := s.pm.ProcessGet(nil, &rpc.ProcessGetRequest{
+				getResp, err := s.pm.ProcessGet(context.TODO(), &rpc.ProcessGetRequest{
 					Name: name,
 				})
 				c.Assert(err, IsNil)
@@ -130,7 +128,7 @@ func (s *TestSuite) TestCRUD(c *C) {
 			deleteReq := &rpc.ProcessDeleteRequest{
 				Name: name,
 			}
-			deleteResp, err := s.pm.ProcessDelete(nil, deleteReq)
+			deleteResp, err := s.pm.ProcessDelete(context.TODO(), deleteReq)
 			c.Assert(err, IsNil)
 			c.Assert(deleteResp.Deleted, Equals, true)
 			c.Assert(deleteResp.Status.State, Not(Equals), types.ProcessStateStarting)
@@ -150,7 +148,10 @@ func (s *TestSuite) TestProcessDeletion(c *C) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			go s.pm.ProcessWatch(nil, pw)
+			go func() {
+				err := s.pm.ProcessWatch(nil, pw)
+				c.Assert(err, IsNil)
+			}()
 			name := "test_process_deletion-" + strconv.Itoa(i)
 
 			assertProcessCreation(c, s.pm, name, TestBinary)
@@ -190,7 +191,10 @@ func (s *TestSuite) TestProcessReplace(c *C) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			go s.pm.ProcessWatch(nil, pw)
+			go func() {
+				err := s.pm.ProcessWatch(nil, pw)
+				c.Assert(err, IsNil)
+			}()
 			name := "test_process_replace-" + strconv.Itoa(i)
 			assertProcessCreation(c, s.pm, name, TestBinary)
 			assertProcessReplace(c, s.pm, name, TestBinaryReplace)
@@ -218,12 +222,15 @@ func (s *TestSuite) TestProcessReplaceMissingBinary(c *C) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			go s.pm.ProcessWatch(nil, pw)
+			go func() {
+				err := s.pm.ProcessWatch(nil, pw)
+				c.Assert(err, NotNil)
+			}()
 			name := "test_process_missing_binary_replace-" + strconv.Itoa(i)
 			assertProcessCreation(c, s.pm, name, TestBinary)
 
 			// replacement for a missing binary should error
-			_, err := s.pm.ProcessReplace(nil, &rpc.ProcessReplaceRequest{
+			_, err := s.pm.ProcessReplace(context.TODO(), &rpc.ProcessReplaceRequest{
 				Spec:            createProcessSpec(name, TestBinaryMissing),
 				TerminateSignal: "SIGHUP",
 			})
@@ -244,7 +251,10 @@ func (s *TestSuite) TestProcessReplaceDuringDeletion(c *C) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			go s.pm.ProcessWatch(nil, pw)
+			go func() {
+				err := s.pm.ProcessWatch(nil, pw)
+				c.Assert(err, NotNil)
+			}()
 			name := "test_process_deletion_replace-" + strconv.Itoa(i)
 			assertProcessCreation(c, s.pm, name, TestBinary)
 			assertProcessDeletion(c, s.pm, name)
@@ -252,7 +262,7 @@ func (s *TestSuite) TestProcessReplaceDuringDeletion(c *C) {
 			// TODO: we should change the deletion handling in a future version
 			// since deletion happens async this might error or not
 			// depending on if the process has already been deleted from the map
-			replaceResp, err := s.pm.ProcessReplace(nil, &rpc.ProcessReplaceRequest{
+			replaceResp, err := s.pm.ProcessReplace(context.TODO(), &rpc.ProcessReplaceRequest{
 				Spec:            createProcessSpec(name, TestBinaryReplace),
 				TerminateSignal: "SIGHUP",
 			})
@@ -290,7 +300,7 @@ func assertProcessReplace(c *C, pm *Manager, name, binary string) {
 		Spec:            createProcessSpec(name, binary),
 		TerminateSignal: "SIGHUP",
 	}
-	rsp, err := pm.ProcessReplace(nil, replaceReq)
+	rsp, err := pm.ProcessReplace(context.TODO(), replaceReq)
 
 	c.Assert(err, IsNil)
 	c.Assert(rsp, NotNil)
@@ -301,13 +311,13 @@ func assertProcessCreation(c *C, pm *Manager, name, binary string) {
 		Spec: createProcessSpec(name, binary),
 	}
 
-	createResp, err := pm.ProcessCreate(nil, createReq)
+	createResp, err := pm.ProcessCreate(context.TODO(), createReq)
 	c.Assert(err, IsNil)
 	c.Assert(createResp.Status.State, Not(Equals), types.ProcessStateStopping)
 	c.Assert(createResp.Status.State, Not(Equals), types.ProcessStateStopped)
 	c.Assert(createResp.Status.State, Not(Equals), types.ProcessStateError)
 
-	createResp, err = pm.ProcessCreate(nil, createReq)
+	createResp, err = pm.ProcessCreate(context.TODO(), createReq)
 	c.Assert(createResp, IsNil)
 	c.Assert(err, NotNil)
 	c.Assert(status.Code(err), Equals, codes.AlreadyExists)
@@ -325,7 +335,7 @@ func assertProcessDeletion(c *C, pm *Manager, name string) {
 		deleteReq := &rpc.ProcessDeleteRequest{
 			Name: name,
 		}
-		deleteResp, err := pm.ProcessDelete(nil, deleteReq)
+		deleteResp, err := pm.ProcessDelete(context.TODO(), deleteReq)
 		if err == nil {
 			c.Assert(deleteResp.Deleted, Equals, true)
 		} else {
@@ -346,7 +356,7 @@ func createProcessSpec(name, binary string) *rpc.ProcessSpec {
 
 func waitForProcessState(pm *Manager, name string, predicate func(process *rpc.ProcessResponse) bool) (bool, error) {
 	for j := 0; j < RetryCount; j++ {
-		getResp, err := pm.ProcessGet(nil, &rpc.ProcessGetRequest{
+		getResp, err := pm.ProcessGet(context.TODO(), &rpc.ProcessGetRequest{
 			Name: name,
 		})
 
@@ -367,7 +377,7 @@ func waitForProcessListState(pm *Manager, predicate func(processes map[string]*r
 	// 	or that it has some marker that it's in the process of deletion unfortunately the deletion marker is only on the rpc response
 	// 	and not the process struct so there is no way for the process list to signal deletion
 	for j := 0; j < RetryCount; j++ {
-		listResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
+		listResp, err := pm.ProcessList(context.TODO(), &rpc.ProcessListRequest{})
 		if err != nil {
 			return false, err
 		}
