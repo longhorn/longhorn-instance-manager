@@ -57,7 +57,6 @@ type Proxy struct {
 	rpc.UnimplementedProxyEngineServiceServer
 	ctx           context.Context
 	logsDir       string
-	shutdownCh    chan error
 	HealthChecker HealthChecker
 	ops           map[rpc.DataEngine]ProxyOps
 }
@@ -86,6 +85,7 @@ func (p *Proxy) startMonitoring() {
 		case <-p.ctx.Done():
 			logrus.Infof("%s: stopped monitoring replicas due to the context done", types.ProxyGRPCService)
 			done = true
+		default:
 		}
 		if done {
 			break
