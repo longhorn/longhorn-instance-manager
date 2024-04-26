@@ -90,6 +90,7 @@ func (s *Server) startMonitoring() {
 		case <-s.ctx.Done():
 			logrus.Infof("%s: stopped monitoring replicas due to the context done", types.DiskGrpcService)
 			done = true
+		default:
 		}
 		if done {
 			break

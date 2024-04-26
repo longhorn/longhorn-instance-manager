@@ -85,19 +85,21 @@ func StartCmd() cli.Command {
 func cleanup(pm *process.Manager) {
 	logrus.Infof("Trying to gracefully shut down %v", types.ProcessManagerGrpcService)
 
-	pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
+	pmResp, err := pm.ProcessList(context.TODO(), &rpc.ProcessListRequest{})
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to list processes before shutting down %v", types.ProcessManagerGrpcService)
 		return
 	}
 	for _, p := range pmResp.Processes {
-		pm.ProcessDelete(nil, &rpc.ProcessDeleteRequest{
+		if _, err := pm.ProcessDelete(context.TODO(), &rpc.ProcessDeleteRequest{
 			Name: p.Spec.Name,
-		})
+		}); err != nil {
+			logrus.WithError(err).Errorf("Failed to delete process %s", p.Spec.Name)
+		}
 	}
 
 	for i := 0; i < types.WaitCount; i++ {
-		pmResp, err := pm.ProcessList(nil, &rpc.ProcessListRequest{})
+		pmResp, err := pm.ProcessList(context.TODO(), &rpc.ProcessListRequest{})
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to list processes when shutting down %v", types.ProcessManagerGrpcService)
 			break
@@ -276,7 +278,7 @@ func start(c *cli.Context) (err error) {
 		listeners[types.SpdkGrpcService] = spdkGRPCListener
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, _ := errgroup.WithContext(ctx)
 
 	// Register signal handler
 	sigs := make(chan os.Signal, 1)
@@ -376,6 +378,9 @@ func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string,
 
 func setupSPDKGRPCServer(ctx context.Context, portRange, listen string) (*grpc.Server, net.Listener, error) {
 	portStart, portEnd, err := util.ParsePortRange(portRange)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	srv, err := spdk.NewServer(ctx, portStart, portEnd)
 	if err != nil {

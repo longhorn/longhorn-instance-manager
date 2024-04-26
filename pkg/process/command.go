@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Executor interface {
@@ -72,7 +74,9 @@ func (bc *BinaryCommand) StopWithSignal(signal syscall.Signal) {
 	bc.RLock()
 	defer bc.RUnlock()
 	if bc.Process != nil {
-		bc.Process.Signal(signal)
+		if err := bc.Process.Signal(signal); err != nil {
+			logrus.WithError(err).Error("failed to send signal to process")
+		}
 	}
 }
 
@@ -80,7 +84,9 @@ func (bc *BinaryCommand) Stop() {
 	bc.RLock()
 	defer bc.RUnlock()
 	if bc.Process != nil {
-		bc.Process.Signal(syscall.SIGINT)
+		if err := bc.Process.Signal(syscall.SIGINT); err != nil {
+			logrus.WithError(err).Error("failed to send signal to process")
+		}
 	}
 }
 
@@ -88,7 +94,9 @@ func (bc *BinaryCommand) Kill() {
 	bc.RLock()
 	defer bc.RUnlock()
 	if bc.Process != nil {
-		bc.Process.Signal(syscall.SIGKILL)
+		if err := bc.Process.Signal(syscall.SIGKILL); err != nil {
+			logrus.WithError(err).Error("failed to send signal to process")
+		}
 	}
 }
 
