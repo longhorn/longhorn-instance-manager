@@ -1626,7 +1626,7 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 	// Initiate restore
 	newRestore := r.restore.DeepCopy()
 	defer func() {
-		if err != nil {
+		if err != nil { // nolint:staticcheck
 			// TODO: Support snapshot revert for incremental restore
 		}
 	}()
@@ -1641,7 +1641,11 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 		return fmt.Errorf("incremental restore is not supported yet")
 	}
 
-	go r.completeBackupRestore(spdkClient)
+	go func() {
+		if completeErr := r.completeBackupRestore(spdkClient); completeErr != nil {
+			logrus.WithError(completeErr).Warn("Failed to complete backup restore")
+		}
+	}()
 
 	return nil
 
