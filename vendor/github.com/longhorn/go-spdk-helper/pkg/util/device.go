@@ -125,7 +125,7 @@ func DetectDevice(path string, executor *commonNs.Executor) (*KernelDevice, erro
 				return nil, fmt.Errorf("invalid major:minor %s for device %s with path %s", dev.Nvme.Name, f[1], path)
 			}
 		}
-		break
+		break // nolint:staticcheck
 	}
 	if dev == nil {
 		return nil, fmt.Errorf("failed to get device with path %s", path)
