@@ -15,7 +15,7 @@ require (
 	github.com/longhorn/types v0.0.0-20240424162824-4995e1e42438
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli v1.22.14
+	github.com/urfave/cli v1.22.15
 	golang.org/x/net v0.24.0
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.63.2
@@ -34,7 +34,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.12.0 // indirect
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gammazero/workerpool v1.1.3 // indirect
