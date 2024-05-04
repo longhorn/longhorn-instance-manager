@@ -132,7 +132,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20240427164602-c8721e8ea31a
+# github.com/longhorn/backupstore v0.0.0-20240501152902-3fa6a4a2e3e3
 ## explicit; go 1.21
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -145,7 +145,7 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-common-libs v0.0.0-20240427164621-70d1933bfa90
+# github.com/longhorn/go-common-libs v0.0.0-20240501153456-f7a5b1a1edb0
 ## explicit; go 1.22
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
@@ -156,8 +156,8 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
-# github.com/longhorn/go-spdk-helper v0.0.0-20240427164640-8cb919fb8e53
-## explicit; go 1.22
+# github.com/longhorn/go-spdk-helper v0.0.0-20240430055420-fe00de2fc195
+## explicit; go 1.22.0
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
 github.com/longhorn/go-spdk-helper/pkg/spdk/client
