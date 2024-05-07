@@ -83,17 +83,10 @@ func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkS
 }
 
 func (s *Server) startMonitoring() {
-	done := false
 	for {
-		select {
-		case <-s.ctx.Done():
-			logrus.Infof("%s: stopped monitoring replicas due to the context done", types.InstanceGrpcService)
-			done = true
-		default:
-		}
-		if done {
-			break
-		}
+		<-s.ctx.Done()
+		logrus.Infof("%s: stopped monitoring due to the context done", types.InstanceGrpcService)
+		break
 	}
 }
 
