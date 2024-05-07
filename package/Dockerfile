@@ -136,7 +136,8 @@ COPY --from=builder \
 
 RUN ldconfig
 
-COPY bin/longhorn-instance-manager package/instance-manager /usr/local/bin/
+COPY package/bin/longhorn-instance-manager /usr/local/bin/
+COPY package/instance-manager /usr/local/bin/
 
 VOLUME /usr/local/bin
 
