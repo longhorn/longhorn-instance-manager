@@ -1,6 +1,6 @@
 FROM registry.suse.com/bci/bci-base:15.5
 
-ARG DAPPER_HOST_ARCH=amd64
+ARG DAPPER_HOST_ARCH
 ARG http_proxy
 ARG https_proxy
 ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
