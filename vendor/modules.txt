@@ -132,7 +132,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20240501152902-3fa6a4a2e3e3
+# github.com/longhorn/backupstore v0.0.0-20240509144945-3bce6e69af15
 ## explicit; go 1.21
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -165,8 +165,8 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.6.0-dev-20231217.0.20240418025706-519598108463
-## explicit; go 1.21
+# github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240509154612-5fdc92a2d526
+## explicit; go 1.22.2
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/interceptor
@@ -194,7 +194,7 @@ github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
 # github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003
 ## explicit
 github.com/longhorn/nsfilelock
-# github.com/longhorn/sparse-tools v0.0.0-20240228120902-ce8c4c2e71ca
+# github.com/longhorn/sparse-tools v0.0.0-20240427164751-a7b9f1b2c8a8
 ## explicit; go 1.17
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
@@ -291,7 +291,7 @@ golang.org/x/net/trace
 # golang.org/x/sync v0.7.0
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.19.0
+# golang.org/x/sys v0.20.0
 ## explicit; go 1.18
 golang.org/x/sys/unix
 golang.org/x/sys/windows
