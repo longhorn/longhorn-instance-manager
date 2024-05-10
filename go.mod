@@ -7,10 +7,10 @@ toolchain go1.22.2
 require (
 	github.com/RoaringBitmap/roaring v1.9.3
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240427164602-c8721e8ea31a
+	github.com/longhorn/backupstore v0.0.0-20240509144945-3bce6e69af15
 	github.com/longhorn/go-common-libs v0.0.0-20240427164621-70d1933bfa90
 	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
-	github.com/longhorn/longhorn-engine v1.6.1
+	github.com/longhorn/longhorn-engine v1.6.2-0.20240510013807-eec0f45568e9
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240308142500-8ac41e985506
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -46,7 +46,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 // indirect
-	github.com/longhorn/sparse-tools v0.0.0-20240228120902-ce8c4c2e71ca // indirect
+	github.com/longhorn/sparse-tools v0.0.0-20240427164751-a7b9f1b2c8a8 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
