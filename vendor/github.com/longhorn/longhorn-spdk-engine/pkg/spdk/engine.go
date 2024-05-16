@@ -15,6 +15,7 @@ import (
 
 	commonNet "github.com/longhorn/go-common-libs/net"
 	commonTypes "github.com/longhorn/go-common-libs/types"
+	commonUtils "github.com/longhorn/go-common-libs/utils"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
@@ -43,6 +44,8 @@ type Engine struct {
 	Port               int32
 	Frontend           string
 	Endpoint           string
+	Nqn                string
+	Nguid              string
 
 	dmDeviceBusy bool
 
@@ -92,7 +95,7 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 	}
 }
 
-func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localReplicaLvsNameMap map[string]string, portCount int32, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Engine, err error) {
+func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Engine, err error) {
 	e.log.Infof("Creating engine with replicas %+v", replicaAddressMap)
 
 	requireUpdate := true
@@ -137,7 +140,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localR
 
 	replicaBdevList := []string{}
 	for replicaName, replicaAddr := range replicaAddressMap {
-		bdevName, err := e.getBdevNameForReplica(spdkClient, localReplicaLvsNameMap, replicaName, replicaAddr, podIP)
+		bdevName, err := e.getBdevNameForReplica(spdkClient, replicaName, replicaAddr, podIP)
 		if err != nil {
 			e.log.WithError(err).Errorf("Failed to get bdev from replica %s with address %s, will skip it and continue", replicaName, replicaAddr)
 			e.ReplicaModeMap[replicaName] = types.ModeERR
@@ -171,19 +174,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap, localR
 	return e.getWithoutLock(), nil
 }
 
-func (e *Engine) getBdevNameForReplica(spdkClient *spdkclient.Client, localReplicaLvsNameMap map[string]string, replicaName, replicaAddress, podIP string) (bdevName string, err error) {
-	replicaIP, _, err := net.SplitHostPort(replicaAddress)
-	if err != nil {
-		return "", err
-	}
-	if replicaIP == podIP {
-		if localReplicaLvsNameMap[replicaName] == "" {
-			return "", fmt.Errorf("cannot find local replica %s from the local replica map", replicaName)
-
-		}
-		return spdktypes.GetLvolAlias(localReplicaLvsNameMap[replicaName], replicaName), nil
-	}
-
+func (e *Engine) getBdevNameForReplica(spdkClient *spdkclient.Client, replicaName, replicaAddress, podIP string) (bdevName string, err error) {
 	return e.connectReplica(spdkClient, replicaName, replicaAddress)
 }
 
@@ -191,10 +182,6 @@ func (e *Engine) connectReplica(spdkClient *spdkclient.Client, replicaName, repl
 	replicaIP, replicaPort, err := net.SplitHostPort(replicaAddress)
 	if err != nil {
 		return "", err
-	}
-	// This function is not responsible for retrieving the bdev name for local replicas
-	if replicaIP == e.IP {
-		return "", nil
 	}
 
 	nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName),
@@ -204,9 +191,11 @@ func (e *Engine) connectReplica(spdkClient *spdkclient.Client, replicaName, repl
 	if err != nil {
 		return "", err
 	}
+
 	if len(nvmeBdevNameList) != 1 {
 		return "", fmt.Errorf("got zero or multiple results when attaching replica %s with address %s as a NVMe bdev: %+v", replicaName, replicaAddress, nvmeBdevNameList)
 	}
+
 	return nvmeBdevNameList[0], nil
 }
 
@@ -220,10 +209,11 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 		return nil
 	}
 
-	nqn := helpertypes.GetNQN(e.Name)
+	e.Nqn = helpertypes.GetNQN(e.Name)
+	e.Nguid = commonUtils.RandomID(nvmeNguidLength)
 
 	e.log.Info("Blindly stopping expose bdev for engine")
-	if err := spdkClient.StopExposeBdev(nqn); err != nil {
+	if err := spdkClient.StopExposeBdev(e.Nqn); err != nil {
 		return errors.Wrap(err, "failed to stop expose bdev for engine")
 	}
 
@@ -233,18 +223,18 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 	}
 	portStr := strconv.Itoa(int(port))
 
-	if err := spdkClient.StartExposeBdev(nqn, e.Name, e.IP, portStr); err != nil {
+	if err := spdkClient.StartExposeBdev(e.Nqn, e.Name, e.Nguid, e.IP, portStr); err != nil {
 		return err
 	}
 	e.Port = port
 	e.log = e.log.WithField("port", port)
 
 	if e.Frontend == types.FrontendSPDKTCPNvmf {
-		e.Endpoint = GetNvmfEndpoint(nqn, e.IP, e.Port)
+		e.Endpoint = GetNvmfEndpoint(e.Nqn, e.IP, e.Port)
 		return nil
 	}
 
-	initiator, err := nvme.NewInitiator(e.VolumeName, nqn, nvme.HostProc)
+	initiator, err := nvme.NewInitiator(e.VolumeName, e.Nqn, nvme.HostProc)
 	if err != nil {
 		return err
 	}
@@ -343,14 +333,6 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 }
 
 func (e *Engine) disconnectReplica(spdkClient *spdkclient.Client, replicaName string) (err error) {
-	replicaIP, _, err := net.SplitHostPort(e.ReplicaAddressMap[replicaName])
-	if err != nil {
-		return err
-	}
-	if replicaIP == e.IP {
-		return nil
-	}
-
 	bdevName := e.ReplicaBdevNameMap[replicaName]
 	if bdevName == "" {
 		return nil
@@ -843,7 +825,7 @@ func (e *Engine) ReplicaAddFinish(spdkClient *spdkclient.Client, replicaName, re
 			replicaBdevList = append(replicaBdevList, e.ReplicaBdevNameMap[rName])
 		}
 		if rName == replicaName {
-			bdevName, err := e.getBdevNameForReplica(spdkClient, localReplicaLvsNameMap, replicaName, replicaAddress, e.IP)
+			bdevName, err := e.getBdevNameForReplica(spdkClient, replicaName, replicaAddress, e.IP)
 			if err != nil {
 				e.log.WithError(err).Errorf("Failed to get bdev from rebuilding replica %s with address %s, will mark it as ERR and error out", replicaName, replicaAddress)
 				e.ReplicaModeMap[replicaName] = types.ModeERR
@@ -1061,16 +1043,10 @@ func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, repli
 	}
 
 	// Detaching the corresponding NVMf controller to remote replica
-	replicaHost, _, err := net.SplitHostPort(replicaAddress)
-	if err != nil {
-		return errors.Wrapf(err, "failed to split replica address %s for deleting replica %s", replicaAddress, replicaName)
-	}
-	if replicaHost != e.IP {
-		controllerName := helperutil.GetNvmeControllerNameFromNamespaceName(replicaName)
-		e.log.Infof("Detaching the corresponding NVMf controller %v during remote replica %s delete", controllerName, replicaName)
-		if _, err := spdkClient.BdevNvmeDetachController(controllerName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-			return errors.Wrapf(err, "failed to detach controller %s for deleting replica %s", controllerName, replicaName)
-		}
+	controllerName := helperutil.GetNvmeControllerNameFromNamespaceName(replicaName)
+	e.log.Infof("Detaching the corresponding NVMf controller %v during remote replica %s delete", controllerName, replicaName)
+	if _, err := spdkClient.BdevNvmeDetachController(controllerName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		return errors.Wrapf(err, "failed to detach controller %s for deleting replica %s", controllerName, replicaName)
 	}
 
 	delete(e.ReplicaAddressMap, replicaName)
@@ -1500,10 +1476,6 @@ func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
 		replicaIP, replicaPort, err := net.SplitHostPort(replicaAddress)
 		if err != nil {
 			return err
-		}
-		if replicaIP == e.IP {
-			replicaBdevList = append(replicaBdevList, bdevName)
-			continue
 		}
 		e.log.Infof("Attaching replica %s with address %s before finishing restoration", replicaName, replicaAddress)
 		_, err = spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,

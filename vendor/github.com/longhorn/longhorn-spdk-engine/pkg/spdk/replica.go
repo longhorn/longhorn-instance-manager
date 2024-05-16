@@ -18,6 +18,7 @@ import (
 	btypes "github.com/longhorn/backupstore/types"
 	butil "github.com/longhorn/backupstore/util"
 	commonNet "github.com/longhorn/go-common-libs/net"
+	commonUtils "github.com/longhorn/go-common-libs/utils"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -662,7 +663,8 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, exposeRequired bool, por
 	r.portAllocator = util.NewBitmap(r.PortStart+1, r.PortEnd)
 
 	if exposeRequired {
-		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headSvcLvol.UUID, podIP, strconv.Itoa(int(r.PortStart))); err != nil {
+		nguid := commonUtils.RandomID(nvmeNguidLength)
+		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headSvcLvol.UUID, nguid, podIP, strconv.Itoa(int(r.PortStart))); err != nil {
 			return nil, err
 		}
 		r.IsExposeRequired = true
@@ -1055,7 +1057,8 @@ func (r *Replica) SnapshotRevert(spdkClient *spdkclient.Client, snapshotName str
 		if err := spdkClient.StopExposeBdev(helpertypes.GetNQN(r.Name)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 			return nil, err
 		}
-		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headLvolUUID, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
+		nguid := commonUtils.RandomID(nvmeNguidLength)
+		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headLvolUUID, nguid, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
 			return nil, err
 		}
 	}
@@ -1304,7 +1307,8 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, exposeRequir
 	r.rebuildingLvol = r.ActiveChain[r.ChainLength-1]
 	if exposeRequired {
 		if !r.IsExposed {
-			if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.rebuildingLvol.Name), r.rebuildingLvol.UUID, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
+			nguid := commonUtils.RandomID(nvmeNguidLength)
+			if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.rebuildingLvol.Name), r.rebuildingLvol.UUID, nguid, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
 				return "", err
 			}
 			r.IsExposeRequired = true
@@ -1541,7 +1545,8 @@ func (r *Replica) RebuildingDstSnapshotRevert(spdkClient *spdkclient.Client, sna
 	}
 
 	if r.IsExposed {
-		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.rebuildingLvol.Name), r.rebuildingLvol.UUID, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
+		nguid := commonUtils.RandomID(nvmeNguidLength)
+		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.rebuildingLvol.Name), r.rebuildingLvol.UUID, nguid, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
 			return err
 		}
 	}

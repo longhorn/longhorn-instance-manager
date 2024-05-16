@@ -798,10 +798,15 @@ func (c *Client) NvmfGetSubsystems(nqn, tgtName string) (subsystemList []spdktyp
 //	"nqn": Required. Subsystem NQN.
 //
 //	"bdevName": Required. Name of bdev to expose as a namespace.
-func (c *Client) NvmfSubsystemAddNs(nqn, bdevName string) (nsid uint32, err error) {
+//
+//	"nguid": Optional. Namespace globally unique identifier.
+func (c *Client) NvmfSubsystemAddNs(nqn, bdevName, nguid string) (nsid uint32, err error) {
 	req := spdktypes.NvmfSubsystemAddNsRequest{
-		Nqn:       nqn,
-		Namespace: spdktypes.NvmfSubsystemNamespace{BdevName: bdevName},
+		Nqn: nqn,
+		Namespace: spdktypes.NvmfSubsystemNamespace{
+			BdevName: bdevName,
+			Nguid:    nguid,
+		},
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("nvmf_subsystem_add_ns", req)

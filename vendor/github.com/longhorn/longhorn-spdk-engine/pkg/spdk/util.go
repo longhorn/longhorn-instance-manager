@@ -10,6 +10,7 @@ import (
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 
 	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonUtils "github.com/longhorn/go-common-libs/utils"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
@@ -25,8 +26,8 @@ func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip
 	}
 
 	portStr := strconv.Itoa(int(port))
-
-	err = spdkClient.StartExposeBdev(helpertypes.GetNQN(lvolName), bdevLvolList[0].UUID, ip, portStr)
+	nguid := commonUtils.RandomID(nvmeNguidLength)
+	err = spdkClient.StartExposeBdev(helpertypes.GetNQN(lvolName), bdevLvolList[0].UUID, nguid, ip, portStr)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to expose snapshot lvol bdev %v", lvolName)
 	}
