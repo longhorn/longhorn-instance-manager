@@ -23,6 +23,8 @@ const (
 	RebuildingSnapshotNamePrefix = "rebuild"
 
 	SyncTimeout = 60 * time.Minute
+
+	nvmeNguidLength = 32
 )
 
 func GetReplicaSnapshotLvolNamePrefix(replicaName string) string {

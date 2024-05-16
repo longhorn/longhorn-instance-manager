@@ -1,8 +1,9 @@
 package client
 
 import (
-	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"path/filepath"
+
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
@@ -50,7 +51,7 @@ func (c *Client) DeleteDevice(bdevAioName, lvsName string) (err error) {
 	return nil
 }
 
-func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
+func (c *Client) StartExposeBdev(nqn, bdevName, nguid, ip, port string) error {
 	nvmfTransportList, err := c.NvmfGetTransports("", "")
 	if err != nil {
 		return err
@@ -65,7 +66,7 @@ func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
 		return err
 	}
 
-	if _, err := c.NvmfSubsystemAddNs(nqn, bdevName); err != nil {
+	if _, err := c.NvmfSubsystemAddNs(nqn, bdevName, nguid); err != nil {
 		return err
 	}
 

@@ -706,10 +706,9 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine])
 	e := s.engineMap[req.Name]
 	spdkClient := s.spdkClient
-	replicaLvsNameMap := s.getLocalReplicaLvsNameMap(req.ReplicaAddressMap)
 	s.Unlock()
 
-	return e.Create(spdkClient, req.ReplicaAddressMap, replicaLvsNameMap, req.PortCount, s.portAllocator)
+	return e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator)
 }
 
 func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replicaLvsNameMap map[string]string) {
