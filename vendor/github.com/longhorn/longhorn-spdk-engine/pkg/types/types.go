@@ -65,3 +65,10 @@ func GRPCReplicaModeToReplicaMode(replicaMode spdkrpc.ReplicaMode) Mode {
 func IsFrontendSupported(frontend string) bool {
 	return frontend == FrontendEmpty || frontend == FrontendSPDKTCPNvmf || frontend == FrontendSPDKTCPBlockdev
 }
+
+const (
+	ProgressStateError      = "error"
+	ProgressStateComplete   = "complete"
+	ProgressStateInProgress = "in_progress"
+	ProgressStateStarting   = "starting"
+)
