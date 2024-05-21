@@ -9,6 +9,7 @@ import (
 
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
@@ -30,12 +31,66 @@ const (
 	retryInterval = 1 * time.Second
 )
 
-type ShallowCopyState string
+type Lvol struct {
+	Name       string
+	UUID       string
+	Alias      string
+	SpecSize   uint64
+	ActualSize uint64
+	// Parent is the snapshot lvol name. <snapshot lvol name> consists of `<replica name>-snap-<snapshot name>`
+	Parent string
+	// Children is map[<snapshot lvol name>] rather than map[<snapshot name>]. <snapshot lvol name> consists of `<replica name>-snap-<snapshot name>`
+	Children          map[string]*Lvol
+	CreationTime      string
+	UserCreated       bool
+	SnapshotTimestamp string
+}
 
-const (
-	ShallowCopyStateError    = ShallowCopyState("error")
-	ShallowCopyStateComplete = ShallowCopyState("complete")
-)
+func ServiceLvolToProtoLvol(replicaName string, lvol *Lvol) *spdkrpc.Lvol {
+	res := &spdkrpc.Lvol{
+		Uuid:              lvol.UUID,
+		SpecSize:          lvol.SpecSize,
+		ActualSize:        lvol.ActualSize,
+		Parent:            GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, lvol.Parent),
+		Children:          map[string]bool{},
+		CreationTime:      lvol.CreationTime,
+		UserCreated:       lvol.UserCreated,
+		SnapshotTimestamp: lvol.SnapshotTimestamp,
+	}
+
+	if lvol.Name == replicaName {
+		res.Name = types.VolumeHead
+	} else {
+		res.Name = GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, lvol.Name)
+	}
+
+	for childLvolName := range lvol.Children {
+		// spdkrpc.Lvol.Children is map[<snapshot name>] rather than map[<snapshot lvol name>]
+		if childLvolName == replicaName {
+			res.Children[types.VolumeHead] = true
+		} else {
+			res.Children[GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, childLvolName)] = true
+		}
+	}
+
+	return res
+}
+
+func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
+	return &Lvol{
+		Name:       spdktypes.GetLvolNameFromAlias(bdev.Aliases[0]),
+		Alias:      bdev.Aliases[0],
+		UUID:       bdev.UUID,
+		SpecSize:   bdev.NumBlocks * uint64(bdev.BlockSize),
+		ActualSize: bdev.DriverSpecific.Lvol.NumAllocatedClusters * defaultClusterSize,
+		Parent:     bdev.DriverSpecific.Lvol.BaseSnapshot,
+		// Need to update this separately
+		Children:          map[string]*Lvol{},
+		CreationTime:      bdev.CreationTime,
+		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == strconv.FormatBool(true),
+		SnapshotTimestamp: bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotTimestamp],
+	}
+}
 
 func GetReplicaSnapshotLvolNamePrefix(replicaName string) string {
 	return fmt.Sprintf("%s-snap-", replicaName)
@@ -47,6 +102,10 @@ func GetReplicaSnapshotLvolName(replicaName, snapshotName string) string {
 
 func GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, snapLvolName string) string {
 	return strings.TrimPrefix(snapLvolName, GetReplicaSnapshotLvolNamePrefix(replicaName))
+}
+
+func IsReplicaLvol(replicaName, lvolName string) bool {
+	return strings.HasPrefix(lvolName, fmt.Sprintf("%s-", replicaName)) || lvolName == replicaName
 }
 
 func IsReplicaSnapshotLvol(replicaName, lvolName string) bool {
