@@ -9,8 +9,8 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20240720044518-32fc527fe868
 	github.com/longhorn/go-spdk-helper v0.0.0-20240722084521-fe00dc625215
 	github.com/longhorn/longhorn-engine v1.7.0-rc1
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240722125042-871405fcca16
-	github.com/longhorn/types v0.0.0-20240706151541-33cb010c3544
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240724043723-daf8fce81448
+	github.com/longhorn/types v0.0.0-20240723142222-56701c990023
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.15

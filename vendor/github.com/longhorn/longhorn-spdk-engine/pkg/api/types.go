@@ -182,6 +182,34 @@ type DiskInfo struct {
 	ClusterSize int64
 }
 
+type ReplicaRebuildingStatus struct {
+	DstReplicaName    string `json:"dst_replica_name"`
+	DstReplicaAddress string `json:"dst_replica_address"`
+	SrcReplicaName    string `json:"src_replica_name"`
+	SrcReplicaAddress string `json:"src_replica_address"`
+	SnapshotName      string `json:"snapshot_name"`
+	State             string `json:"state"`
+	Progress          uint32 `json:"progress"`
+	TotalState        string `json:"total_state"`
+	TotalProgress     uint32 `json:"total_progress"`
+	Error             string `json:"error"`
+}
+
+func ProtoShallowCopyStatusToReplicaRebuildingStatus(replicaName, replicaAddress string, status *spdkrpc.ReplicaRebuildingDstShallowCopyCheckResponse) *ReplicaRebuildingStatus {
+	return &ReplicaRebuildingStatus{
+		DstReplicaName:    replicaName,
+		DstReplicaAddress: replicaAddress,
+		SrcReplicaName:    status.SrcReplicaName,
+		SrcReplicaAddress: status.SrcReplicaAddress,
+		SnapshotName:      status.SnapshotName,
+		State:             status.State,
+		Progress:          status.Progress,
+		TotalState:        status.TotalState,
+		TotalProgress:     status.TotalProgress,
+		Error:             status.Error,
+	}
+}
+
 type ReplicaStream struct {
 	stream spdkrpc.SPDKService_ReplicaWatchClient
 }

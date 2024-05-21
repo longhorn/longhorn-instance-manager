@@ -1,6 +1,7 @@
 package spdk
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -9,7 +10,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
+	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
 	commonNs "github.com/longhorn/go-common-libs/ns"
 	commonUtils "github.com/longhorn/go-common-libs/utils"
@@ -70,4 +73,62 @@ func splitHostPort(address string) (string, int32, error) {
 	}
 
 	return address, 0, nil
+}
+
+// connectNVMfBdev connects to the NVMe-oF target, which is exposed by a remote lvol bdev.
+// controllerName is typically the lvol name, and address is the IP:port of the NVMe-oF target.
+func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address string) (bdevName string, err error) {
+	if controllerName == "" || address == "" {
+		return "", fmt.Errorf("controllerName or address is empty")
+	}
+
+	ip, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return "", err
+	}
+
+	nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(controllerName, helpertypes.GetNQN(controllerName),
+		ip, port, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
+		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec,
+		helpertypes.DefaultMultipath)
+	if err != nil {
+		return "", err
+	}
+
+	if len(nvmeBdevNameList) != 1 {
+		return "", fmt.Errorf("got zero or multiple results when attaching lvol %s with address %s as a NVMe bdev: %+v", controllerName, address, nvmeBdevNameList)
+	}
+
+	return nvmeBdevNameList[0], nil
+}
+
+func disconnectNVMfBdev(spdkClient *spdkclient.Client, bdevName string) error {
+	if bdevName == "" {
+		return nil
+	}
+	if _, err := spdkClient.BdevNvmeDetachController(helperutil.GetNvmeControllerNameFromNamespaceName(bdevName)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		return err
+	}
+	return nil
+}
+
+// CleanupLvolTree retrieves the lvol tree with BFS. Then do cleanup bottom up
+func CleanupLvolTree(spdkClient *spdkclient.Client, rootLvolName string, bdevLvolMap map[string]*spdktypes.BdevInfo) (err error) {
+	var queue []*spdktypes.BdevInfo
+	if bdevLvolMap[rootLvolName] != nil {
+		queue = []*spdktypes.BdevInfo{bdevLvolMap[rootLvolName]}
+	}
+	for idx := 0; idx < len(queue); idx++ {
+		for _, childLvolName := range queue[idx].DriverSpecific.Lvol.Clones {
+			if bdevLvolMap[childLvolName] != nil {
+				queue = append(queue, bdevLvolMap[childLvolName])
+			}
+		}
+	}
+	for idx := len(queue) - 1; idx >= 0; idx-- {
+		if _, err := spdkClient.BdevLvolDelete(queue[idx].UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+			return err
+		}
+	}
+	return nil
 }
