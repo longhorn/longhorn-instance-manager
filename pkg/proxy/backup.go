@@ -77,6 +77,7 @@ func (ops V1DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.Eng
 		req.StorageClassName,
 		labels,
 		credential,
+		req.Parameters,
 	)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create backup").Error())
