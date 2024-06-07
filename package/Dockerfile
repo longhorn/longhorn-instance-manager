@@ -131,13 +131,16 @@ COPY --from=builder \
     /usr/sbin/
 
 COPY --from=builder \
-    /usr/local/lib64 \
-    /usr/local/lib64
+   /usr/local/lib64 \
+   /usr/local/lib64
 
 RUN ldconfig
 
 COPY package/bin/longhorn-instance-manager /usr/local/bin/
 COPY package/instance-manager /usr/local/bin/
+
+# Verify the dependencies for the binaries
+RUN ldd /usr/local/bin/* /usr/local/sbin/* /usr/sbin/* | grep "not found" && exit 1 || true
 
 VOLUME /usr/local/bin
 
