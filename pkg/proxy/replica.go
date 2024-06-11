@@ -52,7 +52,7 @@ func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 		}
 	} else {
 		if err := task.AddReplica(req.Size, req.CurrentSize, req.ReplicaAddress, req.ReplicaName,
-			int(req.FileSyncHttpClientTimeout), req.FastSync); err != nil {
+			int(req.FileSyncHttpClientTimeout), req.FastSync, req.GrpcTimeoutSeconds); err != nil {
 			return nil, err
 		}
 	}

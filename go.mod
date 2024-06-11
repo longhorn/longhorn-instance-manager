@@ -8,16 +8,16 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20240509144945-3bce6e69af15
 	github.com/longhorn/go-common-libs v0.0.0-20240605094403-68743dacbcb1
 	github.com/longhorn/go-spdk-helper v0.0.0-20240514082311-4069f4804017
-	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240612062520-b044fa75d9e5
+	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240617231459-0326a55ae2a6
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240516014845-759dfa872eae
-	github.com/longhorn/types v0.0.0-20240605091135-ef450e1c04cd
+	github.com/longhorn/types v0.0.0-20240612122407-553c71ad6514
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.15
 	golang.org/x/net v0.26.0
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.30.1
 )
