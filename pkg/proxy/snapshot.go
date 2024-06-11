@@ -193,7 +193,7 @@ func (ops V1DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.Engi
 	defer cTo.Close()
 
 	err = esync.CloneSnapshot(cTo, cFrom, req.ProxyEngineRequest.VolumeName, req.FromVolumeName, req.SnapshotName,
-		req.ExportBackingImageIfExist, int(req.FileSyncHttpClientTimeout))
+		req.ExportBackingImageIfExist, int(req.FileSyncHttpClientTimeout), req.GrpcTimeoutSeconds)
 	if err != nil {
 		return nil, err
 	}
