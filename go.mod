@@ -6,11 +6,11 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.3
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240509144945-3bce6e69af15
-	github.com/longhorn/go-common-libs v0.0.0-20240514074907-351459694cbf
+	github.com/longhorn/go-common-libs v0.0.0-20240605094403-68743dacbcb1
 	github.com/longhorn/go-spdk-helper v0.0.0-20240514082311-4069f4804017
-	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240514224711-e39b7f0313b2
+	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240612062520-b044fa75d9e5
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240516014845-759dfa872eae
-	github.com/longhorn/types v0.0.0-20240510221052-ab949bbedea3
+	github.com/longhorn/types v0.0.0-20240605091135-ef450e1c04cd
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.15
