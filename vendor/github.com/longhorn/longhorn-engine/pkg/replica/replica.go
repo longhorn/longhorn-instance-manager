@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,7 @@ var (
 
 type Replica struct {
 	sync.RWMutex
+	ctx             context.Context
 	volume          diffDisk
 	dir             string
 	info            Info
@@ -53,11 +55,11 @@ type Replica struct {
 	activeDiskData []*disk
 	readOnly       bool
 
-	revisionLock            sync.Mutex
-	revisionCache           int64
+	revisionCache           atomic.Int64
 	revisionFile            *sparse.DirectFileIoProcessor
-	revisionRefreshed       bool
 	revisionCounterDisabled bool
+	revisionCounterReqChan  chan bool
+	revisionCounterAckChan  chan error
 
 	unmapMarkDiskChainRemoved bool
 
@@ -129,7 +131,7 @@ func OpenSnapshot(dir string, snapshotName string) (*Replica, error) {
 		}
 	}
 
-	r, err := NewReadOnly(dir, snapshotDiskName, backingFile)
+	r, err := NewReadOnly(context.Background(), dir, snapshotDiskName, backingFile)
 	if err != nil {
 		return nil, err
 	}
@@ -142,17 +144,17 @@ func ReadInfo(dir string) (Info, error) {
 	return info, err
 }
 
-func New(size, sectorSize int64, dir string, backingFile *backingfile.BackingFile, disableRevCounter, unmapMarkDiskChainRemoved bool, snapshotMaxCount int, SnapshotMaxSize int64) (*Replica, error) {
-	return construct(false, size, sectorSize, dir, "", backingFile, disableRevCounter, unmapMarkDiskChainRemoved, snapshotMaxCount, SnapshotMaxSize)
+func New(ctx context.Context, size, sectorSize int64, dir string, backingFile *backingfile.BackingFile, disableRevCounter, unmapMarkDiskChainRemoved bool, snapshotMaxCount int, SnapshotMaxSize int64) (*Replica, error) {
+	return construct(ctx, false, size, sectorSize, dir, "", backingFile, disableRevCounter, unmapMarkDiskChainRemoved, snapshotMaxCount, SnapshotMaxSize)
 }
 
-func NewReadOnly(dir, head string, backingFile *backingfile.BackingFile) (*Replica, error) {
+func NewReadOnly(ctx context.Context, dir, head string, backingFile *backingfile.BackingFile) (*Replica, error) {
 	// size and sectorSize don't matter because they will be read from metadata
 	// snapshotMaxCount and SnapshotMaxSize don't matter because readonly replica can't create a new disk
-	return construct(true, 0, diskutil.ReplicaSectorSize, dir, head, backingFile, false, false, 250, 0)
+	return construct(ctx, true, 0, diskutil.ReplicaSectorSize, dir, head, backingFile, false, false, 250, 0)
 }
 
-func construct(readonly bool, size, sectorSize int64, dir, head string, backingFile *backingfile.BackingFile, disableRevCounter, unmapMarkDiskChainRemoved bool, snapshotMaxCount int, snapshotMaxSize int64) (*Replica, error) {
+func construct(ctx context.Context, readonly bool, size, sectorSize int64, dir, head string, backingFile *backingfile.BackingFile, disableRevCounter, unmapMarkDiskChainRemoved bool, snapshotMaxCount int, snapshotMaxSize int64) (*Replica, error) {
 	if size%sectorSize != 0 {
 		return nil, fmt.Errorf("size %d not a multiple of sector size %d", size, sectorSize)
 	}
@@ -162,12 +164,15 @@ func construct(readonly bool, size, sectorSize int64, dir, head string, backingF
 	}
 
 	r := &Replica{
+		ctx:                       ctx,
 		dir:                       dir,
 		activeDiskData:            make([]*disk, 1),
 		diskData:                  make(map[string]*disk),
 		diskChildrenMap:           map[string]map[string]bool{},
 		readOnly:                  readonly,
 		revisionCounterDisabled:   disableRevCounter,
+		revisionCounterReqChan:    make(chan bool, 1024), // Buffered channel to avoid blocking
+		revisionCounterAckChan:    make(chan error),
 		unmapMarkDiskChainRemoved: unmapMarkDiskChainRemoved,
 		snapshotMaxCount:          snapshotMaxCount,
 		snapshotMaxSize:           snapshotMaxSize,
@@ -195,7 +200,7 @@ func construct(readonly bool, size, sectorSize int64, dir, head string, backingF
 	}
 
 	if !r.revisionCounterDisabled {
-		if err := r.initRevisionCounter(); err != nil {
+		if err := r.initRevisionCounter(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -289,7 +294,7 @@ func (r *Replica) SetRebuilding(rebuilding bool) error {
 }
 
 func (r *Replica) Reload() (*Replica, error) {
-	newReplica, err := New(r.info.Size, r.info.SectorSize, r.dir, r.info.BackingFile, r.revisionCounterDisabled, r.unmapMarkDiskChainRemoved, r.snapshotMaxCount, r.snapshotMaxSize)
+	newReplica, err := New(r.ctx, r.info.Size, r.info.SectorSize, r.dir, r.info.BackingFile, r.revisionCounterDisabled, r.unmapMarkDiskChainRemoved, r.snapshotMaxCount, r.snapshotMaxSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1275,6 +1280,15 @@ func (r *Replica) WriteAt(buf []byte, offset int64) (int, error) {
 		return 0, fmt.Errorf("cannot write on read-only replica")
 	}
 
+	// Increase the revision counter optimistically in a separate goroutine since most of the time write operations will succeed.
+	// Once the write operation fails, the revision counter will be wrongly increased by 1. It means that the revision counter is not accurate.
+	// Actually, the revision counter is not accurate even without this optimistic increment since we cannot make data write operation and the revision counter increment atomic.
+	go func() {
+		if !r.revisionCounterDisabled {
+			r.revisionCounterReqChan <- true
+		}
+	}()
+
 	r.RLock()
 	r.info.Dirty = true
 	c, err := r.volume.WriteAt(buf, offset)
@@ -1284,12 +1298,10 @@ func (r *Replica) WriteAt(buf []byte, offset int64) (int, error) {
 	}
 
 	if !r.revisionCounterDisabled {
-		if err := r.increaseRevisionCounter(); err != nil {
-			return c, err
-		}
+		err = <-r.revisionCounterAckChan
 	}
 
-	return c, nil
+	return c, err
 }
 
 func (r *Replica) ReadAt(buf []byte, offset int64) (int, error) {
@@ -1308,6 +1320,12 @@ func (r *Replica) UnmapAt(length uint32, offset int64) (n int, err error) {
 	if r.readOnly {
 		return 0, fmt.Errorf("can not unmap on read-only replica")
 	}
+
+	go func() {
+		if !r.revisionCounterDisabled {
+			r.revisionCounterReqChan <- true
+		}
+	}()
 
 	unmappedSize, err := func() (int, error) {
 		r.Lock()
@@ -1346,12 +1364,10 @@ func (r *Replica) UnmapAt(length uint32, offset int64) (n int, err error) {
 	}
 
 	if !r.revisionCounterDisabled {
-		if err := r.increaseRevisionCounter(); err != nil {
-			return 0, err
-		}
+		err = <-r.revisionCounterAckChan
 	}
 
-	return unmappedSize, nil
+	return unmappedSize, err
 }
 
 func (r *Replica) ListDisks() map[string]DiskInfo {
