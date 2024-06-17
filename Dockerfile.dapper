@@ -1,19 +1,20 @@
-FROM registry.suse.com/bci/bci-base:15.5
+FROM registry.suse.com/bci/golang:1.22
 
 ARG DAPPER_HOST_ARCH
 ARG http_proxy
 ARG https_proxy
-ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 
-# Setup environment
-ENV PATH /go/bin:$PATH
+ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO
 ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.venv:exec --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.tox:exec -v /dev:/host/dev -v /proc:/host/proc
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
+
 WORKDIR ${DAPPER_SOURCE}
 
+ENTRYPOINT ["./scripts/entry"]
+CMD ["ci"]
 
 RUN zypper refresh && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
@@ -31,6 +32,7 @@ RUN zypper -n install cmake wget curl git less file \
         perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
         rm -rf /var/cache/zypp/*
 
+<<<<<<< HEAD
 # needed for ${!var} substitution
 RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
 
@@ -59,18 +61,16 @@ RUN cd /usr/src && \
     git checkout 3a8bc4823b5390e046f7aa8231ed262c0365c42c && \
     make; \
     make install
+=======
+# Install golanci-lint
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /go/bin v1.55.2
+>>>>>>> 87e6c6f (ci: use golang bci instead of manual download)
 
 # Install libqcow to resolve error:
 #   vendor/github.com/longhorn/longhorn-engine/pkg/qcow/libqcow.go:6:11: fatal error: libqcow.h: No such file or directory
-RUN wget -O - https://s3-us-west-1.amazonaws.com/rancher-longhorn/libqcow-alpha-20181117.tar.gz | tar xvzf - -C /usr/src
-RUN cd /usr/src/libqcow-20181117 && \
-    ./configure
-RUN cd /usr/src/libqcow-20181117 && \
+RUN curl -sSfL https://s3-us-west-1.amazonaws.com/rancher-longhorn/libqcow-alpha-20181117.tar.gz | tar xvzf - -C /usr/src && \
+    cd /usr/src/libqcow-20181117 && \
+    ./configure && \
     make -j$(nproc) && \
-    make install
-RUN ldconfig
-
-VOLUME /tmp
-ENV TMPDIR /tmp
-ENTRYPOINT ["./scripts/entry"]
-CMD ["ci"]
+    make install && \
+    ldconfig
