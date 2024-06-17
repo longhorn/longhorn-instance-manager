@@ -77,8 +77,8 @@ github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHT
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20240427164751-a7b9f1b2c8a8 h1:lwtmZEomiv8uchwo9JIyoo+lK8J3cLCm7/qzpn6wmzo=
 github.com/longhorn/sparse-tools v0.0.0-20240427164751-a7b9f1b2c8a8/go.mod h1:pvlUkVwRGojXhcTkkzksOe4i7GVk59P2PbJjHIB2Yj0=
-github.com/longhorn/types v0.0.0-20240617161402-fd4694118e17 h1:rLggtKKnLYhEM8LVIWMb/ZRjbov8sOd824m1N0T3gM8=
-github.com/longhorn/types v0.0.0-20240617161402-fd4694118e17/go.mod h1:fonrC6SwGpvt+YVlfJ3xMmg0MlOH94T1Qx2+ZEy8n3U=
+github.com/longhorn/types v0.0.0-20240618065801-0e5b8e339fda h1:LOaTUkIZLB19ZEG6GAEqZzl5+S3PnRqK5GwM1NdKz3k=
+github.com/longhorn/types v0.0.0-20240618065801-0e5b8e339fda/go.mod h1:fonrC6SwGpvt+YVlfJ3xMmg0MlOH94T1Qx2+ZEy8n3U=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 h1:jWpvCLoY8Z/e3VKvlsiIGKtc+UG6U5vzxaoagmhXfyg=
 github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0/go.mod h1:QUyp042oQthUoa9bqDv0ER0wrtXnBruoNd7aNjkbP+k=

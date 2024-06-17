@@ -13,6 +13,7 @@ import (
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
+	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
@@ -65,7 +66,11 @@ func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 		snapshotName = util.UUID()
 	}
 
-	_, err = c.EngineSnapshotCreate(req.ProxyEngineRequest.EngineName, snapshotName, nil)
+	snapshotOpts := api.SnapshotOptions{
+		UserCreated: req.SnapshotVolume.UserCreated,
+	}
+
+	_, err = c.EngineSnapshotCreate(req.ProxyEngineRequest.EngineName, snapshotName, &snapshotOpts)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to create snapshot %v", snapshotName).Error())
 	}

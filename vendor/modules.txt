@@ -203,7 +203,7 @@ github.com/longhorn/nsfilelock
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20240617161402-fd4694118e17
+# github.com/longhorn/types v0.0.0-20240618065801-0e5b8e339fda
 ## explicit; go 1.21
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc
