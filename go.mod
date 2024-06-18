@@ -3,14 +3,14 @@ module github.com/longhorn/longhorn-instance-manager
 go 1.22.2
 
 require (
-	github.com/RoaringBitmap/roaring v1.9.3
+	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240509144945-3bce6e69af15
-	github.com/longhorn/go-common-libs v0.0.0-20240605094403-68743dacbcb1
-	github.com/longhorn/go-spdk-helper v0.0.0-20240514082311-4069f4804017
+	github.com/longhorn/backupstore v0.0.0-20240616091913-84428641a11d
+	github.com/longhorn/go-common-libs v0.0.0-20240616051056-103c7d62a0d5
+	github.com/longhorn/go-spdk-helper v0.0.0-20240616091844-5afd86a1d892
 	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240617231459-0326a55ae2a6
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240516014845-759dfa872eae
-	github.com/longhorn/types v0.0.0-20240612122407-553c71ad6514
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240616100437-deee5f023642
+	github.com/longhorn/types v0.0.0-20240617161402-fd4694118e17
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.15
@@ -19,7 +19,7 @@ require (
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.30.1
+	k8s.io/mount-utils v0.30.2
 )
 
 require (
@@ -50,7 +50,7 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.17 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
@@ -59,14 +59,14 @@ require (
 	github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/slok/goresilience v0.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240429193739-8cf5692501f6 // indirect
-	k8s.io/apimachinery v0.30.0 // indirect
+	k8s.io/apimachinery v0.30.2 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
