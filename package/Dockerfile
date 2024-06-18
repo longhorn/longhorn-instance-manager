@@ -145,8 +145,6 @@ COPY package/instance-manager /usr/local/bin/
 # Verify the dependencies for the binaries
 RUN ldd /usr/local/bin/* /usr/local/sbin/* /usr/sbin/* | grep "not found" && exit 1 || true
 
-VOLUME /usr/local/bin
-
 # Add Tini
 ENV TINI_VERSION v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-${ARCH} /tini
