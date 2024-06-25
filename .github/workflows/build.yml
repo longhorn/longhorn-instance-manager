@@ -101,6 +101,7 @@ jobs:
         platforms: linux/amd64
         tags: longhornio/longhorn-instance-manager:${{ env.branch }}-head-amd64
         file: package/Dockerfile
+        sbom: true
         build-args: |
           ARCH=amd64
     - name: docker-publish-longhorn-instance-manager-with-tag
@@ -112,6 +113,7 @@ jobs:
         platforms: linux/amd64
         tags: longhornio/longhorn-instance-manager:${{ github.ref_name }}-amd64
         file: package/Dockerfile
+        sbom: true
         build-args: |
           ARCH=amd64
 
@@ -162,6 +164,7 @@ jobs:
         platforms: linux/arm64
         tags: longhornio/longhorn-instance-manager:${{ env.branch }}-head-arm64
         file: package/Dockerfile
+        sbom: true
         build-args: |
           ARCH=arm64
     - name: docker-publish-longhorn-instance-manager-with-tag
@@ -173,6 +176,7 @@ jobs:
         platforms: linux/arm64
         tags: longhornio/longhorn-instance-manager:${{ github.ref_name }}-arm64
         file: package/Dockerfile
+        sbom: true
         build-args: |
           ARCH=arm64
 
