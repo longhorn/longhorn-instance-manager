@@ -79,9 +79,9 @@ RUN cd /usr/src && \
     make && \
     make install
 
-# Build nvme-cli 2.7.1
+# Build nvme-cli 2.9.1
 ENV NVME_CLI_DIR /usr/src/nvme-cli
-ENV NVME_CLI_COMMIT_ID dcdad6f5d70ffb2fa151f229db048180671eb1fe
+ENV NVME_CLI_COMMIT_ID b340fd7dcf1aef76f8d46ab28bef3c170d310887
 RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
     cd ${NVME_CLI_DIR} && \
     git checkout ${NVME_CLI_COMMIT_ID} && \
