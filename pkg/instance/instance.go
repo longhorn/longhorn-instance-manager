@@ -35,6 +35,10 @@ type InstanceOps interface {
 	InstanceList(map[string]*rpc.InstanceResponse) error
 	InstanceReplace(*rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error)
 	InstanceLog(*rpc.InstanceLogRequest, rpc.InstanceService_InstanceLogServer) error
+	InstanceSuspend(*rpc.InstanceSuspendRequest) (*emptypb.Empty, error)
+	InstanceResume(*rpc.InstanceResumeRequest) (*emptypb.Empty, error)
+	InstanceSwitchOverTarget(*rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error)
+	InstanceDeleteTarget(*rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error)
 
 	LogSetLevel(context.Context, *rpc.LogSetLevelRequest) (*emptypb.Empty, error)
 	LogSetFlags(context.Context, *rpc.LogSetFlagsRequest) (*emptypb.Empty, error)
@@ -107,9 +111,10 @@ func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.Versi
 
 func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
-		"name":       req.Spec.Name,
-		"type":       req.Spec.Type,
-		"dataEngine": req.Spec.DataEngine,
+		"name":            req.Spec.Name,
+		"type":            req.Spec.Type,
+		"dataEngine":      req.Spec.DataEngine,
+		"upgradeRequired": req.Spec.UpgradeRequired,
 	}).Info("Creating instance")
 
 	ops, ok := s.ops[req.Spec.DataEngine]
@@ -148,7 +153,8 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
-		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount)
+		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap,
+			req.Spec.PortCount, req.Spec.InitiatorAddress, req.Spec.TargetAddress, req.Spec.UpgradeRequired)
 		if err != nil {
 			return nil, err
 		}
@@ -511,7 +517,11 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 			// Close the clients for closing streams and unblocking notifier Recv() with error.
 			done <- struct{}{}
 		}()
-		return s.handleNotify(ctx, notifyChan, srv)
+		err := s.handleNotify(ctx, notifyChan, srv)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to handle notify")
+		}
+		return err
 	})
 
 	g.Go(func() error {
@@ -648,6 +658,14 @@ func (s *Server) watchProcess(ctx context.Context, req *emptypb.Empty, client *c
 }
 
 func processResponseToInstanceResponse(p *rpc.ProcessResponse, processType string) *rpc.InstanceResponse {
+	// v1 data engine doesn't support the separation of initiator and target, so
+	// initiator and target are always on the same node.
+	targetPortStart := int32(0)
+	targetPortEnd := int32(0)
+	if processType == types.InstanceTypeEngine {
+		targetPortStart = p.Status.PortStart
+		targetPortEnd = p.Status.PortEnd
+	}
 	return &rpc.InstanceResponse{
 		Spec: &rpc.InstanceSpec{
 			Name: p.Spec.Name,
@@ -663,11 +681,13 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse, processType strin
 			PortArgs:  p.Spec.PortArgs,
 		},
 		Status: &rpc.InstanceStatus{
-			State:      p.Status.State,
-			PortStart:  p.Status.PortStart,
-			PortEnd:    p.Status.PortEnd,
-			ErrorMsg:   p.Status.ErrorMsg,
-			Conditions: p.Status.Conditions,
+			State:           p.Status.State,
+			PortStart:       p.Status.PortStart,
+			PortEnd:         p.Status.PortEnd,
+			TargetPortStart: targetPortStart,
+			TargetPortEnd:   targetPortEnd,
+			ErrorMsg:        p.Status.ErrorMsg,
+			Conditions:      p.Status.Conditions,
 		},
 		Deleted: p.Deleted,
 	}
@@ -702,11 +722,170 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
-			State:      e.State,
-			ErrorMsg:   e.ErrorMsg,
-			PortStart:  e.Port,
-			PortEnd:    e.Port,
-			Conditions: make(map[string]bool),
+			State:           e.State,
+			ErrorMsg:        e.ErrorMsg,
+			PortStart:       e.Port,
+			PortEnd:         e.Port,
+			TargetPortStart: e.TargetPort,
+			TargetPortEnd:   e.TargetPort,
+			Conditions:      make(map[string]bool),
 		},
+	}
+}
+
+func (s *Server) InstanceSuspend(ctx context.Context, req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
+	logrus.WithFields(logrus.Fields{
+		"name":       req.Name,
+		"type":       req.Type,
+		"dataEngine": req.DataEngine,
+	}).Info("Suspending instance")
+
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return ops.InstanceSuspend(req)
+}
+
+func (ops V1DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v1 data engine instance suspend is not supported")
+}
+
+func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+	}
+	defer c.Close()
+
+	switch req.Type {
+	case types.InstanceTypeEngine:
+		err := c.EngineSuspend(req.Name)
+		if err != nil {
+			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to suspend engine %v", req.Name).Error())
+		}
+		return &emptypb.Empty{}, nil
+	case types.InstanceTypeReplica:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "suspend is not supported for instance type %v", req.Type)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
+	}
+}
+
+func (s *Server) InstanceResume(ctx context.Context, req *rpc.InstanceResumeRequest) (*emptypb.Empty, error) {
+	logrus.WithFields(logrus.Fields{
+		"name":       req.Name,
+		"type":       req.Type,
+		"dataEngine": req.DataEngine,
+	}).Info("Resuming instance")
+
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return ops.InstanceResume(req)
+}
+
+func (ops V1DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v1 data engine instance resume is not supported")
+}
+
+func (ops V2DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest) (*emptypb.Empty, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+	}
+	defer c.Close()
+
+	switch req.Type {
+	case types.InstanceTypeEngine:
+		err := c.EngineResume(req.Name)
+		if err != nil {
+			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to resume engine %v", req.Name).Error())
+		}
+		return &emptypb.Empty{}, nil
+	case types.InstanceTypeReplica:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "resume is not supported for instance type %v", req.Type)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
+	}
+}
+
+func (s *Server) InstanceSwitchOverTarget(ctx context.Context, req *rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error) {
+	logrus.WithFields(logrus.Fields{
+		"name":          req.Name,
+		"type":          req.Type,
+		"dataEngine":    req.DataEngine,
+		"targetAddress": req.TargetAddress,
+	}).Info("Switching over target instance")
+
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return ops.InstanceSwitchOverTarget(req)
+}
+
+func (ops V1DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v1 data engine instance target switch over is not supported")
+}
+
+func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+	}
+	defer c.Close()
+
+	switch req.Type {
+	case types.InstanceTypeEngine:
+		err := c.EngineSwitchOverTarget(req.Name, req.TargetAddress)
+		if err != nil {
+			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to switch over target for engine %v", req.Name).Error())
+		}
+		return &emptypb.Empty{}, nil
+	case types.InstanceTypeReplica:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "target switch over is not supported for instance type %v", req.Type)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
+	}
+}
+
+func (s *Server) InstanceDeleteTarget(ctx context.Context, req *rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error) {
+	logrus.WithFields(logrus.Fields{
+		"name":       req.Name,
+		"type":       req.Type,
+		"dataEngine": req.DataEngine,
+	}).Info("Deleting target")
+
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return ops.InstanceDeleteTarget(req)
+}
+
+func (ops V1DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v1 data engine instance target delete is not supported")
+}
+
+func (ops V2DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error) {
+	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+	}
+	defer c.Close()
+
+	switch req.Type {
+	case types.InstanceTypeEngine:
+		err := c.EngineDeleteTarget(req.Name)
+		if err != nil {
+			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to delete target for engine %v", req.Name).Error())
+		}
+		return &emptypb.Empty{}, nil
+	case types.InstanceTypeReplica:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "target deletion is not supported for instance type %v", req.Type)
+	default:
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
 }

@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -26,10 +25,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	"k8s.io/mount-utils"
 
-	commonTypes "github.com/longhorn/go-common-libs/types"
-	helpernvme "github.com/longhorn/go-spdk-helper/pkg/nvme"
-	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
-	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 	engineutil "github.com/longhorn/longhorn-engine/pkg/util"
 	spdk "github.com/longhorn/longhorn-spdk-engine/pkg/spdk"
 	spdkutil "github.com/longhorn/longhorn-spdk-engine/pkg/util"
@@ -115,52 +110,6 @@ func cleanup(pm *process.Manager) {
 	logrus.Errorf("Failed to clean up all processes for %s graceful shutdown", types.ProcessManagerGrpcService)
 }
 
-func getVolumeNameFromNQN(input string) (string, error) {
-	// compile a regular expression that matches ${name} between : and -e-
-	re, err := regexp.Compile(`:(.*)-e-`)
-	if err != nil {
-		return "", err
-	}
-	// find the first submatch of the input string
-	submatch := re.FindStringSubmatch(input)
-	if len(submatch) < 2 {
-		return "", fmt.Errorf("no name found in input")
-	}
-	// return the second element of the submatch, which is ${name}
-	return submatch[1], nil
-}
-
-func cleanupStaledNvmeAndDmDevices() error {
-	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create executor for cleaning up staled NVMe and dm devices")
-	}
-
-	subsystems, err := helpernvme.GetSubsystems(executor)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get NVMe subsystems")
-	}
-	for _, sys := range subsystems {
-		logrus.Infof("Found NVMe subsystem %+v", sys)
-		if strings.HasPrefix(sys.NQN, helpertypes.NQNPrefix) {
-			dmDeviceName, err := getVolumeNameFromNQN(sys.NQN)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get volume name from NQN %v", sys.NQN)
-			}
-			logrus.Infof("Removing dm device %v", dmDeviceName)
-			if err := helperutil.DmsetupRemove(dmDeviceName, false, false, executor); err != nil {
-				logrus.WithError(err).Warnf("Failed to remove dm device %v, will continue the cleanup", dmDeviceName)
-			}
-
-			logrus.Infof("Cleaning up NVMe subsystem %v: NQN %v", sys.Name, sys.NQN)
-			if err := helpernvme.DisconnectTarget(sys.NQN, executor); err != nil {
-				logrus.WithError(err).Warnf("Failed to disconnect NVMe subsystem %v: NQN %v, will continue the cleanup", sys.Name, sys.NQN)
-			}
-		}
-	}
-	return nil
-}
-
 func unfreezeFilesystems() error {
 	// We do not need to switch to the host mount namespace to get mount points here. Usually, longhorn-engine runs in a
 	// container that has / bind mounted to /host with at least HostToContainer (rslave) propagation.
@@ -209,11 +158,7 @@ func start(c *cli.Context) (err error) {
 		return err
 	}
 
-	if spdkEnabled {
-		if err := cleanupStaledNvmeAndDmDevices(); err != nil {
-			return err
-		}
-	} else {
+	if !spdkEnabled {
 		if err := unfreezeFilesystems(); err != nil {
 			return err
 		}
