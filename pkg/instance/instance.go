@@ -13,7 +13,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	lhutils "github.com/longhorn/go-common-libs/utils"
+	lhLonghorn "github.com/longhorn/go-common-libs/longhorn"
 	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
@@ -320,7 +320,7 @@ func (ops V1DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 	}
 	for _, process := range processes {
 		processType := types.InstanceTypeReplica
-		if lhutils.IsEngineProcess(process.Spec.Name) {
+		if lhLonghorn.IsEngineProcess(process.Spec.Name) {
 			processType = types.InstanceTypeEngine
 		}
 		instances[process.Spec.Name] = processResponseToInstanceResponse(process, processType)

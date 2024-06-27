@@ -140,7 +140,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 
 	replicaBdevList := []string{}
 	for replicaName, replicaAddr := range replicaAddressMap {
-		bdevName, err := e.getBdevNameForReplica(spdkClient, replicaName, replicaAddr, podIP)
+		bdevName, err := e.connectReplica(spdkClient, replicaName, replicaAddr)
 		if err != nil {
 			e.log.WithError(err).Errorf("Failed to get bdev from replica %s with address %s, will skip it and continue", replicaName, replicaAddr)
 			e.ReplicaModeMap[replicaName] = types.ModeERR
@@ -172,10 +172,6 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 	e.log.Info("Created engine")
 
 	return e.getWithoutLock(), nil
-}
-
-func (e *Engine) getBdevNameForReplica(spdkClient *spdkclient.Client, replicaName, replicaAddress, podIP string) (bdevName string, err error) {
-	return e.connectReplica(spdkClient, replicaName, replicaAddress)
 }
 
 func (e *Engine) connectReplica(spdkClient *spdkclient.Client, replicaName, replicaAddress string) (bdevName string, err error) {
@@ -776,7 +772,10 @@ func (e *Engine) ReplicaAddStart(spdkClient *spdkclient.Client, replicaName, rep
 
 	// TODO: For online rebuilding, the IO should be paused first
 	snapshotName := GenerateRebuildingSnapshotName()
-	updateRequired, err = e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, SnapshotOperationCreate, nil)
+	opts := &api.SnapshotOptions{
+		Timestamp: time.Now().String(),
+	}
+	updateRequired, err = e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, SnapshotOperationCreate, opts)
 	if err != nil {
 		return err
 	}
@@ -825,7 +824,7 @@ func (e *Engine) ReplicaAddFinish(spdkClient *spdkclient.Client, replicaName, re
 			replicaBdevList = append(replicaBdevList, e.ReplicaBdevNameMap[rName])
 		}
 		if rName == replicaName {
-			bdevName, err := e.getBdevNameForReplica(spdkClient, replicaName, replicaAddress, e.IP)
+			bdevName, err := e.connectReplica(spdkClient, replicaName, replicaAddress)
 			if err != nil {
 				e.log.WithError(err).Errorf("Failed to get bdev from rebuilding replica %s with address %s, will mark it as ERR and error out", replicaName, replicaAddress)
 				e.ReplicaModeMap[replicaName] = types.ModeERR
@@ -967,7 +966,13 @@ func (e *Engine) ReplicaShallowCopy(dstReplicaName, dstReplicaAddress string) (e
 		if err = srcReplicaServiceCli.ReplicaSnapshotShallowCopy(srcReplicaName, currentSnapshotName); err != nil {
 			return err
 		}
-		if err = dstReplicaServiceCli.ReplicaRebuildingDstSnapshotCreate(dstReplicaName, currentSnapshotName, &api.SnapshotOptions{UserCreated: rpcSrcReplica.Snapshots[currentSnapshotName].UserCreated}); err != nil {
+
+		snapshotOptions := &api.SnapshotOptions{
+			UserCreated: rpcSrcReplica.Snapshots[currentSnapshotName].UserCreated,
+			Timestamp:   rpcSrcReplica.Snapshots[currentSnapshotName].SnapshotTimestamp,
+		}
+
+		if err = dstReplicaServiceCli.ReplicaRebuildingDstSnapshotCreate(dstReplicaName, currentSnapshotName, snapshotOptions); err != nil {
 			return err
 		}
 		prevSnapshotName = currentSnapshotName
@@ -1065,8 +1070,13 @@ const (
 	SnapshotOperationRevert = SnapshotOperationType("snapshot-revert")
 )
 
-func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName string, opts *api.SnapshotOptions) (snapshotName string, err error) {
+func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName string) (snapshotName string, err error) {
 	e.log.Infof("Creating snapshot %s", inputSnapshotName)
+
+	opts := &api.SnapshotOptions{
+		UserCreated: true,
+		Timestamp:   time.Now().String(),
+	}
 
 	return e.snapshotOperation(spdkClient, inputSnapshotName, SnapshotOperationCreate, opts)
 }
