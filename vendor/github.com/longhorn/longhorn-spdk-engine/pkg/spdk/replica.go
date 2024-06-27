@@ -92,9 +92,10 @@ type Lvol struct {
 	ActualSize uint64
 	Parent     string
 	// Children is map[<snapshot lvol name>] rather than map[<snapshot name>]. <snapshot lvol name> consists of `<replica name>-snap-<snapshot name>`
-	Children     map[string]*Lvol
-	CreationTime string
-	UserCreated  bool
+	Children          map[string]*Lvol
+	CreationTime      string
+	UserCreated       bool
+	SnapshotTimestamp string
 }
 
 func ServiceReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
@@ -122,13 +123,14 @@ func ServiceReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 
 func ServiceLvolToProtoLvol(replicaName string, lvol *Lvol) *spdkrpc.Lvol {
 	res := &spdkrpc.Lvol{
-		Uuid:         lvol.UUID,
-		SpecSize:     lvol.SpecSize,
-		ActualSize:   lvol.ActualSize,
-		Parent:       GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, lvol.Parent),
-		Children:     map[string]bool{},
-		CreationTime: lvol.CreationTime,
-		UserCreated:  lvol.UserCreated,
+		Uuid:              lvol.UUID,
+		SpecSize:          lvol.SpecSize,
+		ActualSize:        lvol.ActualSize,
+		Parent:            GetSnapshotNameFromReplicaSnapshotLvolName(replicaName, lvol.Parent),
+		Children:          map[string]bool{},
+		CreationTime:      lvol.CreationTime,
+		UserCreated:       lvol.UserCreated,
+		SnapshotTimestamp: lvol.SnapshotTimestamp,
 	}
 
 	if lvol.Name == replicaName {
@@ -158,9 +160,10 @@ func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
 		ActualSize: bdev.DriverSpecific.Lvol.NumAllocatedClusters * defaultClusterSize,
 		Parent:     bdev.DriverSpecific.Lvol.BaseSnapshot,
 		// Need to update this separately
-		Children:     map[string]*Lvol{},
-		CreationTime: bdev.CreationTime,
-		UserCreated:  bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == "true",
+		Children:          map[string]*Lvol{},
+		CreationTime:      bdev.CreationTime,
+		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == "true",
+		SnapshotTimestamp: bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotTimestamp],
 	}
 }
 
@@ -403,7 +406,7 @@ func compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSize bool) error
 	if cur == nil {
 		return fmt.Errorf("cannot find the corresponding cur lvol")
 	}
-	if prev.Name != cur.Name || prev.UUID != cur.UUID || prev.CreationTime != cur.CreationTime || prev.SpecSize != cur.SpecSize || prev.Parent != cur.Parent || len(prev.Children) != len(cur.Children) {
+	if prev.Name != cur.Name || prev.UUID != cur.UUID || prev.SnapshotTimestamp != cur.SnapshotTimestamp || prev.SpecSize != cur.SpecSize || prev.Parent != cur.Parent || len(prev.Children) != len(cur.Children) {
 		return fmt.Errorf("found mismatching lvol %+v with recorded prev lvol %+v", cur, prev)
 	}
 	if checkChildren {
@@ -830,11 +833,17 @@ func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName str
 
 	var xattrs []spdkclient.Xattr
 	if opts != nil {
-		xattr := spdkclient.Xattr{
+		userCreated := spdkclient.Xattr{
 			Name:  spdkclient.UserCreated,
 			Value: strconv.FormatBool(opts.UserCreated),
 		}
-		xattrs = append(xattrs, xattr)
+		xattrs = append(xattrs, userCreated)
+
+		snapshotTimestamp := spdkclient.Xattr{
+			Name:  spdkclient.SnapshotTimestamp,
+			Value: opts.Timestamp,
+		}
+		xattrs = append(xattrs, snapshotTimestamp)
 	}
 
 	snapUUID, err := spdkClient.BdevLvolSnapshot(headSvcLvol.UUID, snapLvolName, xattrs)
@@ -1446,11 +1455,17 @@ func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *spdkclient.Client, sna
 
 	var xattrs []spdkclient.Xattr
 	if opts != nil {
-		xattr := spdkclient.Xattr{
+		userCreated := spdkclient.Xattr{
 			Name:  spdkclient.UserCreated,
 			Value: strconv.FormatBool(opts.UserCreated),
 		}
-		xattrs = append(xattrs, xattr)
+		xattrs = append(xattrs, userCreated)
+
+		snapshotTimestamp := spdkclient.Xattr{
+			Name:  spdkclient.SnapshotTimestamp,
+			Value: opts.Timestamp,
+		}
+		xattrs = append(xattrs, snapshotTimestamp)
 	}
 
 	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)

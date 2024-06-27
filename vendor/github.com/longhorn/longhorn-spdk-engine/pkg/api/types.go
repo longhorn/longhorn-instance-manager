@@ -9,6 +9,7 @@ import (
 
 type SnapshotOptions struct {
 	UserCreated bool
+	Timestamp   string
 }
 
 type Replica struct {
@@ -28,14 +29,15 @@ type Replica struct {
 }
 
 type Lvol struct {
-	Name         string          `json:"name"`
-	UUID         string          `json:"uuid"`
-	SpecSize     uint64          `json:"spec_size"`
-	ActualSize   uint64          `json:"actual_size"`
-	Parent       string          `json:"parent"`
-	Children     map[string]bool `json:"children"`
-	CreationTime string          `json:"creation_time"`
-	UserCreated  bool            `json:"user_created"`
+	Name              string          `json:"name"`
+	UUID              string          `json:"uuid"`
+	SpecSize          uint64          `json:"spec_size"`
+	ActualSize        uint64          `json:"actual_size"`
+	Parent            string          `json:"parent"`
+	Children          map[string]bool `json:"children"`
+	CreationTime      string          `json:"creation_time"`
+	UserCreated       bool            `json:"user_created"`
+	SnapshotTimestamp string          `json:"snapshot_timestamp"`
 }
 
 func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
@@ -45,12 +47,13 @@ func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
 	return &Lvol{
 		Name: l.Name,
 		// UUID:         l.Uuid,
-		SpecSize:     l.SpecSize,
-		ActualSize:   l.ActualSize,
-		Parent:       l.Parent,
-		Children:     l.Children,
-		CreationTime: l.CreationTime,
-		UserCreated:  l.UserCreated,
+		SpecSize:          l.SpecSize,
+		ActualSize:        l.ActualSize,
+		Parent:            l.Parent,
+		Children:          l.Children,
+		CreationTime:      l.CreationTime,
+		UserCreated:       l.UserCreated,
+		SnapshotTimestamp: l.SnapshotTimestamp,
 	}
 }
 
@@ -61,12 +64,13 @@ func LvolToProtoLvol(l *Lvol) *spdkrpc.Lvol {
 	return &spdkrpc.Lvol{
 		Name: l.Name,
 		// Uuid:         l.UUID,
-		SpecSize:     l.SpecSize,
-		ActualSize:   l.ActualSize,
-		Parent:       l.Parent,
-		Children:     l.Children,
-		CreationTime: l.CreationTime,
-		UserCreated:  l.UserCreated,
+		SpecSize:          l.SpecSize,
+		ActualSize:        l.ActualSize,
+		Parent:            l.Parent,
+		Children:          l.Children,
+		CreationTime:      l.CreationTime,
+		UserCreated:       l.UserCreated,
+		SnapshotTimestamp: l.SnapshotTimestamp,
 	}
 }
 
