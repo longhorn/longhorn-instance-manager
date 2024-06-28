@@ -1230,7 +1230,7 @@ func (r *Replica) RebuildingSrcDetach(spdkClient *spdkclient.Client, dstReplicaN
 	return err
 }
 
-func (r *Replica) SnapshotShallowCopy(spdkClient *spdkclient.Client, snapshotName string) (err error) {
+func (r *Replica) SnapshotStartShallowCopy(spdkClient *spdkclient.Client, snapshotName string) (operationId uint32, err error) {
 	r.RLock()
 	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
 	srcSnapLvol := r.SnapshotLvolMap[snapLvolName]
@@ -1238,14 +1238,38 @@ func (r *Replica) SnapshotShallowCopy(spdkClient *spdkclient.Client, snapshotNam
 	r.RUnlock()
 
 	if dstBdevName == "" {
-		return fmt.Errorf("no destination bdev for replica %s shallow copy", r.Name)
+		return 0, fmt.Errorf("no destination bdev for replica %s shallow copy", r.Name)
 	}
 	if srcSnapLvol == nil {
-		return fmt.Errorf("cannot find snapshot %s for replica %s shallow copy", snapshotName, r.Name)
+		return 0, fmt.Errorf("cannot find snapshot %s for replica %s shallow copy", snapshotName, r.Name)
 	}
 
-	_, err = spdkClient.BdevLvolShallowCopy(srcSnapLvol.UUID, dstBdevName)
-	return err
+	operationId, err = spdkClient.BdevLvolStartShallowCopy(srcSnapLvol.UUID, dstBdevName)
+	return operationId, err
+}
+
+func (r *Replica) SnapshotCheckShallowCopy(spdkClient *spdkclient.Client, operationId uint32) (bool, error) {
+	var status *spdktypes.ShallowCopyStatus
+	var err error
+
+	if status, err = spdkClient.BdevLvolCheckShallowCopy(operationId); err != nil {
+		return false, err
+	}
+
+	if ShallowCopyState(status.State) == ShallowCopyStateError {
+		return false, fmt.Errorf(status.Error)
+	}
+
+	if ShallowCopyState(status.State) == ShallowCopyStateComplete {
+		if status.CopiedClusters == status.TotalClusters {
+			return true, nil
+		}
+
+		// This should never happen
+		return false, fmt.Errorf("only %d clusters have been copied instead %d", status.CopiedClusters, status.TotalClusters)
+	}
+
+	return false, nil
 }
 
 func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, exposeRequired bool) (address string, err error) {

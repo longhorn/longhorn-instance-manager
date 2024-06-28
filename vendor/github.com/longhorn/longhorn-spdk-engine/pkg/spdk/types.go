@@ -15,6 +15,8 @@ import (
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 )
 
+type ShallowCopyState string
+
 const (
 	DiskTypeFilesystem = "filesystem"
 	DiskTypeBlock      = "block"
@@ -25,6 +27,9 @@ const (
 	SyncTimeout = 60 * time.Minute
 
 	nvmeNguidLength = 32
+
+	ShallowCopyStateError    = ShallowCopyState("error")
+	ShallowCopyStateComplete = ShallowCopyState("complete")
 )
 
 func GetReplicaSnapshotLvolNamePrefix(replicaName string) string {

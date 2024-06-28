@@ -603,10 +603,19 @@ func (s *Server) ReplicaSnapshotShallowCopy(ctx context.Context, req *spdkrpc.Re
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during snapshot %s shallow copy", req.Name, req.SnapshotName)
 	}
 
-	// Cannot add a lock to protect this now since a shallow copy may be time-consuming
-	if err = r.SnapshotShallowCopy(spdkClient, req.SnapshotName); err != nil {
+	// Should we put a lock around shallow copy start and check?
+	var operationId uint32
+	completed := false
+	if operationId, err = r.SnapshotStartShallowCopy(spdkClient, req.SnapshotName); err != nil {
 		return nil, err
 	}
+	for !completed {
+		if completed, err = r.SnapshotCheckShallowCopy(spdkClient, operationId); err != nil {
+			return nil, err
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	return &emptypb.Empty{}, nil
 }
 
