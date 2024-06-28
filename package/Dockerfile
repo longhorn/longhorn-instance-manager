@@ -1,24 +1,21 @@
-FROM  registry.suse.com/bci/golang:1.22 AS builder
+# Stage 1: build binary from go source code
+FROM  registry.suse.com/bci/golang:1.22 AS gobuilder
 
 ARG ARCH=amd64
 
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.5/devel:languages:python:Factory.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
+RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:utilities/SLE_15_SP5/network:utilities.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake curl wget gcc tar gzip xsltproc docbook-xsl-stylesheets python3 meson ninja python3-pip
+RUN zypper -n install wget
 
-# Build go-spdk-helper
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
 RUN go install golang.org/x/lint/golint@latest
 
+# Build go-spdk-helper
 ENV GO_SPDK_HELPER_DIR /usr/src/go-spdk-helper
 ENV GO_SPDK_HELPER_COMMIT_ID d05637da59788eeeb8927c663f0eec7c958d3f97
 RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DIR} && \
@@ -27,6 +24,26 @@ RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DI
     go build && \
     install -m 755 go-spdk-helper /usr/local/bin/go-spdk-helper && \
     rm -rf ${GO_SPDK_HELPER_DIR}
+
+# Install grpc_health_probe
+RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.24/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
+    chmod +x /usr/local/bin/grpc_health_probe
+
+
+# Stage 2: build binary from c source code
+FROM registry.suse.com/bci/bci-base:15.6 AS cbuilder
+
+ARG ARCH=amd64
+
+RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.6/devel:tools:building.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
+    zypper --gpg-auto-import-keys ref
+
+RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3 libfuse3-3
 
 # Build liblonghorn
 ENV LIBLONGHORN_COMMIT_ID 53d1c063b95efc8d949b095bd4bf04637230265f
@@ -48,18 +65,21 @@ RUN cd /usr/src && \
 
 # Build SPDK
 ENV SPDK_DIR /usr/src/spdk
-ENV SPDK_COMMIT_ID 62a8f8a9c5ac99f6e63d654f6fc6c427c5d8815b
+ENV SPDK_COMMIT_ID a29b937d754cc679da586443309ab4830bbc01b5
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     cd ${SPDK_DIR} && \
     git checkout ${SPDK_COMMIT_ID} && \
     git submodule update --init && \
+    sed -i '/python3-pyelftools/d' ./scripts/pkgdep/sles.sh && \
+    sed -i 's/python3-/python311-/g' ./scripts/pkgdep/sles.sh && \
     ./scripts/pkgdep.sh && \
+    pip3 install -r ./scripts/pkgdep/requirements.txt && \
     if [ ${ARCH} = "amd64" ]; then \
-        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples --enable-debug && \
+        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples --enable-debug --without-nvme-cuse && \
         make -j$(nproc) && \
         make install; \
     elif [ ${ARCH} = "arm64" ]; then \
-        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples --enable-debug && \
+        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples --enable-debug --without-nvme-cuse && \
         DPDKBUILD_FLAGS="-Dplatform=generic" make -j$(nproc) && \
         make install; \
     else \
@@ -89,10 +109,8 @@ RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
     meson compile -C .build && \
     meson install -C .build
 
-# Install grpc_health_probe
-RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.24/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
-    chmod +x /usr/local/bin/grpc_health_probe
 
+# Stage 3: copy binaries to release image
 FROM registry.suse.com/bci/bci-base:15.6 AS release
 
 ARG ARCH=amd64
@@ -105,26 +123,29 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-pyelftools libcmocka-devel device-mapper netcat kmod jq util-linux procps && \
+    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python311-base libcmocka-devel device-mapper netcat kmod jq util-linux procps && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
-COPY --from=builder /usr/src/spdk/scripts /usr/src/spdk/scripts
-COPY --from=builder /usr/src/spdk/include /usr/src/spdk/include
+COPY --from=cbuilder /usr/src/spdk/scripts /usr/src/spdk/scripts
+COPY --from=cbuilder /usr/src/spdk/include /usr/src/spdk/include
 RUN bash /usr/src/spdk/scripts/pkgdep.sh
 
-# Copy pre-built binaries from builder
-COPY --from=builder \
+# Copy pre-built binaries from cbuilder and gobuilder
+COPY --from=gobuilder \
     /usr/local/bin/grpc_health_probe \
-    /usr/local/bin/spdk_* \
     /usr/local/bin/go-spdk-helper \
     /usr/local/bin/
 
-COPY --from=builder \
+COPY --from=cbuilder \
+    /usr/local/bin/spdk_* \
+    /usr/local/bin/
+
+COPY --from=cbuilder \
     /usr/local/sbin/nvme \
     /usr/local/sbin/
 
-COPY --from=builder \
+COPY --from=cbuilder \
     /usr/sbin/tgt-admin \
     /usr/sbin/tgt-setup-lun \
     /usr/sbin/tgtadm \
@@ -132,7 +153,7 @@ COPY --from=builder \
     /usr/sbin/tgtimg \
     /usr/sbin/
 
-COPY --from=builder \
+COPY --from=cbuilder \
    /usr/local/lib64 \
    /usr/local/lib64
 
