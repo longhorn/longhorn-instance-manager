@@ -365,24 +365,52 @@ func (c *Client) BdevLvolResize(name string, size uint64) (resized bool, err err
 	return resized, json.Unmarshal(cmdOutput, &resized)
 }
 
-// BdevLvolShallowCopy make a shallow copy of lvol over a given bdev.
+// BdevLvolStartShallowCopy start a shallow copy of lvol over a given bdev.
 // Only clusters allocated to the lvol will be written on the bdev.
+// Returns the operation ID needed to check the shallow copy status with BdevLvolCheckShallowCopy.
 //
 //	"srcLvolName": Required. UUID or alias of lvol to create a copy from.
 //
 //	"dstBdevName": Required. Name of the bdev that acts as destination for the copy.
-func (c *Client) BdevLvolShallowCopy(srcLvolName, dstBdevName string) (copied bool, err error) {
+func (c *Client) BdevLvolStartShallowCopy(srcLvolName, dstBdevName string) (operationId uint32, err error) {
 	req := spdktypes.BdevLvolShallowCopyRequest{
 		SrcLvolName: srcLvolName,
 		DstBdevName: dstBdevName,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_shallow_copy", req)
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_start_shallow_copy", req)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
-	return copied, json.Unmarshal(cmdOutput, &copied)
+	shallowCopy := spdktypes.ShallowCopy{}
+	err = json.Unmarshal(cmdOutput, &shallowCopy)
+	if err != nil {
+		return 0, err
+	}
+
+	return shallowCopy.OperationId, nil
+}
+
+// BdevLvolCheckShallowCopy check the status of a shallow copy previously started.
+//
+//	"operationId": Required. Operation ID of the shallow copy to check.
+func (c *Client) BdevLvolCheckShallowCopy(operationId uint32) (*spdktypes.ShallowCopyStatus, error) {
+	shallowCopy := spdktypes.ShallowCopy{
+		OperationId: operationId,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_check_shallow_copy", shallowCopy)
+	if err != nil {
+		return nil, err
+	}
+
+	var shallowCopyStatus spdktypes.ShallowCopyStatus
+	err = json.Unmarshal(cmdOutput, &shallowCopyStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	return &shallowCopyStatus, nil
 }
 
 // BdevLvolGetFragmap gets fragmap of the specific segment of the logical volume.

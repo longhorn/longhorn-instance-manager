@@ -42,6 +42,17 @@ type LvolInfo struct {
 	} `json:"lvs"`
 }
 
+type ShallowCopy struct {
+	OperationId uint32 `json:"operation_id"`
+}
+
+type ShallowCopyStatus struct {
+	State          string `json:"state"`
+	CopiedClusters uint64 `json:"copied_clusters"`
+	TotalClusters  uint64 `json:"total_clusters"`
+	Error          string `json:"error,omitempty"`
+}
+
 type BdevLvolCreateLvstoreRequest struct {
 	BdevName string `json:"bdev_name"`
 	LvsName  string `json:"lvs_name"`

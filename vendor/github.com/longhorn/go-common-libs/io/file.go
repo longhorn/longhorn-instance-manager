@@ -326,3 +326,36 @@ func IsDirectoryEmpty(directory string) (bool, error) {
 
 	return false, nil
 }
+
+// CheckIsFileSizeSame verifies if all files in the provided paths have the same size.
+// It returns an error if any file is a directory, does not exist, or has a different size.
+func CheckIsFileSizeSame(paths ...string) error {
+	referenceInfo, err := os.Stat(paths[0])
+	if err != nil {
+		return err
+	}
+
+	if referenceInfo.IsDir() {
+		return errors.Errorf("file %v is a directory", paths[0])
+	}
+
+	referenceSize := referenceInfo.Size()
+
+	for _, path := range paths {
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		if fileInfo.IsDir() {
+			return errors.Errorf("file %v is a directory", path)
+
+		}
+
+		if fileInfo.Size() != referenceSize {
+			return errors.Errorf("file %v size %v is not equal to %v", path, fileInfo.Size(), referenceSize)
+		}
+	}
+
+	return nil
+}
