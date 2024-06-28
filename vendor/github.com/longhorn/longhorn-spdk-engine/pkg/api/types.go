@@ -127,6 +127,8 @@ type Engine struct {
 	ActualSize        uint64                `json:"actual_size"`
 	IP                string                `json:"ip"`
 	Port              int32                 `json:"port"`
+	TargetIP          string                `json:"target_ip"`
+	TargetPort        int32                 `json:"target_port"`
 	ReplicaAddressMap map[string]string     `json:"replica_address_map"`
 	ReplicaModeMap    map[string]types.Mode `json:"replica_mode_map"`
 	Head              *Lvol                 `json:"head"`
@@ -145,6 +147,8 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		ActualSize:        e.ActualSize,
 		IP:                e.Ip,
 		Port:              e.Port,
+		TargetIP:          e.TargetIp,
+		TargetPort:        e.TargetPort,
 		ReplicaAddressMap: e.ReplicaAddressMap,
 		ReplicaModeMap:    map[string]types.Mode{},
 		Head:              ProtoLvolToLvol(e.Head),

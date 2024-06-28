@@ -15,8 +15,6 @@ import (
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 )
 
-type ShallowCopyState string
-
 const (
 	DiskTypeFilesystem = "filesystem"
 	DiskTypeBlock      = "block"
@@ -28,6 +26,13 @@ const (
 
 	nvmeNguidLength = 32
 
+	maxNumRetries = 15
+	retryInterval = 1 * time.Second
+)
+
+type ShallowCopyState string
+
+const (
 	ShallowCopyStateError    = ShallowCopyState("error")
 	ShallowCopyStateComplete = ShallowCopyState("complete")
 )
