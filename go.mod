@@ -8,7 +8,7 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20240624084713-e98e31ebcebb
 	github.com/longhorn/go-common-libs v0.0.0-20240627075631-d78642cff5e1
 	github.com/longhorn/go-spdk-helper v0.0.0-20240627071357-3765b24418d9
-	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240629043813-aa844e18d3f8
+	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240629144251-3f33af038bdf
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240629021626-70f42e1c51e5
 	github.com/longhorn/types v0.0.0-20240624083620-f11ba48bf396
 	github.com/pkg/errors v0.9.1
@@ -43,7 +43,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
-	github.com/gofrs/flock v0.9.0 // indirect
+	github.com/gofrs/flock v0.10.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
