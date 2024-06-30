@@ -171,3 +171,8 @@ func GetDevices(ip, port, nqn string, executor *commonNs.Executor) (devices []De
 func GetSubsystems(executor *commonNs.Executor) (subsystems []Subsystem, err error) {
 	return listSubsystems("", executor)
 }
+
+// Flush commits data and metadata associated with the specified namespace(s) to nonvolatile media.
+func Flush(device, namespaceID string, executor *commonNs.Executor) (output string, err error) {
+	return flush(device, namespaceID, executor)
+}

@@ -97,3 +97,9 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/longhorn/go-spdk-helper v0.0.0-20240627071357-3765b24418d9 => github.com/derekbit/go-spdk-helper v0.0.0-20240627073500-adcba0272891
+
+replace github.com/longhorn/longhorn-spdk-engine v0.0.0-20240629021626-70f42e1c51e5 => github.com/derekbit/longhorn-spdk-engine v0.0.0-20240628004239-bd16c11daebf
+
+replace github.com/longhorn/types v0.0.0-20240624083620-f11ba48bf396 => github.com/derekbit/longhorn-types v0.0.0-20240625055741-c65ab9b3d304

@@ -24,6 +24,7 @@ const (
 	InstanceStateRunning     = "running"
 	InstanceStateTerminating = "terminating"
 	InstanceStateError       = "error"
+	InstanceStateSuspended   = "suspended"
 )
 
 type InstanceType string
@@ -59,4 +60,8 @@ func GRPCReplicaModeToReplicaMode(replicaMode spdkrpc.ReplicaMode) Mode {
 		return ModeERR
 	}
 	return ModeERR
+}
+
+func IsFrontendSupported(frontend string) bool {
+	return frontend == FrontendEmpty || frontend == FrontendSPDKTCPNvmf || frontend == FrontendSPDKTCPBlockdev
 }
