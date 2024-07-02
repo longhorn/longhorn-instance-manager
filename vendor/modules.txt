@@ -217,7 +217,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240630112621-0402d7096a3f
+# github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240630112621-0402d7096a3f => github.com/c3y1huang/longhorn-engine v1.7.0-dev.0.20240702013516-b1f51c004d1e
 ## explicit; go 1.22.2
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -251,7 +251,7 @@ github.com/longhorn/nsfilelock
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20240624083620-f11ba48bf396
+# github.com/longhorn/types v0.0.0-20240624083620-f11ba48bf396 => github.com/c3y1huang/types v0.0.0-20240701065019-3f48d762923b
 ## explicit; go 1.21
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc
@@ -760,3 +760,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
+# github.com/longhorn/types => github.com/c3y1huang/types v0.0.0-20240701065019-3f48d762923b
+# github.com/longhorn/longhorn-engine => github.com/c3y1huang/longhorn-engine v1.7.0-dev.0.20240702013516-b1f51c004d1e
