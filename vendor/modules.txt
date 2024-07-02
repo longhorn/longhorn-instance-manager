@@ -208,7 +208,7 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.0.0-20240630053246-99b2a18336b5
+# github.com/longhorn/go-spdk-helper v0.0.0-20240702033003-35e00d17218f
 ## explicit; go 1.22.0
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
@@ -230,7 +230,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240630082808-c2002ae0216f
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240702040525-31543c7681c8
 ## explicit; go 1.22.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
