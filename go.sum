@@ -97,12 +97,12 @@ github.com/longhorn/go-common-libs v0.0.0-20240627075631-d78642cff5e1 h1:VGSNK9A
 github.com/longhorn/go-common-libs v0.0.0-20240627075631-d78642cff5e1/go.mod h1:wpLEAlsDCnqBA7QfZg0gxYeR8MmLbWHbdidWYwnRbyM=
 github.com/longhorn/go-iscsi-helper v0.0.0-20240624090318-a8ef86edd9a5 h1:X2D6tZjl8y99di1oo4XAbsgNpRTcw+C3DAK5760uQyI=
 github.com/longhorn/go-iscsi-helper v0.0.0-20240624090318-a8ef86edd9a5/go.mod h1:tdKlSNcBEJR0ueHqcYW9xL2Yn01liqKNpAHDEBiX/to=
-github.com/longhorn/go-spdk-helper v0.0.0-20240630053246-99b2a18336b5 h1:4PLC77WJb0SlJjeUzMC4Nb1uKmOBQ4cCYokwSPtm1UY=
-github.com/longhorn/go-spdk-helper v0.0.0-20240630053246-99b2a18336b5/go.mod h1:5dAfJz0UmWUqHgUtmAd/lFNA4yVbpLDgaMfin8UBv3w=
+github.com/longhorn/go-spdk-helper v0.0.0-20240702033003-35e00d17218f h1:CVv/UA0Jiq/w5p2Eb8d6KgwQr9TRMnpqkHZHQuZ0tIU=
+github.com/longhorn/go-spdk-helper v0.0.0-20240702033003-35e00d17218f/go.mod h1:5dAfJz0UmWUqHgUtmAd/lFNA4yVbpLDgaMfin8UBv3w=
 github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240630112621-0402d7096a3f h1:fZyUGzYqxOD60CcpNrFm7AtJGyLl9T6ffz4m706fPVQ=
 github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240630112621-0402d7096a3f/go.mod h1:hpTKTOFivFVSaQPcjy0tGOKFOTPk857V6DRLwRb0ncI=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240630082808-c2002ae0216f h1:DF4n5xpzMKlm/cBS5901sZaQ50A3U2hHhu2mzNM/mQ4=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240630082808-c2002ae0216f/go.mod h1:TsUeo25njFiP7Xj9SdfSLUpWhsrs/UXazwhJZYXU3Gg=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240702040525-31543c7681c8 h1:FXY2bMzK/COsmKMVKUbqg4FJLIzHewsPuTKLdVJTCrQ=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240702040525-31543c7681c8/go.mod h1:gRXFMd9ZUOGJe/rGW7I6QYqy1rPyziFlEmlIy8iG/uY=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHTxp6HcC++/vN17LfeuDmozHI2j6DoZf5E=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20240513025352-ed49dd3f93eb h1:Kh89s6i5T1W6BT1Aq9W1YHXojbbcTXlDieWC5KWAs/E=
