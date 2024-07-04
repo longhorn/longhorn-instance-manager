@@ -35,6 +35,13 @@ FROM registry.suse.com/bci/bci-base:15.6 AS cbuilder
 
 ARG ARCH=amd64
 
+ENV LIBLONGHORN_COMMIT_ID 53d1c063b95efc8d949b095bd4bf04637230265f
+ENV TGT_COMMIT_ID 3a8bc4823b5390e046f7aa8231ed262c0365c42c
+ENV SPDK_COMMIT_ID a6478cde7e0cff2fb09992868308a7387aa5202a
+ENV LIBJSONC_COMMIT_ID b4c371fa0cbc4dcbaccc359ce9e957a22988fb34
+# nvme-cli 2.9.1
+ENV NVME_CLI_COMMIT_ID b340fd7dcf1aef76f8d46ab28bef3c170d310887
+
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
@@ -46,7 +53,6 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
 RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3 libfuse3-3
 
 # Build liblonghorn
-ENV LIBLONGHORN_COMMIT_ID 53d1c063b95efc8d949b095bd4bf04637230265f
 RUN cd /usr/src && \
     git clone https://github.com/rancher/liblonghorn.git && \
     cd liblonghorn && \
@@ -55,7 +61,6 @@ RUN cd /usr/src && \
     make install
 
 # Build TGT
-ENV TGT_COMMIT_ID 3a8bc4823b5390e046f7aa8231ed262c0365c42c
 RUN cd /usr/src && \
     git clone https://github.com/rancher/tgt.git && \
     cd tgt && \
@@ -63,9 +68,8 @@ RUN cd /usr/src && \
     make; \
     make install
 
-# Build SPDK
+# Build spdk
 ENV SPDK_DIR /usr/src/spdk
-ENV SPDK_COMMIT_ID a6478cde7e0cff2fb09992868308a7387aa5202a
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     cd ${SPDK_DIR} && \
     git checkout ${SPDK_COMMIT_ID} && \
@@ -88,7 +92,6 @@ RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     fi
 
 # Build libjson-c-devel
-ENV LIBJSONC_COMMIT_ID b4c371fa0cbc4dcbaccc359ce9e957a22988fb34
 RUN cd /usr/src && \
     git clone https://github.com/json-c/json-c.git && \
     cd json-c && \
@@ -99,9 +102,8 @@ RUN cd /usr/src && \
     make && \
     make install
 
-# Build nvme-cli 2.9.1
+# Build nvme-cli
 ENV NVME_CLI_DIR /usr/src/nvme-cli
-ENV NVME_CLI_COMMIT_ID b340fd7dcf1aef76f8d46ab28bef3c170d310887
 RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
     cd ${NVME_CLI_DIR} && \
     git checkout ${NVME_CLI_COMMIT_ID} && \
