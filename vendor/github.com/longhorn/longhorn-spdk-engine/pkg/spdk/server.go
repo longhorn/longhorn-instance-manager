@@ -454,7 +454,7 @@ func (s *Server) ReplicaSnapshotCreate(ctx context.Context, req *spdkrpc.Snapsho
 
 	opts := &api.SnapshotOptions{
 		UserCreated: req.UserCreated,
-		Timestamp:   req.SnaphotTimestamp,
+		Timestamp:   req.SnapshotTimestamp,
 	}
 
 	return r.SnapshotCreate(spdkClient, req.SnapshotName, opts)
@@ -676,7 +676,7 @@ func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *sp
 
 	opts := &api.SnapshotOptions{
 		UserCreated: req.UserCreated,
-		Timestamp:   req.SnaphotTimestamp,
+		Timestamp:   req.SnapshotTimestamp,
 	}
 
 	if err = r.RebuildingDstSnapshotCreate(spdkClient, req.SnapshotName, opts); err != nil {
