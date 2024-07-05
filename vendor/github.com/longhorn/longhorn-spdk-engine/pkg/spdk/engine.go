@@ -1075,7 +1075,7 @@ func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName
 
 	opts := &api.SnapshotOptions{
 		UserCreated: true,
-		Timestamp:   time.Now().String(),
+		Timestamp:   util.Now(),
 	}
 
 	return e.snapshotOperation(spdkClient, inputSnapshotName, SnapshotOperationCreate, opts)

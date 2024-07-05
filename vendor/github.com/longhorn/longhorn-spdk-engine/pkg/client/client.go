@@ -148,10 +148,10 @@ func (c *SPDKClient) ReplicaSnapshotCreate(name, snapshotName string, opts *api.
 	defer cancel()
 
 	snapshotRequest := spdkrpc.SnapshotRequest{
-		Name:             name,
-		SnapshotName:     snapshotName,
-		UserCreated:      opts.UserCreated,
-		SnaphotTimestamp: opts.Timestamp,
+		Name:              name,
+		SnapshotName:      snapshotName,
+		UserCreated:       opts.UserCreated,
+		SnapshotTimestamp: opts.Timestamp,
 	}
 
 	_, err := client.ReplicaSnapshotCreate(ctx, &snapshotRequest)
@@ -333,10 +333,10 @@ func (c *SPDKClient) ReplicaRebuildingDstSnapshotCreate(name, snapshotName strin
 	defer cancel()
 
 	snapshotRequest := spdkrpc.SnapshotRequest{
-		Name:             name,
-		SnapshotName:     snapshotName,
-		UserCreated:      opts.UserCreated,
-		SnaphotTimestamp: opts.Timestamp,
+		Name:              name,
+		SnapshotName:      snapshotName,
+		UserCreated:       opts.UserCreated,
+		SnapshotTimestamp: opts.Timestamp,
 	}
 
 	_, err := client.ReplicaRebuildingDstSnapshotCreate(ctx, &snapshotRequest)
