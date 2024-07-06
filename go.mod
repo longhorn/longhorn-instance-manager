@@ -5,8 +5,8 @@ go 1.22.2
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240624084713-e98e31ebcebb
-	github.com/longhorn/go-common-libs v0.0.0-20240627075631-d78642cff5e1
+	github.com/longhorn/backupstore v0.0.0-20240701092136-92b7cc071e50
+	github.com/longhorn/go-common-libs v0.0.0-20240702014532-ad3e7f0caf5c
 	github.com/longhorn/go-spdk-helper v0.0.0-20240702033003-35e00d17218f
 	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240704040555-9bf22f23a809
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240704075534-f807c4a293c6
