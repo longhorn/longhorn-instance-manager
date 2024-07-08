@@ -97,12 +97,12 @@ github.com/longhorn/go-common-libs v0.0.0-20240707062002-b9354601827e h1:0SiyvTu
 github.com/longhorn/go-common-libs v0.0.0-20240707062002-b9354601827e/go.mod h1:vX53A9KF4RHC1UTbEGouZHsZO6bwT3zk63l1hvwF5T8=
 github.com/longhorn/go-iscsi-helper v0.0.0-20240706152726-9dbb9c7bdf30 h1:tTHysoIMIUt53dRqLtIo7AH0RRMr2P5Jy8DAMxDISO8=
 github.com/longhorn/go-iscsi-helper v0.0.0-20240706152726-9dbb9c7bdf30/go.mod h1:Y4SlLQTYuOOMWlJNdFhTkM3MsXTmY/jkWj8jbuU7kOE=
-github.com/longhorn/go-spdk-helper v0.0.0-20240702033003-35e00d17218f h1:CVv/UA0Jiq/w5p2Eb8d6KgwQr9TRMnpqkHZHQuZ0tIU=
-github.com/longhorn/go-spdk-helper v0.0.0-20240702033003-35e00d17218f/go.mod h1:5dAfJz0UmWUqHgUtmAd/lFNA4yVbpLDgaMfin8UBv3w=
+github.com/longhorn/go-spdk-helper v0.0.0-20240708060539-de887e9cc6db h1:wQRJNpZadsOD2w57Y3e0M0SnSp5IPIWFEF+1yoRzmrE=
+github.com/longhorn/go-spdk-helper v0.0.0-20240708060539-de887e9cc6db/go.mod h1:BMhlxcEnrn0/jyO+9cMV1gWz2jkmeGFZLnGIqsH3lv0=
 github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240707085442-0bfac42c4aff h1:w8z+IYOHtvWEW7jZniVDX1vJGcGr4DIt2UmHeSxzXKU=
 github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240707085442-0bfac42c4aff/go.mod h1:u0TZ1221YusDYA+ExdVLjLid1Ps6JuJXgh9185l5D9Y=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240704075534-f807c4a293c6 h1:Q7wTQeHyraqMxyFQ36jB1a8z5pddakh/7LbsUr5qpW8=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20240704075534-f807c4a293c6/go.mod h1:rGr1eYUryyGLxXGMFexCcj0VIFKetXr+0Balszp+raI=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240708130427-1b50687fc568 h1:FioK5fYJ2yXpVSaHWq13TvC6BMFcgaYWAYIjjuSYZ1c=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20240708130427-1b50687fc568/go.mod h1:XFF4wVEdM10/7fStU+mM0tx8zXEFurmIWHZjFvQyv/A=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 h1:Jw9uANsGcHTxp6HcC++/vN17LfeuDmozHI2j6DoZf5E=
 github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003/go.mod h1:0CLeXlf59Lg6C0kjLSDf47ft73Dh37CwymYRKWwAn04=
 github.com/longhorn/sparse-tools v0.0.0-20240703010727-92451e38077a h1:+o63c0oh7ZNKeQdc0Hawfzz5vRa4LiDvLOtJYjegtnk=

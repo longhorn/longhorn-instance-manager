@@ -1,7 +1,9 @@
 package util
 
 import (
+	"fmt"
 	"regexp"
+	"strings"
 
 	commonNs "github.com/longhorn/go-common-libs/ns"
 
@@ -97,4 +99,77 @@ func parseDependentDevicesFromString(str string) []string {
 	}
 
 	return devices
+}
+
+type DeviceInfo struct {
+	Name            string
+	BlockDeviceName string
+	TableLive       bool
+	TableInactive   bool
+	Suspended       bool
+	ReadOnly        bool
+	Major           uint32
+	Minor           uint32
+	OpenCount       uint32 // Open reference count
+	TargetCount     uint32 // Number of targets in the live table
+	EventNumber     uint32 // Last event sequence number (used by wait)
+}
+
+// DmsetupInfo returns the information of the device mapper device with the given name
+func DmsetupInfo(dmDeviceName string, executor *commonNs.Executor) ([]*DeviceInfo, error) {
+	opts := []string{
+		"info",
+		"--columns",
+		"--noheadings",
+		"-o",
+		"name,blkdevname,attr,major,minor,open,segments,events",
+		"--separator",
+		" ",
+		dmDeviceName,
+	}
+
+	outputStr, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		lines   = strings.Split(outputStr, "\n")
+		devices = []*DeviceInfo{}
+	)
+
+	for _, line := range lines {
+		var (
+			attr = ""
+			info = &DeviceInfo{}
+		)
+
+		// Break, if the line is empty or EOF
+		if line == "" {
+			break
+		}
+
+		_, err := fmt.Sscan(line,
+			&info.Name,
+			&info.BlockDeviceName,
+			&attr,
+			&info.Major,
+			&info.Minor,
+			&info.OpenCount,
+			&info.TargetCount,
+			&info.EventNumber)
+		if err != nil {
+			continue
+		}
+
+		// Parse attributes (see "man 8 dmsetup" for details)
+		info.Suspended = strings.Contains(attr, "s")
+		info.ReadOnly = strings.Contains(attr, "r")
+		info.TableLive = strings.Contains(attr, "L")
+		info.TableInactive = strings.Contains(attr, "I")
+
+		devices = append(devices, info)
+	}
+
+	return devices, nil
 }
