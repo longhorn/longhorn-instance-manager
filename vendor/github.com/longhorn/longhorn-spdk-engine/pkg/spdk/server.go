@@ -717,17 +717,29 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	}
 
 	s.Lock()
-	if _, ok := s.engineMap[req.Name]; ok {
-		s.Unlock()
-		return nil, grpcstatus.Errorf(grpccodes.AlreadyExists, "engine %v already exists", req.Name)
+	e, ok := s.engineMap[req.Name]
+	if ok {
+		// Check if the engine already exists.
+		// If the engine exists and the initiator address is the same as the target address, return AlreadyExists error.
+		if localTargetExists(e) && req.InitiatorAddress == req.TargetAddress {
+			s.Unlock()
+			return nil, grpcstatus.Errorf(grpccodes.AlreadyExists, "engine %v already exists", req.Name)
+		}
 	}
 
-	s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine])
-	e := s.engineMap[req.Name]
+	if e == nil {
+		s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine])
+		e = s.engineMap[req.Name]
+	}
+
 	spdkClient := s.spdkClient
 	s.Unlock()
 
-	return e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator)
+	return e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator, req.InitiatorAddress, req.TargetAddress, req.UpgradeRequired)
+}
+
+func localTargetExists(e *Engine) bool {
+	return e.Port != 0 && e.TargetPort != 0
 }
 
 func (s *Server) getLocalReplicaLvsNameMap(replicaMap map[string]string) (replicaLvsNameMap map[string]string) {
@@ -761,6 +773,102 @@ func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequ
 		if err := e.Delete(spdkClient, s.portAllocator); err != nil {
 			return nil, err
 		}
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineSuspend(ctx context.Context, req *spdkrpc.EngineSuspendRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name is required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for suspension", req.Name)
+	}
+
+	err = e.Suspend(s.spdkClient)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to suspend engine %v", req.Name).Error())
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineResume(ctx context.Context, req *spdkrpc.EngineResumeRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name is required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for resumption", req.Name)
+	}
+
+	err = e.Resume(s.spdkClient)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to resume engine %v", req.Name).Error())
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineSwitchOverTarget(ctx context.Context, req *spdkrpc.EngineSwitchOverTargetRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" || req.TargetAddress == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name and target address are required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for target switchover", req.Name)
+	}
+
+	err = e.SwitchOverTarget(s.spdkClient, req.TargetAddress)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to switch over target for engine %v", req.Name).Error())
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineDeleteTarget(ctx context.Context, req *spdkrpc.EngineDeleteTargetRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name is required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %s for target deletion", req.Name)
+	}
+
+	defer func() {
+		if err == nil {
+			s.Lock()
+			// Only delete the engine if both initiator (e.Port) and target (e.TargetPort) are not exists.
+			if e.Port == 0 && e.TargetPort == 0 {
+				e.log.Info("Deleting engine %s", req.Name)
+				delete(s.engineMap, req.Name)
+			}
+			s.Unlock()
+		}
+	}()
+
+	err = e.DeleteTarget(s.spdkClient, s.portAllocator)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to delete target for engine %v", req.Name).Error())
 	}
 
 	return &emptypb.Empty{}, nil

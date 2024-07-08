@@ -193,10 +193,10 @@ func getDiskID(filename string) (string, error) {
 
 	dev, err := spdkutil.DetectDevice(filename, executor)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to detect disk device")
+		return "", errors.Wrapf(err, "failed to detect disk device %v", filename)
 	}
 
-	return fmt.Sprintf("%d-%d", dev.Nvme.Major, dev.Nvme.Minor), nil
+	return fmt.Sprintf("%d-%d", dev.Major, dev.Minor), nil
 }
 
 func validateAioDiskCreation(spdkClient *spdkclient.Client, diskPath string, diskDriver commonTypes.DiskDriver) error {

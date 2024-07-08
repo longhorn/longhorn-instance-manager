@@ -1,7 +1,9 @@
 package spdk
 
 import (
+	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -32,20 +34,40 @@ func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip
 		return "", "", errors.Wrapf(err, "failed to expose snapshot lvol bdev %v", lvolName)
 	}
 
-	for r := 0; r < nvme.RetryCounts; r++ {
+	for r := 0; r < maxNumRetries; r++ {
 		subsystemNQN, err = nvme.DiscoverTarget(ip, portStr, executor)
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to discover target for snapshot lvol bdev %v", lvolName)
-			time.Sleep(nvme.RetryInterval)
+			time.Sleep(retryInterval)
 			continue
 		}
 
 		controllerName, err = nvme.ConnectTarget(ip, portStr, subsystemNQN, executor)
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to connect target for snapshot lvol bdev %v", lvolName)
-			time.Sleep(nvme.RetryInterval)
+			time.Sleep(retryInterval)
 			continue
 		}
 	}
 	return subsystemNQN, controllerName, nil
+}
+
+func splitHostPort(address string) (string, int32, error) {
+	if strings.Contains(address, ":") {
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return "", 0, errors.Wrapf(err, "failed to split host and port from address %v", address)
+		}
+
+		portAsInt := 0
+		if port != "" {
+			portAsInt, err = strconv.Atoi(port)
+			if err != nil {
+				return "", 0, errors.Wrapf(err, "failed to parse port %v", port)
+			}
+		}
+		return host, int32(portAsInt), nil
+	}
+
+	return address, 0, nil
 }
