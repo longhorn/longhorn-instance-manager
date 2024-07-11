@@ -153,7 +153,7 @@ func (ops V2DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 			Parent:      snapshot.Parent,
 			Children:    snapshot.Children,
 			Removed:     false,
-			UserCreated: true,
+			UserCreated: snapshot.UserCreated,
 			Created:     snapshot.SnapshotTimestamp,
 			Size:        strconv.FormatUint(snapshot.ActualSize, 10),
 			Labels:      map[string]string{},
