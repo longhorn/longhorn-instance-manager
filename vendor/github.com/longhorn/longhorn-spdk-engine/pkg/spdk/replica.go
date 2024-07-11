@@ -1781,7 +1781,11 @@ func (r *Replica) postFullRestoreOperations(spdkClient *spdkclient.Client, resto
 
 	r.log.Infof("Taking snapshot %v of the restored volume", restore.SnapshotName)
 
-	_, err := r.SnapshotCreate(spdkClient, restore.SnapshotName, nil)
+	opts := &api.SnapshotOptions{
+		UserCreated: false,
+		Timestamp:   util.Now(),
+	}
+	_, err := r.SnapshotCreate(spdkClient, restore.SnapshotName, opts)
 	if err != nil {
 		r.log.WithError(err).Error("Failed to take snapshot of the restored volume")
 		return errors.Wrapf(err, "failed to take snapshot of the restored volume")
