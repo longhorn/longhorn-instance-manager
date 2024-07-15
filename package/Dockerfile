@@ -43,6 +43,7 @@ ENV LIBJSONC_COMMIT_ID b4c371fa0cbc4dcbaccc359ce9e957a22988fb34
 ENV NVME_CLI_COMMIT_ID b340fd7dcf1aef76f8d46ab28bef3c170d310887
 
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
@@ -50,7 +51,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3 libfuse3-3
+RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel
 
 # Build liblonghorn
 RUN cd /usr/src && \
@@ -79,11 +80,11 @@ RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
     ./scripts/pkgdep.sh && \
     pip3 install -r ./scripts/pkgdep/requirements.txt && \
     if [ ${ARCH} = "amd64" ]; then \
-        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples --enable-debug --without-nvme-cuse && \
+        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples && \
         make -j$(nproc) && \
         make install; \
     elif [ ${ARCH} = "arm64" ]; then \
-        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples --enable-debug --without-nvme-cuse && \
+        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples && \
         DPDKBUILD_FLAGS="-Dplatform=generic" make -j$(nproc) && \
         make install; \
     else \
@@ -125,7 +126,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper --gpg-auto-import-keys ref
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python311-base libcmocka-devel device-mapper netcat kmod jq util-linux procps && \
+    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python311-base libcmocka-devel device-mapper netcat kmod jq util-linux procps fuse3-devel && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
