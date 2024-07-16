@@ -66,7 +66,7 @@ func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 }
 
 func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
-	c, err := getSPDKClientFromEngineAddress(req.Address)
+	c, err := getSPDKClientFromAddress(req.Address)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address).Error())
 	}

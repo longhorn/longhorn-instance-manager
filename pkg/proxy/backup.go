@@ -91,7 +91,7 @@ func (ops V1DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.Eng
 }
 
 func (ops V2DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.EngineSnapshotBackupRequest, credential map[string]string, labels []string) (resp *rpc.EngineSnapshotBackupProxyResponse, err error) {
-	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
 	}
@@ -221,7 +221,7 @@ func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *r
 }
 
 func (ops V2DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
-	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
 	}
@@ -295,7 +295,7 @@ func (ops V1DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.Engi
 }
 
 func (ops V2DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest, credential map[string]string) error {
-	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
 	if err != nil {
 		return grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
 	}
@@ -331,7 +331,7 @@ func (ops V1DataEngineProxyOps) BackupRestoreFinish(ctx context.Context, req *rp
 }
 
 func (ops V2DataEngineProxyOps) BackupRestoreFinish(ctx context.Context, req *rpc.EngineBackupRestoreFinishRequest) (*emptypb.Empty, error) {
-	c, err := getSPDKClientFromEngineAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
 	}
@@ -391,7 +391,7 @@ func (ops V1DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rp
 }
 
 func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
-	c, err := getSPDKClientFromEngineAddress(req.Address)
+	c, err := getSPDKClientFromAddress(req.Address)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address).Error())
 	}
