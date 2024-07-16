@@ -116,7 +116,7 @@ func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineReques
 	}, nil
 }
 
-func getSPDKClientFromEngineAddress(address string) (*spdkclient.SPDKClient, error) {
+func getSPDKClientFromAddress(address string) (*spdkclient.SPDKClient, error) {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
