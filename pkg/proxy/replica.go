@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -219,10 +220,51 @@ func (ops V1DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 }
 
 func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
-	/* TODO: implement this */
-	return &rpc.EngineReplicaRebuildStatusProxyResponse{
+	engineCli, err := getSPDKClientFromAddress(req.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address).Error())
+	}
+	defer engineCli.Close()
+
+	e, err := engineCli.EngineGet(req.EngineName)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
+	}
+
+	resp = &rpc.EngineReplicaRebuildStatusProxyResponse{
 		Status: make(map[string]*enginerpc.ReplicaRebuildStatusResponse),
-	}, nil
+	}
+	for replicaName, mode := range e.ReplicaModeMap {
+		if mode != spdktypes.ModeWO {
+			continue
+		}
+		replicaAddress := e.ReplicaAddressMap[replicaName]
+		if replicaAddress == "" {
+			continue
+		}
+		replicaCli, err := getSPDKClientFromAddress(replicaAddress)
+		if err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from replica address %v", replicaAddress).Error())
+		}
+		defer replicaCli.Close()
+
+		shallowCopyResp, err := replicaCli.ReplicaRebuildingDstShallowCopyCheck(replicaName)
+		if err != nil {
+			resp.Status[replicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
+				Error: fmt.Sprintf("failed to get replica rebuild status of %v: %v", replicaAddress, err),
+			}
+			continue
+		}
+		resp.Status[replicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
+			Error:              shallowCopyResp.Error,
+			IsRebuilding:       shallowCopyResp.TotalState == spdktypes.ProgressStateInProgress,
+			Progress:           int32(shallowCopyResp.TotalProgress),
+			State:              shallowCopyResp.TotalState,
+			FromReplicaAddress: shallowCopyResp.SrcReplicaAddress,
+		}
+	}
+
+	return resp, nil
 }
 
 func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *emptypb.Empty, err error) {
