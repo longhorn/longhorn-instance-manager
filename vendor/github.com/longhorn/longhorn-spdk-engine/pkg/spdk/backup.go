@@ -225,7 +225,7 @@ func (b *Backup) CloseSnapshot(snapshotName, volumeName string) error {
 	}
 
 	b.log.Info("Stopping NVMe initiator")
-	if _, err := b.initiator.Stop(false, false, true); err != nil {
+	if _, err := b.initiator.Stop(true, true, true); err != nil {
 		return errors.Wrapf(err, "failed to stop NVMe initiator")
 	}
 
