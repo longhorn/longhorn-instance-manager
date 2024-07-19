@@ -26,7 +26,7 @@ RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DI
     rm -rf ${GO_SPDK_HELPER_DIR}
 
 # Install grpc_health_probe
-RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.24/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
+RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.28/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
     chmod +x /usr/local/bin/grpc_health_probe
 
 
