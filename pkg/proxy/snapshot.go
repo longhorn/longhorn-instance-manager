@@ -148,13 +148,21 @@ func (ops V2DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 		Disks: map[string]*rpc.EngineSnapshotDiskInfo{},
 	}
 	for snapshotName, snapshot := range disks {
+		/*
+		 * If the snapshot was created before the introduction of the new attribute SnapshotTimestamp,
+		 * and so this one is not available, do fallback over the old one CreationTime.
+		 */
+		snapshotTime := snapshot.SnapshotTimestamp
+		if snapshotTime == "" {
+			snapshotTime = snapshot.CreationTime
+		}
 		resp.Disks[snapshotName] = &rpc.EngineSnapshotDiskInfo{
 			Name:        snapshot.Name,
 			Parent:      snapshot.Parent,
 			Children:    snapshot.Children,
 			Removed:     false,
 			UserCreated: snapshot.UserCreated,
-			Created:     snapshot.SnapshotTimestamp,
+			Created:     snapshotTime,
 			Size:        strconv.FormatUint(snapshot.ActualSize, 10),
 			Labels:      map[string]string{},
 		}
