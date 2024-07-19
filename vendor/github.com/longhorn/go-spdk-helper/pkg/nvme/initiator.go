@@ -231,7 +231,7 @@ func (i *Initiator) replaceDmDeviceTarget() error {
 }
 
 // Start starts the NVMe initiator with the given transportAddress and transportServiceID
-func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceCleanupRequired bool) (dmDeviceBusy bool, err error) {
+func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceAndEndpointCleanupRequired bool) (dmDeviceBusy bool, err error) {
 	defer func() {
 		if err != nil {
 			err = errors.Wrapf(err, "failed to start NVMe initiator %s", i.Name)
@@ -239,9 +239,9 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceC
 	}()
 
 	i.logger.WithFields(logrus.Fields{
-		"transportAddress":        transportAddress,
-		"transportServiceID":      transportServiceID,
-		"dmDeviceCleanupRequired": dmDeviceCleanupRequired,
+		"transportAddress":                   transportAddress,
+		"transportServiceID":                 transportServiceID,
+		"dmDeviceAndEndpointCleanupRequired": dmDeviceAndEndpointCleanupRequired,
 	})
 
 	i.logger.Info("Starting initiator")
@@ -273,7 +273,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceC
 	}
 
 	i.logger.Infof("Stopping NVMe initiator blindly before starting")
-	dmDeviceBusy, err = i.stopWithoutLock(dmDeviceCleanupRequired, false, false)
+	dmDeviceBusy, err = i.stopWithoutLock(dmDeviceAndEndpointCleanupRequired, false, false)
 	if err != nil {
 		return dmDeviceBusy, errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
 	}
@@ -322,7 +322,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceC
 	}
 
 	needMakeEndpoint := true
-	if dmDeviceCleanupRequired {
+	if dmDeviceAndEndpointCleanupRequired {
 		if dmDeviceBusy {
 			// Endpoint is already created, just replace the target device
 			needMakeEndpoint = false
@@ -356,7 +356,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceC
 	return dmDeviceBusy, nil
 }
 
-func (i *Initiator) Stop(dmDeviceCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
+func (i *Initiator) Stop(dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -365,7 +365,7 @@ func (i *Initiator) Stop(dmDeviceCleanupRequired, deferDmDeviceCleanup, errOnBus
 		defer lock.Unlock()
 	}
 
-	return i.stopWithoutLock(dmDeviceCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice)
+	return i.stopWithoutLock(dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice)
 }
 
 func (i *Initiator) removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
@@ -384,9 +384,9 @@ func (i *Initiator) removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmD
 	return false, nil
 }
 
-func (i *Initiator) stopWithoutLock(dmDeviceCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
+func (i *Initiator) stopWithoutLock(dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
 	dmDeviceBusy := false
-	if dmDeviceCleanupRequired {
+	if dmDeviceAndEndpointCleanupRequired {
 		var err error
 		dmDeviceBusy, err = i.removeDmDeviceAndEndpoint(deferDmDeviceCleanup, errOnBusyDmDevice)
 		if err != nil {
