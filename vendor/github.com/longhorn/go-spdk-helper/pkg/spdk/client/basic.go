@@ -311,16 +311,39 @@ func (c *Client) BdevLvolSnapshot(name, snapshotName string, xattrs []Xattr) (uu
 
 // BdevLvolClone creates a logical volume based on a snapshot.
 //
-//	"name": Required. UUID or alias of the snapshot to clone. The alias of a lvol is <LVSTORE NAME>/<SNAPSHOT or LVOL NAME>.
+//	"snapshot": Required. UUID or alias of the snapshot lvol to clone. The alias of a lvol is <LVSTORE NAME>/<SNAPSHOT LVOL NAME>.
 //
 //	"cloneName": Required. the name for the newly created lvol.
-func (c *Client) BdevLvolClone(name, cloneName string) (uuid string, err error) {
+func (c *Client) BdevLvolClone(snapshot, cloneName string) (uuid string, err error) {
 	req := spdktypes.BdevLvolCloneRequest{
-		SnapshotName: name,
+		SnapshotName: snapshot,
 		CloneName:    cloneName,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_clone", req)
+	if err != nil {
+		return "", err
+	}
+
+	return uuid, json.Unmarshal(cmdOutput, &uuid)
+}
+
+// BdevLvolCloneBdev creates a logical volume based on an external snapshot bdev.
+// The external snapshot bdev is a bdev that will not be written to by any consumer and must not be an lvol in the lvstore as the clone.
+//
+//	"bdev": Required. UUID or name for bdev that acts as the external snapshot.
+//
+//	"lvsName": Required. logical volume store name of the newly created lvol.
+//
+//	"cloneName": Required. name for the newly created lvol.
+func (c *Client) BdevLvolCloneBdev(bdev, lvsName, cloneName string) (uuid string, err error) {
+	req := spdktypes.BdevLvolCloneBdevRequest{
+		Bdev:      bdev,
+		LvsName:   lvsName,
+		CloneName: cloneName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_clone_bdev", req)
 	if err != nil {
 		return "", err
 	}
@@ -344,6 +367,27 @@ func (c *Client) BdevLvolDecoupleParent(name string) (decoupled bool, err error)
 	}
 
 	return decoupled, json.Unmarshal(cmdOutput, &decoupled)
+}
+
+// BdevLvolSetParent sets a snapshot as the parent of a lvol, making the lvol a clone/child of this snapshot.
+// The previous parent of the lvol can be another snapshot or an external snapshot, if the lvol is not a clone must be thin-provisioned.
+// Lvol and parent snapshot must have the same size and must belong to the same lvol store.
+//
+//	"lvol": Required. Alias or UUID for the lvol to set parent of. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>.
+//
+//	"parent": Required. Alias or UUID for the snapshot lvol to become the parent.
+func (c *Client) BdevLvolSetParent(lvol, parent string) (set bool, err error) {
+	req := spdktypes.BdevLvolSetParentRequest{
+		LvolName:   lvol,
+		ParentName: parent,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_set_parent", req)
+	if err != nil {
+		return false, err
+	}
+
+	return set, json.Unmarshal(cmdOutput, &set)
 }
 
 // BdevLvolResize resizes a logical volume.
@@ -583,6 +627,25 @@ func (c *Client) BdevRaidRemoveBaseBdev(name string) (removed bool, err error) {
 	}
 
 	return removed, json.Unmarshal(cmdOutput, &removed)
+}
+
+// BdevRaidGrowBaseBdev adds a base bdev to a raid bdev, growing the raid's size if needed
+//
+//	"raidName": Required. The RAID bdev name.
+//
+//	"baseBdevName": Required. The base bdev name to be added to the RAID bdev.
+func (c *Client) BdevRaidGrowBaseBdev(raidName, baseBdevName string) (growed bool, err error) {
+	req := spdktypes.BdevRaidGrowBaseBdevRequest{
+		RaidName: raidName,
+		BaseName: baseBdevName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_raid_grow_base_bdev", req)
+	if err != nil {
+		return false, err
+	}
+
+	return growed, json.Unmarshal(cmdOutput, &growed)
 }
 
 // BdevNvmeAttachController constructs NVMe bdev.
