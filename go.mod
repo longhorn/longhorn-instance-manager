@@ -6,10 +6,10 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240709004445-1cadf9073de3
-	github.com/longhorn/go-common-libs v0.0.0-20240718091042-aff867b55212
-	github.com/longhorn/go-spdk-helper v0.0.0-20240719062424-66ae69ad1b6e
+	github.com/longhorn/go-common-libs v0.0.0-20240720044518-32fc527fe868
+	github.com/longhorn/go-spdk-helper v0.0.0-20240720064915-d2ce0846d2a7
 	github.com/longhorn/longhorn-engine v1.7.0-rc1
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240719041144-1c5afdf4401a
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240720045452-539ccfc2e2c6
 	github.com/longhorn/types v0.0.0-20240706151541-33cb010c3544
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -87,9 +87,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.30.2 // indirect
-	k8s.io/apimachinery v0.30.2 // indirect
-	k8s.io/client-go v0.30.2 // indirect
+	k8s.io/api v0.30.3 // indirect
+	k8s.io/apimachinery v0.30.3 // indirect
+	k8s.io/client-go v0.30.3 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect
