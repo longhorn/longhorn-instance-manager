@@ -162,7 +162,7 @@ func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
 		// Need to update this separately
 		Children:          map[string]*Lvol{},
 		CreationTime:      bdev.CreationTime,
-		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == "true",
+		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == strconv.FormatBool(true),
 		SnapshotTimestamp: bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotTimestamp],
 	}
 }
