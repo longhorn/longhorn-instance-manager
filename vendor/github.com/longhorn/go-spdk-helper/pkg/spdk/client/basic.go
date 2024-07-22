@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -273,6 +274,8 @@ func (c *Client) BdevLvolGet(name string, timeout uint64) (bdevLvolInfoList []sp
 		user_created, err := c.BdevLvolGetXattr(b.Name, UserCreated)
 		if err == nil {
 			b.DriverSpecific.Lvol.Xattrs[UserCreated] = user_created
+		} else {
+			b.DriverSpecific.Lvol.Xattrs[UserCreated] = strconv.FormatBool(true)
 		}
 		snapshot_timestamp, err := c.BdevLvolGetXattr(b.Name, SnapshotTimestamp)
 		if err == nil {
