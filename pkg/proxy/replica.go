@@ -17,6 +17,8 @@ import (
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
 
 func (p *Proxy) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *emptypb.Empty, err error) {
@@ -242,6 +244,8 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 		if replicaAddress == "" {
 			continue
 		}
+		// TODO: Need to unify the replica address format for v1 and v2 engine
+		tcpReplicaAddress := types.AddTcpPrefixForAddress(replicaAddress)
 		replicaCli, err := getSPDKClientFromAddress(replicaAddress)
 		if err != nil {
 			return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from replica address %v", replicaAddress).Error())
@@ -250,17 +254,17 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 
 		shallowCopyResp, err := replicaCli.ReplicaRebuildingDstShallowCopyCheck(replicaName)
 		if err != nil {
-			resp.Status[replicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
+			resp.Status[tcpReplicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
 				Error: fmt.Sprintf("failed to get replica rebuild status of %v: %v", replicaAddress, err),
 			}
 			continue
 		}
-		resp.Status[replicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
+		resp.Status[tcpReplicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
 			Error:              shallowCopyResp.Error,
 			IsRebuilding:       shallowCopyResp.TotalState == spdktypes.ProgressStateInProgress,
 			Progress:           int32(shallowCopyResp.TotalProgress),
 			State:              shallowCopyResp.TotalState,
-			FromReplicaAddress: shallowCopyResp.SrcReplicaAddress,
+			FromReplicaAddress: types.AddTcpPrefixForAddress(shallowCopyResp.SrcReplicaAddress),
 		}
 	}
 
