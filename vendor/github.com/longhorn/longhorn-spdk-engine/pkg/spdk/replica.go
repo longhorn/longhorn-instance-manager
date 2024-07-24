@@ -1071,6 +1071,51 @@ func (r *Replica) SnapshotRevert(spdkClient *spdkclient.Client, snapshotName str
 	return ServiceReplicaToProtoReplica(r), nil
 }
 
+// SnapshotPurge asks the replica to delete all system created snapshots
+func (r *Replica) SnapshotPurge(spdkClient *spdkclient.Client) (err error) {
+	updateRequired := false
+
+	r.Lock()
+	defer func() {
+		r.Unlock()
+
+		if updateRequired {
+			r.UpdateCh <- nil
+		}
+	}()
+
+	defer func() {
+		if err != nil && r.State != types.InstanceStateError {
+			r.State = types.InstanceStateError
+			updateRequired = true
+		}
+	}()
+
+	if r.ChainLength < 2 {
+		return fmt.Errorf("invalid chain length %d for replica snapshot purge", r.ChainLength)
+	}
+
+	// delete all non-user-created snapshots
+	for snapshotLvolName, snapSvcLvol := range r.SnapshotLvolMap {
+		if snapSvcLvol.UserCreated {
+			continue
+		}
+		if len(snapSvcLvol.Children) > 1 {
+			continue
+		}
+		if snapSvcLvol.Children[r.Name] != nil {
+			continue
+		}
+		if _, err := spdkClient.BdevLvolDelete(snapSvcLvol.UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+			return err
+		}
+		r.removeLvolFromSnapshotLvolMapWithoutLock(snapshotLvolName)
+		r.removeLvolFromActiveChainWithoutLock(snapshotLvolName)
+		updateRequired = true
+	}
+	return nil
+}
+
 // RebuildingSrcStart asks the source replica to check the parent snapshot of the head and expose it as a NVMf bdev if necessary.
 // If the source replica and the destination replicas have different IPs, the API will expose the snapshot lvol as a NVMf bdev and return the address <IP>:<Port>.
 // Otherwise, the API will directly return the snapshot lvol alias.
@@ -1258,7 +1303,14 @@ func (r *Replica) RebuildingSrcShallowCopyStart(spdkClient *spdkclient.Client, s
 
 // RebuildingSrcShallowCopyCheck asks the src replica to check the shallow copy progress and status via the shallow copy op ID returned by RebuildingSrcShallowCopyStart.
 func (r *Replica) RebuildingSrcShallowCopyCheck(spdkClient *spdkclient.Client, shallowCopyOpID uint32) (status *spdktypes.ShallowCopyStatus, err error) {
-	return spdkClient.BdevLvolCheckShallowCopy(shallowCopyOpID)
+	status, err = spdkClient.BdevLvolCheckShallowCopy(shallowCopyOpID)
+	if err != nil {
+		return nil, err
+	}
+	if status.State == types.SPDKShallowCopyStateInProgress {
+		status.State = types.ProgressStateInProgress
+	}
+	return status, nil
 }
 
 // RebuildingDstStart asks the dst replica to create a new head lvol based on the external snapshot of the src replica and blindly expose it as a NVMf bdev.
