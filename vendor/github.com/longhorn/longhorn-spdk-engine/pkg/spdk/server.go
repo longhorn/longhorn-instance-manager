@@ -496,6 +496,24 @@ func (s *Server) ReplicaSnapshotRevert(ctx context.Context, req *spdkrpc.Snapsho
 	return &emptypb.Empty{}, err
 }
 
+func (s *Server) ReplicaSnapshotPurge(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during snapshot purge", req.Name)
+	}
+
+	err = r.SnapshotPurge(spdkClient)
+	return &emptypb.Empty{}, err
+}
+
 func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcStartRequest) (ret *spdkrpc.ReplicaRebuildingSrcStartResponse, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
@@ -1125,6 +1143,27 @@ func (s *Server) EngineSnapshotRevert(ctx context.Context, req *spdkrpc.Snapshot
 	}
 
 	if err := e.SnapshotRevert(spdkClient, req.SnapshotName); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineSnapshotPurge(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name is required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot purge", req.Name)
+	}
+
+	if err := e.SnapshotPurge(spdkClient); err != nil {
 		return nil, err
 	}
 
