@@ -421,8 +421,10 @@ func (ops V1DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.Eng
 	var lastErr error
 	for _, name := range req.Names {
 		if err := task.DeleteSnapshot(name); err != nil {
-			lastErr = err
-			logrus.WithError(err).Warnf("Failed to delete snapshot %s", name)
+			if err != nil {
+				lastErr = err
+				logrus.WithError(err).Warnf("Failed to delete snapshot %s", name)
+			}
 		}
 	}
 
@@ -439,8 +441,10 @@ func (ops V2DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.Eng
 	var lastErr error
 	for _, name := range req.Names {
 		err = c.EngineSnapshotDelete(req.ProxyEngineRequest.EngineName, name)
-		lastErr = err
-		logrus.WithError(err).Warnf("Failed to delete snapshot %s", name)
+		if err != nil {
+			lastErr = err
+			logrus.WithError(err).Warnf("Failed to delete snapshot %s", name)
+		}
 	}
 
 	return &emptypb.Empty{}, lastErr
