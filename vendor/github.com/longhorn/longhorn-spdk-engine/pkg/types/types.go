@@ -71,4 +71,7 @@ const (
 	ProgressStateComplete   = "complete"
 	ProgressStateInProgress = "in_progress"
 	ProgressStateStarting   = "starting"
+
+	// SPDKShallowCopyStateNew is the state returned from spdk_tgt. There is no underscore in the string.
+	SPDKShallowCopyStateInProgress = "in progress"
 )

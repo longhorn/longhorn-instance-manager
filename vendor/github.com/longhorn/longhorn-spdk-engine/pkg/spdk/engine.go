@@ -937,7 +937,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 
 	snapshotName := GenerateRebuildingSnapshotName()
 	opts := &api.SnapshotOptions{
-		Timestamp: time.Now().String(),
+		Timestamp: util.Now(),
 	}
 	updateRequired, err = e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, SnapshotOperationCreate, opts)
 	if err != nil {
@@ -1234,6 +1234,7 @@ const (
 	SnapshotOperationCreate = SnapshotOperationType("snapshot-create")
 	SnapshotOperationDelete = SnapshotOperationType("snapshot-delete")
 	SnapshotOperationRevert = SnapshotOperationType("snapshot-revert")
+	SnapshotOperationPurge  = SnapshotOperationType("snapshot-purge")
 )
 
 func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName string) (snapshotName string, err error) {
@@ -1258,6 +1259,13 @@ func (e *Engine) SnapshotRevert(spdkClient *spdkclient.Client, snapshotName stri
 	e.log.Infof("Reverting snapshot %s", snapshotName)
 
 	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationRevert, nil)
+	return err
+}
+
+func (e *Engine) SnapshotPurge(spdkClient *spdkclient.Client) (err error) {
+	e.log.Infof("Purging snapshots")
+
+	_, err = e.snapshotOperation(spdkClient, "", SnapshotOperationPurge, nil)
 	return err
 }
 
@@ -1391,6 +1399,11 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 			if r.Snapshots[snapshotName] == nil {
 				return "", fmt.Errorf("replica %s does not contain the reverting snapshot %s", replicaName, snapshotName)
 			}
+		case SnapshotOperationPurge:
+			if e.ReplicaModeMap[replicaName] == types.ModeWO {
+				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot %s purge", e.Name, replicaName, snapshotName)
+			}
+			// TODO: Do we need to verify that all replicas hold the same system snapshot list
 		default:
 			return "", fmt.Errorf("unknown replica snapshot operation %s", snapshotOp)
 		}
@@ -1457,6 +1470,8 @@ func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replica
 		if bdevName != "" {
 			e.ReplicaBdevNameMap[replicaName] = bdevName
 		}
+	case SnapshotOperationPurge:
+		return replicaClient.ReplicaSnapshotPurge(replicaName)
 	default:
 		return fmt.Errorf("unknown replica snapshot operation %s", snapshotOp)
 	}
