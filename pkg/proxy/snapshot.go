@@ -342,7 +342,14 @@ func (ops V1DataEngineProxyOps) SnapshotPurge(ctx context.Context, req *rpc.Engi
 }
 
 func (ops V2DataEngineProxyOps) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: implement this */
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
+	}
+	defer c.Close()
+
+	// For v2 Data Engine, snapshot purge is no longer a time-consuming operation
+	err = c.EngineSnapshotPurge(req.ProxyEngineRequest.EngineName)
 	return &emptypb.Empty{}, nil
 }
 
