@@ -190,6 +190,21 @@ func (c *SPDKClient) ReplicaSnapshotRevert(name, snapshotName string) error {
 	return errors.Wrapf(err, "failed to revert SPDK replica %s snapshot %s", name, snapshotName)
 }
 
+func (c *SPDKClient) ReplicaSnapshotPurge(name string) error {
+	if name == "" {
+		return fmt.Errorf("failed to purge SPDK replica: missing required parameter name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.ReplicaSnapshotPurge(ctx, &spdkrpc.SnapshotRequest{
+		Name: name,
+	})
+	return errors.Wrapf(err, "failed to purge SPDK replica %s", name)
+}
+
 // ReplicaRebuildingSrcStart asks the source replica to check the parent snapshot of the head and expose it as a NVMf bdev if necessary.
 // If the source replica and the destination replica have different IPs, the API will expose the snapshot lvol as a NVMf bdev and return the address <IP>:<Port>.
 // Otherwise, the API will directly return the snapshot lvol alias.
@@ -665,6 +680,21 @@ func (c *SPDKClient) EngineSnapshotRevert(name, snapshotName string) error {
 		SnapshotName: snapshotName,
 	})
 	return errors.Wrapf(err, "failed to revert SPDK engine %s snapshot %s", name, snapshotName)
+}
+
+func (c *SPDKClient) EngineSnapshotPurge(name string) error {
+	if name == "" {
+		return fmt.Errorf("failed to purge SPDK engine: missing required parameter name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineSnapshotPurge(ctx, &spdkrpc.SnapshotRequest{
+		Name: name,
+	})
+	return errors.Wrapf(err, "failed to purge SPDK engine %s", name)
 }
 
 func (c *SPDKClient) EngineReplicaAdd(engineName, replicaName, replicaAddress string) error {
