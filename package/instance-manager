@@ -20,6 +20,10 @@ function bind_sys() {
     mount --rbind /host/sys /sys
 }
 
+function bind_lib_modules() {
+    mount --rbind /host/lib/modules /lib/modules
+}
+
 function enable_tgtd() {
     echo "Enabling tgtd"
     tgtd -f 2>&1 | tee /var/log/tgtd.log &
@@ -86,6 +90,7 @@ done
 
 bind_dev
 bind_sys
+bind_lib_modules
 enable_tgtd
 [ "$enable_spdk" -eq 1 ] && generate_nvme_hostid_and_hostnqn
 [ "$enable_spdk" -eq 1 ] && enable_spdk_tgt "${spdk_options[@]}"
