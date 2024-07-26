@@ -28,9 +28,9 @@ func (d *DiskDriverVirtioScsi) DiskCreate(spdkClient *spdkclient.Client, diskNam
 		return "", errors.Wrapf(err, "failed to get the executor for virtio-scsi disk create %v", diskPath)
 	}
 
-	_, err = spdksetup.Bind(diskPath, string(commonTypes.DiskDriverUioPciGeneric), executor)
+	_, err = spdksetup.Bind(diskPath, "", executor)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to bind virtio-scsi disk %v with %v", diskPath, string(commonTypes.DiskDriverUioPciGeneric))
+		return "", errors.Wrapf(err, "failed to bind virtio-scsi disk %v", diskPath)
 	}
 
 	bdevs, err := spdkClient.BdevVirtioAttachController(diskName, "pci", diskPath, "scsi")

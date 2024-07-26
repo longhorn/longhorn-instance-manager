@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
 	"github.com/pkg/errors"
+
+	commonNs "github.com/longhorn/go-common-libs/ns"
 
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
@@ -22,12 +23,13 @@ func Bind(deviceAddr, deviceDriver string, executor *commonNs.Executor) (string,
 
 	envs := []string{
 		fmt.Sprintf("%s=%s", "PCI_ALLOWED", deviceAddr),
-		fmt.Sprintf("%s=%s", "DRIVER_OVERRIDE", deviceDriver),
+	}
+	if deviceDriver != "" {
+		envs = append(envs, fmt.Sprintf("%s=%s", "DRIVER_OVERRIDE", deviceDriver))
 	}
 
 	cmdArgs := []string{
 		spdkSetupPath,
-		"bind",
 	}
 
 	outputStr, err := executor.Execute(envs, "bash", cmdArgs, types.ExecuteTimeout)
