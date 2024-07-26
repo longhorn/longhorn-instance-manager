@@ -53,7 +53,8 @@ func getDiskDriverForBDF(diskDriver commonTypes.DiskDriver, bdf string) (commonT
 	switch diskDriver {
 	case commonTypes.DiskDriverAuto:
 		diskPath := ""
-		if diskStatus.Driver != string(commonTypes.DiskDriverUioPciGeneric) {
+		if diskStatus.Driver != string(commonTypes.DiskDriverVfioPci) &&
+			diskStatus.Driver != string(commonTypes.DiskDriverUioPciGeneric) {
 			devName, err := util.GetDevNameFromBDF(bdf)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to get device name from BDF %s", bdf)
