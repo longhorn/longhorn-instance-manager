@@ -85,17 +85,26 @@ func svcDiskDelete(spdkClient *spdkclient.Client, diskName, diskUUID, diskPath, 
 		}
 	}()
 
-	if diskName == "" || diskUUID == "" {
-		return &emptypb.Empty{}, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk UUID are required")
+	if diskName == "" {
+		return &emptypb.Empty{}, grpcstatus.Error(grpccodes.InvalidArgument, "disk name is required")
 	}
 
+	var lvstores []spdktypes.LvstoreInfo
 	bdevName := ""
-	lvstores, err := spdkClient.BdevLvolGetLvstore("", diskUUID)
+
+	if diskUUID != "" {
+		lvstores, err = spdkClient.BdevLvolGetLvstore("", diskUUID)
+	} else {
+		// The disk is not successfully created in creation stage because the diskUUID is not provided,
+		// so we blindly use the diskName as the bdevName here.
+		log.Warn("Disk UUID is not provided, trying to get lvstore with disk name")
+		lvstores, err = spdkClient.BdevLvolGetLvstore(diskName, "")
+	}
 	if err != nil {
 		if !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 			return nil, errors.Wrapf(err, "failed to get lvstore with UUID %v", diskUUID)
 		}
-		log.Warnf("Cannot find lvstore with UUID %v", diskUUID)
+		log.WithError(err).Warn("Failed to get lvstore with UUID or disk name, blindly use disk name as bdev name")
 		bdevName = diskName
 	} else {
 		lvstore := &lvstores[0]
