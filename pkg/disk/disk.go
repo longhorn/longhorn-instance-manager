@@ -149,8 +149,8 @@ func (s *Server) DiskDelete(ctx context.Context, req *rpc.DiskDeleteRequest) (*e
 
 	log.Info("Disk Server: Deleting disk")
 
-	if req.DiskName == "" || req.DiskUuid == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk UUID are required")
+	if req.DiskName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name is required")
 	}
 
 	ops, ok := s.ops[req.DiskType]
