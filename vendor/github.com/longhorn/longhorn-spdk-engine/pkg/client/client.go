@@ -860,18 +860,6 @@ func (c *SPDKClient) ReplicaBackupRestore(req *BackupRestoreRequest) error {
 	return err
 }
 
-func (c *SPDKClient) EngineBackupRestoreFinish(engineName string) error {
-	client := c.getSPDKServiceClient()
-	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
-	defer cancel()
-
-	_, err := client.EngineBackupRestoreFinish(ctx, &spdkrpc.EngineBackupRestoreFinishRequest{
-		EngineName: engineName,
-	})
-
-	return err
-}
-
 func (c *SPDKClient) EngineRestoreStatus(engineName string) (*spdkrpc.RestoreStatusResponse, error) {
 	client := c.getSPDKServiceClient()
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
