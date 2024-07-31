@@ -2,6 +2,7 @@ package virtioscsi
 
 import (
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	commonTypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
@@ -32,6 +33,16 @@ func (d *DiskDriverVirtioScsi) DiskCreate(spdkClient *spdkclient.Client, diskNam
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to bind virtio-scsi disk %v", diskPath)
 	}
+	defer func() {
+		if err != nil {
+			logrus.WithError(err).Warnf("Unbinding virtio-scsi disk %v since failed to attach", diskPath)
+
+			_, errUnbind := spdksetup.Unbind(diskPath, executor)
+			if errUnbind != nil {
+				logrus.WithError(errUnbind).Warnf("Failed to unbind virtio-scsi disk %v since failed to attach", diskPath)
+			}
+		}
+	}()
 
 	bdevs, err := spdkClient.BdevVirtioAttachController(diskName, "pci", diskPath, "scsi")
 	if err != nil {

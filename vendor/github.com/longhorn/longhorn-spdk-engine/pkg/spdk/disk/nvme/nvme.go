@@ -35,7 +35,16 @@ func (d *DiskDriverNvme) DiskCreate(spdkClient *spdkclient.Client, diskName, dis
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to bind NVMe disk %v", diskPath)
 	}
+	defer func() {
+		if err != nil {
+			logrus.WithError(err).Warnf("Unbinding NVMe disk %v since failed to attach", diskPath)
 
+			_, errUnbind := spdksetup.Unbind(diskPath, executor)
+			if errUnbind != nil {
+				logrus.WithError(errUnbind).Warnf("Failed to unbind NVMe disk %v since failed to attach", diskPath)
+			}
+		}
+	}()
 	bdevs, err := spdkClient.BdevNvmeAttachController(diskName, "", diskPath, "", "PCIe", "",
 		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec,
 		helpertypes.DefaultMultipath)
