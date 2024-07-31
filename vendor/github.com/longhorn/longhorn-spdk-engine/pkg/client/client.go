@@ -929,8 +929,8 @@ func (c *SPDKClient) DiskGet(diskName, diskPath, diskDriver string) (*spdkrpc.Di
 }
 
 func (c *SPDKClient) DiskDelete(diskName, diskUUID, diskPath, diskDriver string) error {
-	if diskName == "" || diskUUID == "" {
-		return fmt.Errorf("failed to delete disk: missing required parameters")
+	if diskName == "" {
+		return fmt.Errorf("failed to delete disk: missing required parameter disk name")
 	}
 
 	client := c.getSPDKServiceClient()
