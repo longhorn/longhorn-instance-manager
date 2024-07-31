@@ -113,7 +113,7 @@ func (r *Restore) DeepCopy() *Restore {
 	}
 }
 
-func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
+func (r *Restore) OpenVolumeDev(volDevName string, dmDeviceAndEndpointCleanupRequired bool) (*os.File, string, error) {
 	lvolName := r.replica.Name
 
 	r.log.Info("Unexposing lvol bdev before restoration")
@@ -141,7 +141,7 @@ func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create NVMe initiator for lvol bdev %v", lvolName)
 	}
-	if _, err := initiator.Start(r.ip, strconv.Itoa(int(r.port)), false); err != nil {
+	if _, err := initiator.Start(r.ip, strconv.Itoa(int(r.port)), dmDeviceAndEndpointCleanupRequired); err != nil {
 		return nil, "", errors.Wrapf(err, "failed to start NVMe initiator for lvol bdev %v", lvolName)
 	}
 	r.initiator = initiator

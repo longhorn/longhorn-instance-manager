@@ -1904,14 +1904,18 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 			return grpcstatus.Errorf(grpccodes.Internal, err.Error())
 		}
 	} else {
+		r.log.Info("Resetting the restore for backup %v", backupUrl)
+
 		var lvolName string
 		var snapshotNameToBeRestored string
 
 		validLastRestoredBackup := r.canDoIncrementalRestore(restore, backupUrl, backupName)
 		if validLastRestoredBackup {
+			r.log.Infof("Starting an incremental restore for backup %v", backupUrl)
 			lvolName = GetReplicaSnapshotLvolName(r.Name, restore.LastRestored)
 			snapshotNameToBeRestored = restore.LastRestored
 		} else {
+			r.log.Infof("Starting a full restore for backup %v", backupUrl)
 			lvolName = GetReplicaSnapshotLvolName(r.Name, snapshotName)
 			snapshotNameToBeRestored = snapshotName
 		}
@@ -1927,24 +1931,51 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 		}
 	}()
 
-	if newRestore.LastRestored == "" {
+	isFullRestore := newRestore.LastRestored == ""
+
+	defer func() {
+		go func() {
+			if err := r.completeBackupRestore(spdkClient, isFullRestore); err != nil {
+				logrus.WithError(err).Warn("Failed to complete backup restore")
+			}
+		}()
+	}()
+
+	if isFullRestore {
 		r.log.Infof("Starting a new full restore for backup %v", backupUrl)
 		if err := r.backupRestore(backupUrl, newRestore.LvolName, concurrentLimit); err != nil {
 			return errors.Wrapf(err, "failed to start full backup restore")
 		}
 		r.log.Infof("Successfully initiated full restore for %v to %v", backupUrl, newRestore.LvolName)
 	} else {
-		return fmt.Errorf("incremental restore is not supported yet")
-	}
-
-	go func() {
-		if err := r.completeBackupRestore(spdkClient); err != nil {
-			logrus.WithError(err).Warn("Failed to complete backup restore")
+		r.log.Infof("Starting an incremental restore for backup %v", backupUrl)
+		if err := r.backupRestoreIncrementally(backupUrl, newRestore.LastRestored, newRestore.LvolName, concurrentLimit); err != nil {
+			return errors.Wrapf(err, "failed to start incremental backup restore")
 		}
-	}()
+		r.log.Infof("Successfully initiated incremental restore for %v to %v", backupUrl, newRestore.LvolName)
+	}
 
 	return nil
 
+}
+
+func (r *Replica) backupRestoreIncrementally(backupURL, lastRestored, snapshotLvolName string, concurrentLimit int32) error {
+	backupURL = butil.UnescapeURL(backupURL)
+
+	logrus.WithFields(logrus.Fields{
+		"backupURL":        backupURL,
+		"lastRestored":     lastRestored,
+		"snapshotLvolName": snapshotLvolName,
+		"concurrentLimit":  concurrentLimit,
+	}).Info("Start restoring backup incrementally")
+
+	return backupstore.RestoreDeltaBlockBackupIncrementally(r.ctx, &backupstore.DeltaRestoreConfig{
+		BackupURL:       backupURL,
+		DeltaOps:        r.restore,
+		LastBackupName:  lastRestored,
+		Filename:        snapshotLvolName,
+		ConcurrentLimit: int32(concurrentLimit),
+	})
 }
 
 func (r *Replica) backupRestore(backupURL, snapshotLvolName string, concurrentLimit int32) error {
@@ -1976,7 +2007,7 @@ func (r *Replica) canDoIncrementalRestore(restore *Restore, backupURL, requested
 	return true
 }
 
-func (r *Replica) completeBackupRestore(spdkClient *spdkclient.Client) (err error) {
+func (r *Replica) completeBackupRestore(spdkClient *spdkclient.Client, isFullRestore bool) (err error) {
 	defer func() {
 		if extraErr := r.finishRestore(err); extraErr != nil {
 			r.log.WithError(extraErr).Error("Failed to finish backup restore")
@@ -1991,9 +2022,11 @@ func (r *Replica) completeBackupRestore(spdkClient *spdkclient.Client) (err erro
 	restore := r.restore.DeepCopy()
 	r.RUnlock()
 
-	// TODO: Support postIncrementalRestoreOperations
+	if isFullRestore {
+		return r.postFullRestoreOperations(spdkClient, restore)
+	}
 
-	return r.postFullRestoreOperations(spdkClient, restore)
+	return r.postIncrementalRestoreOperations(restore)
 }
 
 func (r *Replica) waitForRestoreComplete() error {
@@ -2021,6 +2054,11 @@ func (r *Replica) waitForRestoreComplete() error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (r *Replica) postIncrementalRestoreOperations(restore *Restore) error {
+	r.log.Infof("Done running incremental restore %v to lvol %v", restore.BackupURL, restore.LvolName)
 	return nil
 }
 
