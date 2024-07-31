@@ -1359,27 +1359,6 @@ func (s *Server) ReplicaBackupRestore(ctx context.Context, req *spdkrpc.ReplicaB
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) EngineBackupRestoreFinish(ctx context.Context, req *spdkrpc.EngineBackupRestoreFinishRequest) (ret *emptypb.Empty, err error) {
-	logrus.WithFields(logrus.Fields{
-		"engine": req.EngineName,
-	}).Info("Finishing backup restoration")
-
-	s.RLock()
-	e := s.engineMap[req.EngineName]
-	s.RUnlock()
-
-	if e == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for finishing backup restoration", req.EngineName)
-	}
-
-	err = e.BackupRestoreFinish(s.spdkClient)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to finish backup restoration for engine %v", req.EngineName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
-	}
-	return &emptypb.Empty{}, nil
-}
-
 func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreStatusRequest) (*spdkrpc.RestoreStatusResponse, error) {
 	s.RLock()
 	e := s.engineMap[req.EngineName]

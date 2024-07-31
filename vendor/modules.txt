@@ -210,7 +210,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20240823072635-7afd6aa10d3e
+# github.com/longhorn/backupstore v0.0.0-20240827054225-fe89e488b75f
 ## explicit; go 1.22.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -267,7 +267,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240821075759-df0d2ae1b9bb
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240828022045-4ced424e8651
 ## explicit; go 1.22.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -288,7 +288,7 @@ github.com/longhorn/nsfilelock
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20240725040629-473d671316c4
+# github.com/longhorn/types v0.0.0-20240827042720-af8f10eb57cd
 ## explicit; go 1.21
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc

@@ -61,7 +61,8 @@ type Engine struct {
 	Head        *api.Lvol
 	SnapshotMap map[string]*api.Lvol
 
-	IsRestoring bool
+	IsRestoring           bool
+	RestoringSnapshotName string
 
 	// UpdateCh should not be protected by the engine lock
 	UpdateCh chan interface{}
@@ -1747,15 +1748,27 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 
 	e.IsRestoring = true
 
-	// TODO: support DR volume
-	if len(e.SnapshotMap) == 0 {
-		if snapshotName == "" {
-			snapshotName = util.UUID()
-			e.log.Infof("Generating a snapshot name %s for the full restore", snapshotName)
-		}
-	} else {
-		return nil, errors.Errorf("incremental restore is not supported yet")
+	switch {
+	case snapshotName != "":
+		e.RestoringSnapshotName = snapshotName
+		e.log.Infof("Using input snapshot name %s for the restore", e.RestoringSnapshotName)
+	case len(e.SnapshotMap) == 0:
+		e.RestoringSnapshotName = util.UUID()
+		e.log.Infof("Using new generated snapshot name %s for the full restore", e.RestoringSnapshotName)
+	case e.RestoringSnapshotName != "":
+		e.log.Infof("Using existing snapshot name %s for the incremental restore", e.RestoringSnapshotName)
+	default:
+		e.RestoringSnapshotName = util.UUID()
+		e.log.Infof("Using new generated snapshot name %s for the incremental restore because e.FinalSnapshotName is empty", e.RestoringSnapshotName)
 	}
+
+	defer func() {
+		go func() {
+			if err := e.completeBackupRestore(spdkClient); err != nil {
+				logrus.WithError(err).Warn("Failed to complete backup restore")
+			}
+		}()
+	}()
 
 	resp := &spdkrpc.EngineBackupRestoreResponse{
 		Errors: map[string]string{},
@@ -1780,7 +1793,7 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 			err = replicaServiceCli.ReplicaBackupRestore(&client.BackupRestoreRequest{
 				BackupUrl:       backupUrl,
 				ReplicaName:     replicaName,
-				SnapshotName:    snapshotName,
+				SnapshotName:    e.RestoringSnapshotName,
 				Credential:      credential,
 				ConcurrentLimit: concurrentLimit,
 			})
@@ -1792,6 +1805,66 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 	}
 
 	return resp, nil
+}
+
+func (e *Engine) completeBackupRestore(spdkClient *spdkclient.Client) error {
+	if err := e.waitForRestoreComplete(); err != nil {
+		return errors.Wrapf(err, "failed to wait for restore complete")
+	}
+
+	return e.BackupRestoreFinish(spdkClient)
+}
+
+func (e *Engine) waitForRestoreComplete() error {
+	periodicChecker := time.NewTicker(time.Duration(restorePeriodicRefreshInterval.Seconds()) * time.Second)
+	defer periodicChecker.Stop()
+
+	var err error
+	for range periodicChecker.C {
+		isReplicaRestoreCompleted := true
+		for replicaName, replicaAddress := range e.ReplicaAddressMap {
+			if e.ReplicaModeMap[replicaName] != types.ModeRW {
+				continue
+			}
+
+			isReplicaRestoreCompleted, err = e.isReplicaRestoreCompleted(replicaName, replicaAddress)
+			if err != nil {
+				return errors.Wrapf(err, "failed to check replica %s restore status", replicaName)
+			}
+
+			if !isReplicaRestoreCompleted {
+				break
+			}
+		}
+
+		if isReplicaRestoreCompleted {
+			e.log.Info("Backup restoration completed successfully")
+			return nil
+		}
+	}
+
+	return errors.Errorf("failed to wait for engine %s restore complete", e.Name)
+}
+
+func (e *Engine) isReplicaRestoreCompleted(replicaName, replicaAddress string) (bool, error) {
+	log := e.log.WithFields(logrus.Fields{
+		"replica": replicaName,
+		"address": replicaAddress,
+	})
+	log.Trace("Checking replica restore status")
+
+	replicaServiceCli, err := GetServiceClient(replicaAddress)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get replica %v service client %s", replicaName, replicaAddress)
+	}
+	defer replicaServiceCli.Close()
+
+	status, err := replicaServiceCli.ReplicaRestoreStatus(replicaName)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check replica %s restore status", replicaName)
+	}
+
+	return !status.IsRestoring, nil
 }
 
 func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
