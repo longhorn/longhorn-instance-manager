@@ -202,7 +202,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		e.ReplicaAddressMap = replicaAddressMap
 		e.log = e.log.WithField("replicaAddressMap", replicaAddressMap)
 
-		e.CheckAndUpdateInfoFromReplica()
+		e.checkAndUpdateInfoFromReplicaNoLock()
 
 		e.log.Info("Launching raid during engine creation")
 		if _, err := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList); err != nil {
@@ -624,12 +624,12 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		// TODO: should we delete the engine automatically here?
 	}
 
-	e.CheckAndUpdateInfoFromReplica()
+	e.checkAndUpdateInfoFromReplicaNoLock()
 
 	return nil
 }
 
-func (e *Engine) CheckAndUpdateInfoFromReplica() {
+func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 	replicaMap := map[string]*api.Replica{}
 	replicaAncestorMap := map[string]*api.Lvol{}
 	// hasBackingImage := false
@@ -867,6 +867,12 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 		return fmt.Errorf("replica %s already exists", dstReplicaName)
 	}
 
+	for replicaName, replicaMode := range e.ReplicaModeMap {
+		if replicaMode == types.ModeWO {
+			return fmt.Errorf("cannot add a new replica %s since there is already a rebuilding replica %s", dstReplicaName, replicaName)
+		}
+	}
+
 	// engineErr will be set when the engine failed to do any non-recoverable operations, then there is no way to make the engine continue working. Typically, it's related to the frontend suspend or resume failures.
 	// While err means replica-related operation errors. It will fail the current replica add flow.
 	var engineErr error
@@ -899,7 +905,10 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	if err != nil {
 		return err
 	}
-	srcReplicaServiceCli := replicaClients[srcReplicaName]
+	srcReplicaServiceCli, err := GetServiceClient(srcReplicaAddress)
+	if err != nil {
+		return err
+	}
 	dstReplicaServiceCli, err := GetServiceClient(dstReplicaAddress)
 	if err != nil {
 		return err
@@ -922,7 +931,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	}()
 
 	// Pause the IO and flush cache by suspending the NVMe initiator
-	if e.Frontend == types.FrontendSPDKTCPBlockdev {
+	if e.Frontend == types.FrontendSPDKTCPBlockdev && e.Endpoint != "" {
 		// The system-created snapshot during a rebuilding does not need to guarantee the integrity of the filesystem.
 		if err = e.initiator.Suspend(true, true); err != nil {
 			engineErr = err
@@ -943,6 +952,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	if err != nil {
 		return err
 	}
+	e.checkAndUpdateInfoFromReplicaNoLock()
 
 	rebuildingSnapshotList, err = getRebuildingSnapshotList(srcReplicaServiceCli, srcReplicaName)
 	if err != nil {
@@ -1031,7 +1041,7 @@ func (e *Engine) replicaShallowCopy(srcReplicaServiceCli, dstReplicaServiceCli *
 		}
 
 		if err := dstReplicaServiceCli.ReplicaRebuildingDstShallowCopyStart(dstReplicaName, currentSnapshotName); err != nil {
-			return err
+			return errors.Wrapf(err, "failed to start shallow copy snapshot %s", currentSnapshotName)
 		}
 		for {
 			shallowCopyStatus, err := dstReplicaServiceCli.ReplicaRebuildingDstShallowCopyCheck(dstReplicaName)
@@ -1045,6 +1055,7 @@ func (e *Engine) replicaShallowCopy(srcReplicaServiceCli, dstReplicaServiceCli *
 				if shallowCopyStatus.Progress != 100 {
 					e.log.Warnf("Shallow copy snapshot %s is %s but somehow the progress is not 100%%", shallowCopyStatus.SnapshotName, helpertypes.ShallowCopyStateComplete)
 				}
+				e.log.Infof("Shallow copied snapshot %s", shallowCopyStatus.SnapshotName)
 				break
 			}
 		}
@@ -1102,7 +1113,7 @@ func (e *Engine) replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli *cl
 
 	// Pause the IO again by suspending the NVMe initiator
 	// If something goes wrong, the engine will be marked as error, then we don't need to do anything for replicas. The deletion logic will take over the responsibility of cleanup.
-	if e.Frontend == types.FrontendSPDKTCPBlockdev {
+	if e.Frontend == types.FrontendSPDKTCPBlockdev && e.Endpoint != "" {
 		if err = e.initiator.Suspend(true, true); err != nil {
 			return errors.Wrapf(err, "failed to suspend NVMe initiator")
 		}
@@ -1124,6 +1135,7 @@ func (e *Engine) replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli *cl
 		}
 		updateRequired = true
 	}
+	e.checkAndUpdateInfoFromReplicaNoLock()
 
 	// The source replica blindly stops exposing the snapshot and wipe the rebuilding info.
 	if srcReplicaErr := srcReplicaServiceCli.ReplicaRebuildingSrcFinish(srcReplicaName, dstReplicaName); srcReplicaErr != nil {
@@ -1335,9 +1347,9 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 		return "", err
 	}
 
-	e.CheckAndUpdateInfoFromReplica()
+	e.checkAndUpdateInfoFromReplicaNoLock()
 
-	e.log.Infof("Engine finished snapshot %s for %v", snapshotOp, snapshotName)
+	e.log.Infof("Engine finished snapshot operation %s %s", snapshotOp, snapshotName)
 
 	return snapshotName, nil
 }
@@ -1372,7 +1384,7 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 			if e.ReplicaModeMap[replicaName] == types.ModeWO {
 				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot %s delete", e.Name, replicaName, snapshotName)
 			}
-			e.CheckAndUpdateInfoFromReplica()
+			e.checkAndUpdateInfoFromReplicaNoLock()
 			if len(e.SnapshotMap[snapshotName].Children) > 1 {
 				return "", fmt.Errorf("engine %s cannot delete snapshot %s since it contains multiple children %+v", e.Name, snapshotName, e.SnapshotMap[snapshotName].Children)
 			}
@@ -1401,9 +1413,9 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 			}
 		case SnapshotOperationPurge:
 			if e.ReplicaModeMap[replicaName] == types.ModeWO {
-				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot %s purge", e.Name, replicaName, snapshotName)
+				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot purge", e.Name, replicaName)
 			}
-			// TODO: Do we need to verify that all replicas hold the same system snapshot list
+			// TODO: Do we need to verify that all replicas hold the same system snapshot list?
 		default:
 			return "", fmt.Errorf("unknown replica snapshot operation %s", snapshotOp)
 		}
