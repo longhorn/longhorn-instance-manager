@@ -8,8 +8,13 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20240720163059-56c90cd23634
 	github.com/longhorn/go-common-libs v0.0.0-20240727052403-b543ea3732fe
 	github.com/longhorn/go-spdk-helper v0.0.0-20240727080828-a55a2982815a
+<<<<<<< HEAD
 	github.com/longhorn/longhorn-engine v1.7.0-rc2.0.20240729031753-4ec2bafb4437
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240731051620-4b7c226d2570
+=======
+	github.com/longhorn/longhorn-engine v1.7.0-dev.0.20240729132346-8d600a74f871
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240802050223-19f91e262eb5
+>>>>>>> 3f53e237 (fix: update vendor longhorn/longhorn-spdk-engine for SPDK online rebuilding bug)
 	github.com/longhorn/types v0.0.0-20240725040629-473d671316c4
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
