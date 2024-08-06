@@ -120,6 +120,14 @@ func GetReplicaRebuildingLvolName(replicaName string) string {
 	return fmt.Sprintf("%s-%s", replicaName, ReplicaRebuildingLvolSuffix)
 }
 
+func IsRebuildingLvol(lvolName string) bool {
+	return strings.HasSuffix(lvolName, ReplicaRebuildingLvolSuffix)
+}
+
+func GetReplicaNameFromRebuildingLvolName(lvolName string) string {
+	return strings.TrimSuffix(lvolName, fmt.Sprintf("-%s", ReplicaRebuildingLvolSuffix))
+}
+
 func GetNvmfEndpoint(nqn, ip string, port int32) string {
 	return fmt.Sprintf("nvmf://%s:%d/%s", ip, port, nqn)
 }
