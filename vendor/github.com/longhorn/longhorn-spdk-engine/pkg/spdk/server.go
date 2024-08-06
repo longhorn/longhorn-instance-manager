@@ -209,6 +209,17 @@ func (s *Server) verify() (err error) {
 		s.Unlock()
 		return err
 	}
+	bdevLvolMap := map[string]*spdktypes.BdevInfo{}
+	for idx := range bdevList {
+		bdev := &bdevList[idx]
+		if spdktypes.GetBdevType(bdev) != spdktypes.BdevTypeLvol {
+			continue
+		}
+		if len(bdev.Aliases) != 1 {
+			continue
+		}
+		bdevLvolMap[spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])] = bdev
+	}
 	lvsList, err := spdkClient.BdevLvolGetLvstore("", "")
 	if err != nil {
 		s.Unlock()
@@ -218,26 +229,39 @@ func (s *Server) verify() (err error) {
 	for _, lvs := range lvsList {
 		lvsUUIDNameMap[lvs.UUID] = lvs.Name
 	}
-	for idx := range bdevList {
-		bdev := &bdevList[idx]
-		if spdktypes.GetBdevType(bdev) != spdktypes.BdevTypeLvol {
+	for lvolName, bdevLvol := range bdevLvolMap {
+		if bdevLvol.DriverSpecific.Lvol.Snapshot {
 			continue
 		}
-		if len(bdev.Aliases) != 1 {
-			continue
-		}
-		if bdev.DriverSpecific.Lvol.Snapshot {
-			continue
-		}
-		lvolName := spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
 		if replicaMap[lvolName] != nil {
 			continue
 		}
-		lvsUUID := bdev.DriverSpecific.Lvol.LvolStoreUUID
-		specSize := bdev.NumBlocks * uint64(bdev.BlockSize)
-		actualSize := bdev.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
+		if IsRebuildingLvol(lvolName) {
+			if replicaMap[GetReplicaNameFromRebuildingLvolName(lvolName)] != nil {
+				continue
+			}
+		}
+		lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
+		specSize := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
+		actualSize := bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
 		replicaMap[lvolName] = NewReplica(s.ctx, lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, actualSize, s.updateChs[types.InstanceTypeReplica])
 		replicaMapForSync[lvolName] = replicaMap[lvolName]
+	}
+	for replicaName, r := range replicaMap {
+		if r.ChainLength < 2 {
+			delete(replicaMap, replicaName)
+			continue
+		}
+		headSvcLvol := r.ActiveChain[r.ChainLength-1]
+		if headSvcLvol == nil {
+			delete(replicaMap, replicaName)
+			continue
+		}
+		// TODO: How to handle a broken replica without a head lvol
+		if bdevLvolMap[headSvcLvol.Name] == nil {
+			delete(replicaMap, replicaName)
+			continue
+		}
 	}
 	s.replicaMap = replicaMap
 	s.Unlock()
