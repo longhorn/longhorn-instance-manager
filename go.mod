@@ -2,25 +2,25 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.22.0
 
-toolchain go1.22.2
+toolchain go1.22.6
 
 require (
-	github.com/RoaringBitmap/roaring v1.9.3
+	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240509144945-3bce6e69af15
-	github.com/longhorn/go-common-libs v0.0.0-20240514074907-351459694cbf
-	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
+	github.com/longhorn/backupstore 13b6333c9ddd
+	github.com/longhorn/go-common-libs 9e1e0e6045c6
+	github.com/longhorn/go-spdk-helper d679e629f379
 	github.com/longhorn/longhorn-engine v1.6.2
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240308142500-8ac41e985506
+	github.com/longhorn/longhorn-spdk-engine 015a1f25f838
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.15
 	golang.org/x/net v0.23.0
 	golang.org/x/sync v0.6.0
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.30.0
+	k8s.io/mount-utils v0.30.3
 )
 
 require (
