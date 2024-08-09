@@ -189,7 +189,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		for replicaName, replicaAddr := range replicaAddressMap {
 			bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaAddr)
 			if err != nil {
-				e.log.WithError(err).Errorf("Failed to get bdev from replica %s with address %s, will skip it and continue", replicaName, replicaAddr)
+				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s during creation, will mark the mode from %v to ERR and skip it and continue", replicaName, replicaAddr, e.ReplicaModeMap[replicaName])
 				e.ReplicaModeMap[replicaName] = types.ModeERR
 				e.ReplicaBdevNameMap[replicaName] = ""
 				continue
@@ -204,7 +204,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 
 		e.checkAndUpdateInfoFromReplicaNoLock()
 
-		e.log.Info("Launching raid during engine creation")
+		e.log.Infof("Connected all available replicas %+v, then launching raid during engine creation", e.ReplicaModeMap)
 		if _, err := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList); err != nil {
 			return nil, err
 		}
@@ -233,7 +233,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		for replicaName, replicaAddr := range replicaAddressMap {
 			_, ok := engineWithTarget.ReplicaAddressMap[replicaName]
 			if !ok {
-				e.log.WithError(err).Errorf("Failed to get bdev from replica %s with address %s, will skip it and continue", replicaName, replicaAddr)
+				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s, will mark the mode from %v to ERR and skip it and continue", replicaName, replicaAddr, e.ReplicaModeMap[replicaName])
 				e.ReplicaModeMap[replicaName] = types.ModeERR
 				e.ReplicaBdevNameMap[replicaName] = ""
 				continue
@@ -246,6 +246,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 
 		e.ReplicaAddressMap = replicaAddressMap
 		e.log = e.log.WithField("replicaAddressMap", replicaAddressMap)
+		e.log.Infof("Re-connected all available replicas %+v for engine reconstruction during upgrade", e.ReplicaModeMap)
 	}
 
 	e.log.Info("Launching frontend during engine creation")
@@ -435,6 +436,7 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *ut
 		if err := disconnectNVMfBdev(spdkClient, e.ReplicaBdevNameMap[replicaName]); err != nil {
 			if e.ReplicaModeMap[replicaName] != types.ModeERR {
 				e.ReplicaModeMap[replicaName] = types.ModeERR
+				e.log.WithError(err).Errorf("Engine failed to disconnect replica %s with bdev %s during deletion, will update the mode to ERR", replicaName, e.ReplicaBdevNameMap[replicaName])
 				requireUpdate = true
 			}
 			return err
@@ -564,33 +566,33 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		if _, exists := e.ReplicaBdevNameMap[replicaName]; !exists {
 			e.ReplicaBdevNameMap[replicaName] = ""
 			e.ReplicaModeMap[replicaName] = types.ModeERR
-			e.log.Errorf("Mark replica %s as mode ERR since it is not found in engine %s bdev name map", replicaName, e.Name)
+			e.log.Errorf("Engine marked replica %s mode from %v to ERR since it is not found in engine %s bdev name map during ValidateAndUpdate", replicaName, e.ReplicaModeMap[replicaName], e.Name)
 		}
 		if _, exists := e.ReplicaModeMap[replicaName]; !exists {
 			e.ReplicaModeMap[replicaName] = types.ModeERR
-			e.log.Errorf("Mark replica %s as mode ERR since it is not found in engine %s mode map", replicaName, e.Name)
+			e.log.Errorf("Engine marked replica %s mode from %v to ERR since it is not found in engine %s mode map during ValidateAndUpdate", replicaName, e.ReplicaModeMap[replicaName], e.Name)
 		}
 	}
 	for replicaName := range e.ReplicaBdevNameMap {
 		if _, exists := e.ReplicaAddressMap[replicaName]; !exists {
 			e.ReplicaAddressMap[replicaName] = ""
 			e.ReplicaModeMap[replicaName] = types.ModeERR
-			e.log.Errorf("Mark replica %s as mode ERR since it is not found in engine %s address map", replicaName, e.Name)
+			e.log.Errorf("Engine marked replica %s mode from %v to ERR since it is not found in engine %s address map during ValidateAndUpdate", replicaName, e.ReplicaModeMap[replicaName], e.Name)
 		}
 		if _, exists := e.ReplicaModeMap[replicaName]; !exists {
 			e.ReplicaModeMap[replicaName] = types.ModeERR
-			e.log.Errorf("Mark replica %s as mode ERR since it is not found in engine %s mode map", replicaName, e.Name)
+			e.log.Errorf("Engine marked replica %s mode from %v to ERR since it is not found in engine %s mode map during ValidateAndUpdate", replicaName, e.ReplicaModeMap[replicaName], e.Name)
 		}
 	}
 	// Now e.ReplicaAddressMap and e.ReplicaBdevNameMap should have the same key set
 	for replicaName := range e.ReplicaModeMap {
 		if _, exists := e.ReplicaAddressMap[replicaName]; !exists {
 			delete(e.ReplicaModeMap, replicaName)
-			e.log.Errorf("Remove replica %s for the mode map since it is not found in engine %s address map", replicaName, e.Name)
+			e.log.Errorf("Engine removed replica %s for the mode map since it is not found in engine %s address map during ValidateAndUpdate", replicaName, e.Name)
 		}
 		if _, exists := e.ReplicaBdevNameMap[replicaName]; !exists {
 			delete(e.ReplicaBdevNameMap, replicaName)
-			e.log.Errorf("Remove replica %s for the mode map since it is not found in engine %s bdev name map", replicaName, e.Name)
+			e.log.Errorf("Engine removed replica %s for the mode map since it is not found in engine %s bdev name map during ValidateAndUpdate", replicaName, e.Name)
 		}
 	}
 	e.log = e.log.WithField("replicaAddressMap", e.ReplicaAddressMap)
@@ -603,14 +605,14 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		mode, err := e.validateAndUpdateReplicaMode(replicaName, bdevMap[bdevName])
 		if err != nil {
 			if e.ReplicaModeMap[replicaName] != types.ModeERR {
-				e.log.WithError(err).Errorf("Replica %v is invalid, will update the mode from %s to %s", replicaName, e.ReplicaModeMap[replicaName], types.ModeERR)
+				e.log.WithError(err).Errorf("Replica %v is invalid, will update the mode from %s to ERR during ValidateAndUpdate", replicaName, e.ReplicaModeMap[replicaName])
 				e.ReplicaModeMap[replicaName] = types.ModeERR
 				updateRequired = true
 			}
 			continue
 		}
 		if e.ReplicaModeMap[replicaName] != mode {
-			e.log.Debugf("Replica %s mode is updated from %s to %s", replicaName, e.ReplicaModeMap[replicaName], mode)
+			e.log.Infof("Engine updated replica %s mode from %v to %v during ValidateAndUpdate", replicaName, e.ReplicaModeMap[replicaName], mode)
 			e.ReplicaModeMap[replicaName] = mode
 			updateRequired = true
 		}
@@ -620,6 +622,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 	}
 	if !containValidReplica {
 		e.State = types.InstanceStateError
+		e.log.Error("Engine had no RW replica found at the end of ValidateAndUpdate, will be marked as error")
 		updateRequired = true
 		// TODO: should we delete the engine automatically here?
 	}
@@ -645,7 +648,8 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 		}
 		replica, err := replicaServiceCli.ReplicaGet(replicaName)
 		if err != nil {
-			e.log.WithError(err).Warnf("failed to get replica %s with address %s, will skip this replica and continue info update from replica", replicaName, address)
+			e.log.WithError(err).Warnf("Failed to get replica %s with address %s, mark the mode from %v to ERR", replicaName, address, e.ReplicaModeMap[replicaName])
+			e.ReplicaModeMap[replicaName] = types.ModeERR
 			continue
 		}
 
@@ -890,6 +894,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 			}
 		}
 		if engineErr != nil || err != nil {
+			e.log.WithError(err).Errorf("Engine failed to start replica %s rebuilding, will mark the rebuilding replica mode from %v to ERR", dstReplicaName, e.ReplicaModeMap[dstReplicaName])
 			e.ReplicaModeMap[dstReplicaName] = types.ModeERR
 			e.ReplicaBdevNameMap[dstReplicaName] = ""
 			updateRequired = true
@@ -1008,7 +1013,7 @@ func (e *Engine) replicaShallowCopy(srcReplicaServiceCli, dstReplicaServiceCli *
 			e.Lock()
 			if e.ReplicaModeMap[dstReplicaName] != types.ModeERR {
 				e.ReplicaModeMap[dstReplicaName] = types.ModeERR
-				e.log.WithError(err).Errorf("Failed to rebuild replica %s from src replica %s, will mark the rebuilding replica mode as ERR", dstReplicaName, srcReplicaName)
+				e.log.WithError(err).Errorf("Engine failed to do shallow copy from src replica %s to dst replica %s, will mark the rebuilding replica mode from %v to ERR", srcReplicaName, dstReplicaName, e.ReplicaModeMap[dstReplicaName])
 				updateRequired = true
 			}
 			e.Unlock()
@@ -1128,9 +1133,10 @@ func (e *Engine) replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli *cl
 	// Besides, it should clean up the attached rebuilding lvol if exists.
 	if e.ReplicaModeMap[dstReplicaName] == types.ModeWO {
 		if dstReplicaErr := dstReplicaServiceCli.ReplicaRebuildingDstFinish(dstReplicaName); dstReplicaErr != nil {
-			e.log.WithError(dstReplicaErr).Errorf("Engine failed to finish rebuilding dst replica %s, will continue rebuilding src replica %s finish", dstReplicaName, srcReplicaName)
+			e.log.WithError(dstReplicaErr).Errorf("Engine failed to finish rebuilding dst replica %s, will update the mode from %v to ERR then continue rebuilding src replica %s finish", dstReplicaName, e.ReplicaModeMap[dstReplicaName], srcReplicaName)
 			e.ReplicaModeMap[dstReplicaName] = types.ModeERR
 		} else {
+			e.log.Infof("Engine succeeded to finish rebuilding dst replica %s, will update the mode from %v to RW", dstReplicaName, e.ReplicaModeMap[dstReplicaName])
 			e.ReplicaModeMap[dstReplicaName] = types.ModeRW
 		}
 		updateRequired = true
@@ -1434,9 +1440,9 @@ func (e *Engine) snapshotOperationWithoutLock(spdkClient *spdkclient.Client, rep
 
 	for replicaName := range replicaClients {
 		if err := e.replicaSnapshotOperation(spdkClient, replicaClients[replicaName], replicaName, snapshotName, snapshotOp, opts); err != nil && e.ReplicaModeMap[replicaName] != types.ModeERR {
+			e.log.WithError(err).Errorf("Engine failed to issue operation %s for replica %s snapshot %s, will mark the replica mode from %v to ERR", snapshotOp, replicaName, snapshotName, e.ReplicaModeMap[replicaName])
 			e.ReplicaModeMap[replicaName] = types.ModeERR
 			e.ReplicaBdevNameMap[replicaName] = ""
-			e.log.WithError(err).Errorf("Failed to issue operation %s for replica %s snapshot %s, will mark the replica as mode ERR", snapshotOp, replicaName, snapshotName)
 			updated = true
 		}
 	}
@@ -1472,6 +1478,8 @@ func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replica
 		if err := disconnectNVMfBdev(spdkClient, e.ReplicaBdevNameMap[replicaName]); err != nil {
 			return err
 		}
+		delete(e.ReplicaBdevNameMap, replicaName)
+		// If the below step failed, the replica will be marked as ERR during ValidateAndUpdate.
 		if err := replicaClient.ReplicaSnapshotRevert(replicaName, snapshotName); err != nil {
 			return err
 		}
@@ -2035,7 +2043,7 @@ func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocat
 	for replicaName := range e.ReplicaAddressMap {
 		e.log.Infof("Disconnecting replica %s after target switchover", replicaName)
 		if err := disconnectNVMfBdev(spdkClient, e.ReplicaBdevNameMap[replicaName]); err != nil {
-			e.log.WithError(err).Warnf("Failed to disconnect replica %s after target switchover", replicaName)
+			e.log.WithError(err).Warnf("Engine failed to disconnect replica %s after target switchover, will mark the replica mode from %v to ERR", replicaName, e.ReplicaModeMap[replicaName])
 			if e.ReplicaModeMap[replicaName] != types.ModeERR {
 				e.ReplicaModeMap[replicaName] = types.ModeERR
 			}
