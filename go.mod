@@ -2,6 +2,10 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.22.2
 
+replace github.com/longhorn/longhorn-spdk-engine => github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20240809051757-7ceda35b480a
+
+replace github.com/longhorn/backupstore => github.com/c3y1huang/backupstore v0.0.0-20240809014845-7e34647347fa
+
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0

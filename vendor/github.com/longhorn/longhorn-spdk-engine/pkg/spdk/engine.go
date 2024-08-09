@@ -1646,8 +1646,19 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 			e.log.Infof("Generating a snapshot name %s for the full restore", snapshotName)
 		}
 	} else {
-		return nil, errors.Errorf("incremental restore is not supported yet")
+		if snapshotName == "" {
+			snapshotName = util.UUID()
+			e.log.Infof("Generating a snapshot name %s for the incremental restore", snapshotName)
+		}
 	}
+
+	defer func() {
+		go func() {
+			if err := e.completeBackupRestore(spdkClient); err != nil {
+				logrus.WithError(err).Warn("Failed to complete backup restore")
+			}
+		}()
+	}()
 
 	resp := &spdkrpc.EngineBackupRestoreResponse{
 		Errors: map[string]string{},
@@ -1676,6 +1687,53 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 	}
 
 	return resp, nil
+}
+
+func (e *Engine) completeBackupRestore(spdkClient *spdkclient.Client) error {
+	if err := e.waitForRestoreComplete(); err != nil {
+		return errors.Wrapf(err, "failed to wait for restore complete")
+	}
+
+	return e.BackupRestoreFinish(spdkClient)
+}
+
+func (e *Engine) waitForRestoreComplete() error {
+	periodicChecker := time.NewTicker(time.Duration(restorePeriodicRefreshInterval.Seconds()) * time.Second)
+	defer periodicChecker.Stop()
+
+	for range periodicChecker.C {
+		isRestoring := false
+		for replicaName, replicaAddress := range e.ReplicaAddressMap {
+			log := e.log.WithFields(logrus.Fields{
+				"replica": replicaName,
+				"address": replicaAddress,
+			})
+			log.Trace("Checking replica restore status")
+
+			if isRestoring {
+				break
+			}
+
+			replicaServiceCli, err := GetServiceClient(replicaAddress)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get replica %v service client %s", replicaName, replicaAddress)
+			}
+
+			status, err := replicaServiceCli.ReplicaRestoreStatus(replicaName)
+			if err != nil {
+				return errors.Wrapf(err, "failed to check replica %s restore status", replicaName)
+			}
+
+			isRestoring = status.IsRestoring
+		}
+
+		if !isRestoring {
+			e.log.Info("Backup restoration completed successfully")
+			return nil
+		}
+	}
+
+	return errors.Errorf("failed to wait for engine %s restore complete", e.Name)
 }
 
 func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
