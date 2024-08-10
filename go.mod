@@ -5,9 +5,9 @@ go 1.22.2
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240729142451-d8ab2fde0c6c
+	github.com/longhorn/backupstore v0.0.0-20240806234049-13b6333c9ddd
 	github.com/longhorn/go-common-libs v0.0.0-20240729132251-9e1e0e6045c6
-	github.com/longhorn/go-spdk-helper v0.0.0-20240809041416-d679e629f379
+	github.com/longhorn/go-spdk-helper v0.0.0-20240810030817-541cd738003e
 	github.com/longhorn/longhorn-engine v1.7.0-rc3
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240809071348-015a1f25f838
 	github.com/longhorn/types v0.0.0-20240725040629-473d671316c4
@@ -79,7 +79,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
