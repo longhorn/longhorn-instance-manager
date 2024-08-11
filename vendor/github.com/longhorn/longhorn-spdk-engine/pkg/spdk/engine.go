@@ -219,6 +219,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		if err != nil {
 			return nil, err
 		}
+		defer targetSPDKClient.Close()
 
 		var engineWithTarget *api.Engine
 		if initiatorIP != targetIP {
@@ -650,6 +651,8 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 			e.log.WithError(err).Warnf("failed to get service client for replica %s with address %s, will skip this replica and continue info update from replica", replicaName, address)
 			continue
 		}
+		defer replicaServiceCli.Close()
+
 		replica, err := replicaServiceCli.ReplicaGet(replicaName)
 		if err != nil {
 			e.log.WithError(err).Warnf("Failed to get replica %s with address %s, mark the mode from %v to ERR", replicaName, address, e.ReplicaModeMap[replicaName])
@@ -913,6 +916,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	if err != nil {
 		return err
 	}
+	defer e.closeRplicaClients(replicaClients)
 
 	srcReplicaName, srcReplicaAddress, err := e.getReplicaAddSrcReplica()
 	if err != nil {
@@ -922,15 +926,30 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			srcReplicaServiceCli.Close()
+		}
+	}()
 	dstReplicaServiceCli, err := GetServiceClient(dstReplicaAddress)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			dstReplicaServiceCli.Close()
+		}
+	}()
 
 	var rebuildingSnapshotList []*api.Lvol
 	// Need to make sure the replica clients available before set this deferred goroutine
 	defer func() {
 		go func() {
+			defer func() {
+				srcReplicaServiceCli.Close()
+				dstReplicaServiceCli.Close()
+			}()
+
 			if err == nil && engineErr == nil {
 				if err = e.replicaShallowCopy(srcReplicaServiceCli, dstReplicaServiceCli, srcReplicaName, dstReplicaName, rebuildingSnapshotList); err != nil {
 					e.log.WithError(err).Errorf("Engine failed to do the shallow copy for replica %s add", dstReplicaName)
@@ -1338,6 +1357,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 	if err != nil {
 		return "", err
 	}
+	defer e.closeRplicaClients(replicaClients)
 
 	if snapshotName, err = e.snapshotOperationPreCheckWithoutLock(replicaClients, inputSnapshotName, snapshotOp); err != nil {
 		return "", err
@@ -1382,6 +1402,12 @@ func (e *Engine) getReplicaClients() (replicaClients map[string]*client.SPDKClie
 	}
 
 	return replicaClients, nil
+}
+
+func (e *Engine) closeRplicaClients(replicaClients map[string]*client.SPDKClient) {
+	for replicaName := range replicaClients {
+		replicaClients[replicaName].Close()
+	}
 }
 
 func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]*client.SPDKClient, snapshotName string, snapshotOp SnapshotOperationType) (string, error) {
@@ -1519,6 +1545,7 @@ func (e *Engine) ReplicaList(spdkClient *spdkclient.Client) (ret map[string]*api
 			e.log.WithError(err).Errorf("Failed to get service client for replica %s with address %s", name, address)
 			continue
 		}
+		defer replicaServiceCli.Close()
 
 		replica, err := replicaServiceCli.ReplicaGet(name)
 		if err != nil {
@@ -1573,6 +1600,7 @@ func (e *Engine) BackupCreate(backupName, volumeName, engineName, snapshotName, 
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
 	}
+	defer replicaServiceCli.Close()
 
 	recv, err := replicaServiceCli.ReplicaBackupCreate(&client.BackupCreateRequest{
 		BackupName:           backupName,
@@ -1622,6 +1650,7 @@ func (e *Engine) BackupStatus(backupName, replicaAddress string) (*spdkrpc.Backu
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
 	}
+	defer replicaServiceCli.Close()
 
 	return replicaServiceCli.ReplicaBackupStatus(backupName)
 }
@@ -1669,6 +1698,7 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 			resp.Errors[replicaAddress] = err.Error()
 			continue
 		}
+		defer replicaServiceCli.Close()
 
 		err = replicaServiceCli.ReplicaBackupRestore(&client.BackupRestoreRequest{
 			BackupUrl:       backupUrl,
@@ -1736,6 +1766,8 @@ func (e *Engine) RestoreStatus() (*spdkrpc.RestoreStatusResponse, error) {
 		if err != nil {
 			return nil, err
 		}
+		defer replicaServiceCli.Close()
+
 		status, err := replicaServiceCli.ReplicaRestoreStatus(replicaName)
 		if err != nil {
 			return nil, err
