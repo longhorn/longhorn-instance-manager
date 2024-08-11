@@ -1563,6 +1563,7 @@ func (r *Replica) RebuildingDstShallowCopyStart(spdkClient *spdkclient.Client, s
 	if err != nil {
 		return err
 	}
+	defer srcReplicaServiceCli.Close()
 
 	r.rebuildingDstCache.processingOpID, err = srcReplicaServiceCli.ReplicaRebuildingSrcShallowCopyStart(r.rebuildingDstCache.srcReplicaName, snapshotName)
 	return err
@@ -1618,6 +1619,8 @@ func (r *Replica) RebuildingDstShallowCopyCheck(spdkClient *spdkclient.Client) (
 		if err != nil {
 			return nil, err
 		}
+		defer srcReplicaServiceCli.Close()
+
 		state, copiedClusters, totalClusters, errorMsg, err := srcReplicaServiceCli.ReplicaRebuildingSrcShallowCopyCheck(r.rebuildingDstCache.srcReplicaName, r.Name, r.rebuildingDstCache.processingSnapshotName, r.rebuildingDstCache.processingOpID)
 		if err != nil {
 			errorMsg = errors.Wrapf(err, "dst replica %s failed to check the shallow copy status from src replica %s for snapshot %s", r.Name, r.rebuildingDstCache.srcReplicaName, r.rebuildingDstCache.processingSnapshotName).Error()
