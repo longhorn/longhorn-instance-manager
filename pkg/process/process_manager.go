@@ -19,6 +19,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/mount-utils"
 
+	lhBitmap "github.com/longhorn/go-common-libs/bitmap"
 	lhKubernetes "github.com/longhorn/go-common-libs/kubernetes"
 	lhLonghorn "github.com/longhorn/go-common-libs/longhorn"
 
@@ -52,7 +53,7 @@ type Manager struct {
 	processes       map[string]*Process
 	processUpdateCh chan *Process
 
-	availablePorts *util.Bitmap
+	availablePorts *lhBitmap.Bitmap
 
 	logsDir string
 
@@ -65,6 +66,11 @@ func NewManager(ctx context.Context, portRange string, logsDir string) (*Manager
 	if err != nil {
 		return nil, err
 	}
+	bitmap, err := lhBitmap.NewBitmap(start, end)
+	if err != nil {
+		return nil, err
+	}
+
 	pm := &Manager{
 		ctx:          ctx,
 		portRangeMin: start,
@@ -76,7 +82,7 @@ func NewManager(ctx context.Context, portRange string, logsDir string) (*Manager
 		lock:            &sync.RWMutex{},
 		processes:       map[string]*Process{},
 		processUpdateCh: make(chan *Process),
-		availablePorts:  util.NewBitmap(start, end),
+		availablePorts:  bitmap,
 
 		logsDir: logsDir,
 
