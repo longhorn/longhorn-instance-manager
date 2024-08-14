@@ -248,11 +248,7 @@ func (s *Server) verify() (err error) {
 		replicaMapForSync[lvolName] = replicaMap[lvolName]
 	}
 	for replicaName, r := range replicaMap {
-		if r.ChainLength < 2 {
-			delete(replicaMap, replicaName)
-			continue
-		}
-		headSvcLvol := r.ActiveChain[r.ChainLength-1]
+		headSvcLvol := r.GetVolumeHead()
 		if headSvcLvol == nil {
 			delete(replicaMap, replicaName)
 			continue
