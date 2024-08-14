@@ -188,6 +188,16 @@ func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specS
 	}
 }
 
+func (r *Replica) GetVolumeHead() *Lvol {
+	r.RLock()
+	defer r.RUnlock()
+
+	if r.ChainLength < 2 {
+		return nil
+	}
+	return r.ActiveChain[r.ChainLength-1]
+}
+
 func (r *Replica) Sync(spdkClient *spdkclient.Client) (err error) {
 	r.Lock()
 	defer r.Unlock()
@@ -1563,7 +1573,11 @@ func (r *Replica) RebuildingDstShallowCopyStart(spdkClient *spdkclient.Client, s
 	if err != nil {
 		return err
 	}
-	defer srcReplicaServiceCli.Close()
+	defer func() {
+		if errClose := srcReplicaServiceCli.Close(); errClose != nil {
+			r.log.WithError(errClose).Errorf("Failed to close replica %s client with address %s during start rebuilding dst shallow copy", r.rebuildingDstCache.srcReplicaName, r.rebuildingDstCache.srcReplicaAddress)
+		}
+	}()
 
 	r.rebuildingDstCache.processingOpID, err = srcReplicaServiceCli.ReplicaRebuildingSrcShallowCopyStart(r.rebuildingDstCache.srcReplicaName, snapshotName)
 	return err
@@ -1619,7 +1633,11 @@ func (r *Replica) RebuildingDstShallowCopyCheck(spdkClient *spdkclient.Client) (
 		if err != nil {
 			return nil, err
 		}
-		defer srcReplicaServiceCli.Close()
+		defer func() {
+			if errClose := srcReplicaServiceCli.Close(); errClose != nil {
+				r.log.WithError(errClose).Errorf("Failed to close replica %s client with address %s during check rebuilding dst shallow copy", r.rebuildingDstCache.srcReplicaName, r.rebuildingDstCache.srcReplicaAddress)
+			}
+		}()
 
 		state, copiedClusters, totalClusters, errorMsg, err := srcReplicaServiceCli.ReplicaRebuildingSrcShallowCopyCheck(r.rebuildingDstCache.srcReplicaName, r.Name, r.rebuildingDstCache.processingSnapshotName, r.rebuildingDstCache.processingOpID)
 		if err != nil {
