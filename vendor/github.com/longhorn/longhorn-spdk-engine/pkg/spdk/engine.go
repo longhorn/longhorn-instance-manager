@@ -33,21 +33,23 @@ import (
 type Engine struct {
 	sync.RWMutex
 
-	Name               string
-	VolumeName         string
-	SpecSize           uint64
-	ActualSize         uint64
+	Name       string
+	VolumeName string
+	SpecSize   uint64
+	ActualSize uint64
+	IP         string
+	Port       int32
+	TargetIP   string
+	TargetPort int32
+	Frontend   string
+	Endpoint   string
+	Nqn        string
+	Nguid      string
+
+	// TODO: Use a single map to store all replica info
 	ReplicaAddressMap  map[string]string
 	ReplicaBdevNameMap map[string]string
 	ReplicaModeMap     map[string]types.Mode
-	IP                 string
-	Port               int32
-	TargetIP           string
-	TargetPort         int32
-	Frontend           string
-	Endpoint           string
-	Nqn                string
-	Nguid              string
 
 	initiator    *nvme.Initiator
 	dmDeviceBusy bool
@@ -189,14 +191,14 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		for replicaName, replicaAddr := range replicaAddressMap {
 			bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaAddr)
 			if err != nil {
-				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s during creation, will mark the mode from %v to ERR and skip it and continue", replicaName, replicaAddr, e.ReplicaModeMap[replicaName])
+				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s during creation, will mark the mode from %v to ERR and continue", replicaName, replicaAddr, e.ReplicaModeMap[replicaName])
 				e.ReplicaModeMap[replicaName] = types.ModeERR
+				e.ReplicaBdevNameMap[replicaName] = ""
+			} else {
+				// TODO: Check if a replica is really a RW replica rather than a rebuilding failed replica
+				e.ReplicaModeMap[replicaName] = types.ModeRW
 				e.ReplicaBdevNameMap[replicaName] = bdevName
-				continue
 			}
-			// TODO: Check if a replica is really a RW replica rather than a rebuilding failed replica
-			e.ReplicaModeMap[replicaName] = types.ModeRW
-			e.ReplicaBdevNameMap[replicaName] = bdevName
 			replicaBdevList = append(replicaBdevList, bdevName)
 		}
 		e.ReplicaAddressMap = replicaAddressMap
@@ -239,13 +241,14 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		for replicaName, replicaAddr := range replicaAddressMap {
 			_, ok := engineWithTarget.ReplicaAddressMap[replicaName]
 			if !ok {
-				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s, will mark the mode from %v to ERR and skip it and continue", replicaName, replicaAddr, e.ReplicaModeMap[replicaName])
+				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s, will mark the mode from %v to ERR and continue", replicaName, replicaAddr, e.ReplicaModeMap[replicaName])
 				e.ReplicaModeMap[replicaName] = types.ModeERR
-				continue
+				e.ReplicaBdevNameMap[replicaName] = ""
+			} else {
+				e.ReplicaModeMap[replicaName] = types.ModeRW
+				e.ReplicaBdevNameMap[replicaName] = replicaName
 			}
 
-			e.ReplicaModeMap[replicaName] = types.ModeRW
-			e.ReplicaBdevNameMap[replicaName] = replicaName
 			replicaBdevList = append(replicaBdevList, replicaName)
 		}
 
@@ -570,6 +573,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 	for replicaName := range e.ReplicaAddressMap {
 		if _, exists := e.ReplicaBdevNameMap[replicaName]; !exists {
 			e.ReplicaModeMap[replicaName] = types.ModeERR
+			e.ReplicaBdevNameMap[replicaName] = ""
 			e.log.Errorf("Engine marked replica %s mode from %v to ERR since it is not found in engine %s bdev name map during ValidateAndUpdate", replicaName, e.ReplicaModeMap[replicaName], e.Name)
 		}
 		if _, exists := e.ReplicaModeMap[replicaName]; !exists {
