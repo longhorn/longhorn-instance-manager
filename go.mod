@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240811043357-5c2b7879457f
-	github.com/longhorn/go-common-libs v0.0.0-20240820144159-94447d3f68d8
+	github.com/longhorn/go-common-libs v0.0.0-20240821134112-907f57efd48f
 	github.com/longhorn/go-spdk-helper v0.0.0-20240811121608-9383fa59dd7c
 	github.com/longhorn/longhorn-engine v1.7.0-rc3
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240815033436-41791a2d0239
