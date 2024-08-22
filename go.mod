@@ -6,7 +6,11 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240811043357-5c2b7879457f
+<<<<<<< HEAD
 	github.com/longhorn/go-common-libs v0.0.0-20240811024046-b6ddc3efb72e
+=======
+	github.com/longhorn/go-common-libs v0.0.0-20240821134112-907f57efd48f
+>>>>>>> 4c2672c0 (fix: update engine naming regex to allow non digit enging)
 	github.com/longhorn/go-spdk-helper v0.0.0-20240811121608-9383fa59dd7c
 	github.com/longhorn/longhorn-engine v1.7.0-rc4
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240815033436-41791a2d0239

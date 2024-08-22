@@ -93,10 +93,17 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/longhorn/backupstore v0.0.0-20240811043357-5c2b7879457f h1:VBXKJ+BJoqhz+PGmHxDl6h+aWX9X9N3KQm1cxz4fv/w=
 github.com/longhorn/backupstore v0.0.0-20240811043357-5c2b7879457f/go.mod h1:U02ktOpAMSejR4vUztX2zt/78btYsUICDH5AipTddu4=
+<<<<<<< HEAD
 github.com/longhorn/go-common-libs v0.0.0-20240811024046-b6ddc3efb72e h1:cmns0zh6HMocqH7tnjFrgI8mf/h1i0bbnLznWfjQ63k=
 github.com/longhorn/go-common-libs v0.0.0-20240811024046-b6ddc3efb72e/go.mod h1:Yrq49KPpchy++7Z15GrMKPkiwr5IduPboLTL99a1TGA=
 github.com/longhorn/go-iscsi-helper v0.0.0-20240811043302-df8de353dd58 h1:fzLAnCLCecoUnsSYyyo7li5GD17xckyBl/zietxz168=
 github.com/longhorn/go-iscsi-helper v0.0.0-20240811043302-df8de353dd58/go.mod h1:TobRDCXmF0Ni+jz6+nLJamw3uVu+gNDZoZre1JczGwc=
+=======
+github.com/longhorn/go-common-libs v0.0.0-20240821134112-907f57efd48f h1:hjqUs3WVodkzrWwlUMVsnKAlom3uohoNlhZBGLsRvQY=
+github.com/longhorn/go-common-libs v0.0.0-20240821134112-907f57efd48f/go.mod h1:Qv34svr/msf6XoUwnrltNBTwMhQljbHEhb5ZKWiRdxo=
+github.com/longhorn/go-iscsi-helper v0.0.0-20240727052644-d2442a50e906 h1:1FoEoyIQRtKAKv3O8MJ1nczly3+WMzbFbjT3pmakpWw=
+github.com/longhorn/go-iscsi-helper v0.0.0-20240727052644-d2442a50e906/go.mod h1:/VLElLs6+hjmkY7VQn92W8MO56HVvLJUSNBQitOB0fY=
+>>>>>>> 4c2672c0 (fix: update engine naming regex to allow non digit enging)
 github.com/longhorn/go-spdk-helper v0.0.0-20240811121608-9383fa59dd7c h1:ztjrkxi7KcZPZBexnSKBZ2fX75JIU+iXibXeq8qpeg4=
 github.com/longhorn/go-spdk-helper v0.0.0-20240811121608-9383fa59dd7c/go.mod h1:BrtXoVnIZ97+uZ+cMcaICc5KnuJkh8j3+G1NjKxh+8Q=
 github.com/longhorn/longhorn-engine v1.7.0-rc4 h1:m+IUTSwkCLXZABPzxH1NjX2P3FJv/Yg0cP5nLS2tvns=

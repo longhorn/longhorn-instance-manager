@@ -187,7 +187,11 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
+<<<<<<< HEAD
 # github.com/longhorn/go-common-libs v0.0.0-20240811024046-b6ddc3efb72e
+=======
+# github.com/longhorn/go-common-libs v0.0.0-20240821134112-907f57efd48f
+>>>>>>> 4c2672c0 (fix: update engine naming regex to allow non digit enging)
 ## explicit; go 1.22.0
 github.com/longhorn/go-common-libs/backup
 github.com/longhorn/go-common-libs/exec
