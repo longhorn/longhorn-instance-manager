@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/mount-utils"
 
-	commonUtils "github.com/longhorn/go-common-libs/utils"
+	lhKubernetes "github.com/longhorn/go-common-libs/kubernetes"
 	rpc "github.com/longhorn/longhorn-instance-manager/pkg/imrpc"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
@@ -161,7 +161,7 @@ func (pm *Manager) getProcessesToUpdateConditions(volumeMountPointMap map[string
 			volumeNameSHAStr := hex.EncodeToString(volumeNameSHA[:])
 
 			if mp, exists := volumeMountPointMap[volumeNameSHAStr]; exists {
-				p.Conditions[types.EngineConditionFilesystemReadOnly] = commonUtils.IsMountPointReadOnly(mp)
+				p.Conditions[types.EngineConditionFilesystemReadOnly] = lhKubernetes.IsMountPointReadOnly(mp)
 				processesToUpdate = append(processesToUpdate, p)
 			}
 		}
