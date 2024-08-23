@@ -920,8 +920,9 @@ func (r *Replica) createDisk(name string, userCreated bool, created string, labe
 	rollbackFuncList := []func() error{}
 	defer func() {
 		if err == nil {
-			err = r.rmDisk(oldHead)
-			logrus.WithError(err).Errorf("Failed to remove old head %v", oldHead)
+			if errRm := r.rmDisk(oldHead); errRm != nil {
+				logrus.WithError(errRm).Warnf("Failed to remove old head %v", oldHead)
+			}
 			return
 		}
 
@@ -1467,7 +1468,8 @@ func (r *Replica) Preload(includeBackingFileLayer bool) error {
 	} else {
 		r.volume.initializeSectorLocation(nilFileIndex)
 	}
-	return r.volume.preload()
+	isThereBackingFile := r.info.BackingFile != nil
+	return r.volume.preload(isThereBackingFile)
 }
 
 func (r *Replica) GetDataLayout(ctx context.Context) (<-chan sparse.FileInterval, <-chan error, error) {
