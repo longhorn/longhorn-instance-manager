@@ -13,6 +13,7 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonNet "github.com/longhorn/go-common-libs/net"
 	commonTypes "github.com/longhorn/go-common-libs/types"
 	commonUtils "github.com/longhorn/go-common-libs/utils"
@@ -100,7 +101,7 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 	}
 }
 
-func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *util.Bitmap, initiatorAddress, targetAddress string, upgradeRequired bool) (ret *spdkrpc.Engine, err error) {
+func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonBitmap.Bitmap, initiatorAddress, targetAddress string, upgradeRequired bool) (ret *spdkrpc.Engine, err error) {
 	logrus.WithFields(logrus.Fields{
 		"portCount":         portCount,
 		"upgradeRequired":   upgradeRequired,
@@ -269,7 +270,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 	return e.getWithoutLock(), nil
 }
 
-func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *util.Bitmap, initiatorCreationRequired, upgradeRequired bool, initiatorAddress, targetAddress string) (err error) {
+func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonBitmap.Bitmap, initiatorCreationRequired, upgradeRequired bool, initiatorAddress, targetAddress string) (err error) {
 	if !types.IsFrontendSupported(e.Frontend) {
 		return fmt.Errorf("unknown frontend type %s", e.Frontend)
 	}
@@ -373,7 +374,7 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 	return nil
 }
 
-func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *util.Bitmap) (err error) {
+func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
 	e.log.Info("Deleting engine")
 
 	requireUpdate := false
@@ -2151,7 +2152,7 @@ func (e *Engine) connectTarget(targetAddress string) error {
 }
 
 // DeleteTarget deletes the target
-func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocator *util.Bitmap) (err error) {
+func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
 	e.log.Infof("Deleting target")
 
 	if err := spdkClient.StopExposeBdev(e.Nqn); err != nil {

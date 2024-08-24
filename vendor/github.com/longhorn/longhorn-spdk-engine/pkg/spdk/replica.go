@@ -17,6 +17,7 @@ import (
 	"github.com/longhorn/backupstore"
 	btypes "github.com/longhorn/backupstore/types"
 	butil "github.com/longhorn/backupstore/util"
+	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonNet "github.com/longhorn/go-common-libs/net"
 	commonUtils "github.com/longhorn/go-common-libs/utils"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
@@ -75,7 +76,7 @@ type Replica struct {
 	isRestoring bool
 	restore     *Restore
 
-	portAllocator *util.Bitmap
+	portAllocator *commonBitmap.Bitmap
 	// UpdateCh should not be protected by the replica lock
 	UpdateCh chan interface{}
 
@@ -561,7 +562,7 @@ func constructActiveChainFromSnapshotLvolMap(replicaName string, snapshotLvolMap
 }
 
 // Create initiates the replica, prepares the head lvol bdev then blindly exposes it for the replica.
-func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *util.Bitmap) (ret *spdkrpc.Replica, err error) {
+func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonBitmap.Bitmap) (ret *spdkrpc.Replica, err error) {
 	updateRequired := true
 
 	r.Lock()
@@ -656,7 +657,11 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 		return nil, err
 	}
 	// Always reserved the 1st port for replica expose and the rest for rebuilding
-	r.portAllocator = util.NewBitmap(r.PortStart+1, r.PortEnd)
+	bitmap, err := commonBitmap.NewBitmap(r.PortStart+1, r.PortEnd)
+	if err != nil {
+		return nil, err
+	}
+	r.portAllocator = bitmap
 
 	nguid := commonUtils.RandomID(nvmeNguidLength)
 	if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headSvcLvol.UUID, nguid, podIP, strconv.Itoa(int(r.PortStart))); err != nil {
@@ -670,7 +675,7 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 	return ServiceReplicaToProtoReplica(r), nil
 }
 
-func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, superiorPortAllocator *util.Bitmap) (err error) {
+func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
 	updateRequired := false
 
 	r.Lock()

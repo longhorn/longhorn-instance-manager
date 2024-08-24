@@ -210,7 +210,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20240823013231-436ca3afcf2d
+# github.com/longhorn/backupstore v0.0.0-20240823072635-7afd6aa10d3e
 ## explicit; go 1.22.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -226,6 +226,7 @@ github.com/longhorn/backupstore/vfs
 # github.com/longhorn/go-common-libs v0.0.0-20240821134112-907f57efd48f
 ## explicit; go 1.22.0
 github.com/longhorn/go-common-libs/backup
+github.com/longhorn/go-common-libs/bitmap
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
 github.com/longhorn/go-common-libs/kubernetes
@@ -244,7 +245,7 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.0.0-20240811121608-9383fa59dd7c
+# github.com/longhorn/go-spdk-helper v0.0.0-20240820144231-33c0873802ff
 ## explicit; go 1.22.0
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
@@ -266,7 +267,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240815033436-41791a2d0239
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240821075759-df0d2ae1b9bb
 ## explicit; go 1.22.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
