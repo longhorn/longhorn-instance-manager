@@ -13,6 +13,7 @@ import (
 
 	"github.com/longhorn/backupstore"
 	btypes "github.com/longhorn/backupstore/types"
+	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonNet "github.com/longhorn/go-common-libs/net"
 	commonNs "github.com/longhorn/go-common-libs/ns"
 	commonTypes "github.com/longhorn/go-common-libs/types"
@@ -63,7 +64,7 @@ type Backup struct {
 }
 
 // NewBackup creates a new backup instance
-func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *util.Bitmap) (*Backup, error) {
+func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *commonBitmap.Bitmap) (*Backup, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"backupName":   backupName,
 		"volumeName":   volumeName,
