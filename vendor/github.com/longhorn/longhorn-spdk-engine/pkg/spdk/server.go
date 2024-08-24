@@ -16,6 +16,7 @@ import (
 
 	"github.com/longhorn/backupstore"
 	butil "github.com/longhorn/backupstore/util"
+	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -39,7 +40,7 @@ type Server struct {
 	ctx context.Context
 
 	spdkClient    *spdkclient.Client
-	portAllocator *util.Bitmap
+	portAllocator *commonBitmap.Bitmap
 
 	replicaMap map[string]*Replica
 	engineMap  map[string]*Engine
@@ -53,6 +54,11 @@ type Server struct {
 
 func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 	cli, err := spdkclient.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bitmap, err := commonBitmap.NewBitmap(portStart, portEnd)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +85,7 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 		ctx: ctx,
 
 		spdkClient:    cli,
-		portAllocator: util.NewBitmap(portStart, portEnd),
+		portAllocator: bitmap,
 
 		replicaMap: map[string]*Replica{},
 		engineMap:  map[string]*Engine{},
