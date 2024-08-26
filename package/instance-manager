@@ -72,6 +72,10 @@ while [[ $# -gt 0 ]]; do
         -s|--enable-spdk)
             enable_spdk=1
             ;;
+        -m|--spdk-cpumask)
+            spdk_options+=("-m" "$2")
+            shift
+            ;;
         -l|--spdk-log)
             spdk_options+=("-L" "$2")
             shift
