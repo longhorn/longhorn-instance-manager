@@ -309,41 +309,6 @@ func (ops V2DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.Engi
 	})
 }
 
-func (p *Proxy) BackupRestoreFinish(ctx context.Context, req *rpc.EngineBackupRestoreFinishRequest) (resp *emptypb.Empty, err error) {
-	log := logrus.WithFields(logrus.Fields{
-		"serviceURL": req.ProxyEngineRequest.Address,
-		"engineName": req.ProxyEngineRequest.EngineName,
-		"volumeName": req.ProxyEngineRequest.VolumeName,
-		"dataEngine": req.ProxyEngineRequest.DataEngine,
-	})
-	log.Info("Finishing backup restoration")
-
-	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
-	if !ok {
-		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
-	}
-	return ops.BackupRestoreFinish(ctx, req)
-}
-
-func (ops V1DataEngineProxyOps) BackupRestoreFinish(ctx context.Context, req *rpc.EngineBackupRestoreFinishRequest) (*emptypb.Empty, error) {
-	// TODO: implement this
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
-}
-
-func (ops V2DataEngineProxyOps) BackupRestoreFinish(ctx context.Context, req *rpc.EngineBackupRestoreFinishRequest) (*emptypb.Empty, error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
-	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.ProxyEngineRequest.Address).Error())
-	}
-	defer c.Close()
-
-	err = c.EngineBackupRestoreFinish(req.ProxyEngineRequest.EngineName)
-	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to finish backup restoration").Error())
-	}
-	return &emptypb.Empty{}, nil
-}
-
 func (p *Proxy) BackupRestoreStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineBackupRestoreStatusProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL": req.Address,
