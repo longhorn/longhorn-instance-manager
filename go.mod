@@ -2,6 +2,10 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.22.2
 
+replace github.com/longhorn/backupstore => github.com/c3y1huang/backupstore v0.0.0-20240828035323-5cc2e815df20
+
+replace github.com/longhorn/longhorn-spdk-engine => github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20240828035930-a03e93ed1b9f
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20240827054225-fe89e488b75f
