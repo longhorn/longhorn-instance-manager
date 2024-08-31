@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	commonns "github.com/longhorn/go-common-libs/ns"
+	commontypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/nsfilelock"
 
 	"github.com/longhorn/go-spdk-helper/pkg/types"
@@ -47,7 +47,7 @@ type Initiator struct {
 	isUp           bool
 
 	hostProc string
-	executor *commonNs.Executor
+	executor *commonns.Executor
 
 	logger logrus.FieldLogger
 }
@@ -59,7 +59,7 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 	}
 
 	// If transportAddress or transportServiceID is empty, the initiator is still valid for stopping
-	executor, err := util.NewExecutor(commonTypes.ProcDirectory)
+	executor, err := util.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return nil, err
 	}

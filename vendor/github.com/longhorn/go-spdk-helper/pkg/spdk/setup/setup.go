@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonns "github.com/longhorn/go-common-libs/ns"
 
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
@@ -16,7 +16,7 @@ const (
 	spdkSetupPath = "/usr/src/spdk/scripts/setup.sh"
 )
 
-func Bind(deviceAddr, deviceDriver string, executor *commonNs.Executor) (string, error) {
+func Bind(deviceAddr, deviceDriver string, executor *commonns.Executor) (string, error) {
 	if deviceAddr == "" {
 		return "", fmt.Errorf("device address is empty")
 	}
@@ -40,7 +40,7 @@ func Bind(deviceAddr, deviceDriver string, executor *commonNs.Executor) (string,
 	return outputStr, nil
 }
 
-func Unbind(deviceAddr string, executor *commonNs.Executor) (string, error) {
+func Unbind(deviceAddr string, executor *commonns.Executor) (string, error) {
 	if deviceAddr == "" {
 		return "", fmt.Errorf("device address is empty")
 	}
@@ -59,7 +59,7 @@ func Unbind(deviceAddr string, executor *commonNs.Executor) (string, error) {
 	return outputStr, nil
 }
 
-func GetDiskDriver(deviceAddr string, executor *commonNs.Executor) (string, error) {
+func GetDiskDriver(deviceAddr string, executor *commonns.Executor) (string, error) {
 	if deviceAddr == "" {
 		return "", fmt.Errorf("device address is empty")
 	}
@@ -78,7 +78,7 @@ func GetDiskDriver(deviceAddr string, executor *commonNs.Executor) (string, erro
 	return extractJSON(outputStr)
 }
 
-func GetDiskStatus(deviceAddr string, executor *commonNs.Executor) (*types.DiskStatus, error) {
+func GetDiskStatus(deviceAddr string, executor *commonns.Executor) (*types.DiskStatus, error) {
 	if deviceAddr == "" {
 		return nil, fmt.Errorf("device address is empty")
 	}
