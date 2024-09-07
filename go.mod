@@ -68,7 +68,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/opencontainers/runc v1.1.13 // indirect
+	github.com/opencontainers/runc v1.1.14 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
