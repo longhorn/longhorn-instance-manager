@@ -4,11 +4,11 @@ go 1.22.2
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240905092550-326b9844e10b
-	github.com/longhorn/go-common-libs v0.0.0-20240906072425-66d5f9e6ae4e
-	github.com/longhorn/go-spdk-helper v0.0.0-20240902084253-ba8761258885
+	github.com/longhorn/backupstore v0.0.0-20240907142840-c1268343d512
+	github.com/longhorn/go-common-libs v0.0.0-20240907130740-7060fefb5bda
+	github.com/longhorn/go-spdk-helper v0.0.0-20240907134443-f2c9f3529ef6
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20240825.0.20240905075622-ecfa3c2bc26f
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240905144717-3024cb1ba7a1
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240907151113-a8f9ead687c5
 	github.com/longhorn/types v0.0.0-20240902072916-1bf23d310acb
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
