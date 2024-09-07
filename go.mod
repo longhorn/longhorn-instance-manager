@@ -4,12 +4,12 @@ go 1.22.2
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240827054225-fe89e488b75f
-	github.com/longhorn/go-common-libs v0.0.0-20240821134112-907f57efd48f
+	github.com/longhorn/backupstore v0.0.0-20240905092550-326b9844e10b
+	github.com/longhorn/go-common-libs v0.0.0-20240906072425-66d5f9e6ae4e
 	github.com/longhorn/go-spdk-helper v0.0.0-20240902084253-ba8761258885
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20240825.0.20240905075622-ecfa3c2bc26f
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240903022243-ca0b8f4dae1f
-	github.com/longhorn/types v0.0.0-20240827042720-af8f10eb57cd
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240905144717-3024cb1ba7a1
+	github.com/longhorn/types v0.0.0-20240902072916-1bf23d310acb
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.15
@@ -85,7 +85,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
