@@ -9,7 +9,6 @@ import (
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	"github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	grpccodes "google.golang.org/grpc/codes"
@@ -68,13 +67,13 @@ func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVolumeGetProxyResponse, err error) {
 	c, err := getSPDKClientFromAddress(req.Address)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address).Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
 	defer c.Close()
 
 	recv, err := c.EngineGet(req.EngineName)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v: %v", req.EngineName, err)
 	}
 
 	return &rpc.EngineVolumeGetProxyResponse{
