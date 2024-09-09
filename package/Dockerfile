@@ -177,4 +177,4 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-${ARC
 RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
-CMD ["longhorn"]
+CMD ["longhorn-instance-manager"]
