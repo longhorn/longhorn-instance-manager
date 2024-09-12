@@ -85,11 +85,8 @@ func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string)
 }
 
 func (s *Server) startMonitoring() {
-	for {
-		<-s.ctx.Done()
-		logrus.Infof("%s: stopped monitoring due to the context done", types.DiskGrpcService)
-		break
-	}
+	<-s.ctx.Done()
+	logrus.Infof("%s: stopped monitoring due to the context done", types.DiskGrpcService)
 }
 
 func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.DiskVersionResponse, error) {
