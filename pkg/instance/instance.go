@@ -87,11 +87,8 @@ func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkS
 }
 
 func (s *Server) startMonitoring() {
-	for {
-		<-s.ctx.Done()
-		logrus.Infof("%s: stopped monitoring due to the context done", types.InstanceGrpcService)
-		break
-	}
+	<-s.ctx.Done()
+	logrus.Infof("%s: stopped monitoring due to the context done", types.InstanceGrpcService)
 }
 
 func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.VersionResponse, error) {

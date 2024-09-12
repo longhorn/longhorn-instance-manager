@@ -78,11 +78,8 @@ func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddre
 }
 
 func (p *Proxy) startMonitoring() {
-	for {
-		<-p.ctx.Done()
-		logrus.Infof("%s: stopped monitoring due to the context done", types.ProxyGRPCService)
-		break
-	}
+	<-p.ctx.Done()
+	logrus.Infof("%s: stopped monitoring due to the context done", types.ProxyGRPCService)
 }
 
 func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineVersionProxyResponse, err error) {
