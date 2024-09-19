@@ -471,7 +471,7 @@ func (c *SPDKClient) ReplicaRebuildingDstSnapshotRevert(name, snapshotName strin
 }
 
 func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string, portCount int32,
-	initiatorAddress, targetAddress string, upgradeRequired bool) (*api.Engine, error) {
+	initiatorAddress, targetAddress string, upgradeRequired, salvageRequested bool) (*api.Engine, error) {
 	if name == "" || volumeName == "" || len(replicaAddressMap) == 0 {
 		return nil, fmt.Errorf("failed to start SPDK engine: missing required parameters")
 	}
@@ -490,6 +490,7 @@ func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize ui
 		UpgradeRequired:   upgradeRequired,
 		TargetAddress:     targetAddress,
 		InitiatorAddress:  initiatorAddress,
+		SalvageRequested:  salvageRequested,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start SPDK engine")
