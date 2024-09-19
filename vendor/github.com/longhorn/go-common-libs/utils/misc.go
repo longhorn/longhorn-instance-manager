@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -118,4 +119,36 @@ func ConvertTypeToString[T any](value T) string {
 	default:
 		return fmt.Sprintf("Unsupported type: %v", v.Kind())
 	}
+}
+
+// SortKeys sorts the keys of a map in ascending order.
+func SortKeys[K comparable, V any](mapObj map[K]V) ([]K, error) {
+	if mapObj == nil {
+		return nil, fmt.Errorf("input object cannot be nil")
+	}
+
+	keys := make([]K, 0, len(mapObj))
+	for key := range mapObj {
+		keys = append(keys, key)
+	}
+
+	// Handle empty map gracefully.
+	if len(keys) == 0 {
+		return keys, nil
+	}
+
+	switch reflect.TypeOf(keys[0]).Kind() {
+	case reflect.String:
+		sort.Slice(keys, func(i, j int) bool {
+			return reflect.ValueOf(keys[i]).String() < reflect.ValueOf(keys[j]).String()
+		})
+	case reflect.Uint64:
+		sort.Slice(keys, func(i, j int) bool {
+			return reflect.ValueOf(keys[i]).Uint() < reflect.ValueOf(keys[j]).Uint()
+		})
+	default:
+		return nil, fmt.Errorf("unsupported key type: %v", reflect.TypeOf(keys[0]).Kind())
+	}
+
+	return keys, nil
 }
