@@ -17,9 +17,9 @@ import (
 	"github.com/longhorn/backupstore"
 	btypes "github.com/longhorn/backupstore/types"
 	butil "github.com/longhorn/backupstore/util"
-	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
-	commonNet "github.com/longhorn/go-common-libs/net"
-	commonUtils "github.com/longhorn/go-common-libs/utils"
+	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
+	commonnet "github.com/longhorn/go-common-libs/net"
+	commonutils "github.com/longhorn/go-common-libs/utils"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -76,7 +76,7 @@ type Replica struct {
 	isRestoring bool
 	restore     *Restore
 
-	portAllocator *commonBitmap.Bitmap
+	portAllocator *commonbitmap.Bitmap
 	// UpdateCh should not be protected by the replica lock
 	UpdateCh chan interface{}
 
@@ -562,7 +562,7 @@ func constructActiveChainFromSnapshotLvolMap(replicaName string, snapshotLvolMap
 }
 
 // Create initiates the replica, prepares the head lvol bdev then blindly exposes it for the replica.
-func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonBitmap.Bitmap) (ret *spdkrpc.Replica, err error) {
+func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonbitmap.Bitmap) (ret *spdkrpc.Replica, err error) {
 	updateRequired := true
 
 	r.Lock()
@@ -646,7 +646,7 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 		r.State = types.InstanceStateStopped
 	}
 
-	podIP, err := commonNet.GetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return nil, err
 	}
@@ -657,13 +657,13 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 		return nil, err
 	}
 	// Always reserved the 1st port for replica expose and the rest for rebuilding
-	bitmap, err := commonBitmap.NewBitmap(r.PortStart+1, r.PortEnd)
+	bitmap, err := commonbitmap.NewBitmap(r.PortStart+1, r.PortEnd)
 	if err != nil {
 		return nil, err
 	}
 	r.portAllocator = bitmap
 
-	nguid := commonUtils.RandomID(nvmeNguidLength)
+	nguid := commonutils.RandomID(nvmeNguidLength)
 	if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headSvcLvol.UUID, nguid, podIP, strconv.Itoa(int(r.PortStart))); err != nil {
 		return nil, err
 	}
@@ -675,7 +675,7 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 	return ServiceReplicaToProtoReplica(r), nil
 }
 
-func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
+func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, superiorPortAllocator *commonbitmap.Bitmap) (err error) {
 	updateRequired := false
 
 	r.Lock()
@@ -1060,7 +1060,7 @@ func (r *Replica) SnapshotRevert(spdkClient *spdkclient.Client, snapshotName str
 		}
 		r.IsExposed = false
 
-		nguid := commonUtils.RandomID(nvmeNguidLength)
+		nguid := commonutils.RandomID(nvmeNguidLength)
 		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headLvolUUID, nguid, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
 			return nil, err
 		}
@@ -1173,7 +1173,7 @@ func (r *Replica) RebuildingSrcStart(spdkClient *spdkclient.Client, dstReplicaNa
 	if err != nil {
 		return "", err
 	}
-	nguid := commonUtils.RandomID(nvmeNguidLength)
+	nguid := commonutils.RandomID(nvmeNguidLength)
 	if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(snapLvol.Name), snapLvol.UUID, nguid, r.IP, strconv.Itoa(int(port))); err != nil {
 		return "", err
 	}
@@ -1395,7 +1395,7 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, srcReplicaNa
 	headSvcLvol := BdevLvolInfoToServiceLvol(&bdevLvolList[0])
 	r.ActiveChain[1] = headSvcLvol
 
-	nguid := commonUtils.RandomID(nvmeNguidLength)
+	nguid := commonutils.RandomID(nvmeNguidLength)
 	if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), headSvcLvol.UUID, nguid, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
 		return "", err
 	}
@@ -1860,7 +1860,7 @@ func (r *Replica) RebuildingDstSnapshotRevert(spdkClient *spdkclient.Client, sna
 
 	dstRebuildingLvolAddress = r.rebuildingDstCache.rebuildingLvol.Alias
 	if r.rebuildingDstCache.rebuildingPort != 0 {
-		nguid := commonUtils.RandomID(nvmeNguidLength)
+		nguid := commonutils.RandomID(nvmeNguidLength)
 		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.rebuildingDstCache.rebuildingLvol.Name), r.rebuildingDstCache.rebuildingLvol.UUID, nguid, r.IP, strconv.Itoa(int(r.rebuildingDstCache.rebuildingPort))); err != nil {
 			return "", err
 		}

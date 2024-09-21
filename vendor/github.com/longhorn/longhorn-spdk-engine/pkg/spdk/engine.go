@@ -13,10 +13,10 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
-	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
-	commonNet "github.com/longhorn/go-common-libs/net"
-	commonTypes "github.com/longhorn/go-common-libs/types"
-	commonUtils "github.com/longhorn/go-common-libs/utils"
+	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
+	commonnet "github.com/longhorn/go-common-libs/net"
+	commontypes "github.com/longhorn/go-common-libs/types"
+	commonutils "github.com/longhorn/go-common-libs/utils"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
@@ -102,7 +102,7 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 	}
 }
 
-func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonBitmap.Bitmap, initiatorAddress, targetAddress string, upgradeRequired bool) (ret *spdkrpc.Engine, err error) {
+func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorAddress, targetAddress string, upgradeRequired bool) (ret *spdkrpc.Engine, err error) {
 	logrus.WithFields(logrus.Fields{
 		"portCount":         portCount,
 		"upgradeRequired":   upgradeRequired,
@@ -122,7 +122,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		}
 	}()
 
-	podIP, err := commonNet.GetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 	return e.getWithoutLock(), nil
 }
 
-func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonBitmap.Bitmap, initiatorCreationRequired, upgradeRequired bool, initiatorAddress, targetAddress string) (err error) {
+func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorCreationRequired, upgradeRequired bool, initiatorAddress, targetAddress string) (err error) {
 	if !types.IsFrontendSupported(e.Frontend) {
 		return fmt.Errorf("unknown frontend type %s", e.Frontend)
 	}
@@ -295,7 +295,7 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 
 	var port int32
 	if !upgradeRequired {
-		e.Nguid = commonUtils.RandomID(nvmeNguidLength)
+		e.Nguid = commonutils.RandomID(nvmeNguidLength)
 
 		e.log.Info("Blindly stopping expose bdev for engine")
 		if err := spdkClient.StopExposeBdev(e.Nqn); err != nil {
@@ -375,7 +375,7 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 	return nil
 }
 
-func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
+func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap) (err error) {
 	e.log.Info("Deleting engine")
 
 	requireUpdate := false
@@ -546,7 +546,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		}
 	}()
 
-	podIP, err := commonNet.GetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return err
 	}
@@ -1379,7 +1379,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 		}
 		e.RUnlock()
 		if devicePath != "" {
-			ne, err := helperutil.NewExecutor(commonTypes.HostProcDirectory)
+			ne, err := helperutil.NewExecutor(commontypes.HostProcDirectory)
 			if err != nil {
 				e.log.WithError(err).Errorf("WARNING: failed to get the executor for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
 			} else {
@@ -2225,7 +2225,7 @@ func (e *Engine) connectTarget(targetAddress string) error {
 }
 
 // DeleteTarget deletes the target
-func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
+func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap) (err error) {
 	e.log.Infof("Deleting target")
 
 	if err := spdkClient.StopExposeBdev(e.Nqn); err != nil {
