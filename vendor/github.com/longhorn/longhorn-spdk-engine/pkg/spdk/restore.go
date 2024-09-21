@@ -11,8 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	btypes "github.com/longhorn/backupstore/types"
-	commonNs "github.com/longhorn/go-common-libs/ns"
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	commonns "github.com/longhorn/go-common-libs/ns"
+	commontypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
@@ -39,7 +39,7 @@ type Restore struct {
 
 	ip             string
 	port           int32
-	executor       *commonNs.Executor
+	executor       *commonns.Executor
 	subsystemNQN   string
 	controllerName string
 	initiator      *nvme.Initiator
@@ -58,7 +58,7 @@ func NewRestore(spdkClient *spdkclient.Client, lvolName, snapshotName, backupUrl
 		"backupName":   backupName,
 	})
 
-	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create executor")
 	}
