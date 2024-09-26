@@ -276,7 +276,7 @@ func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 		}
 		return engineResponseToInstanceResponse(engine), nil
 	case types.InstanceTypeReplica:
-		replica, err := c.ReplicaGet(req.Name)
+		replica, err := c.ReplicaGet(req.Name, false)
 		if err != nil {
 			return nil, err
 		}
