@@ -151,7 +151,7 @@ func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyE
 	}
 	defer c.Close()
 
-	recv, err := c.EngineGet(req.EngineName)
+	recv, err := c.EngineGet(req.EngineName, false)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
 	}
@@ -228,7 +228,7 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 	}
 	defer engineCli.Close()
 
-	e, err := engineCli.EngineGet(req.EngineName)
+	e, err := engineCli.EngineGet(req.EngineName, false)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v: %v", req.EngineName, err)
 	}
