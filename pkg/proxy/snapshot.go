@@ -135,7 +135,7 @@ func (ops V2DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 	}
 	defer c.Close()
 
-	engine, err := c.EngineGet(req.EngineName)
+	engine, err := c.EngineGet(req.EngineName, true)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get engine %v", req.EngineName)
 	}

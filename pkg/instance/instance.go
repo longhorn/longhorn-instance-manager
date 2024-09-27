@@ -270,7 +270,7 @@ func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
-		engine, err := c.EngineGet(req.Name)
+		engine, err := c.EngineGet(req.Name, false)
 		if err != nil {
 			return nil, err
 		}
