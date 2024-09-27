@@ -71,7 +71,7 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	}
 	defer c.Close()
 
-	recv, err := c.EngineGet(req.EngineName)
+	recv, err := c.EngineGet(req.EngineName, false)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v: %v", req.EngineName, err)
 	}
