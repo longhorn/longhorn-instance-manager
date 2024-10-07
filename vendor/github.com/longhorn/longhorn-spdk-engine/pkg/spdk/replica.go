@@ -1891,19 +1891,19 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 	backupType, err := butil.CheckBackupType(backupUrl)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to check the type for restoring backup %v", backupUrl)
-		return grpcstatus.Errorf(grpccodes.InvalidArgument, err.Error())
+		return grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
 	}
 
 	err = butil.SetupCredential(backupType, credential)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to setup credential for restoring backup %v", backupUrl)
-		return grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	backupName, _, _, err := backupstore.DecodeBackupURL(util.UnescapeURL(backupUrl))
 	if err != nil {
 		err = errors.Wrapf(err, "failed to decode backup url %v", backupUrl)
-		return grpcstatus.Errorf(grpccodes.InvalidArgument, err.Error())
+		return grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
 	}
 
 	if r.restore == nil {
@@ -1927,7 +1927,7 @@ func (r *Replica) BackupRestore(spdkClient *spdkclient.Client, backupUrl, snapsh
 		r.restore, err = NewRestore(spdkClient, lvolName, snapshotName, backupUrl, backupName, r)
 		if err != nil {
 			err = errors.Wrap(err, "failed to start new restore")
-			return grpcstatus.Errorf(grpccodes.Internal, err.Error())
+			return grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 		}
 	} else {
 		r.log.Infof("Resetting the restore for backup %v", backupUrl)

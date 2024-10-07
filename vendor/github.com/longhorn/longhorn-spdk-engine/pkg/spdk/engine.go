@@ -1662,7 +1662,7 @@ func (e *Engine) BackupCreate(backupName, volumeName, engineName, snapshotName, 
 
 	replicaServiceCli, err := GetServiceClient(replicaAddress)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 	defer func() {
 		if errClose := replicaServiceCli.Close(); errClose != nil {
@@ -1711,12 +1711,12 @@ func (e *Engine) BackupStatus(backupName, replicaAddress string) (*spdkrpc.Backu
 	}
 
 	if !found {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, fmt.Sprintf("replica address %s is not found in engine %s for getting backup %v status", replicaAddress, e.Name, backupName))
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "replica address %s is not found in engine %s for getting backup %v status", replicaAddress, e.Name, backupName)
 	}
 
 	replicaServiceCli, err := GetServiceClient(replicaAddress)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 	defer func() {
 		if errClose := replicaServiceCli.Close(); errClose != nil {
