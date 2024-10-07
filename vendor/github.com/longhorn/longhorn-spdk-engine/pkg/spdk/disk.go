@@ -150,7 +150,7 @@ func svcDiskGet(spdkClient *spdkclient.Client, diskName, diskPath, diskDriver st
 	bdevs, err := disk.DiskGet(spdkClient, diskName, diskPath, diskDriver, 0)
 	if err != nil {
 		if !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get bdev with name %v", diskName).Error())
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get bdev with name %v: %v", diskName, err)
 		}
 	}
 	if len(bdevs) == 0 {
@@ -184,7 +184,7 @@ func svcDiskGet(spdkClient *spdkclient.Client, diskName, diskPath, diskDriver st
 	}
 
 	if targetBdev == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, errors.Wrapf(err, "failed to get disk bdev for disk %v", diskName).Error())
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "failed to get disk bdev for disk %v: %v", diskName, err)
 	}
 
 	return lvstoreToDisk(spdkClient, diskPath, targetBdev.Name, "", exactDiskDriver)

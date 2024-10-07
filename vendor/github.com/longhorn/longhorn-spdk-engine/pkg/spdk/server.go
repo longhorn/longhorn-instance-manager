@@ -1228,7 +1228,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	err = butil.SetupCredential(backupType, req.Credential)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to setup credential of backup target %v for backup %v", req.BackupTarget, backupName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	var labelMap map[string]string
@@ -1236,7 +1236,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 		labelMap, err = util.ParseLabels(req.Labels)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to parse backup labels for backup %v", backupName)
-			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, err.Error())
+			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
 		}
 	}
 
@@ -1255,7 +1255,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	backup, err := NewBackup(s.spdkClient, backupName, req.VolumeName, req.SnapshotName, replica, s.portAllocator)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create backup instance %v for volume %v", backupName, req.VolumeName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	config := &backupstore.DeltaBackupConfig{
@@ -1285,7 +1285,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	if err := backup.BackupCreate(config); err != nil {
 		delete(s.backupMap, backupName)
 		err = errors.Wrapf(err, "failed to create backup %v for volume %v", backupName, req.VolumeName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	return &spdkrpc.BackupCreateResponse{
@@ -1371,7 +1371,7 @@ func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreSt
 	resp, err := e.RestoreStatus()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get restore status for engine %v", req.EngineName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 	return resp, nil
 }
