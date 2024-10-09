@@ -13,10 +13,10 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
-	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
-	commonNet "github.com/longhorn/go-common-libs/net"
-	commonTypes "github.com/longhorn/go-common-libs/types"
-	commonUtils "github.com/longhorn/go-common-libs/utils"
+	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
+	commonnet "github.com/longhorn/go-common-libs/net"
+	commontypes "github.com/longhorn/go-common-libs/types"
+	commonutils "github.com/longhorn/go-common-libs/utils"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
@@ -61,7 +61,8 @@ type Engine struct {
 	Head        *api.Lvol
 	SnapshotMap map[string]*api.Lvol
 
-	IsRestoring bool
+	IsRestoring           bool
+	RestoringSnapshotName string
 
 	// UpdateCh should not be protected by the engine lock
 	UpdateCh chan interface{}
@@ -101,7 +102,7 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 	}
 }
 
-func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonBitmap.Bitmap, initiatorAddress, targetAddress string, upgradeRequired bool) (ret *spdkrpc.Engine, err error) {
+func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorAddress, targetAddress string, upgradeRequired bool) (ret *spdkrpc.Engine, err error) {
 	logrus.WithFields(logrus.Fields{
 		"portCount":         portCount,
 		"upgradeRequired":   upgradeRequired,
@@ -121,7 +122,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		}
 	}()
 
-	podIP, err := commonNet.GetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +271,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 	return e.getWithoutLock(), nil
 }
 
-func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonBitmap.Bitmap, initiatorCreationRequired, upgradeRequired bool, initiatorAddress, targetAddress string) (err error) {
+func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorCreationRequired, upgradeRequired bool, initiatorAddress, targetAddress string) (err error) {
 	if !types.IsFrontendSupported(e.Frontend) {
 		return fmt.Errorf("unknown frontend type %s", e.Frontend)
 	}
@@ -294,7 +295,7 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 
 	var port int32
 	if !upgradeRequired {
-		e.Nguid = commonUtils.RandomID(nvmeNguidLength)
+		e.Nguid = commonutils.RandomID(nvmeNguidLength)
 
 		e.log.Info("Blindly stopping expose bdev for engine")
 		if err := spdkClient.StopExposeBdev(e.Nqn); err != nil {
@@ -374,7 +375,7 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, 
 	return nil
 }
 
-func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
+func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap) (err error) {
 	e.log.Info("Deleting engine")
 
 	requireUpdate := false
@@ -545,7 +546,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		}
 	}()
 
-	podIP, err := commonNet.GetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return err
 	}
@@ -1378,7 +1379,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 		}
 		e.RUnlock()
 		if devicePath != "" {
-			ne, err := helperutil.NewExecutor(commonTypes.HostProcDirectory)
+			ne, err := helperutil.NewExecutor(commontypes.HostProcDirectory)
 			if err != nil {
 				e.log.WithError(err).Errorf("WARNING: failed to get the executor for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
 			} else {
@@ -1661,7 +1662,7 @@ func (e *Engine) BackupCreate(backupName, volumeName, engineName, snapshotName, 
 
 	replicaServiceCli, err := GetServiceClient(replicaAddress)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 	defer func() {
 		if errClose := replicaServiceCli.Close(); errClose != nil {
@@ -1710,12 +1711,12 @@ func (e *Engine) BackupStatus(backupName, replicaAddress string) (*spdkrpc.Backu
 	}
 
 	if !found {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, fmt.Sprintf("replica address %s is not found in engine %s for getting backup %v status", replicaAddress, e.Name, backupName))
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "replica address %s is not found in engine %s for getting backup %v status", replicaAddress, e.Name, backupName)
 	}
 
 	replicaServiceCli, err := GetServiceClient(replicaAddress)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 	defer func() {
 		if errClose := replicaServiceCli.Close(); errClose != nil {
@@ -1747,15 +1748,27 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 
 	e.IsRestoring = true
 
-	// TODO: support DR volume
-	if len(e.SnapshotMap) == 0 {
-		if snapshotName == "" {
-			snapshotName = util.UUID()
-			e.log.Infof("Generating a snapshot name %s for the full restore", snapshotName)
-		}
-	} else {
-		return nil, errors.Errorf("incremental restore is not supported yet")
+	switch {
+	case snapshotName != "":
+		e.RestoringSnapshotName = snapshotName
+		e.log.Infof("Using input snapshot name %s for the restore", e.RestoringSnapshotName)
+	case len(e.SnapshotMap) == 0:
+		e.RestoringSnapshotName = util.UUID()
+		e.log.Infof("Using new generated snapshot name %s for the full restore", e.RestoringSnapshotName)
+	case e.RestoringSnapshotName != "":
+		e.log.Infof("Using existing snapshot name %s for the incremental restore", e.RestoringSnapshotName)
+	default:
+		e.RestoringSnapshotName = util.UUID()
+		e.log.Infof("Using new generated snapshot name %s for the incremental restore because e.FinalSnapshotName is empty", e.RestoringSnapshotName)
 	}
+
+	defer func() {
+		go func() {
+			if err := e.completeBackupRestore(spdkClient); err != nil {
+				logrus.WithError(err).Warn("Failed to complete backup restore")
+			}
+		}()
+	}()
 
 	resp := &spdkrpc.EngineBackupRestoreResponse{
 		Errors: map[string]string{},
@@ -1780,7 +1793,7 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 			err = replicaServiceCli.ReplicaBackupRestore(&client.BackupRestoreRequest{
 				BackupUrl:       backupUrl,
 				ReplicaName:     replicaName,
-				SnapshotName:    snapshotName,
+				SnapshotName:    e.RestoringSnapshotName,
 				Credential:      credential,
 				ConcurrentLimit: concurrentLimit,
 			})
@@ -1792,6 +1805,66 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 	}
 
 	return resp, nil
+}
+
+func (e *Engine) completeBackupRestore(spdkClient *spdkclient.Client) error {
+	if err := e.waitForRestoreComplete(); err != nil {
+		return errors.Wrapf(err, "failed to wait for restore complete")
+	}
+
+	return e.BackupRestoreFinish(spdkClient)
+}
+
+func (e *Engine) waitForRestoreComplete() error {
+	periodicChecker := time.NewTicker(time.Duration(restorePeriodicRefreshInterval.Seconds()) * time.Second)
+	defer periodicChecker.Stop()
+
+	var err error
+	for range periodicChecker.C {
+		isReplicaRestoreCompleted := true
+		for replicaName, replicaAddress := range e.ReplicaAddressMap {
+			if e.ReplicaModeMap[replicaName] != types.ModeRW {
+				continue
+			}
+
+			isReplicaRestoreCompleted, err = e.isReplicaRestoreCompleted(replicaName, replicaAddress)
+			if err != nil {
+				return errors.Wrapf(err, "failed to check replica %s restore status", replicaName)
+			}
+
+			if !isReplicaRestoreCompleted {
+				break
+			}
+		}
+
+		if isReplicaRestoreCompleted {
+			e.log.Info("Backup restoration completed successfully")
+			return nil
+		}
+	}
+
+	return errors.Errorf("failed to wait for engine %s restore complete", e.Name)
+}
+
+func (e *Engine) isReplicaRestoreCompleted(replicaName, replicaAddress string) (bool, error) {
+	log := e.log.WithFields(logrus.Fields{
+		"replica": replicaName,
+		"address": replicaAddress,
+	})
+	log.Trace("Checking replica restore status")
+
+	replicaServiceCli, err := GetServiceClient(replicaAddress)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get replica %v service client %s", replicaName, replicaAddress)
+	}
+	defer replicaServiceCli.Close()
+
+	status, err := replicaServiceCli.ReplicaRestoreStatus(replicaName)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check replica %s restore status", replicaName)
+	}
+
+	return !status.IsRestoring, nil
 }
 
 func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
@@ -2152,7 +2225,7 @@ func (e *Engine) connectTarget(targetAddress string) error {
 }
 
 // DeleteTarget deletes the target
-func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonBitmap.Bitmap) (err error) {
+func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap) (err error) {
 	e.log.Infof("Deleting target")
 
 	if err := spdkClient.StopExposeBdev(e.Nqn); err != nil {

@@ -13,10 +13,10 @@ import (
 
 	"github.com/longhorn/backupstore"
 	btypes "github.com/longhorn/backupstore/types"
-	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
-	commonNet "github.com/longhorn/go-common-libs/net"
-	commonNs "github.com/longhorn/go-common-libs/ns"
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
+	commonnet "github.com/longhorn/go-common-libs/net"
+	commonns "github.com/longhorn/go-common-libs/ns"
+	commontypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
@@ -58,13 +58,13 @@ type Backup struct {
 	controllerName string
 	initiator      *nvme.Initiator
 	devFh          *os.File
-	executor       *commonNs.Executor
+	executor       *commonns.Executor
 
 	log logrus.FieldLogger
 }
 
 // NewBackup creates a new backup instance
-func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *commonBitmap.Bitmap) (*Backup, error) {
+func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *commonbitmap.Bitmap) (*Backup, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"backupName":   backupName,
 		"volumeName":   volumeName,
@@ -73,7 +73,7 @@ func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotNa
 
 	log.Info("Initializing backup")
 
-	podIP, err := commonNet.GetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotNa
 		return nil, err
 	}
 
-	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create executor")
 	}
