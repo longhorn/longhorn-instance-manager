@@ -14,14 +14,14 @@ import (
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
-	commonUtils "github.com/longhorn/go-common-libs/utils"
+	commonns "github.com/longhorn/go-common-libs/ns"
+	commonutils "github.com/longhorn/go-common-libs/utils"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 )
 
-func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip string, port int32, executor *commonNs.Executor) (subsystemNQN, controllerName string, err error) {
+func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip string, port int32, executor *commonns.Executor) (subsystemNQN, controllerName string, err error) {
 	bdevLvolList, err := spdkClient.BdevLvolGet(spdktypes.GetLvolAlias(lvsName, lvolName), 0)
 	if err != nil {
 		return "", "", err
@@ -31,7 +31,7 @@ func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip
 	}
 
 	portStr := strconv.Itoa(int(port))
-	nguid := commonUtils.RandomID(nvmeNguidLength)
+	nguid := commonutils.RandomID(nvmeNguidLength)
 	err = spdkClient.StartExposeBdev(helpertypes.GetNQN(lvolName), bdevLvolList[0].UUID, nguid, ip, portStr)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to expose snapshot lvol bdev %v", lvolName)

@@ -16,7 +16,7 @@ import (
 
 	"github.com/longhorn/backupstore"
 	butil "github.com/longhorn/backupstore/util"
-	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
+	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -40,7 +40,7 @@ type Server struct {
 	ctx context.Context
 
 	spdkClient    *spdkclient.Client
-	portAllocator *commonBitmap.Bitmap
+	portAllocator *commonbitmap.Bitmap
 
 	replicaMap map[string]*Replica
 	engineMap  map[string]*Engine
@@ -58,7 +58,7 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 		return nil, err
 	}
 
-	bitmap, err := commonBitmap.NewBitmap(portStart, portEnd)
+	bitmap, err := commonbitmap.NewBitmap(portStart, portEnd)
 	if err != nil {
 		return nil, err
 	}
@@ -1228,7 +1228,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	err = butil.SetupCredential(backupType, req.Credential)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to setup credential of backup target %v for backup %v", req.BackupTarget, backupName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	var labelMap map[string]string
@@ -1236,7 +1236,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 		labelMap, err = util.ParseLabels(req.Labels)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to parse backup labels for backup %v", backupName)
-			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, err.Error())
+			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
 		}
 	}
 
@@ -1255,7 +1255,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	backup, err := NewBackup(s.spdkClient, backupName, req.VolumeName, req.SnapshotName, replica, s.portAllocator)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create backup instance %v for volume %v", backupName, req.VolumeName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	config := &backupstore.DeltaBackupConfig{
@@ -1285,7 +1285,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	if err := backup.BackupCreate(config); err != nil {
 		delete(s.backupMap, backupName)
 		err = errors.Wrapf(err, "failed to create backup %v for volume %v", backupName, req.VolumeName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	return &spdkrpc.BackupCreateResponse{
@@ -1359,27 +1359,6 @@ func (s *Server) ReplicaBackupRestore(ctx context.Context, req *spdkrpc.ReplicaB
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) EngineBackupRestoreFinish(ctx context.Context, req *spdkrpc.EngineBackupRestoreFinishRequest) (ret *emptypb.Empty, err error) {
-	logrus.WithFields(logrus.Fields{
-		"engine": req.EngineName,
-	}).Info("Finishing backup restoration")
-
-	s.RLock()
-	e := s.engineMap[req.EngineName]
-	s.RUnlock()
-
-	if e == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for finishing backup restoration", req.EngineName)
-	}
-
-	err = e.BackupRestoreFinish(s.spdkClient)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to finish backup restoration for engine %v", req.EngineName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
-	}
-	return &emptypb.Empty{}, nil
-}
-
 func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreStatusRequest) (*spdkrpc.RestoreStatusResponse, error) {
 	s.RLock()
 	e := s.engineMap[req.EngineName]
@@ -1392,7 +1371,7 @@ func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreSt
 	resp, err := e.RestoreStatus()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get restore status for engine %v", req.EngineName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 	return resp, nil
 }
