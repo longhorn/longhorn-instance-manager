@@ -4,11 +4,11 @@ go 1.22.2
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20241013024428-b52180a5191f
-	github.com/longhorn/go-common-libs v0.0.0-20241012153249-4c71f1cbdd9e
-	github.com/longhorn/go-spdk-helper v0.0.0-20240922062342-22115a91cbe9
+	github.com/longhorn/backupstore v0.0.0-20241019040107-9af970b538d9
+	github.com/longhorn/go-common-libs v0.0.0-20241018042323-54da24c0807f
+	github.com/longhorn/go-spdk-helper v0.0.0-20241018034138-ef1671b8828a
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241006
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241013042832-7fbb6d9d4fb8
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241018083705-f8fcbf5a6a48
 	github.com/longhorn/types v0.0.0-20241007141758-3640f2357238
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -23,7 +23,7 @@ require (
 
 require (
 	github.com/0xPolygon/polygon-edge v1.3.3 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.1 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
