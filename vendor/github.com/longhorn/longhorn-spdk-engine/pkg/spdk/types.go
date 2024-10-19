@@ -172,7 +172,11 @@ func GetBdevMap(cli *spdkclient.Client) (map[string]*spdktypes.BdevInfo, error) 
 }
 
 func GetBdevLvolMap(cli *spdkclient.Client) (map[string]*spdktypes.BdevInfo, error) {
-	bdevList, err := cli.BdevLvolGet("", 0)
+	return GetBdevLvolMapWithFilter(cli, func(*spdktypes.BdevInfo) bool { return true })
+}
+
+func GetBdevLvolMapWithFilter(cli *spdkclient.Client, filter func(*spdktypes.BdevInfo) bool) (map[string]*spdktypes.BdevInfo, error) {
+	bdevList, err := cli.BdevLvolGetWithFilter("", 0, filter)
 	if err != nil {
 		return nil, err
 	}

@@ -205,7 +205,14 @@ func (r *Replica) Sync(spdkClient *spdkclient.Client) (err error) {
 	// It's better to let the server send the update signal
 
 	// This lvol and nvmf subsystem fetch should be protected by replica lock, in case of snapshot operations happened during the sync-up.
-	bdevLvolMap, err := GetBdevLvolMap(spdkClient)
+	replicaLvolFilter := func(bdev *spdktypes.BdevInfo) bool {
+		var lvolName string
+		if len(bdev.Aliases) == 1 {
+			lvolName = spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
+		}
+		return IsReplicaLvol(r.Name, lvolName) || (r.ActiveChain[0] != nil && r.ActiveChain[0].Name == lvolName)
+	}
+	bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, replicaLvolFilter)
 	if err != nil {
 		return err
 	}
@@ -762,7 +769,14 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 
 	// Clean up the valid snapshot tree
 	if len(r.ActiveChain) > 1 {
-		bdevLvolMap, err := GetBdevLvolMap(spdkClient)
+		replicaLvolFilter := func(bdev *spdktypes.BdevInfo) bool {
+			var lvolName string
+			if len(bdev.Aliases) == 1 {
+				lvolName = spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
+			}
+			return IsReplicaLvol(r.Name, lvolName) || (r.ActiveChain[0] != nil && r.ActiveChain[0].Name == lvolName)
+		}
+		bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, replicaLvolFilter)
 		if err != nil {
 			return err
 		}
@@ -1036,7 +1050,14 @@ func (r *Replica) SnapshotRevert(spdkClient *spdkclient.Client, snapshotName str
 		return nil, err
 	}
 
-	bdevLvolMap, err := GetBdevLvolMap(spdkClient)
+	replicaLvolFilter := func(bdev *spdktypes.BdevInfo) bool {
+		var lvolName string
+		if len(bdev.Aliases) == 1 {
+			lvolName = spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
+		}
+		return IsReplicaLvol(r.Name, lvolName) || (r.ActiveChain[0] != nil && r.ActiveChain[0].Name == lvolName)
+	}
+	bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, replicaLvolFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -1490,7 +1511,14 @@ func (r *Replica) RebuildingDstFinish(spdkClient *spdkclient.Client) (err error)
 
 	r.doCleanupForRebuildingDst(spdkClient, r.rebuildingDstCache.rebuildingState == types.ProgressStateError)
 
-	bdevLvolMap, err := GetBdevLvolMap(spdkClient)
+	replicaLvolFilter := func(bdev *spdktypes.BdevInfo) bool {
+		var lvolName string
+		if len(bdev.Aliases) == 1 {
+			lvolName = spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
+		}
+		return IsReplicaLvol(r.Name, lvolName) || (r.ActiveChain[0] != nil && r.ActiveChain[0].Name == lvolName)
+	}
+	bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, replicaLvolFilter)
 	if err != nil {
 		return err
 	}
