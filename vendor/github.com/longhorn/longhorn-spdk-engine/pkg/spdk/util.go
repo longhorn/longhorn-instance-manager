@@ -3,6 +3,7 @@ package spdk
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,12 +15,44 @@ import (
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
+	commontypes "github.com/longhorn/go-common-libs/types"
 	commonutils "github.com/longhorn/go-common-libs/utils"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 )
+
+func connectNVMeTarget(srcIP string, srcPort int32, maxRetries int, retryInterval time.Duration) (string, string, error) {
+	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to create executor")
+	}
+
+	subsystemNQN := ""
+	controllerName := ""
+	for r := 0; r < maxRetries; r++ {
+		subsystemNQN, err = nvme.DiscoverTarget(srcIP, strconv.Itoa(int(srcPort)), executor)
+		if err != nil {
+			logrus.WithError(err).Warnf("Failed to discover target for with address %v:%v", srcIP, srcPort)
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		controllerName, err = nvme.ConnectTarget(srcIP, strconv.Itoa(int(srcPort)), subsystemNQN, executor)
+		if err != nil {
+			logrus.WithError(err).Warnf("Failed to connect target with address %v:%v", srcIP, srcPort)
+			time.Sleep(retryInterval)
+			continue
+		}
+		// break when it successfully discover and connect the target
+		break
+	}
+	if subsystemNQN == "" || controllerName == "" {
+		return "", "", errors.Wrapf(err, "timeout connecting target with address %v:%v", srcIP, srcPort)
+	}
+	return subsystemNQN, controllerName, nil
+}
 
 func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip string, port int32, executor *commonns.Executor) (subsystemNQN, controllerName string, err error) {
 	bdevLvolList, err := spdkClient.BdevLvolGet(spdktypes.GetLvolAlias(lvsName, lvolName), 0)
@@ -51,6 +84,8 @@ func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip
 			time.Sleep(retryInterval)
 			continue
 		}
+		// break when it successfully discover and connect the target
+		break
 	}
 	return subsystemNQN, controllerName, nil
 }
@@ -131,4 +166,46 @@ func CleanupLvolTree(spdkClient *spdkclient.Client, rootLvolName string, bdevLvo
 			log.WithError(err).Errorf("Failed to delete lvol %v(%v) from the lvol tree with root %v(%s), this lvol may accidentally have some leftover orphans children %+v, will continue", queue[idx].Aliases[0], queue[idx].UUID, bdevLvolMap[rootLvolName].Aliases[0], bdevLvolMap[rootLvolName].UUID, queue[idx].DriverSpecific.Lvol.Clones)
 		}
 	}
+}
+
+func GetSnapXattr(spdkClient *spdkclient.Client, alias, key string) (string, error) {
+	value, err := spdkClient.BdevLvolGetXattr(alias, key)
+	if err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
+func GetLvsNameByUUID(spdkClient *spdkclient.Client, lvsUUID string) (string, error) {
+	if lvsUUID == "" {
+		return "", fmt.Errorf("empty UUID provided when getting logical volume store name")
+	}
+	var lvsList []spdktypes.LvstoreInfo
+	lvsList, err := spdkClient.BdevLvolGetLvstore("", lvsUUID)
+	if err != nil {
+		return "", err
+	}
+	if len(lvsList) != 1 {
+		return "", fmt.Errorf("expected exactly one lvstore for UUID %s, but found %d", lvsUUID, len(lvsList))
+	}
+	return lvsList[0].Name, nil
+}
+
+// ExtractBackingImageAndDiskUUID extracts the BackingImageName and DiskUUID from the string pattern "bi-${BackingImageName}-disk-${DiskUUID}"
+func ExtractBackingImageAndDiskUUID(lvolName string) (string, string, error) {
+	// Define the regular expression pattern
+	// This captures the BackingImageName and DiskUUID while allowing for hyphens in both.
+	re := regexp.MustCompile(`^bi-([a-zA-Z0-9-]+)-disk-([a-zA-Z0-9-]+)$`)
+
+	// Try to find a match
+	matches := re.FindStringSubmatch(lvolName)
+	if matches == nil {
+		return "", "", fmt.Errorf("lvolName does not match the expected pattern")
+	}
+
+	// Extract BackingImageName and DiskUUID from the matches
+	backingImageName := matches[1]
+	diskUUID := matches[2]
+
+	return backingImageName, diskUUID, nil
 }

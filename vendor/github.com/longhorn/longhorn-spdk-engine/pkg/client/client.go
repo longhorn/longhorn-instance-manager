@@ -53,7 +53,7 @@ func NewSPDKClient(serviceURL string) (*SPDKClient, error) {
 	}, nil
 }
 
-func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint64, portCount int32) (*api.Replica, error) {
+func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint64, portCount int32, backingImageName string) (*api.Replica, error) {
 	if name == "" || lvsName == "" || lvsUUID == "" {
 		return nil, fmt.Errorf("failed to start SPDK replica: missing required parameters")
 	}
@@ -63,11 +63,12 @@ func (c *SPDKClient) ReplicaCreate(name, lvsName, lvsUUID string, specSize uint6
 	defer cancel()
 
 	resp, err := client.ReplicaCreate(ctx, &spdkrpc.ReplicaCreateRequest{
-		Name:      name,
-		LvsName:   lvsName,
-		LvsUuid:   lvsUUID,
-		SpecSize:  specSize,
-		PortCount: portCount,
+		Name:             name,
+		LvsName:          lvsName,
+		LvsUuid:          lvsUUID,
+		SpecSize:         specSize,
+		PortCount:        portCount,
+		BackingImageName: backingImageName,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start SPDK replica")
@@ -881,6 +882,129 @@ func (c *SPDKClient) ReplicaRestoreStatus(replicaName string) (*spdkrpc.ReplicaR
 	return client.ReplicaRestoreStatus(ctx, &spdkrpc.ReplicaRestoreStatusRequest{
 		ReplicaName: replicaName,
 	})
+}
+
+func (c *SPDKClient) BackingImageCreate(name, backingImageUUID, lvsUUID string, size uint64, checksum string, fromAddress string, srcLvsUUID string) (*api.BackingImage, error) {
+	if name == "" || backingImageUUID == "" || checksum == "" || lvsUUID == "" || size == 0 {
+		return nil, fmt.Errorf("failed to start SPDK backing image: missing required parameters")
+	}
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.BackingImageCreate(ctx, &spdkrpc.BackingImageCreateRequest{
+		Name:             name,
+		BackingImageUuid: backingImageUUID,
+		LvsUuid:          lvsUUID,
+		Size:             size,
+		Checksum:         checksum,
+		FromAddress:      fromAddress,
+		SrcLvsUuid:       srcLvsUUID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start SPDK backing image")
+	}
+	return api.ProtoBackingImageToBackingImage(resp), nil
+}
+
+func (c *SPDKClient) BackingImageDelete(name, lvsUUID string) error {
+	if name == "" || lvsUUID == "" {
+		return fmt.Errorf("failed to delete SPDK backingImage: missing required parameter")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.BackingImageDelete(ctx, &spdkrpc.BackingImageDeleteRequest{
+		Name:    name,
+		LvsUuid: lvsUUID,
+	})
+	return errors.Wrapf(err, "failed to delete SPDK backing image %v", name)
+}
+
+func (c *SPDKClient) BackingImageGet(name, lvsUUID string) (*api.BackingImage, error) {
+	if name == "" || lvsUUID == "" {
+		return nil, fmt.Errorf("failed to get SPDK BackingImage: missing required parameter")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.BackingImageGet(ctx, &spdkrpc.BackingImageGetRequest{
+		Name:    name,
+		LvsUuid: lvsUUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get SPDK backing image %v", name)
+	}
+	return api.ProtoBackingImageToBackingImage(resp), nil
+}
+
+func (c *SPDKClient) BackingImageList() (map[string]*api.BackingImage, error) {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.BackingImageList(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list SPDK backing images")
+	}
+
+	res := map[string]*api.BackingImage{}
+	for name, backingImage := range resp.BackingImages {
+		res[name] = api.ProtoBackingImageToBackingImage(backingImage)
+	}
+	return res, nil
+}
+
+func (c *SPDKClient) BackingImageWatch(ctx context.Context) (*api.BackingImageStream, error) {
+	client := c.getSPDKServiceClient()
+	stream, err := client.BackingImageWatch(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open backing image watch stream")
+	}
+
+	return api.NewBackingImageStream(stream), nil
+}
+
+func (c *SPDKClient) BackingImageExpose(name, lvsUUID string) (exposedSnapshotLvolAddress string, err error) {
+	if name == "" || lvsUUID == "" {
+		return "", fmt.Errorf("failed to expose SPDK backing image: missing required parameter")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	resp, err := client.BackingImageExpose(ctx, &spdkrpc.BackingImageGetRequest{
+		Name:    name,
+		LvsUuid: lvsUUID,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to expose SPDK backing image %v in lvstore: %v", name, lvsUUID)
+	}
+	return resp.ExposedSnapshotLvolAddress, nil
+}
+
+func (c *SPDKClient) BackingImageUnexpose(name, lvsUUID string) error {
+	if name == "" || lvsUUID == "" {
+		return fmt.Errorf("failed to unexpose SPDK backing image: missing required parameter")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.BackingImageUnexpose(ctx, &spdkrpc.BackingImageGetRequest{
+		Name:    name,
+		LvsUuid: lvsUUID,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to unexpose SPDK backing image %v in lvstore %v", name, lvsUUID)
+	}
+	return nil
 }
 
 // DiskCreate creates a disk with the given name and path.

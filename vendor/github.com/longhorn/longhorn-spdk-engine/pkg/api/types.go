@@ -14,19 +14,20 @@ type SnapshotOptions struct {
 }
 
 type Replica struct {
-	Name       string           `json:"name"`
-	LvsName    string           `json:"lvs_name"`
-	LvsUUID    string           `json:"lvs_uuid"`
-	SpecSize   uint64           `json:"spec_size"`
-	ActualSize uint64           `json:"actual_size"`
-	Head       *Lvol            `json:"head"`
-	Snapshots  map[string]*Lvol `json:"snapshots"`
-	IP         string           `json:"ip"`
-	PortStart  int32            `json:"port_start"`
-	PortEnd    int32            `json:"port_end"`
-	State      string           `json:"state"`
-	ErrorMsg   string           `json:"error_msg"`
-	Rebuilding bool             `json:"rebuilding"`
+	Name             string           `json:"name"`
+	LvsName          string           `json:"lvs_name"`
+	LvsUUID          string           `json:"lvs_uuid"`
+	SpecSize         uint64           `json:"spec_size"`
+	ActualSize       uint64           `json:"actual_size"`
+	Head             *Lvol            `json:"head"`
+	Snapshots        map[string]*Lvol `json:"snapshots"`
+	IP               string           `json:"ip"`
+	PortStart        int32            `json:"port_start"`
+	PortEnd          int32            `json:"port_end"`
+	State            string           `json:"state"`
+	ErrorMsg         string           `json:"error_msg"`
+	Rebuilding       bool             `json:"rebuilding"`
+	BackingImageName string           `json:"backing_image_name"`
 }
 
 type Lvol struct {
@@ -95,6 +96,10 @@ func ProtoReplicaToReplica(r *spdkrpc.Replica) *Replica {
 		res.Snapshots[snapName] = ProtoLvolToLvol(snapProtoLvol)
 	}
 
+	if r.BackingImageName != "" {
+		res.BackingImageName = r.BackingImageName
+	}
+
 	return res
 }
 
@@ -104,7 +109,7 @@ func ReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 		snapshots[name] = LvolToProtoLvol(snapshot)
 	}
 
-	return &spdkrpc.Replica{
+	res := &spdkrpc.Replica{
 		Name:       r.Name,
 		LvsName:    r.LvsName,
 		LvsUuid:    r.LvsUUID,
@@ -119,6 +124,11 @@ func ReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 		State:      r.State,
 		ErrorMsg:   r.ErrorMsg,
 	}
+
+	if r.BackingImageName != "" {
+		res.BackingImageName = r.BackingImageName
+	}
+	return res
 }
 
 type Engine struct {
@@ -169,6 +179,54 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 	}
 
 	return res
+}
+
+type BackingImage struct {
+	Name             string `json:"name"`
+	BackingImageUUID string `json:"backing_image_uuid"`
+	LvsName          string `json:"lvs_name"`
+	LvsUUID          string `json:"lvs_uuid"`
+	Size             uint64 `json:"size"`
+	ExpectedChecksum string `json:"expected_checksum"`
+	Snapshot         *Lvol  `json:"snapshot"`
+	Progress         int32  `json:"progress"`
+	State            string `json:"state"`
+	CurrentChecksum  string `json:"current_checksum"`
+	ErrorMsg         string `json:"error_msg"`
+}
+
+func ProtoBackingImageToBackingImage(bi *spdkrpc.BackingImage) *BackingImage {
+	res := &BackingImage{
+		Name:             bi.Name,
+		BackingImageUUID: bi.BackingImageUuid,
+		LvsName:          bi.LvsName,
+		LvsUUID:          bi.LvsUuid,
+		Size:             bi.Size,
+		ExpectedChecksum: bi.ExpectedChecksum,
+		Snapshot:         ProtoLvolToLvol(bi.Snapshot),
+		Progress:         bi.Progress,
+		State:            bi.State,
+		CurrentChecksum:  bi.CurrentChecksum,
+		ErrorMsg:         bi.ErrorMsg,
+	}
+
+	return res
+}
+
+func BackingImageToProtoBackingImage(bi *BackingImage) *spdkrpc.BackingImage {
+	return &spdkrpc.BackingImage{
+		Name:             bi.Name,
+		BackingImageUuid: bi.BackingImageUUID,
+		LvsName:          bi.LvsName,
+		LvsUuid:          bi.LvsUUID,
+		Size:             bi.Size,
+		ExpectedChecksum: bi.ExpectedChecksum,
+		Snapshot:         LvolToProtoLvol(bi.Snapshot),
+		Progress:         bi.Progress,
+		State:            bi.State,
+		CurrentChecksum:  bi.CurrentChecksum,
+		ErrorMsg:         bi.ErrorMsg,
+	}
 }
 
 type DiskInfo struct {
@@ -238,5 +296,19 @@ func NewEngineStream(stream spdkrpc.SPDKService_EngineWatchClient) *EngineStream
 }
 
 func (s *EngineStream) Recv() (*emptypb.Empty, error) {
+	return s.stream.Recv()
+}
+
+type BackingImageStream struct {
+	stream spdkrpc.SPDKService_BackingImageWatchClient
+}
+
+func NewBackingImageStream(stream spdkrpc.SPDKService_BackingImageWatchClient) *BackingImageStream {
+	return &BackingImageStream{
+		stream,
+	}
+}
+
+func (s *BackingImageStream) Recv() (*emptypb.Empty, error) {
 	return s.stream.Recv()
 }

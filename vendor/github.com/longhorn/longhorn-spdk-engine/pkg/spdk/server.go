@@ -50,6 +50,9 @@ type Server struct {
 
 	backupMap map[string]*Backup
 
+	// We store BackingImage in each lvstore
+	backingImageMap map[string]*BackingImage
+
 	broadcasters map[types.InstanceType]*broadcaster.Broadcaster
 	broadcastChs map[types.InstanceType]chan interface{}
 	updateChs    map[types.InstanceType]chan interface{}
@@ -78,7 +81,7 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 	broadcasters := map[types.InstanceType]*broadcaster.Broadcaster{}
 	broadcastChs := map[types.InstanceType]chan interface{}{}
 	updateChs := map[types.InstanceType]chan interface{}{}
-	for _, t := range []types.InstanceType{types.InstanceTypeReplica, types.InstanceTypeEngine} {
+	for _, t := range []types.InstanceType{types.InstanceTypeReplica, types.InstanceTypeEngine, types.InstanceTypeBackingImage} {
 		broadcasters[t] = &broadcaster.Broadcaster{}
 		broadcastChs[t] = make(chan interface{})
 		updateChs[t] = make(chan interface{})
@@ -95,6 +98,8 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 
 		backupMap: map[string]*Backup{},
 
+		backingImageMap: map[string]*BackingImage{},
+
 		broadcasters: broadcasters,
 		broadcastChs: broadcastChs,
 		updateChs:    updateChs,
@@ -104,6 +109,9 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 		return nil, err
 	}
 	if _, err := s.broadcasters[types.InstanceTypeEngine].Subscribe(ctx, s.engineBroadcastConnector); err != nil {
+		return nil, err
+	}
+	if _, err := s.broadcasters[types.InstanceTypeBackingImage].Subscribe(ctx, s.backingImageBroadcastConnector); err != nil {
 		return nil, err
 	}
 
@@ -182,6 +190,8 @@ func (s *Server) verify() (err error) {
 	replicaMap := map[string]*Replica{}
 	replicaMapForSync := map[string]*Replica{}
 	engineMapForSync := map[string]*Engine{}
+	backingImageMap := map[string]*BackingImage{}
+	backingImageMapForSync := map[string]*BackingImage{}
 
 	s.Lock()
 	for k, v := range s.replicaMap {
@@ -191,6 +201,11 @@ func (s *Server) verify() (err error) {
 	for k, v := range s.engineMap {
 		engineMapForSync[k] = v
 	}
+	for k, v := range s.backingImageMap {
+		backingImageMap[k] = v
+		backingImageMapForSync[k] = v
+	}
+
 	spdkClient := s.spdkClient
 
 	defer func() {
@@ -208,7 +223,7 @@ func (s *Server) verify() (err error) {
 		}
 	}()
 
-	// Detect if the lvol bdev is an uncached replica.
+	// Detect if the lvol bdev is an uncached replica or backing image.
 	// But cannot detect if a RAID bdev is an engine since:
 	//   1. we don't know the frontend
 	//   2. RAID bdevs are not persist objects in SPDK. After spdk_tgt start/restart, there is no RAID bdev hence there is no need to do detection.
@@ -238,11 +253,26 @@ func (s *Server) verify() (err error) {
 	for _, lvs := range lvsList {
 		lvsUUIDNameMap[lvs.UUID] = lvs.Name
 	}
+	// Backing image lvol name will be "bi-${biName}-disk-${lvsUUID}"
+	// Backing image temp lvol name will be "bi-${biName}-disk-${lvsUUID}-temp-head"
 	for lvolName, bdevLvol := range bdevLvolMap {
-		if bdevLvol.DriverSpecific.Lvol.Snapshot {
+		if bdevLvol.DriverSpecific.Lvol.Snapshot && !IsBackingImageSnapLvolName(lvolName) {
+			continue
+		}
+		if IsBackingImageTempHead(lvolName) {
+			if s.backingImageMap[GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName)] == nil {
+				lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
+				logrus.Infof("Found one backing image temp head lvol %v while there is no backing image record in the server", lvolName)
+				if err := cleanupOrphanBackingImageTempHead(spdkClient, lvsUUIDNameMap[lvsUUID], lvolName); err != nil {
+					logrus.WithError(err).Warnf("Failed to clean up orphan backing image temp head")
+				}
+			}
 			continue
 		}
 		if replicaMap[lvolName] != nil {
+			continue
+		}
+		if s.backingImageMap[lvolName] != nil {
 			continue
 		}
 		if IsRebuildingLvol(lvolName) {
@@ -250,11 +280,38 @@ func (s *Server) verify() (err error) {
 				continue
 			}
 		}
-		lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
-		specSize := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
-		actualSize := bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
-		replicaMap[lvolName] = NewReplica(s.ctx, lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, actualSize, s.updateChs[types.InstanceTypeReplica])
-		replicaMapForSync[lvolName] = replicaMap[lvolName]
+		if IsBackingImageSnapLvolName(lvolName) {
+			lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
+			backingImageName, _, err := ExtractBackingImageAndDiskUUID(lvolName)
+			if err != nil {
+				logrus.WithError(err).Warnf("failed to extract backing image name and disk UUID from lvol name %v", lvolName)
+				continue
+			}
+			actualSize := bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
+			alias := bdevLvol.Aliases[0]
+			expectedChecksum, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrChecksum)
+			if err != nil {
+				logrus.WithError(err).Warnf("failed to retrieve checksum attribute for backing image snapshot %v", alias)
+				continue
+			}
+			backingImageUUID, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrBackingImageUUID)
+			if err != nil {
+				logrus.WithError(err).Warnf("failed to retrieve backing image UUID attribute for snapshot %v", alias)
+				continue
+			}
+			backingImage := NewBackingImage(s.ctx, backingImageName, backingImageUUID, lvsUUID, actualSize, expectedChecksum, s.updateChs[types.InstanceTypeBackingImage])
+			backingImage.Alias = alias
+			// For uncahced backing image, we set the state to pending first, so we can distinguish it from the cached but starting backing image
+			backingImage.State = types.BackingImageStatePending
+			backingImageMapForSync[lvolName] = backingImage
+			backingImageMap[lvolName] = backingImage
+		} else {
+			lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
+			specSize := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
+			actualSize := bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
+			replicaMap[lvolName] = NewReplica(s.ctx, lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, actualSize, s.updateChs[types.InstanceTypeReplica])
+			replicaMapForSync[lvolName] = replicaMap[lvolName]
+		}
 	}
 	for replicaName, r := range replicaMap {
 		// Try the best to avoid eliminating broken replicas or rebuilding replicas without head lvols
@@ -279,6 +336,7 @@ func (s *Server) verify() (err error) {
 		logrus.Infof("spdk gRPC server: Replica map updated, map count is changed from %d to %d", len(s.replicaMap), len(replicaMap))
 	}
 	s.replicaMap = replicaMap
+	s.backingImageMap = backingImageMap
 	s.Unlock()
 
 	for _, r := range replicaMapForSync {
@@ -292,6 +350,16 @@ func (s *Server) verify() (err error) {
 		err = e.ValidateAndUpdate(spdkClient)
 		if err != nil && jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
 			return err
+		}
+	}
+
+	for _, bi := range backingImageMapForSync {
+		err = bi.ValidateAndUpdate(spdkClient)
+		if err != nil {
+			if jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
+				return err
+			}
+			continue
 		}
 	}
 
@@ -311,6 +379,8 @@ func (s *Server) broadcasting() {
 			s.broadcastChs[types.InstanceTypeReplica] <- nil
 		case <-s.updateChs[types.InstanceTypeEngine]:
 			s.broadcastChs[types.InstanceTypeEngine] <- nil
+		case <-s.updateChs[types.InstanceTypeBackingImage]:
+			s.broadcastChs[types.InstanceTypeBackingImage] <- nil
 		}
 		if done {
 			break
@@ -324,6 +394,8 @@ func (s *Server) Subscribe(instanceType types.InstanceType) (<-chan interface{},
 		return s.broadcasters[types.InstanceTypeEngine].Subscribe(context.TODO(), s.engineBroadcastConnector)
 	case types.InstanceTypeReplica:
 		return s.broadcasters[types.InstanceTypeReplica].Subscribe(context.TODO(), s.replicaBroadcastConnector)
+	case types.InstanceTypeBackingImage:
+		return s.broadcasters[types.InstanceTypeBackingImage].Subscribe(context.TODO(), s.backingImageBroadcastConnector)
 	}
 	return nil, fmt.Errorf("invalid instance type %v for subscription", instanceType)
 }
@@ -334,6 +406,10 @@ func (s *Server) replicaBroadcastConnector() (chan interface{}, error) {
 
 func (s *Server) engineBroadcastConnector() (chan interface{}, error) {
 	return s.broadcastChs[types.InstanceTypeEngine], nil
+}
+
+func (s *Server) backingImageBroadcastConnector() (chan interface{}, error) {
+	return s.broadcastChs[types.InstanceTypeBackingImage], nil
 }
 
 func (s *Server) checkLvsReadiness(lvsUUID, lvsName string) (bool, error) {
@@ -388,7 +464,18 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 	spdkClient := s.spdkClient
 	s.RUnlock()
 
-	return r.Create(spdkClient, req.PortCount, s.portAllocator)
+	var backingImage *BackingImage
+	if req.BackingImageName != "" {
+		backingImageSnapLvolName := GetBackingImageSnapLvolName(req.BackingImageName, req.LvsUuid)
+		s.RLock()
+		backingImage = s.backingImageMap[backingImageSnapLvolName]
+		s.RUnlock()
+		if backingImage == nil {
+			return nil, grpcstatus.Error(grpccodes.NotFound, "failed to find the backing image in the spdk server")
+		}
+	}
+
+	return r.Create(spdkClient, req.PortCount, s.portAllocator, backingImage)
 }
 
 func (s *Server) ReplicaDelete(ctx context.Context, req *spdkrpc.ReplicaDeleteRequest) (ret *emptypb.Empty, err error) {
@@ -1503,4 +1590,223 @@ func (s *Server) VersionDetailGet(context.Context, *emptypb.Empty) (*spdkrpc.Ver
 	return &spdkrpc.VersionDetailGetReply{
 		Version: &spdkrpc.VersionOutput{},
 	}, nil
+}
+
+func (s *Server) newBackingImage(req *spdkrpc.BackingImageCreateRequest) (*BackingImage, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	// The backing image key is in this form "bi-%s-disk-%s" to distinguish different disks.
+	backingImageSnapLvolName := GetBackingImageSnapLvolName(req.Name, req.LvsUuid)
+	if _, ok := s.backingImageMap[backingImageSnapLvolName]; !ok {
+		ready, err := s.checkLvsReadiness(req.LvsUuid, "")
+		if err != nil || !ready {
+			return nil, err
+		}
+		s.backingImageMap[backingImageSnapLvolName] = NewBackingImage(s.ctx, req.Name, req.BackingImageUuid, req.LvsUuid, req.Size, req.Checksum, s.updateChs[types.InstanceTypeBackingImage])
+	}
+
+	return s.backingImageMap[backingImageSnapLvolName], nil
+}
+
+func (s *Server) BackingImageCreate(ctx context.Context, req *spdkrpc.BackingImageCreateRequest) (ret *spdkrpc.BackingImage, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "backing image name is required")
+	}
+	if req.BackingImageUuid == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "backing image UUID is required")
+	}
+	if req.Size == uint64(0) {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "backing image size is required")
+	}
+	if req.LvsUuid == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "lvs UUID is required")
+	}
+	if req.Checksum == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "checksum is required")
+	}
+
+	// Don't recreate the backing image
+	backingImageSnapLvolName := GetBackingImageSnapLvolName(req.Name, req.LvsUuid)
+	if _, ok := s.backingImageMap[backingImageSnapLvolName]; ok {
+		return nil, grpcstatus.Errorf(grpccodes.AlreadyExists, "backing image %v already exists", req.Name)
+	}
+
+	bi, err := s.newBackingImage(req)
+	if err != nil {
+		return nil, err
+	}
+
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	return bi.Create(spdkClient, s.portAllocator, req.FromAddress, req.SrcLvsUuid)
+}
+
+func (s *Server) BackingImageDelete(ctx context.Context, req *spdkrpc.BackingImageDeleteRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "backing image name is required")
+	}
+	if req.LvsUuid == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "lvs UUID is required")
+	}
+
+	s.RLock()
+	bi := s.backingImageMap[GetBackingImageSnapLvolName(req.Name, req.LvsUuid)]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	defer func() {
+		if err == nil {
+			s.Lock()
+			delete(s.backingImageMap, GetBackingImageSnapLvolName(req.Name, req.LvsUuid))
+			s.Unlock()
+		}
+	}()
+
+	if bi != nil {
+		if err := bi.Delete(spdkClient, s.portAllocator); err != nil {
+			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to delete backing image %v in lvs %v", req.Name, req.LvsUuid).Error())
+		}
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) BackingImageGet(ctx context.Context, req *spdkrpc.BackingImageGetRequest) (ret *spdkrpc.BackingImage, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "backing image name is required")
+	}
+	if req.LvsUuid == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "lvs UUID is required")
+	}
+
+	backingImageSnapLvolName := GetBackingImageSnapLvolName(req.Name, req.LvsUuid)
+
+	s.RLock()
+	bi := s.backingImageMap[backingImageSnapLvolName]
+	s.RUnlock()
+
+	if bi == nil {
+		lvsName, err := GetLvsNameByUUID(s.spdkClient, req.LvsUuid)
+		if err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.NotFound, "failed to get the lvs name with lvs uuid %v", req.LvsUuid)
+		}
+
+		if lvsName != "" {
+			backingImageSnapLvolAlias := spdktypes.GetLvolAlias(lvsName, backingImageSnapLvolName)
+			bdevLvolList, err := s.spdkClient.BdevLvolGet(backingImageSnapLvolAlias, 0)
+			if err != nil {
+				return nil, grpcstatus.Errorf(grpccodes.NotFound, "got error %v when getting lvol %v in the lvs %v", err, req.Name, req.LvsUuid)
+			}
+			if len(bdevLvolList) != 1 {
+				return nil, grpcstatus.Errorf(grpccodes.NotFound, "zero or multiple lvols with alias %s found when finding backing image %v in lvs %v", backingImageSnapLvolAlias, req.Name, req.LvsUuid)
+			}
+			// If we can get the lvol, verify() will reconstruct the backing image record in the server, should inform the caller
+			return nil, grpcstatus.Errorf(grpccodes.NotFound, "backing image %v lvol found in the lvs %v but failed to find the record in the server", req.Name, req.LvsUuid)
+		}
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find backing image %v in lvs %v", req.Name, req.LvsUuid)
+	}
+
+	return bi.Get(), nil
+}
+
+func (s *Server) BackingImageList(ctx context.Context, req *emptypb.Empty) (ret *spdkrpc.BackingImageListResponse, err error) {
+	backingImageMap := map[string]*BackingImage{}
+	res := map[string]*spdkrpc.BackingImage{}
+
+	s.RLock()
+	for k, v := range s.backingImageMap {
+		backingImageMap[k] = v
+	}
+	s.RUnlock()
+
+	// backingImageName is in the form of "bi-%s-disk-%s"
+	for backingImageName, bi := range backingImageMap {
+		res[backingImageName] = bi.Get()
+	}
+
+	return &spdkrpc.BackingImageListResponse{BackingImages: res}, nil
+}
+
+func (s *Server) BackingImageWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_BackingImageWatchServer) error {
+	responseCh, err := s.Subscribe(types.InstanceTypeBackingImage)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			logrus.WithError(err).Error("SPDK service backing image watch errored out")
+		} else {
+			logrus.Info("SPDK service backing image watch ended successfully")
+		}
+	}()
+	logrus.Info("Started new SPDK service backing image update watch")
+
+	done := false
+	for {
+		select {
+		case <-s.ctx.Done():
+			logrus.Info("spdk gRPC server: stopped backing image watch due to the context done")
+			done = true
+		case <-responseCh:
+			if err := srv.Send(&emptypb.Empty{}); err != nil {
+				return err
+			}
+		}
+		if done {
+			break
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) BackingImageExpose(ctx context.Context, req *spdkrpc.BackingImageGetRequest) (ret *spdkrpc.BackingImageExposeResponse, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "backing image name is required")
+	}
+	if req.LvsUuid == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "lvs UUID is required")
+	}
+	s.RLock()
+	bi := s.backingImageMap[GetBackingImageSnapLvolName(req.Name, req.LvsUuid)]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if bi == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find backing image %v in lvs %v", req.Name, req.LvsUuid)
+	}
+
+	exposedSnapshotLvolAddress, err := bi.BackingImageExpose(spdkClient, s.portAllocator)
+	if err != nil {
+		return nil, err
+	}
+	return &spdkrpc.BackingImageExposeResponse{ExposedSnapshotLvolAddress: exposedSnapshotLvolAddress}, nil
+
+}
+
+func (s *Server) BackingImageUnexpose(ctx context.Context, req *spdkrpc.BackingImageGetRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "backing image name is required")
+	}
+	if req.LvsUuid == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "lvs UUID is required")
+	}
+	s.RLock()
+	bi := s.backingImageMap[GetBackingImageSnapLvolName(req.Name, req.LvsUuid)]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if bi == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find backing image %v in lvs %v", req.Name, req.LvsUuid)
+	}
+
+	err = bi.BackingImageUnexpose(spdkClient, s.portAllocator)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to unexpose backing image %v in lvs %v", req.Name, req.LvsUuid).Error())
+	}
+	return &emptypb.Empty{}, nil
 }
