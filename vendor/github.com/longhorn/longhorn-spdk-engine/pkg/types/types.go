@@ -30,8 +30,31 @@ const (
 type InstanceType string
 
 const (
-	InstanceTypeReplica = InstanceType("replica")
-	InstanceTypeEngine  = InstanceType("engine")
+	InstanceTypeReplica      = InstanceType("replica")
+	InstanceTypeEngine       = InstanceType("engine")
+	InstanceTypeBackingImage = InstanceType("backingImage")
+)
+
+type BackingImageState string
+
+const (
+	BackingImageStatePending          = BackingImageState("pending")
+	BackingImageStateStarting         = BackingImageState("starting")
+	BackingImageStateReadyForTransfer = BackingImageState("ready-for-transfer")
+	BackingImageStateReady            = BackingImageState("ready")
+	BackingImageStateInProgress       = BackingImageState("in-progress")
+	BackingImageStateFailed           = BackingImageState("failed")
+	BackingImageStateFailedAndCleanUp = BackingImageState("failed-and-cleanup")
+	BackingImageStateUnknown          = BackingImageState("unknown")
+)
+
+const (
+	BackingImagePortCount = 1
+	DiskPathInContainer   = "/host"
+
+	BackingImageSnapshotAttrChecksum         = "checksum"
+	BackingImageSnapshotAttrBackingImageUUID = "backing_image_uuid"
+	BackingImageSnapshotAttrPrepareState     = "backing_image_prepare_state"
 )
 
 const VolumeHead = "volume-head"

@@ -127,6 +127,23 @@ E.g.,
 
 The memory usage of a bitset using `N` bits is at least `N/8` bytes. The number of bits in a bitset is at least as large as one plus the greatest bit index you have accessed. Thus it is possible to run out of memory while using a bitset. If you have lots of bits, you might prefer compressed bitsets, like the [Roaring bitmaps](http://roaringbitmap.org) and its [Go implementation](https://github.com/RoaringBitmap/roaring).
 
+The `roaring` library allows you to go back and forth between compressed Roaring bitmaps and the conventional bitset instances:
+```Go
+			mybitset := roaringbitmap.ToBitSet()
+			newroaringbitmap := roaring.FromBitSet(mybitset)
+```
+
+
+### Goroutine safety
+
+In general, it not safe to access
+the same BitSet using different goroutines--they are
+unsynchronized for performance. Should you want to access
+a BitSet from more than one goroutine, you should
+provide synchronization. Typically this is done by using channels to pass
+the *BitSet around (in Go style; so there is only ever one owner),
+or by using `sync.Mutex` to serialize operations on BitSets.
+
 ## Implementation Note
 
 Go 1.9 introduced a native `math/bits` library. We provide backward compatibility to Go 1.7, which might be removed.

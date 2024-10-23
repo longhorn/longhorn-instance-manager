@@ -50,6 +50,7 @@ type Replica struct {
 	ActiveChain []*Lvol
 	// SnapshotLvolMap map[<snapshot lvol name>]. <snapshot lvol name> consists of `<replica name>-snap-<snapshot name>`
 	SnapshotLvolMap map[string]*Lvol
+	BackingImage    *Lvol
 
 	Name       string
 	Alias      string
@@ -137,6 +138,11 @@ func ServiceReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 		res.Snapshots[GetSnapshotNameFromReplicaSnapshotLvolName(r.Name, lvolName)] = ServiceLvolToProtoLvol(r.Name, lvol)
 	}
 
+	if r.BackingImage != nil {
+		backingImageName, _, _ := ExtractBackingImageAndDiskUUID(r.BackingImage.Name)
+		res.BackingImageName = backingImageName
+	}
+
 	return res
 }
 
@@ -193,7 +199,8 @@ func (r *Replica) replicaLvolFilter(bdev *spdktypes.BdevInfo) bool {
 		return false
 	}
 	lvolName := spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
-	return IsReplicaLvol(r.Name, lvolName) || (len(r.ActiveChain) > 0 && r.ActiveChain[0] != nil && r.ActiveChain[0].Name == lvolName)
+	// it is okay to habe backing image snapshot in the results, because we exclude it when finding root or construct the snapshot map
+	return IsReplicaLvol(r.Name, lvolName) || IsBackingImageSnapLvolName(lvolName)
 }
 
 func (r *Replica) Sync(spdkClient *spdkclient.Client) (err error) {
@@ -261,6 +268,7 @@ func (r *Replica) construct(bdevLvolMap map[string]*spdktypes.BdevInfo) (err err
 	r.Head = newChain[len(newChain)-1]
 	r.ActiveChain = newChain
 	r.SnapshotLvolMap = newSnapshotLvolMap
+	r.BackingImage = newChain[0]
 
 	if r.State == types.InstanceStatePending {
 		r.State = types.InstanceStateStopped
@@ -333,6 +341,8 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 			if svcLvol == nil && newSvcLvol != nil {
 				return fmt.Errorf("replica current backing image is nil while the latest chain contains backing image %v", newSvcLvol.Name)
 			}
+			// no need to compare the backing image
+			continue
 		}
 
 		if err := compareSvcLvols(svcLvol, newSvcLvol, true, svcLvol.Name != r.Name); err != nil {
@@ -509,20 +519,25 @@ func (r *Replica) updateHeadCache(spdkClient *spdkclient.Client) (err error) {
 	return nil
 }
 
-func (r *Replica) prepareHead(spdkClient *spdkclient.Client) (err error) {
+func (r *Replica) prepareHead(spdkClient *spdkclient.Client, backingImage *BackingImage) (err error) {
 	isHeadAvailable, err := r.IsHeadAvailable(spdkClient)
 	if err != nil {
 		return err
 	}
 
+	if backingImage != nil {
+		r.ActiveChain[0] = backingImage.Snapshot
+		r.BackingImage = r.ActiveChain[0]
+	}
+
 	if !isHeadAvailable {
-		r.log.Info("Creating a lvol bdev as replica Head")
 		if r.ActiveChain[len(r.ActiveChain)-1] != nil { // The replica has a backing image or somehow there are already snapshots in the chain
-			if _, err := spdkClient.BdevLvolClone(r.ActiveChain[len(r.ActiveChain)-1].UUID, r.Name); err != nil {
+			uuid, err := spdkClient.BdevLvolClone(r.ActiveChain[len(r.ActiveChain)-1].UUID, r.Name)
+			if err != nil {
 				return err
 			}
 			if r.ActiveChain[len(r.ActiveChain)-1].SpecSize != r.SpecSize {
-				if _, err := spdkClient.BdevLvolResize(r.Alias, r.SpecSize); err != nil {
+				if _, err := spdkClient.BdevLvolResize(uuid, util.BytesToMiB(r.SpecSize)); err != nil {
 					return err
 				}
 			}
@@ -643,7 +658,7 @@ func constructActiveChainFromSnapshotLvolMap(replicaName string, snapshotLvolMap
 }
 
 // Create initiates the replica, prepares the head lvol bdev then blindly exposes it for the replica.
-func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonbitmap.Bitmap) (ret *spdkrpc.Replica, err error) {
+func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, backingImage *BackingImage) (ret *spdkrpc.Replica, err error) {
 	updateRequired := true
 
 	r.Lock()
@@ -711,7 +726,7 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 	}
 
 	// A stopped replica may be a broken one. We need to make sure the head lvol is ready first.
-	if err := r.prepareHead(spdkClient); err != nil {
+	if err := r.prepareHead(spdkClient, backingImage); err != nil {
 		return nil, err
 	}
 	r.State = types.InstanceStateStopped
@@ -1023,6 +1038,7 @@ func (r *Replica) removeLvolFromSnapshotLvolMapWithoutLock(snapsLvolName string)
 	if IsReplicaSnapshotLvol(r.Name, deletingSvcLvol.Parent) {
 		parentSvcLvol = r.SnapshotLvolMap[deletingSvcLvol.Parent]
 	} else {
+		// Parent is either backing image or nil
 		parentSvcLvol = r.ActiveChain[0]
 	}
 	if parentSvcLvol != nil {
@@ -1233,7 +1249,7 @@ func (r *Replica) RebuildingSrcStart(spdkClient *spdkclient.Client, dstReplicaNa
 
 	snapLvol := r.SnapshotLvolMap[GetReplicaSnapshotLvolName(r.Name, exposedSnapshotName)]
 	if snapLvol == nil {
-		return "", fmt.Errorf("cannot find snapshot %s for for replica %s rebuilding src start", exposedSnapshotName, r.Name)
+		return "", fmt.Errorf("cannot find snapshot %s for the replica %s rebuilding src start", exposedSnapshotName, r.Name)
 	}
 
 	if r.rebuildingSrcCache.dstReplicaName != "" || r.rebuildingSrcCache.exposedSnapshotAlias != "" {
@@ -1930,9 +1946,27 @@ func (r *Replica) RebuildingDstSnapshotRevert(spdkClient *spdkclient.Client, sna
 	rebuildingLvolUUID := ""
 	if snapshotName != "" {
 		snapLvolAlias := spdktypes.GetLvolAlias(r.LvsName, GetReplicaSnapshotLvolName(r.Name, snapshotName))
+		if IsBackingImageSnapLvolName(snapshotName) {
+			// The snapshot name here is the one in the src SPDK server.
+			// On the current node, ths backing image snapshot name is not the same due to the different LVS UUID.
+			backingImageName, _, err := ExtractBackingImageAndDiskUUID(snapshotName)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to extract backing image name and disk UUID from snapshot name %s", snapshotName)
+			}
+			backingImageSnapLvolName := GetBackingImageSnapLvolName(backingImageName, r.LvsUUID)
+			snapLvolAlias = spdktypes.GetLvolAlias(r.LvsName, backingImageSnapLvolName)
+		}
 
 		if rebuildingLvolUUID, err = spdkClient.BdevLvolClone(snapLvolAlias, rebuildingLvolName); err != nil {
 			return "", err
+		}
+
+		if IsBackingImageSnapLvolName(snapshotName) {
+			// Resize the replica head to the spec size
+			if _, err := spdkClient.BdevLvolResize(rebuildingLvolUUID, util.BytesToMiB(r.SpecSize)); err != nil {
+				logrus.WithError(err).Errorf("[DEBUG] failed to resize the rebuildingLvolUUID %v to size %v", rebuildingLvolUUID, r.SpecSize)
+				return "", err
+			}
 		}
 	} else {
 		if rebuildingLvolUUID, err = spdkClient.BdevLvolCreate("", r.LvsUUID, rebuildingLvolName, util.BytesToMiB(r.SpecSize), "", true); err != nil {

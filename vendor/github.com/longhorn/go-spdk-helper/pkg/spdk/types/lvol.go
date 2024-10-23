@@ -130,8 +130,8 @@ type BdevLvolSetParentRequest struct {
 }
 
 type BdevLvolResizeRequest struct {
-	Name string `json:"name"`
-	Size uint64 `json:"size"`
+	Name      string `json:"name"`
+	SizeInMib uint64 `json:"size_in_mib"`
 }
 
 type BdevLvolShallowCopyRequest struct {

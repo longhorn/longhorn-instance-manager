@@ -103,7 +103,7 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
-# github.com/bits-and-blooms/bitset v1.12.0
+# github.com/bits-and-blooms/bitset v1.16.0
 ## explicit; go 1.16
 github.com/bits-and-blooms/bitset
 # github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
@@ -112,9 +112,6 @@ github.com/c9s/goprocinfo/linux
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/coreos/go-systemd/v22 v22.5.0
-## explicit; go 1.12
-github.com/coreos/go-systemd/v22/dbus
 # github.com/cpuguy83/go-md2man/v2 v2.0.5
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man
@@ -131,8 +128,8 @@ github.com/felixge/httpsnoop
 # github.com/fxamacker/cbor/v2 v2.7.0
 ## explicit; go 1.17
 github.com/fxamacker/cbor/v2
-# github.com/gammazero/deque v0.2.1
-## explicit; go 1.18
+# github.com/gammazero/deque v1.0.0
+## explicit; go 1.22
 github.com/gammazero/deque
 # github.com/gammazero/workerpool v1.1.3
 ## explicit; go 1.18
@@ -154,9 +151,6 @@ github.com/go-openapi/jsonreference/internal
 # github.com/go-openapi/swag v0.22.4
 ## explicit; go 1.18
 github.com/go-openapi/swag
-# github.com/godbus/dbus/v5 v5.1.0
-## explicit; go 1.12
-github.com/godbus/dbus/v5
 # github.com/gofrs/flock v0.12.1
 ## explicit; go 1.21.0
 github.com/gofrs/flock
@@ -245,7 +239,7 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.0.0-20241124090314-c396ae715a7f
+# github.com/longhorn/go-spdk-helper v0.0.0-20241124090314-c396ae715a7f => github.com/chanyilin/go-spdk-helper v0.0.0-20241125130336-15bee7b0eec2
 ## explicit; go 1.22.7
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
@@ -267,7 +261,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20241124131155-114edffb76fa
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20241124131155-114edffb76fa => github.com/chanyilin/longhorn-spdk-engine v0.0.0-20241127134412-6c507c791f05
 ## explicit; go 1.22.7
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -285,7 +279,7 @@ github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20241123075624-48c550af4eab
+# github.com/longhorn/types v0.0.0-20241123075624-48c550af4eab => github.com/chanyilin/types v0.0.0-20241127133205-f9c284b13214
 ## explicit; go 1.22.7
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc
@@ -295,15 +289,15 @@ github.com/longhorn/types/pkg/generated/spdkrpc
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
-# github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0
-## explicit; go 1.19
-github.com/matttproud/golang_protobuf_extensions/v2/pbutil
 # github.com/mitchellh/go-ps v1.0.0
 ## explicit; go 1.13
 github.com/mitchellh/go-ps
-# github.com/moby/sys/mountinfo v0.7.1
-## explicit; go 1.16
+# github.com/moby/sys/mountinfo v0.7.2
+## explicit; go 1.17
 github.com/moby/sys/mountinfo
+# github.com/moby/sys/userns v0.1.0
+## explicit; go 1.21
+github.com/moby/sys/userns
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 ## explicit
 github.com/modern-go/concurrent
@@ -316,15 +310,9 @@ github.com/mschoch/smat
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/opencontainers/runc v1.1.14
-## explicit; go 1.18
-github.com/opencontainers/runc/libcontainer/configs
-github.com/opencontainers/runc/libcontainer/devices
-github.com/opencontainers/runc/libcontainer/user
+# github.com/opencontainers/runc v1.2.2
+## explicit; go 1.22
 github.com/opencontainers/runc/libcontainer/userns
-# github.com/opencontainers/runtime-spec v1.1.0
-## explicit
-github.com/opencontainers/runtime-spec/specs-go
 # github.com/pierrec/lz4/v4 v4.1.21
 ## explicit; go 1.14
 github.com/pierrec/lz4/v4
@@ -338,28 +326,27 @@ github.com/pkg/errors
 # github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55
 ## explicit; go 1.14
 github.com/power-devops/perfstat
-# github.com/prometheus/client_golang v1.18.0
-## explicit; go 1.19
+# github.com/prometheus/client_golang v1.20.5
+## explicit; go 1.20
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
-# github.com/prometheus/client_model v0.5.0
+# github.com/prometheus/client_model v0.6.1
 ## explicit; go 1.19
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.45.0
-## explicit; go 1.20
+# github.com/prometheus/common v0.60.1
+## explicit; go 1.21
 github.com/prometheus/common/expfmt
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.12.0
-## explicit; go 1.19
+# github.com/prometheus/procfs v0.15.1
+## explicit; go 1.20
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
 # github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47
 ## explicit
 github.com/rancher/go-fibmap
-# github.com/rogpeppe/go-internal v1.12.0
-## explicit; go 1.20
+# github.com/rogpeppe/go-internal v1.13.1
+## explicit; go 1.22
 github.com/rogpeppe/go-internal/fmtsort
 # github.com/russross/blackfriday/v2 v2.1.0
 ## explicit
@@ -428,7 +415,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.5.0
 ## explicit; go 1.18
 golang.org/x/time/rate
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20241118233622-e639e219e697
 ## explicit; go 1.21
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.68.0
@@ -497,6 +484,7 @@ google.golang.org/grpc/status
 google.golang.org/grpc/tap
 # google.golang.org/protobuf v1.35.2
 ## explicit; go 1.21
+google.golang.org/protobuf/encoding/protodelim
 google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
@@ -803,7 +791,7 @@ k8s.io/kube-openapi/pkg/validation/spec
 # k8s.io/mount-utils v0.31.3
 ## explicit; go 1.22.0
 k8s.io/mount-utils
-# k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
+# k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
 ## explicit; go 1.18
 k8s.io/utils/clock
 k8s.io/utils/clock/testing

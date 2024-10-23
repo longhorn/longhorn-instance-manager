@@ -702,7 +702,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 	replicaMap := map[string]*api.Replica{}
 	replicaAncestorMap := map[string]*api.Lvol{}
-	// hasBackingImage := false
+	hasBackingImage := false
 	hasSnapshot := false
 
 	for replicaName, replicaStatus := range e.ReplicaStatusMap {
@@ -750,28 +750,37 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 			}
 
 			// The ancestor check sequence: the backing image, then the oldest snapshot, finally head
-			// TODO: Check the backing image first
-
-			// if replica.BackingImage != nil {
-			//	hasBackingImage = true
-			//	replicaAncestorMap[replicaName] = replica.BackingImage
-			// } else
-			if len(replica.Snapshots) != 0 {
-				// if hasBackingImage {
-				// e.log.Warnf("Found replica %s does not have a backing image while other replicas have during info update for other replicas", replicaName)
-				// } else {}
-				hasSnapshot = true
-				for snapshotName, snapApiLvol := range replica.Snapshots {
-					if snapApiLvol.Parent == "" {
-						replicaAncestorMap[replicaName] = replica.Snapshots[snapshotName]
-						break
-					}
+			if replica.BackingImageName != "" {
+				hasBackingImage = true
+				backingImage, err := replicaServiceCli.BackingImageGet(replica.BackingImageName, replica.LvsUUID)
+				if err != nil {
+					e.log.WithError(err).Warnf("Failed to get backing image %s with disk UUID %s from replica %s head parent %s, will mark the mode from %v to ERR and continue info update for other replicas", replica.BackingImageName, replica.LvsUUID, replicaName, replica.Head.Parent, replicaStatus.Mode)
+					replicaStatus.Mode = types.ModeERR
+					return
+				}
+				replicaAncestorMap[replicaName] = backingImage.Snapshot
+				if len(replica.Snapshots) > 0 {
+					hasSnapshot = true
 				}
 			} else {
-				if hasSnapshot {
-					e.log.Warnf("Engine found replica %s does not have a snapshot while other replicas have during info update for other replicas", replicaName)
+				if len(replica.Snapshots) > 0 {
+					if hasBackingImage {
+						e.log.Warnf("Engine found replica %s does not have a backing image while other replicas have during info update for other replicas", replicaName)
+					} else {
+						hasSnapshot = true
+						for snapshotName, snapApiLvol := range replica.Snapshots {
+							if snapApiLvol.Parent == "" {
+								replicaAncestorMap[replicaName] = replica.Snapshots[snapshotName]
+								break
+							}
+						}
+					}
 				} else {
-					replicaAncestorMap[replicaName] = replica.Head
+					if hasSnapshot {
+						e.log.Warnf("Engine found replica %s does not have a snapshot while other replicas have during info update for other replicas", replicaName)
+					} else {
+						replicaAncestorMap[replicaName] = replica.Head
+					}
 				}
 			}
 			if replicaAncestorMap[replicaName] == nil {
@@ -789,18 +798,19 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 	candidateReplicaName := ""
 	earliestCreationTime := time.Now()
 	for replicaName, ancestorApiLvol := range replicaAncestorMap {
-		// if hasBackingImage {
-		//	if ancestorApiLvol.Name == types.VolumeHead || IsReplicaSnapshotLvol(replicaName, ancestorApiLvol.Name) {
-		//		continue
-		//	}
-		// } else
-		if hasSnapshot {
-			if ancestorApiLvol.Name == types.VolumeHead {
+		if hasBackingImage {
+			if ancestorApiLvol.Name == types.VolumeHead || IsReplicaSnapshotLvol(replicaName, ancestorApiLvol.Name) {
 				continue
 			}
 		} else {
-			if ancestorApiLvol.Name != types.VolumeHead {
-				continue
+			if hasSnapshot {
+				if ancestorApiLvol.Name == types.VolumeHead {
+					continue
+				}
+			} else {
+				if ancestorApiLvol.Name != types.VolumeHead {
+					continue
+				}
 			}
 		}
 
@@ -815,8 +825,19 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 			e.Head = replicaMap[replicaName].Head
 			e.ActualSize = replicaMap[replicaName].ActualSize
 			if candidateReplicaName != replicaName {
-				if candidateReplicaName != "" && replicaAncestorMap[candidateReplicaName].Name != ancestorApiLvol.Name {
-					e.log.Warnf("Comparing with replica %s ancestor %s, replica %s has a different and earlier ancestor %s, will update info from this replica", candidateReplicaName, replicaAncestorMap[candidateReplicaName].Name, replicaName, ancestorApiLvol.Name)
+				if candidateReplicaName != "" {
+					candidateReplicaAncestorName := replicaAncestorMap[candidateReplicaName].Name
+					currentReplicaAncestorName := ancestorApiLvol.Name
+					if IsBackingImageSnapLvolName(candidateReplicaAncestorName) {
+						candidateReplicaAncestorName, _, _ = ExtractBackingImageAndDiskUUID(candidateReplicaAncestorName)
+					}
+					if IsBackingImageSnapLvolName(currentReplicaAncestorName) {
+						currentReplicaAncestorName, _, _ = ExtractBackingImageAndDiskUUID(currentReplicaAncestorName)
+					}
+
+					if candidateReplicaName != "" && candidateReplicaAncestorName != currentReplicaAncestorName {
+						e.log.Warnf("Comparing with replica %s ancestor %s, replica %s has a different and earlier ancestor %s, will update info from this replica", candidateReplicaName, replicaAncestorMap[candidateReplicaName].Name, replicaName, ancestorApiLvol.Name)
+					}
 				}
 				candidateReplicaName = replicaName
 			}
@@ -1312,7 +1333,8 @@ func getRebuildingSnapshotList(srcReplicaServiceCli *client.SPDKClient, srcRepli
 	}
 	ancestorSnapshotName, latestSnapshotName := "", ""
 	for snapshotName, snapApiLvol := range rpcSrcReplica.Snapshots {
-		if snapApiLvol.Parent == "" {
+		// If parent is empty or the parent is a backing image snapshot, it's the ancestor snapshot
+		if snapApiLvol.Parent == "" || IsBackingImageSnapLvolName(snapApiLvol.Parent) {
 			ancestorSnapshotName = snapshotName
 		}
 		if snapApiLvol.Children[types.VolumeHead] {

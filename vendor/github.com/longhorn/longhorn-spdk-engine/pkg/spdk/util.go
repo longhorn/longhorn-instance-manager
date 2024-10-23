@@ -15,11 +15,41 @@ import (
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
+	commontypes "github.com/longhorn/go-common-libs/types"
 	commonutils "github.com/longhorn/go-common-libs/utils"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 )
+
+func connectNVMeTarget(srcIP string, srcPort int32) (string, string, error) {
+	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to create executor")
+	}
+
+	subsystemNQN := ""
+	controllerName := ""
+	for r := 0; r < maxNumRetries; r++ {
+		subsystemNQN, err = nvme.DiscoverTarget(srcIP, strconv.Itoa(int(srcPort)), executor)
+		if err != nil {
+			logrus.WithError(err).Errorf("Failed to discover target for with address %v:%v", srcIP, srcPort)
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		controllerName, err = nvme.ConnectTarget(srcIP, strconv.Itoa(int(srcPort)), subsystemNQN, executor)
+		if err != nil {
+			logrus.WithError(err).Errorf("Failed to connect target with address %v:%v", srcIP, srcPort)
+			time.Sleep(retryInterval)
+			continue
+		}
+	}
+	if subsystemNQN == "" || controllerName == "" {
+		return "", "", errors.Wrapf(err, "timeout connecting target with address %v:%v", srcIP, srcPort)
+	}
+	return subsystemNQN, controllerName, nil
+}
 
 func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip string, port int32, executor *commonns.Executor) (subsystemNQN, controllerName string, err error) {
 	bdevLvolList, err := spdkClient.BdevLvolGet(spdktypes.GetLvolAlias(lvsName, lvolName), 0)
@@ -132,4 +162,25 @@ func CleanupLvolTree(spdkClient *spdkclient.Client, rootLvolName string, bdevLvo
 			log.WithError(err).Errorf("Failed to delete lvol %v(%v) from the lvol tree with root %v(%s), this lvol may accidentally have some leftover orphans children %+v, will continue", queue[idx].Aliases[0], queue[idx].UUID, bdevLvolMap[rootLvolName].Aliases[0], bdevLvolMap[rootLvolName].UUID, queue[idx].DriverSpecific.Lvol.Clones)
 		}
 	}
+}
+
+func GetSnapXattr(spdkClient *spdkclient.Client, alias, key string) (res string) {
+	value, err := spdkClient.BdevLvolGetXattr(alias, key)
+	if err != nil {
+		return ""
+	}
+	return value
+}
+
+func GetLvsNameByUUID(spdkClient *spdkclient.Client, lvsUUID string) string {
+	var lvsList []spdktypes.LvstoreInfo
+	lvsList, err := spdkClient.BdevLvolGetLvstore("", lvsUUID)
+	if err != nil {
+		return ""
+	}
+	if len(lvsList) != 1 {
+		// consider it as failed to get the correct lvs
+		return ""
+	}
+	return lvsList[0].Name
 }

@@ -3,6 +3,7 @@ package spdk
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,8 @@ const (
 
 	ReplicaRebuildingLvolSuffix  = "rebuilding"
 	RebuildingSnapshotNamePrefix = "rebuild"
+
+	BackingImageTempHeadLvolSuffix = "temp-head"
 
 	SyncTimeout = 60 * time.Minute
 
@@ -44,6 +47,29 @@ type Lvol struct {
 	CreationTime      string
 	UserCreated       bool
 	SnapshotTimestamp string
+}
+
+func ServiceBackingImageLvolToProtoBackingImageLvol(lvol *Lvol) *spdkrpc.Lvol {
+	res := &spdkrpc.Lvol{
+		Uuid:       lvol.UUID,
+		Name:       lvol.Name,
+		SpecSize:   lvol.SpecSize,
+		ActualSize: lvol.ActualSize,
+		// BackingImage has no parent
+		Parent:       "",
+		Children:     map[string]bool{},
+		CreationTime: lvol.CreationTime,
+		UserCreated:  false,
+		// Use creation time instead
+		SnapshotTimestamp: "",
+	}
+
+	for childLvolName := range lvol.Children {
+		// For backing image, the children is map[<snapshot lvol name>]
+		res.Children[childLvolName] = true
+	}
+
+	return res
 }
 
 func ServiceLvolToProtoLvol(replicaName string, lvol *Lvol) *spdkrpc.Lvol {
@@ -93,6 +119,50 @@ func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
 		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == strconv.FormatBool(true),
 		SnapshotTimestamp: bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotTimestamp],
 	}
+}
+
+func GetBackingImageNameFromLvolName(lvolName string) string {
+	// lvolName is in the format of `bi-<backing image name>-disk-<lvs uuid>`
+	return strings.Split(lvolName, "-")[1]
+}
+
+// ExtractBackingImageAndDiskUUID extracts the BackingImageName and DiskUUID from the string pattern "bi-${BackingImageName}-disk-${DiskUUID}"
+func ExtractBackingImageAndDiskUUID(lvolName string) (string, string, error) {
+	// Define the regular expression pattern
+	// This captures the BackingImageName and DiskUUID while allowing for hyphens in both.
+	re := regexp.MustCompile(`^bi-([a-zA-Z0-9-]+)-disk-([a-zA-Z0-9-]+)$`)
+
+	// Try to find a match
+	matches := re.FindStringSubmatch(lvolName)
+	if matches == nil {
+		return "", "", fmt.Errorf("lvolName does not match the expected pattern")
+	}
+
+	// Extract BackingImageName and DiskUUID from the matches
+	backingImageName := matches[1]
+	diskUUID := matches[2]
+
+	return backingImageName, diskUUID, nil
+}
+
+func GetBackingImageSnapLvolName(backingImageName string, lvsUUID string) string {
+	return fmt.Sprintf("bi-%s-disk-%s", backingImageName, lvsUUID)
+}
+
+func IsBackingImageSnapLvolName(lvolName string) bool {
+	return strings.HasPrefix(lvolName, "bi-") && !strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
+}
+
+func GetBackingImageTempHeadLvolName(backingImageName string, lvsUUID string) string {
+	return fmt.Sprintf("bi-%s-disk-%s-temp-head", backingImageName, lvsUUID)
+}
+
+func GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName string) string {
+	return strings.TrimSuffix(lvolName, fmt.Sprintf("-%s", BackingImageTempHeadLvolSuffix))
+}
+
+func IsBackingImageTempHead(lvolName string) bool {
+	return strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
 }
 
 func GetReplicaSnapshotLvolNamePrefix(replicaName string) string {

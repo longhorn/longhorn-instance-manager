@@ -6,8 +6,11 @@ import (
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	"github.com/longhorn/types/pkg/generated/enginerpc"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
@@ -58,18 +61,31 @@ type Proxy struct {
 	logsDir       string
 	HealthChecker HealthChecker
 	ops           map[rpc.DataEngine]ProxyOps
+
+	spdkServiceAddress string
+	spdkLocalClient    *spdkclient.SPDKClient
 }
 
 func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddress string) (*Proxy, error) {
+
 	ops := map[rpc.DataEngine]ProxyOps{
 		rpc.DataEngine_DATA_ENGINE_V1: V1DataEngineProxyOps{},
 		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineProxyOps{},
 	}
+
+	spdkLocalClient, err := spdkclient.NewSPDKClient(spdkServiceAddress)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+	}
+
 	p := &Proxy{
 		ctx:           ctx,
 		logsDir:       logsDir,
 		HealthChecker: &GRPCHealthChecker{},
 		ops:           ops,
+
+		spdkServiceAddress: spdkServiceAddress,
+		spdkLocalClient:    spdkLocalClient,
 	}
 
 	go p.startMonitoring()
