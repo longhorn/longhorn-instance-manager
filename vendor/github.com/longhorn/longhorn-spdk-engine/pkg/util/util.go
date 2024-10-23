@@ -252,3 +252,18 @@ func (t *TaskError) Append(re ReplicaError) {
 func (t *TaskError) HasError() bool {
 	return len(t.ReplicaErrors) != 0
 }
+
+func GetFileChecksum(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha512.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
+}

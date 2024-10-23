@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
@@ -23,6 +24,8 @@ const (
 
 	ReplicaRebuildingLvolSuffix  = "rebuilding"
 	RebuildingSnapshotNamePrefix = "rebuild"
+
+	BackingImageTempHeadLvolSuffix = "temp-head"
 
 	SyncTimeout = 60 * time.Minute
 
@@ -55,6 +58,8 @@ const (
 )
 
 type Lvol struct {
+	sync.RWMutex
+
 	Name       string
 	UUID       string
 	Alias      string
@@ -67,6 +72,32 @@ type Lvol struct {
 	CreationTime      string
 	UserCreated       bool
 	SnapshotTimestamp string
+}
+
+func ServiceBackingImageLvolToProtoBackingImageLvol(lvol *Lvol) *spdkrpc.Lvol {
+	lvol.RLock()
+	defer lvol.RUnlock()
+
+	res := &spdkrpc.Lvol{
+		Uuid:       lvol.UUID,
+		Name:       lvol.Name,
+		SpecSize:   lvol.SpecSize,
+		ActualSize: lvol.ActualSize,
+		// BackingImage has no parent
+		Parent:       "",
+		Children:     map[string]bool{},
+		CreationTime: lvol.CreationTime,
+		UserCreated:  false,
+		// Use creation time instead
+		SnapshotTimestamp: "",
+	}
+
+	for childLvolName := range lvol.Children {
+		// For backing image, the children is map[<snapshot lvol name>]
+		res.Children[childLvolName] = true
+	}
+
+	return res
 }
 
 func ServiceLvolToProtoLvol(replicaName string, lvol *Lvol) *spdkrpc.Lvol {
@@ -116,6 +147,26 @@ func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
 		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == strconv.FormatBool(true),
 		SnapshotTimestamp: bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotTimestamp],
 	}
+}
+
+func GetBackingImageSnapLvolName(backingImageName string, lvsUUID string) string {
+	return fmt.Sprintf("bi-%s-disk-%s", backingImageName, lvsUUID)
+}
+
+func IsBackingImageSnapLvolName(lvolName string) bool {
+	return strings.HasPrefix(lvolName, "bi-") && !strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
+}
+
+func GetBackingImageTempHeadLvolName(backingImageName string, lvsUUID string) string {
+	return fmt.Sprintf("bi-%s-disk-%s-temp-head", backingImageName, lvsUUID)
+}
+
+func GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName string) string {
+	return strings.TrimSuffix(lvolName, fmt.Sprintf("-%s", BackingImageTempHeadLvolSuffix))
+}
+
+func IsBackingImageTempHead(lvolName string) bool {
+	return strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
 }
 
 func GetReplicaSnapshotLvolNamePrefix(replicaName string) string {
