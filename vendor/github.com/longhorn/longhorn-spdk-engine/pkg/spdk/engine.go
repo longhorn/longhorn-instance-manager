@@ -102,13 +102,14 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 	}
 }
 
-func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorAddress, targetAddress string, upgradeRequired bool) (ret *spdkrpc.Engine, err error) {
+func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorAddress, targetAddress string, upgradeRequired, salvageRequested bool) (ret *spdkrpc.Engine, err error) {
 	logrus.WithFields(logrus.Fields{
 		"portCount":         portCount,
 		"upgradeRequired":   upgradeRequired,
 		"replicaAddressMap": replicaAddressMap,
 		"initiatorAddress":  initiatorAddress,
 		"targetAddress":     targetAddress,
+		"salvageRequested":  salvageRequested,
 	}).Info("Creating engine")
 
 	requireUpdate := true
@@ -190,7 +191,20 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 			initiatorCreationRequired = false
 		}
 
+		if salvageRequested {
+			e.log.Info("Requesting salvage for engine replicas")
+
+			if err := e.updateReplicaModeToFilterSalvageCandidates(replicaAddressMap); err != nil {
+				return nil, errors.Wrapf(err, "failed to update replica mode to filter salvage candidates")
+			}
+		}
+
 		for replicaName, replicaAddr := range replicaAddressMap {
+			if e.ReplicaModeMap[replicaName] == types.ModeERR {
+				e.log.Infof("Skipping connecting replica %s in ERR mode during engine creation", replicaName)
+				continue
+			}
+
 			bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaAddr)
 			if err != nil {
 				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s during creation, will mark the mode from %v to ERR and continue", replicaName, replicaAddr, e.ReplicaModeMap[replicaName])
@@ -206,7 +220,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		e.ReplicaAddressMap = replicaAddressMap
 		e.log = e.log.WithField("replicaAddressMap", replicaAddressMap)
 
-		e.checkAndUpdateInfoFromReplicaNoLock()
+		e.checkAndUpdateInfoFromReplicaNoLock(false)
 
 		e.log.Infof("Connected all available replicas %+v, then launching raid during engine creation", e.ReplicaModeMap)
 		if _, err := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList); err != nil {
@@ -232,7 +246,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 
 		var engineWithTarget *api.Engine
 		if initiatorIP != targetIP {
-			engineWithTarget, err = targetSPDKClient.EngineGet(e.Name)
+			engineWithTarget, err = targetSPDKClient.EngineGet(e.Name, false)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get engine %v from %v", e.Name, targetAddress)
 			}
@@ -269,6 +283,72 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 	e.log.Info("Created engine")
 
 	return e.getWithoutLock(), nil
+}
+
+// updateReplicaModeToFilterSalvageCandidates updates e.ReplicaModeMap and filters
+// out the replicas that are not eligible for salvage based on the volume head size.
+//
+// It iterates through all replicas and:
+//   - Skips the replicas with mode ERR.
+//   - Gets the volume head size of each replica.
+//   - Selects replicas with the largest volume head size as salvage candidates.
+//   - Marks the replicas that are not salvage candidates as mode ERR.
+func (e *Engine) updateReplicaModeToFilterSalvageCandidates(replicaAddressMap map[string]string) error {
+	volumeHeadSizeToReplicaNames := map[uint64][]string{}
+	for replicaName, replicaAddress := range replicaAddressMap {
+		if e.ReplicaModeMap[replicaName] == types.ModeERR {
+			e.log.Debugf("Skipping replica %s (mode %v) for salvage", replicaName, e.ReplicaModeMap[replicaName])
+			continue
+		}
+
+		func() {
+			replicaServiceCli, err := GetServiceClient(replicaAddress)
+			if err != nil {
+				e.log.WithError(err).Warnf("Skipping salvage for replica %s with address %s due to failed to get replica service client", replicaName, replicaAddress)
+				return
+			}
+
+			defer func() {
+				if errClose := replicaServiceCli.Close(); errClose != nil {
+					e.log.WithError(errClose).Errorf("Failed to close replica %s client with address %s during salvage candidate filtering", replicaName, replicaAddress)
+				}
+			}()
+
+			replica, err := replicaServiceCli.ReplicaGet(replicaName, true)
+			if err != nil {
+				e.log.WithError(err).Warnf("Marking replica %s from %v to ERR during salvage candidate filtering since failed to get replica info", replicaName, e.ReplicaModeMap[replicaName])
+				e.ReplicaModeMap[replicaName] = types.ModeERR
+				return
+			}
+
+			volumeHeadSizeToReplicaNames[replica.Head.ActualSize] = append(volumeHeadSizeToReplicaNames[replica.Head.ActualSize], replicaName)
+		}()
+	}
+
+	volumeHeadSizeSorted, err := commonutils.SortKeys(volumeHeadSizeToReplicaNames)
+	if err != nil {
+		return errors.Wrap(err, "failed to sort keys of salvage candidate by volume head size")
+	}
+
+	if len(volumeHeadSizeSorted) == 0 {
+		return errors.New("failed to find any salvage candidate with volume head size")
+	}
+
+	largestVolumeHeadSize := volumeHeadSizeSorted[len(volumeHeadSizeSorted)-1]
+	e.log.Infof("Filtering salvage candidates by volume head size (%v) from %+v", largestVolumeHeadSize, volumeHeadSizeToReplicaNames)
+
+	salvageCandidates := volumeHeadSizeToReplicaNames[largestVolumeHeadSize]
+	for replicaName := range replicaAddressMap {
+		if !commonutils.Contains(salvageCandidates, replicaName) {
+			e.log.Infof("Marking replica %s from %v to ERR since it's not a salvage candidate", replicaName, e.ReplicaModeMap[replicaName])
+			e.ReplicaModeMap[replicaName] = types.ModeERR
+			continue
+		}
+
+		e.log.Infof("Including replica %s with mode %v as a salvage candidate", replicaName, e.ReplicaModeMap[replicaName])
+	}
+
+	return nil
 }
 
 func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorCreationRequired, upgradeRequired bool, initiatorAddress, targetAddress string) (err error) {
@@ -641,12 +721,12 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		// TODO: should we delete the engine automatically here?
 	}
 
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicaNoLock(false)
 
 	return nil
 }
 
-func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
+func (e *Engine) checkAndUpdateInfoFromReplicaNoLock(runtimeRequested bool) {
 	replicaMap := map[string]*api.Replica{}
 	replicaAncestorMap := map[string]*api.Lvol{}
 	// hasBackingImage := false
@@ -675,7 +755,7 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 				}
 			}()
 
-			replica, err := replicaServiceCli.ReplicaGet(replicaName)
+			replica, err := replicaServiceCli.ReplicaGet(replicaName, runtimeRequested)
 			if err != nil {
 				e.log.WithError(err).Warnf("Failed to get replica %s with address %s, mark the mode from %v to ERR", replicaName, address, e.ReplicaModeMap[replicaName])
 				e.ReplicaModeMap[replicaName] = types.ModeERR
@@ -1006,7 +1086,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	if err != nil {
 		return err
 	}
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicaNoLock(false)
 
 	rebuildingSnapshotList, err = getRebuildingSnapshotList(srcReplicaServiceCli, srcReplicaName)
 	if err != nil {
@@ -1217,7 +1297,7 @@ func (e *Engine) replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli *cl
 		}
 		updateRequired = true
 	}
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicaNoLock(false)
 
 	// The source replica blindly stops exposing the snapshot and wipe the rebuilding info.
 	if srcReplicaErr := srcReplicaServiceCli.ReplicaRebuildingSrcFinish(srcReplicaName, dstReplicaName); srcReplicaErr != nil {
@@ -1246,7 +1326,7 @@ func (e *Engine) getReplicaAddSrcReplica() (srcReplicaName, srcReplicaAddress st
 }
 
 func getRebuildingSnapshotList(srcReplicaServiceCli *client.SPDKClient, srcReplicaName string) ([]*api.Lvol, error) {
-	rpcSrcReplica, err := srcReplicaServiceCli.ReplicaGet(srcReplicaName)
+	rpcSrcReplica, err := srcReplicaServiceCli.ReplicaGet(srcReplicaName, false)
 	if err != nil {
 		return []*api.Lvol{}, err
 	}
@@ -1435,7 +1515,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 		return "", err
 	}
 
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicaNoLock(false)
 
 	e.log.Infof("Engine finished snapshot operation %s %s", snapshotOp, snapshotName)
 
@@ -1482,7 +1562,7 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 			if e.ReplicaModeMap[replicaName] == types.ModeWO {
 				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot %s delete", e.Name, replicaName, snapshotName)
 			}
-			e.checkAndUpdateInfoFromReplicaNoLock()
+			e.checkAndUpdateInfoFromReplicaNoLock(false)
 			if len(e.SnapshotMap[snapshotName].Children) > 1 {
 				return "", fmt.Errorf("engine %s cannot delete snapshot %s since it contains multiple children %+v", e.Name, snapshotName, e.SnapshotMap[snapshotName].Children)
 			}
@@ -1502,7 +1582,7 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 			if e.ReplicaModeMap[replicaName] == types.ModeWO {
 				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot %s revert", e.Name, replicaName, snapshotName)
 			}
-			r, err := replicaClients[replicaName].ReplicaGet(replicaName)
+			r, err := replicaClients[replicaName].ReplicaGet(replicaName, false)
 			if err != nil {
 				return "", err
 			}
@@ -1610,7 +1690,7 @@ func (e *Engine) ReplicaList(spdkClient *spdkclient.Client) (ret map[string]*api
 				}
 			}()
 
-			replica, err := replicaServiceCli.ReplicaGet(name)
+			replica, err := replicaServiceCli.ReplicaGet(name, false)
 			if err != nil {
 				e.log.WithError(err).Errorf("Failed to get replica %s with address %s", name, address)
 				return

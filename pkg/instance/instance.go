@@ -151,7 +151,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap,
-			req.Spec.PortCount, req.Spec.InitiatorAddress, req.Spec.TargetAddress, req.Spec.UpgradeRequired)
+			req.Spec.PortCount, req.Spec.InitiatorAddress, req.Spec.TargetAddress, req.Spec.UpgradeRequired, req.Spec.SpdkInstanceSpec.SalvageRequested)
 		if err != nil {
 			return nil, err
 		}
@@ -270,13 +270,13 @@ func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
-		engine, err := c.EngineGet(req.Name)
+		engine, err := c.EngineGet(req.Name, false)
 		if err != nil {
 			return nil, err
 		}
 		return engineResponseToInstanceResponse(engine), nil
 	case types.InstanceTypeReplica:
-		replica, err := c.ReplicaGet(req.Name)
+		replica, err := c.ReplicaGet(req.Name, false)
 		if err != nil {
 			return nil, err
 		}
