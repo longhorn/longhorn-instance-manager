@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonns "github.com/longhorn/go-common-libs/ns"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 )
 
 // DiscoverTarget discovers a target
-func DiscoverTarget(ip, port string, executor *commonNs.Executor) (subnqn string, err error) {
+func DiscoverTarget(ip, port string, executor *commonns.Executor) (subnqn string, err error) {
 	hostID, err := getHostID(executor)
 	if err != nil {
 		return "", err
@@ -40,7 +40,7 @@ func DiscoverTarget(ip, port string, executor *commonNs.Executor) (subnqn string
 }
 
 // ConnectTarget connects to a target
-func ConnectTarget(ip, port, nqn string, executor *commonNs.Executor) (controllerName string, err error) {
+func ConnectTarget(ip, port, nqn string, executor *commonns.Executor) (controllerName string, err error) {
 	// Trying to connect an existing subsystem will error out with exit code 114.
 	// Hence, it's better to check the existence first.
 	if devices, err := GetDevices(ip, port, nqn, executor); err == nil && len(devices) > 0 {
@@ -60,12 +60,12 @@ func ConnectTarget(ip, port, nqn string, executor *commonNs.Executor) (controlle
 }
 
 // DisconnectTarget disconnects a target
-func DisconnectTarget(nqn string, executor *commonNs.Executor) error {
+func DisconnectTarget(nqn string, executor *commonns.Executor) error {
 	return disconnect(nqn, executor)
 }
 
 // GetDevices returns all devices
-func GetDevices(ip, port, nqn string, executor *commonNs.Executor) (devices []Device, err error) {
+func GetDevices(ip, port, nqn string, executor *commonns.Executor) (devices []Device, err error) {
 	defer func() {
 		err = errors.Wrapf(err, "failed to get devices for address %s:%s and nqn %s", ip, port, nqn)
 	}()
@@ -172,11 +172,11 @@ func GetDevices(ip, port, nqn string, executor *commonNs.Executor) (devices []De
 }
 
 // GetSubsystems returns all devices
-func GetSubsystems(executor *commonNs.Executor) (subsystems []Subsystem, err error) {
+func GetSubsystems(executor *commonns.Executor) (subsystems []Subsystem, err error) {
 	return listSubsystems("", executor)
 }
 
 // Flush commits data and metadata associated with the specified namespace(s) to nonvolatile media.
-func Flush(device, namespaceID string, executor *commonNs.Executor) (output string, err error) {
+func Flush(device, namespaceID string, executor *commonns.Executor) (output string, err error) {
 	return flush(device, namespaceID, executor)
 }
