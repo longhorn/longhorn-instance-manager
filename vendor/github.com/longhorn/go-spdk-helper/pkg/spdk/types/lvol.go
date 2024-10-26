@@ -145,6 +145,11 @@ type BdevLvolGetFragmapRequest struct {
 	Size   uint64 `json:"size"`
 }
 
+type BdevLvolRenameRequest struct {
+	OldName string `json:"old_name"`
+	NewName string `json:"new_name"`
+}
+
 func GetLvolAlias(lvsName, lvolName string) string {
 	return fmt.Sprintf("%s/%s", lvsName, lvolName)
 }
