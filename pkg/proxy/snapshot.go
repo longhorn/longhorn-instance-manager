@@ -24,7 +24,7 @@ func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapsho
 		"volumeName": req.ProxyEngineRequest.VolumeName,
 		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
-	log.Infof("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
+	log.Debugf("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
 
 	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
@@ -177,7 +177,7 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 		"volumeName": req.ProxyEngineRequest.VolumeName,
 		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
-	log.Infof("Cloning snapshot from %v to %v", req.FromEngineAddress, req.ProxyEngineRequest.Address)
+	log.Debugf("Cloning snapshot from %v to %v", req.FromEngineAddress, req.ProxyEngineRequest.Address)
 
 	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
@@ -272,7 +272,7 @@ func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRever
 		"volumeName": req.ProxyEngineRequest.VolumeName,
 		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
-	log.Infof("Reverting snapshot %v", req.Name)
+	log.Debugf("Reverting snapshot %v", req.Name)
 
 	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
@@ -318,7 +318,7 @@ func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeR
 		"volumeName": req.ProxyEngineRequest.VolumeName,
 		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
-	log.Info("Purging snapshots")
+	log.Debug("Purging snapshots")
 
 	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
@@ -409,7 +409,7 @@ func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemov
 		"volumeName": req.ProxyEngineRequest.VolumeName,
 		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
-	log.Infof("Removing snapshots %v", req.Names)
+	log.Debugf("Removing snapshots %v", req.Names)
 
 	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
@@ -464,7 +464,7 @@ func (p *Proxy) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashReq
 		"volumeName": req.ProxyEngineRequest.VolumeName,
 		"dataEngine": req.ProxyEngineRequest.DataEngine,
 	})
-	log.Infof("Hashing snapshot %v with rehash %v", req.SnapshotName, req.Rehash)
+	log.Debugf("Hashing snapshot %v with rehash %v", req.SnapshotName, req.Rehash)
 
 	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
 	if !ok {
