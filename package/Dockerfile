@@ -9,7 +9,7 @@ RUN zypper -n ref && \
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:utilities/SLE_15_SP5/network:utilities.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install wget
+RUN zypper -n install wget jq
 
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
@@ -26,7 +26,8 @@ RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DI
     rm -rf ${GO_SPDK_HELPER_DIR}
 
 # Install grpc_health_probe
-RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.28/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
+RUN GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/repos/grpc-ecosystem/grpc-health-probe/releases/latest | jq -r '.assets[] | select(.name | test("linux.*'"${ARCH}"'"; "i")) | .browser_download_url') && \
+    wget ${GRPC_HEALTH_PROBE_DOWNLOAD_URL} -O /usr/local/bin/grpc_health_probe && \
     chmod +x /usr/local/bin/grpc_health_probe
 
 
