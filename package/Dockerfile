@@ -12,7 +12,7 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake curl wget git gcc tar gzip xsltproc docbook-xsl-stylesheets python3 meson ninja python3-pip
+RUN zypper -n install cmake curl wget git gcc tar gzip xsltproc docbook-xsl-stylesheets python3 meson ninja python3-pip jq
 
 # Build go-spdk-helper
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
@@ -89,7 +89,8 @@ RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
     meson install -C .build
 
 # Install grpc_health_probe
-RUN wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.28/grpc_health_probe-linux-${ARCH} -O /usr/local/bin/grpc_health_probe && \
+RUN GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/repos/grpc-ecosystem/grpc-health-probe/releases/latest | jq -r '.assets[] | select(.name | test("linux.*'"${ARCH}"'"; "i")) | .browser_download_url') && \
+    wget ${GRPC_HEALTH_PROBE_DOWNLOAD_URL} -O /usr/local/bin/grpc_health_probe && \
     chmod +x /usr/local/bin/grpc_health_probe
 
 FROM registry.suse.com/bci/bci-base:15.5 AS release
