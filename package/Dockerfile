@@ -40,8 +40,8 @@ ENV LIBLONGHORN_COMMIT_ID 53d1c063b95efc8d949b095bd4bf04637230265f
 ENV TGT_COMMIT_ID 3a8bc4823b5390e046f7aa8231ed262c0365c42c
 ENV SPDK_COMMIT_ID a6478cde7e0cff2fb09992868308a7387aa5202a
 ENV LIBJSONC_COMMIT_ID b4c371fa0cbc4dcbaccc359ce9e957a22988fb34
-# nvme-cli 2.9.1
-ENV NVME_CLI_COMMIT_ID b340fd7dcf1aef76f8d46ab28bef3c170d310887
+# nvme-cli 2.10.2
+ENV NVME_CLI_COMMIT_ID eeaa08c9a0e9184f3889df0bff3d2a23db6d6294
 
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
