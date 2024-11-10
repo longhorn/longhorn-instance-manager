@@ -210,8 +210,8 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20241110034415-4a9de521eb80
-## explicit; go 1.22.0
+# github.com/longhorn/backupstore v0.0.0-20241110035711-b5b0e7238e0d
+## explicit; go 1.22.7
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
 github.com/longhorn/backupstore/cifs
