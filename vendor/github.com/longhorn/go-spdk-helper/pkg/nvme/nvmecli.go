@@ -19,7 +19,7 @@ const (
 	// Set short ctrlLossTimeoutSec for quick response to the controller loss.
 	defaultCtrlLossTmo    = 30
 	defaultKeepAliveTmo   = 5
-	defaultReconnectDelay = 10
+	defaultReconnectDelay = 2
 )
 
 type Device struct {

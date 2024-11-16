@@ -47,6 +47,9 @@ type Lvol struct {
 }
 
 func ServiceLvolToProtoLvol(replicaName string, lvol *Lvol) *spdkrpc.Lvol {
+	if lvol == nil {
+		return nil
+	}
 	res := &spdkrpc.Lvol{
 		Uuid:              lvol.UUID,
 		SpecSize:          lvol.SpecSize,
