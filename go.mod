@@ -6,19 +6,19 @@ toolchain go1.23.3
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20241110035711-b5b0e7238e0d
+	github.com/longhorn/backupstore v0.0.0-20241112162019-b405e8f77dc3
 	github.com/longhorn/go-common-libs v0.0.0-20241109101504-614ae31d2212
-	github.com/longhorn/go-spdk-helper v0.0.0-20241110033706-a878ed0191b2
+	github.com/longhorn/go-spdk-helper v0.0.0-20241115132910-af0134eda2a6
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241103
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241106035350-4642db182def
-	github.com/longhorn/types v0.0.0-20241101010532-9e901229a935
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241116051417-f09c9b92b0a9
+	github.com/longhorn/types v0.0.0-20241110123431-85dca7039c42
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.16
 	golang.org/x/net v0.31.0
 	golang.org/x/sync v0.9.0
 	google.golang.org/grpc v1.68.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.35.2
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.31.2
 )

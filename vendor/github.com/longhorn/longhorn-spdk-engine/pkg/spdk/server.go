@@ -3,6 +3,7 @@ package spdk
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -254,16 +255,26 @@ func (s *Server) verify() (err error) {
 		replicaMapForSync[lvolName] = replicaMap[lvolName]
 	}
 	for replicaName, r := range replicaMap {
-		headSvcLvol := r.GetVolumeHead()
-		if headSvcLvol == nil {
-			delete(replicaMap, replicaName)
-			continue
+		// Try the best to avoid eliminating broken replicas or rebuilding replicas without head lvols
+		if bdevLvolMap[r.Name] == nil {
+			if r.IsRebuilding() {
+				continue
+			}
+			noReplicaLvol := true
+			for lvolName := range bdevLvolMap {
+				if IsReplicaLvol(r.Name, lvolName) {
+					noReplicaLvol = false
+					break
+				}
+			}
+			if noReplicaLvol {
+				delete(replicaMap, replicaName)
+				continue
+			}
 		}
-		// TODO: How to handle a broken replica without a head lvol
-		if bdevLvolMap[headSvcLvol.Name] == nil {
-			delete(replicaMap, replicaName)
-			continue
-		}
+	}
+	if !reflect.DeepEqual(s.replicaMap, replicaMap) {
+		logrus.Infof("spdk gRPC server: Replica map updated, map count is changed from %d to %d", len(s.replicaMap), len(replicaMap))
 	}
 	s.replicaMap = replicaMap
 	s.Unlock()
