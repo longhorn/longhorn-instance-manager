@@ -8,9 +8,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20241117040525-542fb2c66652
 	github.com/longhorn/go-common-libs v0.0.0-20241117040506-5685d80d0eea
-	github.com/longhorn/go-spdk-helper v0.0.0-20241115132910-af0134eda2a6
+	github.com/longhorn/go-spdk-helper v0.0.0-20241119100050-6cd194fc6cdc
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241117
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241117035515-bf1618060e28
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241119105630-ad968cf6f4eb
 	github.com/longhorn/types v0.0.0-20241117042122-c899b8796df9
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -20,7 +20,7 @@ require (
 	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.2
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.31.2
+	k8s.io/mount-utils v0.31.3
 )
 
 require (
