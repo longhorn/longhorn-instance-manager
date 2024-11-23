@@ -10,7 +10,7 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20241117040506-5685d80d0eea
 	github.com/longhorn/go-spdk-helper v0.0.0-20241119100050-6cd194fc6cdc
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241117
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241119105630-ad968cf6f4eb
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241123051834-6831d4d362a9
 	github.com/longhorn/types v0.0.0-20241117042122-c899b8796df9
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -97,7 +97,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.31.2 // indirect
-	k8s.io/apimachinery v0.31.2 // indirect
+	k8s.io/apimachinery v0.31.3 // indirect
 	k8s.io/client-go v0.31.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
