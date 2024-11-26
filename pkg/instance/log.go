@@ -43,6 +43,7 @@ func logSetLevel(level string) error {
 	return nil
 }
 
+// This method is used to set instance-manager internal log level regardless of engine type.
 func (ops V1DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.LogSetLevelRequest) (resp *emptypb.Empty, err error) {
 	if err := logSetLevel(req.Level); err != nil {
 		return nil, err
@@ -51,16 +52,10 @@ func (ops V1DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.Log
 	return &emptypb.Empty{}, nil
 }
 
+// This method is used to set the log level for spdk_tgt, for v2 engine type.
 func (ops V2DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.LogSetLevelRequest) (resp *emptypb.Empty, err error) {
-	if err := logSetLevel(req.Level); err != nil {
-		return nil, err
-	}
-
-	// Also set level for spdk_tgt.  There is no "trace" level for SPDK.
 	spdkLevel := strings.ToUpper(req.Level)
-	if spdkLevel == NonSPDKLogLevelTrace {
-		spdkLevel = SPDKLogLevelDebug
-	}
+
 	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
@@ -69,7 +64,7 @@ func (ops V2DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.Log
 
 	err = c.LogSetLevel(spdkLevel)
 	if err != nil {
-		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to set SPDK log level").Error())
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to set v2 data engine log level").Error())
 	}
 
 	return &emptypb.Empty{}, nil
