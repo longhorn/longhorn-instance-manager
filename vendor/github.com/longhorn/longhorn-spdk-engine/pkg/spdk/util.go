@@ -77,7 +77,7 @@ func splitHostPort(address string) (string, int32, error) {
 
 // connectNVMfBdev connects to the NVMe-oF target, which is exposed by a remote lvol bdev.
 // controllerName is typically the lvol name, and address is the IP:port of the NVMe-oF target.
-func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address string) (bdevName string, err error) {
+func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address string, ctrlrLossTimeout, fastIOFailTimeoutSec int) (bdevName string, err error) {
 	if controllerName == "" || address == "" {
 		return "", fmt.Errorf("controllerName or address is empty")
 	}
@@ -89,7 +89,7 @@ func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address stri
 
 	nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(controllerName, helpertypes.GetNQN(controllerName),
 		ip, port, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
-		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec,
+		int32(ctrlrLossTimeout), helpertypes.DefaultReplicaReconnectDelaySec, int32(fastIOFailTimeoutSec),
 		helpertypes.DefaultMultipath)
 	if err != nil {
 		return "", err

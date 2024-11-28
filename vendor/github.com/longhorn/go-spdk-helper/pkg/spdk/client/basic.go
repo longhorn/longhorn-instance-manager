@@ -770,22 +770,13 @@ func (c *Client) BdevNvmeGetControllers(name string) (controllerInfoList []spdkt
 // Parameters, ctrlr_loss_timeout_sec, reconnect_delay_sec, and fast_io_fail_timeout_sec, are
 // for I/O error resiliency. They can be overridden if they are given by the RPC bdev_nvme_attach_controller.
 //
-// "ctrlrLossTimeoutSec": Controller loss timeout in seconds
-//
-// "reconnectDelaySec": Controller reconnect delay in seconds
-//
-// "fastIOFailTimeoutSec": Fast I/O failure timeout in seconds
-//
 // "transportAckTimeout": Time to wait ack until retransmission for RDMA or connection close for TCP. Range 0-31 where 0 means use default
 //
 // "keepAliveTimeoutMs": Keep alive timeout in milliseconds.
-func (c *Client) BdevNvmeSetOptions(ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec, transportAckTimeout, keepAliveTimeoutMs int32) (result bool, err error) {
+func (c *Client) BdevNvmeSetOptions(transportAckTimeout, keepAliveTimeoutMs int32) (result bool, err error) {
 	req := spdktypes.BdevNvmeSetOptionsRequest{
-		CtrlrLossTimeoutSec:  ctrlrLossTimeoutSec,
-		ReconnectDelaySec:    reconnectDelaySec,
-		FastIOFailTimeoutSec: fastIOFailTimeoutSec,
-		TransportAckTimeout:  transportAckTimeout,
-		KeepAliveTimeoutMs:   keepAliveTimeoutMs,
+		TransportAckTimeout: transportAckTimeout,
+		KeepAliveTimeoutMs:  keepAliveTimeoutMs,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_set_options", req)

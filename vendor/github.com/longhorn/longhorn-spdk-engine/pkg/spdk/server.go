@@ -65,12 +65,9 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 	}
 
 	if _, err = cli.BdevNvmeSetOptions(
-		helpertypes.DefaultCtrlrLossTimeoutSec,
-		helpertypes.DefaultReconnectDelaySec,
-		helpertypes.DefaultFastIOFailTimeoutSec,
 		helpertypes.DefaultTransportAckTimeout,
 		helpertypes.DefaultKeepAliveTimeoutMs); err != nil {
-		return nil, errors.Wrap(err, "failed to set nvme options")
+		return nil, errors.Wrap(err, "failed to set NVMe options")
 	}
 
 	broadcasters := map[types.InstanceType]*broadcaster.Broadcaster{}

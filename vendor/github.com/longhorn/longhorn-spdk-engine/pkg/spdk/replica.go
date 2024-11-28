@@ -15,17 +15,18 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/longhorn/backupstore"
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+
 	btypes "github.com/longhorn/backupstore/types"
 	butil "github.com/longhorn/backupstore/util"
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonnet "github.com/longhorn/go-common-libs/net"
 	commonutils "github.com/longhorn/go-common-libs/utils"
-	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
@@ -1325,7 +1326,8 @@ func (r *Replica) RebuildingSrcAttach(spdkClient *spdkclient.Client, dstReplicaN
 		return nil
 	}
 
-	r.rebuildingSrcCache.dstRebuildingBdevName, err = connectNVMfBdev(spdkClient, dstRebuildingLvolName, dstRebuildingLvolAddress)
+	r.rebuildingSrcCache.dstRebuildingBdevName, err = connectNVMfBdev(spdkClient, dstRebuildingLvolName, dstRebuildingLvolAddress,
+		helpertypes.DefaultReplicaCtrlrLossTimeoutSec, helpertypes.DefaultReplicaFastIOFailTimeoutSec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect rebuilding lvol %s with address %s as a NVMe bdev for replica %s rebuilding src attach", dstRebuildingLvolName, dstRebuildingLvolAddress, r.Name)
 	}
@@ -1432,7 +1434,8 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, srcReplicaNa
 	r.rebuildingDstCache.srcReplicaAddress = srcReplicaAddress
 
 	externalSnapshotLvolName := GetReplicaSnapshotLvolName(srcReplicaName, externalSnapshotName)
-	externalSnapshotBdevName, err := connectNVMfBdev(spdkClient, externalSnapshotLvolName, externalSnapshotAddress)
+	externalSnapshotBdevName, err := connectNVMfBdev(spdkClient, externalSnapshotLvolName, externalSnapshotAddress,
+		helpertypes.DefaultReplicaCtrlrLossTimeoutSec, helpertypes.DefaultReplicaFastIOFailTimeoutSec)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to connect the external src snapshot lvol %s with address %s as a NVMf bdev for dst replica %v rebuilding start", externalSnapshotLvolName, externalSnapshotAddress, r.Name)
 	}

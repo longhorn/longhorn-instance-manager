@@ -10,20 +10,22 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
+
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	"github.com/longhorn/go-spdk-helper/pkg/nvme"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonnet "github.com/longhorn/go-common-libs/net"
 	commontypes "github.com/longhorn/go-common-libs/types"
 	commonutils "github.com/longhorn/go-common-libs/utils"
-	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/client"
@@ -46,6 +48,9 @@ type Engine struct {
 	Endpoint   string
 	Nqn        string
 	Nguid      string
+
+	ctrlrLossTimeout     int
+	fastIOFailTimeoutSec int
 
 	ReplicaStatusMap map[string]*EngineReplicaStatus
 
@@ -91,6 +96,9 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 		VolumeName: volumeName,
 		Frontend:   frontend,
 		SpecSize:   specSize,
+
+		ctrlrLossTimeout:     helpertypes.DefaultReplicaCtrlrLossTimeoutSec,
+		fastIOFailTimeoutSec: helpertypes.DefaultReplicaFastIOFailTimeoutSec,
 
 		ReplicaStatusMap: map[string]*EngineReplicaStatus{},
 
@@ -207,7 +215,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 				Address: replicaAddr,
 			}
 
-			bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaAddr)
+			bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaAddr, e.ctrlrLossTimeout, e.fastIOFailTimeoutSec)
 			if err != nil {
 				e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s during creation, will mark the mode to ERR and continue", replicaName, replicaAddr)
 				e.ReplicaStatusMap[replicaName].Mode = types.ModeERR
@@ -1078,7 +1086,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	}
 
 	// Add rebuilding replica head bdev to the base bdev list of the RAID bdev
-	dstHeadLvolBdevName, err := connectNVMfBdev(spdkClient, dstReplicaName, dstHeadLvolAddress)
+	dstHeadLvolBdevName, err := connectNVMfBdev(spdkClient, dstReplicaName, dstHeadLvolAddress, e.ctrlrLossTimeout, e.fastIOFailTimeoutSec)
 	if err != nil {
 		return err
 	}
@@ -1648,7 +1656,7 @@ func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replica
 		if err := replicaClient.ReplicaSnapshotRevert(replicaName, snapshotName); err != nil {
 			return err
 		}
-		bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaStatus.Address)
+		bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaStatus.Address, e.ctrlrLossTimeout, e.fastIOFailTimeoutSec)
 		if err != nil {
 			return err
 		}
@@ -1954,8 +1962,10 @@ func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
 			return err
 		}
 		e.log.Infof("Attaching replica %s with address %s before finishing restoration", replicaName, replicaAddress)
-		_, err = spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
-			helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec, helpertypes.DefaultMultipath)
+		_, err = spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort,
+			spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
+			int32(e.ctrlrLossTimeout), helpertypes.DefaultReplicaReconnectDelaySec, int32(e.fastIOFailTimeoutSec),
+			helpertypes.DefaultMultipath)
 		if err != nil {
 			return err
 		}
