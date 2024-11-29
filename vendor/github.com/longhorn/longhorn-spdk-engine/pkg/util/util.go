@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"syscall"
@@ -251,4 +252,36 @@ func (t *TaskError) Append(re ReplicaError) {
 
 func (t *TaskError) HasError() bool {
 	return len(t.ReplicaErrors) != 0
+}
+
+const (
+	BackingImageManagerDirectoryName = "backing-images"
+	BackingImageFileName             = "backing"
+)
+
+func GetBackingImageDirectoryName(biName, biUUID string) string {
+	return fmt.Sprintf("%s-%s", biName, biUUID)
+}
+
+func GetBackingImageDirectory(diskPath, biName, biUUID string) string {
+	return filepath.Join(diskPath, BackingImageManagerDirectoryName, GetBackingImageDirectoryName(biName, biUUID))
+}
+
+func GetBackingImageFilePath(diskPath, biName, biUUID string) string {
+	return filepath.Join(GetBackingImageDirectory(diskPath, biName, biUUID), BackingImageFileName)
+}
+
+func GetFileChecksum(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha512.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
