@@ -229,7 +229,10 @@ func (c *SPDKClient) ReplicaRebuildingSrcStart(srcReplicaName, dstReplicaName, d
 		DstReplicaAddress:   dstReplicaAddress,
 		ExposedSnapshotName: exposedSnapshotName,
 	})
-	return resp.ExposedSnapshotLvolAddress, errors.Wrapf(err, "failed to start replica rebuilding src %s for rebuilding replica %s(%s)", srcReplicaName, dstReplicaName, dstReplicaAddress)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to start replica rebuilding src %s for rebuilding replica %s(%s)", srcReplicaName, dstReplicaName, dstReplicaAddress)
+	}
+	return resp.ExposedSnapshotLvolAddress, nil
 }
 
 // ReplicaRebuildingSrcFinish asks the source replica to stop exposing the parent snapshot of the head (if necessary) and clean up the dst replica related cache

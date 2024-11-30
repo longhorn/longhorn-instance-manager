@@ -12,12 +12,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/backupstore"
+	"github.com/longhorn/go-spdk-helper/pkg/nvme"
+
 	btypes "github.com/longhorn/backupstore/types"
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonnet "github.com/longhorn/go-common-libs/net"
 	commonns "github.com/longhorn/go-common-libs/ns"
 	commontypes "github.com/longhorn/go-common-libs/types"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -166,10 +167,10 @@ func (b *Backup) OpenSnapshot(snapshotName, volumeName string) error {
 	}
 	b.initiator = initiator
 
-	b.log.Infof("Opening nvme device %v", b.initiator.Endpoint)
+	b.log.Infof("Opening NVMe device %v", b.initiator.Endpoint)
 	devFh, err := os.OpenFile(b.initiator.Endpoint, os.O_RDONLY, 0666)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open nvme device %v for snapshot lvol bdev %v", b.initiator.Endpoint, lvolName)
+		return errors.Wrapf(err, "failed to open NVMe device %v for snapshot lvol bdev %v", b.initiator.Endpoint, lvolName)
 	}
 	b.devFh = devFh
 
@@ -220,9 +221,9 @@ func (b *Backup) CloseSnapshot(snapshotName, volumeName string) error {
 	b.Lock()
 	defer b.Unlock()
 
-	b.log.Infof("Closing nvme device %v", b.initiator.Endpoint)
+	b.log.Infof("Closing NVMe device %v", b.initiator.Endpoint)
 	if err := b.devFh.Close(); err != nil {
-		return errors.Wrapf(err, "failed to close nvme device %v", b.initiator.Endpoint)
+		return errors.Wrapf(err, "failed to close NVMe device %v", b.initiator.Endpoint)
 	}
 
 	b.log.Info("Stopping NVMe initiator")

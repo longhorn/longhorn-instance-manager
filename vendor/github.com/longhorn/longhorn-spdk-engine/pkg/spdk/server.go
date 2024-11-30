@@ -11,18 +11,20 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	grpccodes "google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
+
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
 	"github.com/longhorn/backupstore"
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+
 	butil "github.com/longhorn/backupstore/util"
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
-	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
-	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
@@ -65,12 +67,12 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 	}
 
 	if _, err = cli.BdevNvmeSetOptions(
-		helpertypes.DefaultCtrlrLossTimeoutSec,
-		helpertypes.DefaultReconnectDelaySec,
-		helpertypes.DefaultFastIOFailTimeoutSec,
-		helpertypes.DefaultTransportAckTimeout,
-		helpertypes.DefaultKeepAliveTimeoutMs); err != nil {
-		return nil, errors.Wrap(err, "failed to set nvme options")
+		replicaCtrlrLossTimeoutSec,
+		replicaReconnectDelaySec,
+		replicaFastIOFailTimeoutSec,
+		replicaTransportAckTimeout,
+		replicaKeepAliveTimeoutMs); err != nil {
+		return nil, errors.Wrap(err, "failed to set NVMe options")
 	}
 
 	broadcasters := map[types.InstanceType]*broadcaster.Broadcaster{}

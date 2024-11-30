@@ -10,10 +10,19 @@ import (
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdksetup "github.com/longhorn/go-spdk-helper/pkg/spdk/setup"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
-	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk"
+)
+
+const (
+	// Timeouts for disk bdev
+	diskCtrlrLossTimeoutSec  = 30
+	diskReconnectDelaySec    = 2
+	diskFastIOFailTimeoutSec = 15
+	diskTransportAckTimeout  = 14
+	diskKeepAliveTimeoutMs   = 10000
+	diskMultipath            = "disable"
 )
 
 type DiskDriverNvme struct {
@@ -46,8 +55,7 @@ func (d *DiskDriverNvme) DiskCreate(spdkClient *spdkclient.Client, diskName, dis
 		}
 	}()
 	bdevs, err := spdkClient.BdevNvmeAttachController(diskName, "", diskPath, "", "PCIe", "",
-		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec,
-		helpertypes.DefaultMultipath)
+		diskCtrlrLossTimeoutSec, diskReconnectDelaySec, diskFastIOFailTimeoutSec, diskMultipath)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to attach NVMe disk %v", diskPath)
 	}

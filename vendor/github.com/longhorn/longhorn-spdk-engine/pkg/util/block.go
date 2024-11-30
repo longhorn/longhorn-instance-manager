@@ -10,8 +10,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	commontypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
+
+	commontypes "github.com/longhorn/go-common-libs/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 )
 

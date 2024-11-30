@@ -10,10 +10,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/longhorn/go-spdk-helper/pkg/nvme"
+
 	btypes "github.com/longhorn/backupstore/types"
 	commonns "github.com/longhorn/go-common-libs/ns"
 	commontypes "github.com/longhorn/go-common-libs/types"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -156,9 +157,9 @@ func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 }
 
 func (r *Restore) CloseVolumeDev(volDev *os.File) error {
-	r.log.Infof("Closing nvme device %v", r.initiator.Endpoint)
+	r.log.Infof("Closing NVMe device %v", r.initiator.Endpoint)
 	if err := volDev.Close(); err != nil {
-		return errors.Wrapf(err, "failed to close nvme device %v", r.initiator.Endpoint)
+		return errors.Wrapf(err, "failed to close NVMe device %v", r.initiator.Endpoint)
 	}
 
 	r.log.Info("Stopping NVMe initiator")

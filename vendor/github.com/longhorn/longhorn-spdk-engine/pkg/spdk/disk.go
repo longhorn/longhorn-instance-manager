@@ -6,20 +6,22 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	grpccodes "google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	commontypes "github.com/longhorn/go-common-libs/types"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+
+	commontypes "github.com/longhorn/go-common-libs/types"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	spdkutil "github.com/longhorn/go-spdk-helper/pkg/util"
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
-
-	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk"
+	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
+
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/aio"
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/nvme"
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/virtio-blk"
