@@ -10,13 +10,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	commonTypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
+
+	commontypes "github.com/longhorn/go-common-libs/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func GetDevNameFromBDF(bdf string) (string, error) {
-	ne, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
+	ne, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create executor")
 	}
@@ -61,7 +62,7 @@ type BlockDevices struct {
 }
 
 func GetBlockDevice(devPath string) (BlockDevice, error) {
-	ne, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
+	ne, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return BlockDevice{}, errors.Wrap(err, "failed to create executor")
 	}

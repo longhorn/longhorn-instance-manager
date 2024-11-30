@@ -3,6 +3,7 @@ package spdk
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -10,18 +11,20 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	grpccodes "google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
+
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
 	"github.com/longhorn/backupstore"
-	butil "github.com/longhorn/backupstore/util"
-	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+
+	butil "github.com/longhorn/backupstore/util"
+	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
-	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
@@ -40,7 +43,7 @@ type Server struct {
 	ctx context.Context
 
 	spdkClient    *spdkclient.Client
-	portAllocator *commonBitmap.Bitmap
+	portAllocator *commonbitmap.Bitmap
 
 	replicaMap map[string]*Replica
 	engineMap  map[string]*Engine
@@ -58,18 +61,18 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 		return nil, err
 	}
 
-	bitmap, err := commonBitmap.NewBitmap(portStart, portEnd)
+	bitmap, err := commonbitmap.NewBitmap(portStart, portEnd)
 	if err != nil {
 		return nil, err
 	}
 
 	if _, err = cli.BdevNvmeSetOptions(
-		helpertypes.DefaultCtrlrLossTimeoutSec,
-		helpertypes.DefaultReconnectDelaySec,
-		helpertypes.DefaultFastIOFailTimeoutSec,
-		helpertypes.DefaultTransportAckTimeout,
-		helpertypes.DefaultKeepAliveTimeoutMs); err != nil {
-		return nil, errors.Wrap(err, "failed to set nvme options")
+		replicaCtrlrLossTimeoutSec,
+		replicaReconnectDelaySec,
+		replicaFastIOFailTimeoutSec,
+		replicaTransportAckTimeout,
+		replicaKeepAliveTimeoutMs); err != nil {
+		return nil, errors.Wrap(err, "failed to set NVMe options")
 	}
 
 	broadcasters := map[types.InstanceType]*broadcaster.Broadcaster{}
@@ -254,16 +257,26 @@ func (s *Server) verify() (err error) {
 		replicaMapForSync[lvolName] = replicaMap[lvolName]
 	}
 	for replicaName, r := range replicaMap {
-		headSvcLvol := r.GetVolumeHead()
-		if headSvcLvol == nil {
-			delete(replicaMap, replicaName)
-			continue
+		// Try the best to avoid eliminating broken replicas or rebuilding replicas without head lvols
+		if bdevLvolMap[r.Name] == nil {
+			if r.IsRebuilding() {
+				continue
+			}
+			noReplicaLvol := true
+			for lvolName := range bdevLvolMap {
+				if IsReplicaLvol(r.Name, lvolName) {
+					noReplicaLvol = false
+					break
+				}
+			}
+			if noReplicaLvol {
+				delete(replicaMap, replicaName)
+				continue
+			}
 		}
-		// TODO: How to handle a broken replica without a head lvol
-		if bdevLvolMap[headSvcLvol.Name] == nil {
-			delete(replicaMap, replicaName)
-			continue
-		}
+	}
+	if !reflect.DeepEqual(s.replicaMap, replicaMap) {
+		logrus.Infof("spdk gRPC server: Replica map updated, map count is changed from %d to %d", len(s.replicaMap), len(replicaMap))
 	}
 	s.replicaMap = replicaMap
 	s.Unlock()
@@ -865,7 +878,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	spdkClient := s.spdkClient
 	s.Unlock()
 
-	return e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator, req.InitiatorAddress, req.TargetAddress, req.UpgradeRequired)
+	return e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator, req.InitiatorAddress, req.TargetAddress, req.UpgradeRequired, req.SalvageRequested)
 }
 
 func localTargetExists(e *Engine) bool {
@@ -1228,7 +1241,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	err = butil.SetupCredential(backupType, req.Credential)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to setup credential of backup target %v for backup %v", req.BackupTarget, backupName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	var labelMap map[string]string
@@ -1236,7 +1249,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 		labelMap, err = util.ParseLabels(req.Labels)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to parse backup labels for backup %v", backupName)
-			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, err.Error())
+			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
 		}
 	}
 
@@ -1255,7 +1268,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	backup, err := NewBackup(s.spdkClient, backupName, req.VolumeName, req.SnapshotName, replica, s.portAllocator)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create backup instance %v for volume %v", backupName, req.VolumeName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	config := &backupstore.DeltaBackupConfig{
@@ -1285,7 +1298,7 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 	if err := backup.BackupCreate(config); err != nil {
 		delete(s.backupMap, backupName)
 		err = errors.Wrapf(err, "failed to create backup %v for volume %v", backupName, req.VolumeName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 
 	return &spdkrpc.BackupCreateResponse{
@@ -1359,27 +1372,6 @@ func (s *Server) ReplicaBackupRestore(ctx context.Context, req *spdkrpc.ReplicaB
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) EngineBackupRestoreFinish(ctx context.Context, req *spdkrpc.EngineBackupRestoreFinishRequest) (ret *emptypb.Empty, err error) {
-	logrus.WithFields(logrus.Fields{
-		"engine": req.EngineName,
-	}).Info("Finishing backup restoration")
-
-	s.RLock()
-	e := s.engineMap[req.EngineName]
-	s.RUnlock()
-
-	if e == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for finishing backup restoration", req.EngineName)
-	}
-
-	err = e.BackupRestoreFinish(s.spdkClient)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to finish backup restoration for engine %v", req.EngineName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
-	}
-	return &emptypb.Empty{}, nil
-}
-
 func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreStatusRequest) (*spdkrpc.RestoreStatusResponse, error) {
 	s.RLock()
 	e := s.engineMap[req.EngineName]
@@ -1392,7 +1384,7 @@ func (s *Server) EngineRestoreStatus(ctx context.Context, req *spdkrpc.RestoreSt
 	resp, err := e.RestoreStatus()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get restore status for engine %v", req.EngineName)
-		return nil, grpcstatus.Errorf(grpccodes.Internal, err.Error())
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "%v", err)
 	}
 	return resp, nil
 }

@@ -12,16 +12,16 @@ import (
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
-	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
-	commonUtils "github.com/longhorn/go-common-libs/utils"
+	commonns "github.com/longhorn/go-common-libs/ns"
+	commonutils "github.com/longhorn/go-common-libs/utils"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
+	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip string, port int32, executor *commonNs.Executor) (subsystemNQN, controllerName string, err error) {
+func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip string, port int32, executor *commonns.Executor) (subsystemNQN, controllerName string, err error) {
 	bdevLvolList, err := spdkClient.BdevLvolGet(spdktypes.GetLvolAlias(lvsName, lvolName), 0)
 	if err != nil {
 		return "", "", err
@@ -31,7 +31,7 @@ func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip
 	}
 
 	portStr := strconv.Itoa(int(port))
-	nguid := commonUtils.RandomID(nvmeNguidLength)
+	nguid := commonutils.RandomID(nvmeNguidLength)
 	err = spdkClient.StartExposeBdev(helpertypes.GetNQN(lvolName), bdevLvolList[0].UUID, nguid, ip, portStr)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to expose snapshot lvol bdev %v", lvolName)
@@ -77,7 +77,7 @@ func splitHostPort(address string) (string, int32, error) {
 
 // connectNVMfBdev connects to the NVMe-oF target, which is exposed by a remote lvol bdev.
 // controllerName is typically the lvol name, and address is the IP:port of the NVMe-oF target.
-func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address string) (bdevName string, err error) {
+func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address string, ctrlrLossTimeout, fastIOFailTimeoutSec int) (bdevName string, err error) {
 	if controllerName == "" || address == "" {
 		return "", fmt.Errorf("controllerName or address is empty")
 	}
@@ -89,8 +89,7 @@ func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address stri
 
 	nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(controllerName, helpertypes.GetNQN(controllerName),
 		ip, port, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
-		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec,
-		helpertypes.DefaultMultipath)
+		int32(ctrlrLossTimeout), replicaReconnectDelaySec, int32(fastIOFailTimeoutSec), replicaMultipath)
 	if err != nil {
 		return "", err
 	}
