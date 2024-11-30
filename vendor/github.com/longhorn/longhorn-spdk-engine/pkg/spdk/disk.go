@@ -6,20 +6,22 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	grpccodes "google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+
+	commontypes "github.com/longhorn/go-common-libs/types"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	spdkutil "github.com/longhorn/go-spdk-helper/pkg/util"
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
-
-	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk"
+	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
+
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/aio"
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/nvme"
 	_ "github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/virtio-blk"
@@ -55,7 +57,7 @@ func svcDiskCreate(spdkClient *spdkclient.Client, diskName, diskUUID, diskPath, 
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk path are required")
 	}
 
-	exactDiskDriver, err := disk.GetDiskDriver(commonTypes.DiskDriver(diskDriver), diskPath)
+	exactDiskDriver, err := disk.GetDiskDriver(commontypes.DiskDriver(diskDriver), diskPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get disk driver for disk %s", diskName)
 	}
@@ -150,7 +152,7 @@ func svcDiskGet(spdkClient *spdkclient.Client, diskName, diskPath, diskDriver st
 	bdevs, err := disk.DiskGet(spdkClient, diskName, diskPath, diskDriver, 0)
 	if err != nil {
 		if !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, errors.Wrapf(err, "failed to get bdev with name %v", diskName).Error())
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get bdev with name %v: %v", diskName, err)
 		}
 	}
 	if len(bdevs) == 0 {
@@ -158,7 +160,7 @@ func svcDiskGet(spdkClient *spdkclient.Client, diskName, diskPath, diskDriver st
 	}
 
 	var targetBdev *spdktypes.BdevInfo
-	var exactDiskDriver commonTypes.DiskDriver
+	var exactDiskDriver commontypes.DiskDriver
 
 	for i, bdev := range bdevs {
 		switch bdev.ProductName {
@@ -167,15 +169,15 @@ func svcDiskGet(spdkClient *spdkclient.Client, diskName, diskPath, diskDriver st
 				targetBdev = &bdevs[i]
 				diskPath = util.RemovePrefix(bdev.DriverSpecific.Aio.FileName, hostPrefix)
 			}
-			exactDiskDriver = commonTypes.DiskDriverAio
+			exactDiskDriver = commontypes.DiskDriverAio
 		case spdktypes.BdevProductNameVirtioBlk:
-			exactDiskDriver = commonTypes.DiskDriverVirtioBlk
+			exactDiskDriver = commontypes.DiskDriverVirtioBlk
 			targetBdev = &bdevs[i]
 		case spdktypes.BdevProductNameVirtioScsi:
-			exactDiskDriver = commonTypes.DiskDriverVirtioScsi
+			exactDiskDriver = commontypes.DiskDriverVirtioScsi
 			targetBdev = &bdevs[i]
 		case spdktypes.BdevProductNameNvme:
-			exactDiskDriver = commonTypes.DiskDriverNvme
+			exactDiskDriver = commontypes.DiskDriverNvme
 			targetBdev = &bdevs[i]
 		}
 		if targetBdev != nil {
@@ -184,7 +186,7 @@ func svcDiskGet(spdkClient *spdkclient.Client, diskName, diskPath, diskDriver st
 	}
 
 	if targetBdev == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, errors.Wrapf(err, "failed to get disk bdev for disk %v", diskName).Error())
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "failed to get disk bdev for disk %v: %v", diskName, err)
 	}
 
 	return lvstoreToDisk(spdkClient, diskPath, targetBdev.Name, "", exactDiskDriver)
@@ -195,7 +197,7 @@ func getDiskPath(path string) string {
 }
 
 func getDiskID(filename string) (string, error) {
-	executor, err := spdkutil.NewExecutor(commonTypes.ProcDirectory)
+	executor, err := spdkutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return "", err
 	}
@@ -208,7 +210,7 @@ func getDiskID(filename string) (string, error) {
 	return fmt.Sprintf("%d-%d", dev.Major, dev.Minor), nil
 }
 
-func validateAioDiskCreation(spdkClient *spdkclient.Client, diskPath string, diskDriver commonTypes.DiskDriver) error {
+func validateAioDiskCreation(spdkClient *spdkclient.Client, diskPath string, diskDriver commontypes.DiskDriver) error {
 	diskID, err := getDiskID(getDiskPath(diskPath))
 	if err != nil {
 		return errors.Wrap(err, "failed to get disk device number")
@@ -233,7 +235,7 @@ func validateAioDiskCreation(spdkClient *spdkclient.Client, diskPath string, dis
 	return nil
 }
 
-func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, originalDiskPath string, diskDriver commonTypes.DiskDriver, blockSize int64) (string, error) {
+func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, originalDiskPath string, diskDriver commontypes.DiskDriver, blockSize int64) (string, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskName":   diskName,
 		"diskUUID":   diskUUID,
@@ -243,7 +245,7 @@ func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, originalD
 	})
 
 	diskPath := originalDiskPath
-	if diskDriver == commonTypes.DiskDriverAio {
+	if diskDriver == commontypes.DiskDriverAio {
 		if err := validateAioDiskCreation(spdkClient, diskPath, diskDriver); err != nil {
 			return "", errors.Wrap(err, "failed to validate disk creation")
 		}
@@ -316,7 +318,7 @@ func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, originalD
 	return "", grpcstatus.Error(grpccodes.NotFound, fmt.Sprintf("cannot find lvstore with UUID %v", diskUUID))
 }
 
-func lvstoreToDisk(spdkClient *spdkclient.Client, diskPath, lvstoreName, lvstoreUUID string, diskDriver commonTypes.DiskDriver) (*spdkrpc.Disk, error) {
+func lvstoreToDisk(spdkClient *spdkclient.Client, diskPath, lvstoreName, lvstoreUUID string, diskDriver commontypes.DiskDriver) (*spdkrpc.Disk, error) {
 	lvstores, err := spdkClient.BdevLvolGetLvstore(lvstoreName, lvstoreUUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get lvstore with name %v and UUID %v", lvstoreName, lvstoreUUID)
@@ -325,7 +327,7 @@ func lvstoreToDisk(spdkClient *spdkclient.Client, diskPath, lvstoreName, lvstore
 
 	// A disk does not have a fsid, so we use the device number as the disk ID
 	diskID := diskPath
-	if diskDriver == commonTypes.DiskDriverAio {
+	if diskDriver == commontypes.DiskDriverAio {
 		diskID, err = getDiskID(getDiskPath(diskPath))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get disk ID")

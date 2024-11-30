@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	commontypes "github.com/longhorn/go-common-libs/types"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdksetup "github.com/longhorn/go-spdk-helper/pkg/spdk/setup"
@@ -19,12 +19,12 @@ type DiskDriverVirtioScsi struct {
 
 func init() {
 	driver := &DiskDriverVirtioScsi{}
-	disk.RegisterDiskDriver(string(commonTypes.DiskDriverVirtioScsi), driver)
+	disk.RegisterDiskDriver(string(commontypes.DiskDriverVirtioScsi), driver)
 }
 
 func (d *DiskDriverVirtioScsi) DiskCreate(spdkClient *spdkclient.Client, diskName, diskPath string, blockSize uint64) (string, error) {
 	// TODO: validate the diskPath
-	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get the executor for virtio-scsi disk create %v", diskPath)
 	}
@@ -55,7 +55,7 @@ func (d *DiskDriverVirtioScsi) DiskCreate(spdkClient *spdkclient.Client, diskNam
 }
 
 func (d *DiskDriverVirtioScsi) DiskDelete(spdkClient *spdkclient.Client, diskName, diskPath string) (deleted bool, err error) {
-	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get the executor for virtio-scsi disk %v deletion", diskName)
 	}
