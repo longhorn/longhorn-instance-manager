@@ -7,20 +7,20 @@ toolchain go1.22.2
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20240914104455-ae6fea57b2c1
-	github.com/longhorn/go-common-libs v0.0.0-20240914083622-928beb30c12e
-	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
+	github.com/longhorn/backupstore 2b482603a2c6
+	github.com/longhorn/go-common-libs 4d6c3a880dbc
+	github.com/longhorn/go-spdk-helper 7d9a097456b2
 	github.com/longhorn/longhorn-engine v1.6.3
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240308142500-8ac41e985506
+	github.com/longhorn/longhorn-spdk-engine bfa1d21ce112
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli v1.22.15
+	github.com/urfave/cli v1.22.16
 	golang.org/x/net v0.29.0
 	golang.org/x/sync v0.8.0
 	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.31.1
+	k8s.io/mount-utils v0.31.3
 )
 
 require (
