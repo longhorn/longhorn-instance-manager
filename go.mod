@@ -4,6 +4,8 @@ go 1.23.0
 
 toolchain go1.23.4
 
+replace github.com/longhorn/longhorn-spdk-engine => github.com/shuo-wu/longhorn-spdk-engine v0.0.0-20241221021722-8c4f187115f7
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20241218004307-b75ee1322085
@@ -11,7 +13,7 @@ require (
 	github.com/longhorn/go-spdk-helper v0.0.0-20241218003628-6c9c87b76aa0
 	github.com/longhorn/longhorn-engine v1.8.0-rc1
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241220074852-c84ca84d6e5e
-	github.com/longhorn/types v0.0.0-20241217083824-2e0ecb487ccf
+	github.com/longhorn/types v0.0.0-20241220104939-0d566342b51d
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.16

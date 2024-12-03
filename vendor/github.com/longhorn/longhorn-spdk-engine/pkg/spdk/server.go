@@ -690,58 +690,15 @@ func (s *Server) ReplicaRebuildingSrcFinish(ctx context.Context, req *spdkrpc.Re
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) ReplicaRebuildingSrcAttach(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcAttachRequest) (ret *emptypb.Empty, err error) {
-	if req.Name == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
-	}
-	if req.DstReplicaName == "" || req.DstRebuildingLvolAddress == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "dst replica name and dst rebuilding lvol address are required")
-	}
-
-	s.RLock()
-	r := s.replicaMap[req.Name]
-	spdkClient := s.spdkClient
-	s.RUnlock()
-
-	if r == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src attach", req.Name)
-	}
-
-	if err = r.RebuildingSrcAttach(spdkClient, req.DstReplicaName, req.DstRebuildingLvolAddress); err != nil {
-		return nil, err
-	}
-	return &emptypb.Empty{}, nil
-}
-
-func (s *Server) ReplicaRebuildingSrcDetach(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcDetachRequest) (ret *emptypb.Empty, err error) {
-	if req.Name == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
-	}
-	if req.DstReplicaName == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "dst replica name is required")
-	}
-
-	s.RLock()
-	r := s.replicaMap[req.Name]
-	spdkClient := s.spdkClient
-	s.RUnlock()
-
-	if r == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src detach", req.Name)
-	}
-
-	if err = r.RebuildingSrcDetach(spdkClient, req.DstReplicaName); err != nil {
-		return nil, err
-	}
-	return &emptypb.Empty{}, nil
-}
-
-func (s *Server) ReplicaRebuildingSrcShallowCopyStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcShallowCopyStartRequest) (ret *spdkrpc.ReplicaRebuildingSrcShallowCopyStartResponse, err error) {
+func (s *Server) ReplicaRebuildingSrcShallowCopyStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcShallowCopyStartRequest) (ret *emptypb.Empty, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
 	}
 	if req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica snapshot name is required")
+	}
+	if req.DstRebuildingLvolAddress == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "dst rebuilding lvol address is required")
 	}
 
 	s.RLock()
@@ -753,12 +710,11 @@ func (s *Server) ReplicaRebuildingSrcShallowCopyStart(ctx context.Context, req *
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src snapshot %s shallow copy start", req.Name, req.SnapshotName)
 	}
 
-	shallowCopyOpId, err := r.RebuildingSrcShallowCopyStart(spdkClient, req.SnapshotName)
-	if err != nil {
+	if err := r.RebuildingSrcShallowCopyStart(spdkClient, req.SnapshotName, req.DstRebuildingLvolAddress); err != nil {
 		return nil, err
 	}
 
-	return &spdkrpc.ReplicaRebuildingSrcShallowCopyStartResponse{ShallowCopyOpId: shallowCopyOpId}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) ReplicaRebuildingSrcShallowCopyCheck(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcShallowCopyCheckRequest) (ret *spdkrpc.ReplicaRebuildingSrcShallowCopyCheckResponse, err error) {
@@ -768,20 +724,16 @@ func (s *Server) ReplicaRebuildingSrcShallowCopyCheck(ctx context.Context, req *
 	if req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica snapshot name is required")
 	}
-	if req.ShallowCopyOpId == 0 {
-		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "invalid shallow copy op ID %v", req.ShallowCopyOpId)
-	}
 
 	s.RLock()
 	r := s.replicaMap[req.Name]
-	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if r == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src snapshot %s shallow copy check", req.Name, req.SnapshotName)
 	}
 
-	status, err := r.RebuildingSrcShallowCopyCheck(spdkClient, req.ShallowCopyOpId)
+	status, err := r.RebuildingSrcShallowCopyCheck(req.SnapshotName)
 	if err != nil {
 		return nil, err
 	}
@@ -911,28 +863,6 @@ func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *sp
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
-}
-
-func (s *Server) ReplicaRebuildingDstSnapshotRevert(ctx context.Context, req *spdkrpc.SnapshotRequest) (ret *spdkrpc.ReplicaRebuildingDstSnapshotRevertResponse, err error) {
-	if req.Name == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
-	}
-
-	s.RLock()
-	r := s.replicaMap[req.Name]
-	spdkClient := s.spdkClient
-	s.RUnlock()
-
-	if r == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding dst snapshot revert", req.Name)
-	}
-
-	dstRebuildingLvolAddress, err := r.RebuildingDstSnapshotRevert(spdkClient, req.SnapshotName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &spdkrpc.ReplicaRebuildingDstSnapshotRevertResponse{DstRebuildingLvolAddress: dstRebuildingLvolAddress}, nil
 }
 
 func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequest) (ret *spdkrpc.Engine, err error) {
@@ -1155,6 +1085,9 @@ func (s *Server) EngineWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_EngineW
 }
 
 func (s *Server) EngineReplicaAdd(ctx context.Context, req *spdkrpc.EngineReplicaAddRequest) (ret *emptypb.Empty, err error) {
+	if req.ReplicaName == "" || req.ReplicaAddress == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name and address are required")
+	}
 	s.RLock()
 	e := s.engineMap[req.EngineName]
 	spdkClient := s.spdkClient
