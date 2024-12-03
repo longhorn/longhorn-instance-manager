@@ -996,8 +996,10 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 			}
 		}
 		if engineErr != nil || err != nil {
-			e.log.WithError(err).Errorf("Engine failed to start replica %s rebuilding, will mark the rebuilding replica mode from %v to ERR", dstReplicaName, e.ReplicaStatusMap[dstReplicaName].Mode)
-			e.ReplicaStatusMap[dstReplicaName].Mode = types.ModeERR
+			if e.ReplicaStatusMap[dstReplicaName] != nil && e.ReplicaStatusMap[dstReplicaName].Mode != types.ModeERR {
+				e.log.WithError(err).Errorf("Engine failed to start replica %s rebuilding, will mark the rebuilding replica mode from %v to ERR", dstReplicaName, e.ReplicaStatusMap[dstReplicaName].Mode)
+				e.ReplicaStatusMap[dstReplicaName].Mode = types.ModeERR
+			}
 			updateRequired = true
 		}
 	}()
