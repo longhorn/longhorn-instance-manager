@@ -20,7 +20,7 @@ const (
 	diskCtrlrLossTimeoutSec  = 30
 	diskReconnectDelaySec    = 2
 	diskFastIOFailTimeoutSec = 15
-	diskTransportAckTimeout  = 14
+	diskTransportAckTimeout  = 10
 	diskKeepAliveTimeoutMs   = 10000
 	diskMultipath            = "disable"
 )
