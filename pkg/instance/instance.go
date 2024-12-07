@@ -9,9 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	lhLonghorn "github.com/longhorn/go-common-libs/longhorn"
 	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
@@ -151,7 +152,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap,
-			req.Spec.PortCount, req.Spec.InitiatorAddress, req.Spec.TargetAddress, req.Spec.UpgradeRequired, req.Spec.SpdkInstanceSpec.SalvageRequested)
+			req.Spec.PortCount, req.Spec.InitiatorAddress, req.Spec.TargetAddress, req.Spec.SpdkInstanceSpec.SalvageRequested)
 		if err != nil {
 			return nil, err
 		}
@@ -719,13 +720,15 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
-			State:           e.State,
-			ErrorMsg:        e.ErrorMsg,
-			PortStart:       e.Port,
-			PortEnd:         e.Port,
-			TargetPortStart: e.TargetPort,
-			TargetPortEnd:   e.TargetPort,
-			Conditions:      make(map[string]bool),
+			State:                  e.State,
+			ErrorMsg:               e.ErrorMsg,
+			PortStart:              e.Port,
+			PortEnd:                e.Port,
+			TargetPortStart:        e.TargetPort,
+			TargetPortEnd:          e.TargetPort,
+			StandbyTargetPortStart: e.StandbyTargetPort,
+			StandbyTargetPortEnd:   e.StandbyTargetPort,
+			Conditions:             make(map[string]bool),
 		},
 	}
 }
