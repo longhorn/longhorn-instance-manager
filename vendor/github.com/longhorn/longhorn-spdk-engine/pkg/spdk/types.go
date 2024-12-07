@@ -49,7 +49,7 @@ const (
 	replicaCtrlrLossTimeoutSec  = 15
 	replicaReconnectDelaySec    = 2
 	replicaFastIOFailTimeoutSec = 10
-	replicaTransportAckTimeout  = 14
+	replicaTransportAckTimeout  = 10
 	replicaKeepAliveTimeoutMs   = 10000
 	replicaMultipath            = "disable"
 )
