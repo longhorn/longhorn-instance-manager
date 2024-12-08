@@ -7,11 +7,11 @@ toolchain go1.23.4
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20241207165647-0292e7399ff4
-	github.com/longhorn/go-common-libs v0.0.0-20241206085105-b60ef86c0b25
+	github.com/longhorn/go-common-libs v0.0.0-20241208031806-6a06a4861f43
 	github.com/longhorn/go-spdk-helper v0.0.0-20241207070034-582021db73c8
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241201
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241207200153-0d0a3148cc66
-	github.com/longhorn/types v0.0.0-20241123075624-48c550af4eab
+	github.com/longhorn/types v0.0.0-20241208031854-891e672bc453
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.16
@@ -86,7 +86,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
+	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
