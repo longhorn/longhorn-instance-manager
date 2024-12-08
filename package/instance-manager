@@ -42,7 +42,7 @@ function generate_nvme_hostid_and_hostnqn() {
 function enable_spdk_tgt() {
     local options=("$@")
     echo "Enabling spdk_tgt with options: ${options[*]}"
-    spdk_tgt "${options[@]}" 2>&1 | tee /var/log/spdk_tgt.log &
+    spdk_tgt "${options[@]}" 2>&1 &
 
     timeout=120  # Timeout in seconds
     interval=1  # Interval in seconds
