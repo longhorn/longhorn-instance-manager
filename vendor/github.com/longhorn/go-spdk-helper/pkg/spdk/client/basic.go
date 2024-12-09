@@ -412,11 +412,11 @@ func (c *Client) BdevLvolSetParent(lvol, parent string) (set bool, err error) {
 //
 //	"name": Required. UUID or alias of the logical volume to resize.
 //
-//	"size": Required. Desired size of the logical volume in bytes.
-func (c *Client) BdevLvolResize(name string, size uint64) (resized bool, err error) {
+//	"sizeInMib": Required. Desired size of the logical volume in bytes.
+func (c *Client) BdevLvolResize(name string, sizeInMib uint64) (resized bool, err error) {
 	req := spdktypes.BdevLvolResizeRequest{
-		Name: name,
-		Size: size,
+		Name:      name,
+		SizeInMib: sizeInMib,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_resize", req)

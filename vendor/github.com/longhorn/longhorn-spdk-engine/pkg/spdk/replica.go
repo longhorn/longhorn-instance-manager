@@ -418,7 +418,7 @@ func compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSize bool) error
 
 func getExposedPort(subsystem *spdktypes.NvmfSubsystem) (exposedPort int32, err error) {
 	if subsystem == nil || len(subsystem.ListenAddresses) == 0 {
-		return 0, fmt.Errorf("cannot find the Nvmf subsystem")
+		return 0, fmt.Errorf("cannot find the NVMf subsystem")
 	}
 
 	port := 0
@@ -434,7 +434,7 @@ func getExposedPort(subsystem *spdktypes.NvmfSubsystem) (exposedPort int32, err 
 		return int32(port), nil
 	}
 
-	return 0, fmt.Errorf("cannot find a exposed port in the Nvmf subsystem")
+	return 0, fmt.Errorf("cannot find a exposed port in the NVMf subsystem")
 }
 
 func (r *Replica) validateReplicaHead(headBdevLvol *spdktypes.BdevInfo) (err error) {
@@ -518,7 +518,7 @@ func (r *Replica) prepareHead(spdkClient *spdkclient.Client) (err error) {
 	}
 
 	if !isHeadAvailable {
-		r.log.Info("Creating a lvol bdev as replica Head")
+		r.log.Info("Creating a lvol bdev as replica head")
 		if r.ActiveChain[len(r.ActiveChain)-1] != nil { // The replica has a backing image or somehow there are already snapshots in the chain
 			if _, err := spdkClient.BdevLvolClone(r.ActiveChain[len(r.ActiveChain)-1].UUID, r.Name); err != nil {
 				return err
@@ -801,7 +801,7 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 	}
 
 	if r.IsExposed {
-		r.log.Info("Unexposing lvol bdev for replica deletion")
+		r.log.Info("Unexposing bdev for replica deletion")
 		if err := spdkClient.StopExposeBdev(helpertypes.GetNQN(r.Name)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 			return err
 		}

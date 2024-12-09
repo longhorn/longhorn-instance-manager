@@ -8,10 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
-)
 
-const (
-	ErrorMessageCannotFindValidNvmeDevice = "cannot find a valid nvme device"
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
 
 // DiscoverTarget discovers a target
@@ -59,7 +57,7 @@ func ConnectTarget(ip, port, nqn string, executor *commonns.Executor) (controlle
 	return connect(hostID, hostNQN, nqn, DefaultTransportType, ip, port, executor)
 }
 
-// DisconnectTarget disconnects a target
+// DisconnectTarget disconnects from a target
 func DisconnectTarget(nqn string, executor *commonns.Executor) error {
 	return disconnect(nqn, executor)
 }
@@ -72,22 +70,21 @@ func GetDevices(ip, port, nqn string, executor *commonns.Executor) (devices []De
 
 	devices = []Device{}
 
-	nvmeDevices, err := listControllers(executor)
+	nvmeDevices, err := listRecognizedNvmeDevices(executor)
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range nvmeDevices {
-		// Get subsystem
 		subsystems, err := listSubsystems(d.DevicePath, executor)
 		if err != nil {
-			logrus.WithError(err).Warnf("failed to get subsystem for nvme device %s", d.DevicePath)
+			logrus.WithError(err).Warnf("failed to list subsystems for NVMe device %s", d.DevicePath)
 			continue
 		}
 		if len(subsystems) == 0 {
-			return nil, fmt.Errorf("no subsystem found for nvme device %s", d.DevicePath)
+			return nil, fmt.Errorf("no subsystem found for NVMe device %s", d.DevicePath)
 		}
 		if len(subsystems) > 1 {
-			return nil, fmt.Errorf("multiple subsystems found for nvme device %s", d.DevicePath)
+			return nil, fmt.Errorf("multiple subsystems found for NVMe device %s", d.DevicePath)
 		}
 		sys := subsystems[0]
 
@@ -166,7 +163,7 @@ func GetDevices(ip, port, nqn string, executor *commonns.Executor) (devices []De
 			}
 		}
 
-		return nil, fmt.Errorf(ErrorMessageCannotFindValidNvmeDevice+" with subsystem NQN %s and address %s:%s", nqn, ip, port)
+		return nil, fmt.Errorf(types.ErrorMessageCannotFindValidNvmeDevice+" with subsystem NQN %s and address %s:%s", nqn, ip, port)
 	}
 	return res, nil
 }
