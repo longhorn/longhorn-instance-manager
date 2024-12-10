@@ -95,7 +95,7 @@ done
 bind_dev
 bind_sys
 bind_lib_modules
-enable_tgtd
+[ "$enable_spdk" -eq 0 ] && enable_tgtd
 [ "$enable_spdk" -eq 1 ] && generate_nvme_hostid_and_hostnqn
 [ "$enable_spdk" -eq 1 ] && enable_spdk_tgt "${spdk_options[@]}"
 
