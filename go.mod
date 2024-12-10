@@ -8,9 +8,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20241208150358-e44f7d35fe1f
 	github.com/longhorn/go-common-libs v0.0.0-20241208100509-e1932c65c078
-	github.com/longhorn/go-spdk-helper v0.0.0-20241209015745-e5a448a84da0
+	github.com/longhorn/go-spdk-helper v0.0.0-20241210055426-92898a883955
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241201
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241210000947-c93635596614
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241210153533-39244ef57082
 	github.com/longhorn/types v0.0.0-20241208031854-891e672bc453
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3

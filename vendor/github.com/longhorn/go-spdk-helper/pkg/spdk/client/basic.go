@@ -109,7 +109,7 @@ func (c *Client) BdevLvolCreateLvstore(bdevName, lvsName string, clusterSize uin
 		ClusterSz: clusterSize,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_create_lvstore", req)
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_create_lvstore", req)
 	if err != nil {
 		return "", err
 	}
