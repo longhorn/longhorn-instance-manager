@@ -37,18 +37,19 @@ import (
 type Engine struct {
 	sync.RWMutex
 
-	Name       string
-	VolumeName string
-	SpecSize   uint64
-	ActualSize uint64
-	IP         string
-	Port       int32 // Port that initiator is connecting to
-	TargetIP   string
-	TargetPort int32 // Port of the target that is used for letting initiator connect to
-	Frontend   string
-	Endpoint   string
-	Nqn        string
-	Nguid      string
+	Name              string
+	VolumeName        string
+	SpecSize          uint64
+	ActualSize        uint64
+	IP                string
+	Port              int32 // Port that initiator is connecting to
+	TargetIP          string
+	TargetPort        int32 // Port of the target that is used for letting initiator connect to
+	StandbyTargetPort int32
+	Frontend          string
+	Endpoint          string
+	Nqn               string
+	Nguid             string
 
 	ctrlrLossTimeout     int
 	fastIOFailTimeoutSec int
@@ -115,7 +116,7 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 }
 
 func (e *Engine) isNewEngine() bool {
-	return e.IP == "" && e.TargetIP == ""
+	return e.IP == "" && e.TargetIP == "" && e.StandbyTargetPort == 0
 }
 
 func (e *Engine) checkInitiatorAndTargetCreationRequirements(podIP, initiatorIP, targetIP string) (bool, bool, error) {
@@ -132,7 +133,11 @@ func (e *Engine) checkInitiatorAndTargetCreationRequirements(podIP, initiatorIP,
 		} else if e.Port != 0 && e.TargetPort == 0 {
 			// Only target instance creation is required, because the initiator instance is already running
 			e.log.Info("Creating a target instance")
-			targetCreationRequired = true
+			if e.StandbyTargetPort != 0 {
+				e.log.Warnf("Standby target instance with port %v is already created, will skip the target creation", e.StandbyTargetPort)
+			} else {
+				targetCreationRequired = true
+			}
 		} else {
 			e.log.Infof("Initiator instance with port %v and target instance with port %v are already created, will skip the creation", e.Port, e.TargetPort)
 		}
@@ -404,6 +409,13 @@ func (e *Engine) filterSalvageCandidates(replicaAddressMap map[string]string) (m
 	return filteredCandidates, nil
 }
 
+func (e *Engine) isStandbyTargetCreationRequired() bool {
+	// e.Port is non-zero which means the initiator instance is already created and connected to a target instance.
+	// e.TargetPort is zero which means the target instance is not created on the same pod.
+	// Thus, a standby target instance should be created for the target instance switch-over.
+	return e.Port != 0 && e.TargetPort == 0
+}
+
 func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap, portCount int32, targetAddress string,
 	initiatorCreationRequired, targetCreationRequired bool) (err error) {
 	if !types.IsFrontendSupported(e.Frontend) {
@@ -411,9 +423,11 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, superiorPortAlloc
 	}
 
 	if e.Frontend == types.FrontendEmpty {
-		e.log.Infof("No frontend specified, will not expose the volume %s", e.VolumeName)
+		e.log.Info("No frontend specified, will not expose bdev for engine")
 		return nil
 	}
+
+	standbyTargetCreationRequired := e.isStandbyTargetCreationRequired()
 
 	targetIP, targetPort, err := splitHostPort(targetAddress)
 	if err != nil {
@@ -432,14 +446,16 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, superiorPortAlloc
 
 	defer func() {
 		if err == nil {
-			e.initiator = initiator
-			e.dmDeviceIsBusy = dmDeviceIsBusy
-			e.Endpoint = initiator.GetEndpoint()
-			e.log = e.log.WithFields(logrus.Fields{
-				"endpoint":   e.Endpoint,
-				"port":       e.Port,
-				"targetPort": e.TargetPort,
-			})
+			if !standbyTargetCreationRequired {
+				e.initiator = initiator
+				e.dmDeviceIsBusy = dmDeviceIsBusy
+				e.Endpoint = initiator.GetEndpoint()
+				e.log = e.log.WithFields(logrus.Fields{
+					"endpoint":   e.Endpoint,
+					"port":       e.Port,
+					"targetPort": e.TargetPort,
+				})
+			}
 
 			e.log.Infof("Finished handling frontend for engine: %+v", e)
 		}
@@ -491,7 +507,11 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, superiorPortAlloc
 		e.Port = port
 	}
 	if targetCreationRequired {
-		e.TargetPort = port
+		if standbyTargetCreationRequired {
+			e.StandbyTargetPort = port
+		} else {
+			e.TargetPort = port
+		}
 	}
 
 	if err := spdkClient.StartExposeBdev(e.Nqn, e.Name, e.Nguid, targetIP, strconv.Itoa(int(port))); err != nil {
@@ -650,6 +670,7 @@ func (e *Engine) getWithoutLock() (res *spdkrpc.Engine) {
 		Port:              e.Port,
 		TargetIp:          e.TargetIP,
 		TargetPort:        e.TargetPort,
+		StandbyTargetPort: e.StandbyTargetPort,
 		Snapshots:         map[string]*spdkrpc.Lvol{},
 		Frontend:          e.Frontend,
 		Endpoint:          e.Endpoint,
@@ -905,22 +926,19 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 }
 
 func (e *Engine) validateAndUpdateFrontend(subsystemMap map[string]*spdktypes.NvmfSubsystem) (err error) {
-	if e.Frontend != types.FrontendEmpty &&
-		e.Frontend != types.FrontendSPDKTCPNvmf &&
-		e.Frontend != types.FrontendSPDKTCPBlockdev {
+	if !types.IsFrontendSupported(e.Frontend) {
 		return fmt.Errorf("unknown frontend type %s", e.Frontend)
 	}
 
-	nqn := helpertypes.GetNQN(e.Name)
-
-	subsystem, ok := subsystemMap[nqn]
-	if !ok {
-		return fmt.Errorf("cannot find the NVMf subsystem for engine %s", e.Name)
+	if e.Nqn == "" {
+		return fmt.Errorf("NQN is empty for engine %s", e.Name)
 	}
+
+	subsystem := subsystemMap[e.Nqn]
 
 	if e.Frontend == types.FrontendEmpty {
 		if subsystem != nil {
-			return fmt.Errorf("found NVMf subsystem %s for engine %s with empty frontend", nqn, e.Name)
+			return fmt.Errorf("found NVMf subsystem %s for engine %s with empty frontend", e.Nqn, e.Name)
 		}
 		if e.Endpoint != "" {
 			return fmt.Errorf("found non-empty endpoint %s for engine %s with empty frontend", e.Endpoint, e.Name)
@@ -931,8 +949,12 @@ func (e *Engine) validateAndUpdateFrontend(subsystemMap map[string]*spdktypes.Nv
 		return nil
 	}
 
-	if subsystem == nil || len(subsystem.ListenAddresses) == 0 {
+	if subsystem == nil {
 		return fmt.Errorf("cannot find the NVMf subsystem for engine %s", e.Name)
+	}
+
+	if len(subsystem.ListenAddresses) == 0 {
+		return fmt.Errorf("cannot find any listener for NVMf subsystem %s for engine %s", e.Nqn, e.Name)
 	}
 
 	port := 0
@@ -955,7 +977,7 @@ func (e *Engine) validateAndUpdateFrontend(subsystemMap map[string]*spdktypes.Nv
 	switch e.Frontend {
 	case types.FrontendSPDKTCPBlockdev:
 		if e.initiator == nil {
-			initiator, err := nvme.NewInitiator(e.VolumeName, nqn, nvme.HostProc)
+			initiator, err := nvme.NewInitiator(e.VolumeName, e.Nqn, nvme.HostProc)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create initiator for engine %v during frontend validation and update", e.Name)
 			}
@@ -964,7 +986,7 @@ func (e *Engine) validateAndUpdateFrontend(subsystemMap map[string]*spdktypes.Nv
 		if err := e.initiator.LoadNVMeDeviceInfo(e.initiator.TransportAddress, e.initiator.TransportServiceID, e.initiator.SubsystemNQN); err != nil {
 			if strings.Contains(err.Error(), "connecting state") ||
 				strings.Contains(err.Error(), "resetting state") {
-				e.log.WithError(err).Warnf("Ignored to validate and update engine %v, because the device is still in a transient state", e.Name)
+				e.log.WithError(err).Warn("Ignored to validate and update engine, because the device is still in a transient state")
 				return nil
 			}
 			return err
@@ -980,7 +1002,7 @@ func (e *Engine) validateAndUpdateFrontend(subsystemMap map[string]*spdktypes.Nv
 			return fmt.Errorf("found mismatching between engine endpoint %s and actual block device endpoint %s for engine %s", e.Endpoint, blockDevEndpoint, e.Name)
 		}
 	case types.FrontendSPDKTCPNvmf:
-		nvmfEndpoint := GetNvmfEndpoint(nqn, e.IP, e.Port)
+		nvmfEndpoint := GetNvmfEndpoint(e.Nqn, e.IP, e.Port)
 		if e.Endpoint == "" {
 			e.Endpoint = nvmfEndpoint
 		}
@@ -2270,7 +2292,9 @@ func (e *Engine) SwitchOverTarget(spdkClient *spdkclient.Client, newTargetAddres
 
 	if newTargetIP == podIP {
 		e.TargetPort = newTargetPort
+		e.StandbyTargetPort = 0
 	} else {
+		e.StandbyTargetPort = e.TargetPort
 		e.TargetPort = 0
 	}
 
@@ -2411,16 +2435,16 @@ func (e *Engine) connectTarget(targetAddress string) error {
 
 // DeleteTarget deletes the target instance
 func (e *Engine) DeleteTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap) (err error) {
-	e.log.Infof("Deleting target with target port %d", e.TargetPort)
+	e.log.Infof("Deleting target with target port %d and standby target port %d", e.TargetPort, e.StandbyTargetPort)
 
 	err = spdkClient.StopExposeBdev(e.Nqn)
 	if err != nil {
 		return errors.Wrapf(err, "failed to stop expose bdev while deleting target instance for engine %s", e.Name)
 	}
 
-	err = e.releaseTargetPort(superiorPortAllocator)
+	err = e.releaseTargetAndStandbyTargetPorts(superiorPortAllocator)
 	if err != nil {
-		return errors.Wrapf(err, "failed to release target port while deleting target instance for engine %s", e.Name)
+		return errors.Wrapf(err, "failed to release target and standby target ports while deleting target instance for engine %s", e.Name)
 	}
 
 	e.log.Infof("Deleting raid bdev %s while deleting target instance", e.Name)
@@ -2446,8 +2470,9 @@ func isSwitchOverTargetRequired(oldTargetAddress, newTargetAddress string) bool 
 	return oldTargetAddress != newTargetAddress
 }
 
-func (e *Engine) releaseTargetPort(superiorPortAllocator *commonbitmap.Bitmap) error {
+func (e *Engine) releaseTargetAndStandbyTargetPorts(superiorPortAllocator *commonbitmap.Bitmap) error {
 	releaseTargetPortRequired := e.TargetPort != 0
+	releaseStandbyTargetPortRequired := e.StandbyTargetPort != 0 && e.StandbyTargetPort != e.TargetPort
 
 	// Release the target port
 	if releaseTargetPortRequired {
@@ -2456,6 +2481,14 @@ func (e *Engine) releaseTargetPort(superiorPortAllocator *commonbitmap.Bitmap) e
 		}
 	}
 	e.TargetPort = 0
+
+	// Release the standby target port
+	if releaseStandbyTargetPortRequired {
+		if err := superiorPortAllocator.ReleaseRange(e.StandbyTargetPort, e.StandbyTargetPort); err != nil {
+			return errors.Wrapf(err, "failed to release standby target port %d", e.StandbyTargetPort)
+		}
+	}
+	e.StandbyTargetPort = 0
 
 	return nil
 }

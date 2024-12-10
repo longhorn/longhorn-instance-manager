@@ -1,8 +1,9 @@
 package api
 
 import (
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 )
@@ -129,6 +130,7 @@ type Engine struct {
 	Port              int32                 `json:"port"`
 	TargetIP          string                `json:"target_ip"`
 	TargetPort        int32                 `json:"target_port"`
+	StandbyTargetPort int32                 `json:"standby_target_port"`
 	ReplicaAddressMap map[string]string     `json:"replica_address_map"`
 	ReplicaModeMap    map[string]types.Mode `json:"replica_mode_map"`
 	Head              *Lvol                 `json:"head"`
@@ -149,6 +151,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		Port:              e.Port,
 		TargetIP:          e.TargetIp,
 		TargetPort:        e.TargetPort,
+		StandbyTargetPort: e.StandbyTargetPort,
 		ReplicaAddressMap: e.ReplicaAddressMap,
 		ReplicaModeMap:    map[string]types.Mode{},
 		Head:              ProtoLvolToLvol(e.Head),
