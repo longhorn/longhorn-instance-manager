@@ -267,7 +267,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20241211171702-5c791cfa8bbc
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20241212122144-776b2e088e31
 ## explicit; go 1.22.7
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -285,7 +285,7 @@ github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20241208031854-891e672bc453
+# github.com/longhorn/types v0.0.0-20241212070310-f6797e59f9c9
 ## explicit; go 1.22.7
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc
