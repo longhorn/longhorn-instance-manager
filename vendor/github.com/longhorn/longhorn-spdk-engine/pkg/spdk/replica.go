@@ -455,30 +455,20 @@ func (r *Replica) validateReplicaHead(headBdevLvol *spdktypes.BdevInfo) (err err
 	return nil
 }
 
-func (r *Replica) IsHeadAvailable(spdkClient *spdkclient.Client) (isAvailable bool, err error) {
-	defer func() {
-		if err != nil || isAvailable {
-			return
-		}
-		r.Head = nil
-		if r.ActiveChain[len(r.ActiveChain)-1] != nil &&
-			r.ActiveChain[len(r.ActiveChain)-1].Name == r.Name {
-			r.ActiveChain = r.ActiveChain[:len(r.ActiveChain)-1]
-		}
-	}()
-
-	if len(r.ActiveChain) < 2 {
-		return false, nil
-	}
-	if r.Head == nil {
-		return false, nil
-	}
-
+func (r *Replica) IsHeadLvolAvailable(spdkClient *spdkclient.Client) (isAvailable bool, err error) {
 	bdevLvolList, err := spdkClient.BdevLvolGet(r.Alias, 0)
-	if err != nil {
+	if err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 		return false, err
 	}
 	if len(bdevLvolList) < 1 {
+		return false, nil
+	}
+
+	if validateErr := r.validateReplicaHead(&bdevLvolList[0]); validateErr != nil {
+		r.log.WithError(validateErr).Warnf("Found invalid head lvol %v for replica %v, will delete it first", bdevLvolList[0].Name, r.Name)
+		if _, deleteErr := spdkClient.BdevLvolDelete(bdevLvolList[0].UUID); deleteErr != nil {
+			return false, deleteErr
+		}
 		return false, nil
 	}
 
@@ -512,7 +502,7 @@ func (r *Replica) updateHeadCache(spdkClient *spdkclient.Client) (err error) {
 }
 
 func (r *Replica) prepareHead(spdkClient *spdkclient.Client) (err error) {
-	isHeadAvailable, err := r.IsHeadAvailable(spdkClient)
+	isHeadAvailable, err := r.IsHeadLvolAvailable(spdkClient)
 	if err != nil {
 		return err
 	}
@@ -533,6 +523,13 @@ func (r *Replica) prepareHead(spdkClient *spdkclient.Client) (err error) {
 				return err
 			}
 		}
+	}
+
+	// Blindly clean up then update the caches for the head
+	r.Head = nil
+	if r.ActiveChain[len(r.ActiveChain)-1] != nil &&
+		r.ActiveChain[len(r.ActiveChain)-1].Name == r.Name {
+		r.ActiveChain = r.ActiveChain[:len(r.ActiveChain)-1]
 	}
 
 	return r.updateHeadCache(spdkClient)
