@@ -1,0 +1,37 @@
+#!/bin/bash
+
+function cleanup_spdk_resources() {
+    echo "Caught termination signal. Cleaning up SPDK resources..."
+
+    local v2_devices=($(get_v2_devices))
+    for device in "${v2_devices[@]}"; do
+        dmsetup remove "$device"
+        echo "Removed device-mapper device: $device"
+
+        device_file="/host/dev/longhorn/$device"
+        rm "$device_file"
+        echo "Removed device file: $device_file"
+    done
+}
+
+function get_v2_devices() {
+    local dm_devices=$(dmsetup ls | awk '{print $1}')
+    local device_files=$(ls /host/dev/longhorn/)
+    local v2_devices=()
+
+    # Iterate over DM devices.
+    for dm_device in $dm_devices; do
+        # Iterate over Longhorn device files.
+        for device_file in $device_files; do
+            # If the DM device matches the Longhorn device file, add it to the V2 devices list.
+            if [[ "$dm_device" == "$device_file" ]]; then
+                v2_devices+=("$dm_device")
+                break
+            fi
+        done
+    done
+
+    echo "${v2_devices[@]}"
+}
+
+cleanup_spdk_resources
