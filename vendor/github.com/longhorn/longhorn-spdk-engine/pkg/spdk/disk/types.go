@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	commontypes "github.com/longhorn/go-common-libs/types"
+	commonTypes "github.com/longhorn/go-common-libs/types"
 	spdksetup "github.com/longhorn/go-spdk-helper/pkg/spdk/setup"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -31,7 +31,7 @@ const (
 	BlockDiskTypeLoop = BlockDiskType("loop")
 )
 
-func GetDiskDriver(diskDriver commontypes.DiskDriver, diskPathOrBdf string) (commontypes.DiskDriver, error) {
+func GetDiskDriver(diskDriver commonTypes.DiskDriver, diskPathOrBdf string) (commonTypes.DiskDriver, error) {
 	if isBDF(diskPathOrBdf) {
 		return getDiskDriverForBDF(diskDriver, diskPathOrBdf)
 	}
@@ -39,8 +39,8 @@ func GetDiskDriver(diskDriver commontypes.DiskDriver, diskPathOrBdf string) (com
 	return getDiskDriverForPath(diskDriver, diskPathOrBdf)
 }
 
-func getDiskDriverForBDF(diskDriver commontypes.DiskDriver, bdf string) (commontypes.DiskDriver, error) {
-	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
+func getDiskDriverForBDF(diskDriver commonTypes.DiskDriver, bdf string) (commonTypes.DiskDriver, error) {
+	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get the executor for disk driver detection")
 	}
@@ -51,10 +51,10 @@ func getDiskDriverForBDF(diskDriver commontypes.DiskDriver, bdf string) (commont
 	}
 
 	switch diskDriver {
-	case commontypes.DiskDriverAuto:
+	case commonTypes.DiskDriverAuto:
 		diskPath := ""
-		if diskStatus.Driver != string(commontypes.DiskDriverVfioPci) &&
-			diskStatus.Driver != string(commontypes.DiskDriverUioPciGeneric) {
+		if diskStatus.Driver != string(commonTypes.DiskDriverVfioPci) &&
+			diskStatus.Driver != string(commonTypes.DiskDriverUioPciGeneric) {
 			devName, err := util.GetDevNameFromBDF(bdf)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to get device name from BDF %s", bdf)
@@ -62,14 +62,14 @@ func getDiskDriverForBDF(diskDriver commontypes.DiskDriver, bdf string) (commont
 			diskPath = fmt.Sprintf("/dev/%s", devName)
 		}
 		return getDriverForAuto(diskStatus, diskPath)
-	case commontypes.DiskDriverAio, commontypes.DiskDriverNvme, commontypes.DiskDriverVirtioScsi, commontypes.DiskDriverVirtioBlk:
+	case commonTypes.DiskDriverAio, commonTypes.DiskDriverNvme, commonTypes.DiskDriverVirtioScsi, commonTypes.DiskDriverVirtioBlk:
 		return diskDriver, nil
 	default:
-		return commontypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for BDF %s", diskDriver, bdf)
+		return commonTypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for BDF %s", diskDriver, bdf)
 	}
 }
 
-func getDriverForAuto(diskStatus *helpertypes.DiskStatus, diskPath string) (commontypes.DiskDriver, error) {
+func getDriverForAuto(diskStatus *helpertypes.DiskStatus, diskPath string) (commonTypes.DiskDriver, error) {
 	// SPDK supports various types of disks, including NVMe, virtio-blk, and virtio-scsi.
 	//
 	// NVMe disks can be managed by either NVMe bdev or AIO bdev.
@@ -80,34 +80,34 @@ func getDriverForAuto(diskStatus *helpertypes.DiskStatus, diskPath string) (comm
 	// - If a block device uses the subsystems virtio and pci, it's a virtio-blk disk.
 	// - If it uses the subsystems virtio, pci, and scsi, it's a virtio-scsi disk.
 	switch diskStatus.Driver {
-	case string(commontypes.DiskDriverNvme):
-		return commontypes.DiskDriverNvme, nil
-	case string(commontypes.DiskDriverVirtioPci):
+	case string(commonTypes.DiskDriverNvme):
+		return commonTypes.DiskDriverNvme, nil
+	case string(commonTypes.DiskDriverVirtioPci):
 		blockdevice, err := util.GetBlockDevice(diskPath)
 		if err != nil {
-			return commontypes.DiskDriverNone, errors.Wrapf(err, "failed to get blockdevice info for %s", diskPath)
+			return commonTypes.DiskDriverNone, errors.Wrapf(err, "failed to get blockdevice info for %s", diskPath)
 		}
 
 		if slices.Contains(blockdevice.Subsystems, string(BlockDiskSubsystemVirtio)) && slices.Contains(blockdevice.Subsystems, string(BlockDiskSubsystemPci)) {
-			diskDriver := commontypes.DiskDriverVirtioBlk
+			diskDriver := commonTypes.DiskDriverVirtioBlk
 			if slices.Contains(blockdevice.Subsystems, string(BlockDiskSubsystemScsi)) {
-				diskDriver = commontypes.DiskDriverVirtioScsi
+				diskDriver = commonTypes.DiskDriverVirtioScsi
 			}
 			return diskDriver, nil
 		}
 
-		return commontypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for disk path %s", diskStatus.Driver, diskPath)
+		return commonTypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for disk path %s", diskStatus.Driver, diskPath)
 	default:
-		return commontypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for disk path %s", diskStatus.Driver, diskPath)
+		return commonTypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for disk path %s", diskStatus.Driver, diskPath)
 	}
 }
 
-func getDiskDriverForPath(diskDriver commontypes.DiskDriver, diskPath string) (commontypes.DiskDriver, error) {
+func getDiskDriverForPath(diskDriver commonTypes.DiskDriver, diskPath string) (commonTypes.DiskDriver, error) {
 	switch diskDriver {
-	case commontypes.DiskDriverAuto, commontypes.DiskDriverAio:
-		return commontypes.DiskDriverAio, nil
+	case commonTypes.DiskDriverAuto, commonTypes.DiskDriverAio:
+		return commonTypes.DiskDriverAio, nil
 	default:
-		return commontypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for disk path %s", diskDriver, diskPath)
+		return commonTypes.DiskDriverNone, fmt.Errorf("unsupported disk driver %s for disk path %s", diskDriver, diskPath)
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	commontypes "github.com/longhorn/go-common-libs/types"
+	commonTypes "github.com/longhorn/go-common-libs/types"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	spdkutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -20,7 +20,7 @@ type DiskDriverAio struct {
 
 func init() {
 	driver := &DiskDriverAio{}
-	disk.RegisterDiskDriver(string(commontypes.DiskDriverAio), driver)
+	disk.RegisterDiskDriver(string(commonTypes.DiskDriverAio), driver)
 }
 
 func (d *DiskDriverAio) DiskCreate(spdkClient *spdkclient.Client, diskName, diskPath string, blockSize uint64) (string, error) {

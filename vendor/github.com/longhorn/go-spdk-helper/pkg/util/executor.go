@@ -1,13 +1,13 @@
 package util
 
 import (
-	commonns "github.com/longhorn/go-common-libs/ns"
-	commontypes "github.com/longhorn/go-common-libs/types"
+	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonTypes "github.com/longhorn/go-common-libs/types"
 )
 
 // NewExecutor creates a new namespaced executor
-func NewExecutor(hostProc string) (*commonns.Executor, error) {
-	namespaces := []commontypes.Namespace{commontypes.NamespaceMnt, commontypes.NamespaceIpc, commontypes.NamespaceNet}
+func NewExecutor(hostProc string) (*commonNs.Executor, error) {
+	namespaces := []commonTypes.Namespace{commonTypes.NamespaceMnt, commonTypes.NamespaceIpc, commonTypes.NamespaceNet}
 
-	return commonns.NewNamespaceExecutor(commontypes.ProcessNone, hostProc, namespaces)
+	return commonNs.NewNamespaceExecutor(commonTypes.ProcessNone, hostProc, namespaces)
 }

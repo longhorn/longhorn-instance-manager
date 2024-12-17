@@ -3,9 +3,8 @@ package client
 import (
 	"time"
 
-	"google.golang.org/grpc"
-
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
+	"google.golang.org/grpc"
 )
 
 const (

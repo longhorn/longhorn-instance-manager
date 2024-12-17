@@ -6,23 +6,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	commontypes "github.com/longhorn/go-common-libs/types"
+	commonTypes "github.com/longhorn/go-common-libs/types"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdksetup "github.com/longhorn/go-spdk-helper/pkg/spdk/setup"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk"
-)
-
-const (
-	// Timeouts for disk bdev
-	diskCtrlrLossTimeoutSec  = 30
-	diskReconnectDelaySec    = 2
-	diskFastIOFailTimeoutSec = 15
-	diskTransportAckTimeout  = 10
-	diskKeepAliveTimeoutMs   = 10000
-	diskMultipath            = "disable"
 )
 
 type DiskDriverNvme struct {
@@ -30,12 +21,12 @@ type DiskDriverNvme struct {
 
 func init() {
 	driver := &DiskDriverNvme{}
-	disk.RegisterDiskDriver(string(commontypes.DiskDriverNvme), driver)
+	disk.RegisterDiskDriver(string(commonTypes.DiskDriverNvme), driver)
 }
 
 func (d *DiskDriverNvme) DiskCreate(spdkClient *spdkclient.Client, diskName, diskPath string, blockSize uint64) (string, error) {
 	// TODO: validate the diskPath
-	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get the executor for NVMe disk create %v", diskPath)
 	}
@@ -55,7 +46,8 @@ func (d *DiskDriverNvme) DiskCreate(spdkClient *spdkclient.Client, diskName, dis
 		}
 	}()
 	bdevs, err := spdkClient.BdevNvmeAttachController(diskName, "", diskPath, "", "PCIe", "",
-		diskCtrlrLossTimeoutSec, diskReconnectDelaySec, diskFastIOFailTimeoutSec, diskMultipath)
+		helpertypes.DefaultCtrlrLossTimeoutSec, helpertypes.DefaultReconnectDelaySec, helpertypes.DefaultFastIOFailTimeoutSec,
+		helpertypes.DefaultMultipath)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to attach NVMe disk %v", diskPath)
 	}
@@ -66,7 +58,7 @@ func (d *DiskDriverNvme) DiskCreate(spdkClient *spdkclient.Client, diskName, dis
 }
 
 func (d *DiskDriverNvme) DiskDelete(spdkClient *spdkclient.Client, diskName, diskPath string) (deleted bool, err error) {
-	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get the executor for NVMe disk %v deletion", diskName)
 	}
