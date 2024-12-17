@@ -130,8 +130,8 @@ type BdevLvolSetParentRequest struct {
 }
 
 type BdevLvolResizeRequest struct {
-	Name string `json:"name"`
-	Size uint64 `json:"size"`
+	Name      string `json:"name"`
+	SizeInMib uint64 `json:"size_in_mib"`
 }
 
 type BdevLvolShallowCopyRequest struct {
@@ -143,6 +143,11 @@ type BdevLvolGetFragmapRequest struct {
 	Name   string `json:"name"`
 	Offset uint64 `json:"offset"`
 	Size   uint64 `json:"size"`
+}
+
+type BdevLvolRenameRequest struct {
+	OldName string `json:"old_name"`
+	NewName string `json:"new_name"`
 }
 
 func GetLvolAlias(lvsName, lvolName string) string {
