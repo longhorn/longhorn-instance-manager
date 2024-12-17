@@ -7,9 +7,9 @@ toolchain go1.23.4
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20241208150358-e44f7d35fe1f
-	github.com/longhorn/go-common-libs v0.0.0-20241216151853-f3a20a6d8f6e
-	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
+	github.com/longhorn/backupstore v0.0.0-20241217122650-1663643255d4
+	github.com/longhorn/go-common-libs v0.0.0-20241217111348-5bad87d5320c
+	github.com/longhorn/go-spdk-helper v0.0.0-20241216160651-bcce92add55b
 	github.com/longhorn/longhorn-engine v1.6.4-dev-20241215.0.20241216110519-0138c0160103
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20240308142500-8ac41e985506
 	github.com/pkg/errors v0.9.1
@@ -59,7 +59,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20241124090628-9499c1fb63d7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
@@ -71,7 +70,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/runc v1.1.14 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20220909204839-494a5a6aca78 // indirect
-	github.com/pierrec/lz4/v4 v4.1.21 // indirect
+	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
@@ -100,7 +99,7 @@ require (
 	k8s.io/client-go v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
-	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
+	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
