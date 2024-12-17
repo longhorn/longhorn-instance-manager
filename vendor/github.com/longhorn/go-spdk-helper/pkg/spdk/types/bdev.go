@@ -3,12 +3,10 @@ package types
 type BdevProductName string
 
 const (
-	BdevProductNameAio        = BdevProductName("AIO disk")
-	BdevProductNameLvol       = BdevProductName("Logical Volume")
-	BdevProductNameRaid       = BdevProductName("Raid Volume")
-	BdevProductNameNvme       = BdevProductName("NVMe disk")
-	BdevProductNameVirtioBlk  = BdevProductName("VirtioBlk Disk")
-	BdevProductNameVirtioScsi = BdevProductName("Virtio SCSI Disk")
+	BdevProductNameAio  = BdevProductName("AIO disk")
+	BdevProductNameLvol = BdevProductName("Logical Volume")
+	BdevProductNameRaid = BdevProductName("Raid Volume")
+	BdevProductNameNvme = BdevProductName("NVMe disk")
 )
 
 type BdevType string
@@ -127,6 +125,10 @@ type BdevInfo struct {
 type BdevGetBdevsRequest struct {
 	Name    string `json:"name,omitempty"`
 	Timeout uint64 `json:"timeout,omitempty"`
+}
+
+type BdevGetBdevsResponse struct {
+	bdevs []BdevInfo
 }
 
 type BdevLvolFragmap struct {
