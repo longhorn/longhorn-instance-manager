@@ -18,22 +18,13 @@ const (
 	NvmeAddressFamilyIntraHost = NvmeAddressFamily("intra_host")
 )
 
-type NvmeMultipathBehavior string
-
-const (
-	NvmeMultipathBehaviorDisable   = "disable"
-	NvmeMultipathBehaviorFailover  = "failover"
-	NvmeMultipathBehaviorMultipath = "multipath"
-)
-
 type BdevDriverSpecificNvme []NvmeNamespaceInfo
 
 type NvmeNamespaceInfo struct {
-	PciAddress string             `json:"pci_address,omitempty"`
-	CtrlrData  NvmeCtrlrData      `json:"ctrlr_data"`
-	NsData     NvmeNsData         `json:"ns_data"`
-	Trid       NvmeTransportID    `json:"trid"`
-	VS         NvmeVendorSpecific `json:"vs"`
+	CtrlrData NvmeCtrlrData      `json:"ctrlr_data"`
+	NsData    NvmeNsData         `json:"ns_data"`
+	Trid      NvmeTransportID    `json:"trid"`
+	VS        NvmeVendorSpecific `json:"vs"`
 }
 
 type NvmeCtrlrData struct {
@@ -107,8 +98,6 @@ type BdevNvmeAttachControllerRequest struct {
 	CtrlrLossTimeoutSec  int32 `json:"ctrlr_loss_timeout_sec"`
 	ReconnectDelaySec    int32 `json:"reconnect_delay_sec"`
 	FastIOFailTimeoutSec int32 `json:"fast_io_fail_timeout_sec"`
-
-	Multipath string `json:"multipath,omitempty"`
 }
 
 type BdevNvmeDetachControllerRequest struct {

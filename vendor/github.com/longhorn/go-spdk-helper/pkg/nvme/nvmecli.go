@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	commonns "github.com/longhorn/go-common-libs/ns"
+	commonNs "github.com/longhorn/go-common-libs/ns"
 
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
@@ -17,9 +17,7 @@ const (
 	DefaultTransportType = "tcp"
 
 	// Set short ctrlLossTimeoutSec for quick response to the controller loss.
-	defaultCtrlLossTmo    = 30
-	defaultKeepAliveTmo   = 5
-	defaultReconnectDelay = 2
+	defaultCtrlLossTimeoutSec = 30
 )
 
 type Device struct {
@@ -67,7 +65,7 @@ type Path struct {
 	State     string `json:"State,omitempty"`
 }
 
-func cliVersion(executor *commonns.Executor) (major, minor int, err error) {
+func cliVersion(executor *commonNs.Executor) (major, minor int, err error) {
 	opts := []string{
 		"--version",
 	}
@@ -105,7 +103,7 @@ func cliVersion(executor *commonns.Executor) (major, minor int, err error) {
 	return major, minor, nil
 }
 
-func showHostNQN(executor *commonns.Executor) (string, error) {
+func showHostNQN(executor *commonNs.Executor) (string, error) {
 	opts := []string{
 		"--show-hostnqn",
 	}
@@ -124,7 +122,7 @@ func showHostNQN(executor *commonns.Executor) (string, error) {
 	return "", fmt.Errorf("failed to get host NQN from %s", outputStr)
 }
 
-func listSubsystems(devicePath string, executor *commonns.Executor) ([]Subsystem, error) {
+func listSubsystems(devicePath string, executor *commonNs.Executor) ([]Subsystem, error) {
 	major, _, err := cliVersion(executor)
 	if err != nil {
 		return nil, err
@@ -149,12 +147,12 @@ func listSubsystems(devicePath string, executor *commonns.Executor) ([]Subsystem
 	}
 
 	if major == 1 {
-		return listSubsystemsV1(jsonStr)
+		return listSubsystemsV1(jsonStr, executor)
 	}
-	return listSubsystemsV2(jsonStr)
+	return listSubsystemsV2(jsonStr, executor)
 }
 
-func listSubsystemsV1(jsonStr string) ([]Subsystem, error) {
+func listSubsystemsV1(jsonStr string, executor *commonNs.Executor) ([]Subsystem, error) {
 	output := map[string][]Subsystem{}
 	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
@@ -169,7 +167,7 @@ type ListSubsystemsV2Output struct {
 	Subsystems []Subsystem `json:"Subsystems"`
 }
 
-func listSubsystemsV2(jsonStr string) ([]Subsystem, error) {
+func listSubsystemsV2(jsonStr string, executor *commonNs.Executor) ([]Subsystem, error) {
 	var output []ListSubsystemsV2Output
 	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
@@ -197,7 +195,7 @@ type CliDevice struct {
 	SectorSize   int32  `json:"SectorSize,omitempty"`
 }
 
-func listRecognizedNvmeDevices(executor *commonns.Executor) ([]CliDevice, error) {
+func listControllers(executor *commonNs.Executor) ([]CliDevice, error) {
 	opts := []string{
 		"list",
 		"-o", "json",
@@ -218,7 +216,7 @@ func listRecognizedNvmeDevices(executor *commonns.Executor) ([]CliDevice, error)
 	return output["Devices"], nil
 }
 
-func getHostID(executor *commonns.Executor) (string, error) {
+func getHostID(executor *commonNs.Executor) (string, error) {
 	outputStr, err := executor.Execute(nil, "cat", []string{"/etc/nvme/hostid"}, types.ExecuteTimeout)
 	if err == nil {
 		return strings.TrimSpace(string(outputStr)), nil
@@ -232,7 +230,7 @@ func getHostID(executor *commonns.Executor) (string, error) {
 	return "", err
 }
 
-func discovery(hostID, hostNQN, ip, port string, executor *commonns.Executor) ([]DiscoveryPageEntry, error) {
+func discovery(hostID, hostNQN, ip, port string, executor *commonNs.Executor) ([]DiscoveryPageEntry, error) {
 	opts := []string{
 		"discover",
 		"-t", DefaultTransportType,
@@ -301,16 +299,14 @@ func discovery(hostID, hostNQN, ip, port string, executor *commonns.Executor) ([
 	return output.Entries, nil
 }
 
-func connect(hostID, hostNQN, nqn, transpotType, ip, port string, executor *commonns.Executor) (string, error) {
+func connect(hostID, hostNQN, nqn, transpotType, ip, port string, executor *commonNs.Executor) (string, error) {
 	var err error
 
 	opts := []string{
 		"connect",
 		"-t", transpotType,
 		"--nqn", nqn,
-		"--ctrl-loss-tmo", strconv.Itoa(defaultCtrlLossTmo),
-		"--keep-alive-tmo", strconv.Itoa(defaultKeepAliveTmo),
-		"--reconnect-delay", strconv.Itoa(defaultReconnectDelay),
+		"--ctrl-loss-tmo", strconv.Itoa(defaultCtrlLossTimeoutSec),
 		"-o", "json",
 	}
 
@@ -349,7 +345,7 @@ func connect(hostID, hostNQN, nqn, transpotType, ip, port string, executor *comm
 	return output["device"], nil
 }
 
-func disconnect(nqn string, executor *commonns.Executor) error {
+func disconnect(nqn string, executor *commonNs.Executor) error {
 	opts := []string{
 		"disconnect",
 		"--nqn", nqn,
@@ -412,19 +408,4 @@ func GetIPAndPortFromControllerAddress(address string) (string, string) {
 	}
 
 	return traddr, trsvcid
-}
-
-func flush(devicePath, namespaceID string, executor *commonns.Executor) (string, error) {
-
-	opts := []string{
-		"flush",
-		devicePath,
-		"-o", "json",
-	}
-
-	if namespaceID != "" {
-		opts = append(opts, "-n", namespaceID)
-	}
-
-	return executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 }

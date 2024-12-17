@@ -94,12 +94,8 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout t
 		// For debug purpose
 		stdenc := json.NewEncoder(os.Stdin)
 		stdenc.SetIndent("", "\t")
-		if encodeErr := stdenc.Encode(msg); encodeErr != nil {
-			logrus.WithError(encodeErr).Warn("failed to encode the request message")
-		}
-		if encodeErr := stdenc.Encode(&resp); encodeErr != nil {
-			logrus.WithError(encodeErr).Warn("failed to encode the response message")
-		}
+		stdenc.Encode(msg)
+		stdenc.Encode(&resp)
 	}()
 
 	marshaledParams, err := json.Marshal(msg.Params)
