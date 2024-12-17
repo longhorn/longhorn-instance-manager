@@ -41,13 +41,15 @@ type LonghornBlockDevice struct {
 }
 
 // RemoveDevice removes the given device
-func RemoveDevice(dev string) error {
-	if _, err := os.Stat(dev); err == nil {
-		if err := remove(dev); err != nil {
-			return errors.Wrapf(err, "failed to removing device %s", dev)
+func RemoveDevice(devPath string) error {
+	if _, err := os.Stat(devPath); err != nil {
+		if os.IsNotExist(err) {
+			return nil
 		}
 	}
-	return nil
+
+	// Still try to remove the device node
+	return remove(devPath)
 }
 
 // GetKnownDevices returns the path of the device with the given major and minor numbers
