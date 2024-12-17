@@ -1,3 +1,3 @@
 {
-  "extends": ["github>longhorn/release:renovate-lib"]
+  "extends": ["github>longhorn/release:renovate-default"]
 }

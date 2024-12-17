@@ -59,8 +59,3 @@ type BdevRaidGetBdevsRequest struct {
 type BdevRaidRemoveBaseBdevRequest struct {
 	Name string `json:"name"`
 }
-
-type BdevRaidGrowBaseBdevRequest struct {
-	RaidName string `json:"raid_name"`
-	BaseName string `json:"base_name"`
-}
