@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	commonns "github.com/longhorn/go-common-libs/ns"
+	commonNs "github.com/longhorn/go-common-libs/ns"
 
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
@@ -41,19 +41,17 @@ type LonghornBlockDevice struct {
 }
 
 // RemoveDevice removes the given device
-func RemoveDevice(devPath string) error {
-	if _, err := os.Stat(devPath); err != nil {
-		if os.IsNotExist(err) {
-			return nil
+func RemoveDevice(dev string) error {
+	if _, err := os.Stat(dev); err == nil {
+		if err := remove(dev); err != nil {
+			return errors.Wrapf(err, "failed to removing device %s", dev)
 		}
 	}
-
-	// Still try to remove the device node
-	return remove(devPath)
+	return nil
 }
 
 // GetKnownDevices returns the path of the device with the given major and minor numbers
-func GetKnownDevices(executor *commonns.Executor) (map[string]*LonghornBlockDevice, error) {
+func GetKnownDevices(executor *commonNs.Executor) (map[string]*LonghornBlockDevice, error) {
 	knownDevices := make(map[string]*LonghornBlockDevice)
 
 	// Example command output
@@ -96,7 +94,7 @@ func GetKnownDevices(executor *commonns.Executor) (map[string]*LonghornBlockDevi
 }
 
 // DetectDevice detects the device with the given path
-func DetectDevice(path string, executor *commonns.Executor) (*BlockDevice, error) {
+func DetectDevice(path string, executor *commonNs.Executor) (*BlockDevice, error) {
 	// Example command output
 	// $ lsblk -l -n <Device Path> -o NAME,MAJ:MIN
 	// nvme1n1     259:3
@@ -182,7 +180,7 @@ func parseNumber(str string) (int, error) {
 }
 
 // GetDeviceSectorSize returns the sector size of the given device
-func GetDeviceSectorSize(devPath string, executor *commonns.Executor) (int64, error) {
+func GetDeviceSectorSize(devPath string, executor *commonNs.Executor) (int64, error) {
 	opts := []string{
 		"--getsz", devPath,
 	}
@@ -196,7 +194,7 @@ func GetDeviceSectorSize(devPath string, executor *commonns.Executor) (int64, er
 }
 
 // GetDeviceNumbers returns the major and minor numbers of the given device
-func GetDeviceNumbers(devPath string, executor *commonns.Executor) (int, int, error) {
+func GetDeviceNumbers(devPath string, executor *commonNs.Executor) (int, int, error) {
 	opts := []string{
 		"-l", "-J", "-n", "-o", "MAJ:MIN", devPath,
 	}

@@ -238,15 +238,15 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
-# github.com/longhorn/go-iscsi-helper v0.0.0-20241006012607-08f5166d1fad
-## explicit; go 1.22.0
+# github.com/longhorn/go-iscsi-helper v0.0.0-20241216160354-6e5f17558cef
+## explicit; go 1.22.7
 github.com/longhorn/go-iscsi-helper/iscsi
 github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.0.0-20241216160651-bcce92add55b
-## explicit; go 1.22.7
+# github.com/longhorn/go-spdk-helper v0.0.0-20240820144231-33c0873802ff
+## explicit; go 1.22.0
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/nvme
 github.com/longhorn/go-spdk-helper/pkg/spdk/client
@@ -254,8 +254,8 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.7.2
-## explicit; go 1.22.2
+# github.com/longhorn/longhorn-engine v1.7.3-dev-20241215.0.20241216174127-932253f43c96
+## explicit; go 1.22.7
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/interceptor
@@ -267,8 +267,8 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20241208121935-2be9d5e06cc6
-## explicit; go 1.22.7
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20240821075759-df0d2ae1b9bb
+## explicit; go 1.22.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
 github.com/longhorn/longhorn-spdk-engine/pkg/spdk
@@ -280,7 +280,10 @@ github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/virtio-scsi
 github.com/longhorn/longhorn-spdk-engine/pkg/types
 github.com/longhorn/longhorn-spdk-engine/pkg/util
 github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
-# github.com/longhorn/sparse-tools v0.0.0-20240907135423-37af3c64d59d
+# github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003
+## explicit
+github.com/longhorn/nsfilelock
+# github.com/longhorn/sparse-tools v0.0.0-20241124090628-9499c1fb63d7
 ## explicit; go 1.22.0
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types

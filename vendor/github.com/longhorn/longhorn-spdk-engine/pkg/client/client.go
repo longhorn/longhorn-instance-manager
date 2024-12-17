@@ -229,10 +229,7 @@ func (c *SPDKClient) ReplicaRebuildingSrcStart(srcReplicaName, dstReplicaName, d
 		DstReplicaAddress:   dstReplicaAddress,
 		ExposedSnapshotName: exposedSnapshotName,
 	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to start replica rebuilding src %s for rebuilding replica %s(%s)", srcReplicaName, dstReplicaName, dstReplicaAddress)
-	}
-	return resp.ExposedSnapshotLvolAddress, nil
+	return resp.ExposedSnapshotLvolAddress, errors.Wrapf(err, "failed to start replica rebuilding src %s for rebuilding replica %s(%s)", srcReplicaName, dstReplicaName, dstReplicaAddress)
 }
 
 // ReplicaRebuildingSrcFinish asks the source replica to stop exposing the parent snapshot of the head (if necessary) and clean up the dst replica related cache
@@ -474,7 +471,7 @@ func (c *SPDKClient) ReplicaRebuildingDstSnapshotRevert(name, snapshotName strin
 }
 
 func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string, portCount int32,
-	initiatorAddress, targetAddress string, upgradeRequired, salvageRequested bool) (*api.Engine, error) {
+	initiatorAddress, targetAddress string, upgradeRequired bool) (*api.Engine, error) {
 	if name == "" || volumeName == "" || len(replicaAddressMap) == 0 {
 		return nil, fmt.Errorf("failed to start SPDK engine: missing required parameters")
 	}
@@ -493,7 +490,6 @@ func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize ui
 		UpgradeRequired:   upgradeRequired,
 		TargetAddress:     targetAddress,
 		InitiatorAddress:  initiatorAddress,
-		SalvageRequested:  salvageRequested,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start SPDK engine")
@@ -861,6 +857,18 @@ func (c *SPDKClient) ReplicaBackupRestore(req *BackupRestoreRequest) error {
 		Credential:      req.Credential,
 		ConcurrentLimit: req.ConcurrentLimit,
 	})
+	return err
+}
+
+func (c *SPDKClient) EngineBackupRestoreFinish(engineName string) error {
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineBackupRestoreFinish(ctx, &spdkrpc.EngineBackupRestoreFinishRequest{
+		EngineName: engineName,
+	})
+
 	return err
 }
 

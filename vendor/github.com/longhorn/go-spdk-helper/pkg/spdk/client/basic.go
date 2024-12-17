@@ -109,7 +109,7 @@ func (c *Client) BdevLvolCreateLvstore(bdevName, lvsName string, clusterSize uin
 		ClusterSz: clusterSize,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_create_lvstore", req)
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_create_lvstore", req)
 	if err != nil {
 		return "", err
 	}
@@ -250,19 +250,6 @@ func (c *Client) BdevLvolDelete(name string) (deleted bool, err error) {
 //
 //		"timeout": Optional. 0 by default, meaning the method returns immediately whether the lvol bdev exists or not.
 func (c *Client) BdevLvolGet(name string, timeout uint64) (bdevLvolInfoList []spdktypes.BdevInfo, err error) {
-	return c.BdevLvolGetWithFilter(name, timeout, func(*spdktypes.BdevInfo) bool { return true })
-}
-
-// BdevLvolGetWithFilter gets information about some specific lvol bdevs.
-//
-//		"name": Optional. UUID or alias of a logical volume (lvol) bdev.
-//	        	The alias of a lvol bdev is <LVSTORE NAME>/<LVOL NAME>. And the name of a lvol bdev is UUID.
-//			 	If this is not specified, the function will list all lvol bdevs.
-//
-//		"timeout": Optional. 0 by default, meaning the method returns immediately whether the lvol bdev exists or not.
-//
-//		"filter": Only the lvol bdevs that pass the filter will be returned.
-func (c *Client) BdevLvolGetWithFilter(name string, timeout uint64, filter func(*spdktypes.BdevInfo) bool) (bdevLvolInfoList []spdktypes.BdevInfo, err error) {
 	req := spdktypes.BdevGetBdevsRequest{
 		Name:    name,
 		Timeout: timeout,
@@ -282,9 +269,7 @@ func (c *Client) BdevLvolGetWithFilter(name string, timeout uint64, filter func(
 		if spdktypes.GetBdevType(&b) != spdktypes.BdevTypeLvol {
 			continue
 		}
-		if !filter(&b) {
-			continue
-		}
+
 		b.DriverSpecific.Lvol.Xattrs = make(map[string]string)
 		user_created, err := c.BdevLvolGetXattr(b.Name, UserCreated)
 		if err == nil {
@@ -412,11 +397,11 @@ func (c *Client) BdevLvolSetParent(lvol, parent string) (set bool, err error) {
 //
 //	"name": Required. UUID or alias of the logical volume to resize.
 //
-//	"sizeInMib": Required. Desired size of the logical volume in bytes.
-func (c *Client) BdevLvolResize(name string, sizeInMib uint64) (resized bool, err error) {
+//	"size": Required. Desired size of the logical volume in bytes.
+func (c *Client) BdevLvolResize(name string, size uint64) (resized bool, err error) {
 	req := spdktypes.BdevLvolResizeRequest{
-		Name:      name,
-		SizeInMib: sizeInMib,
+		Name: name,
+		Size: size,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_resize", req)
@@ -500,26 +485,6 @@ func (c *Client) BdevLvolGetFragmap(name string, offset, size uint64) (*spdktype
 		return nil, err
 	}
 	return &result, nil
-}
-
-// BdevLvolRename renames a logical volume.
-//
-//	"oldName": Required. UUID or alias of the existing logical volume.
-//
-//	"newName": Required. New logical volume name.
-func (c *Client) BdevLvolRename(oldName, newName string) (renamed bool, err error) {
-	req := spdktypes.BdevLvolRenameRequest{
-		OldName: oldName,
-		NewName: newName,
-	}
-
-	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_rename", req)
-	if err != nil {
-		return false, err
-	}
-
-	err = json.Unmarshal(cmdOutput, &renamed)
-	return renamed, err
 }
 
 // BdevRaidCreate constructs a new RAID bdev.

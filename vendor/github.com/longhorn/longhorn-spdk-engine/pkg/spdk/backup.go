@@ -12,13 +12,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/backupstore"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
-
 	btypes "github.com/longhorn/backupstore/types"
-	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
-	commonnet "github.com/longhorn/go-common-libs/net"
-	commonns "github.com/longhorn/go-common-libs/ns"
-	commontypes "github.com/longhorn/go-common-libs/types"
+	commonBitmap "github.com/longhorn/go-common-libs/bitmap"
+	commonNet "github.com/longhorn/go-common-libs/net"
+	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonTypes "github.com/longhorn/go-common-libs/types"
+	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -59,13 +58,13 @@ type Backup struct {
 	controllerName string
 	initiator      *nvme.Initiator
 	devFh          *os.File
-	executor       *commonns.Executor
+	executor       *commonNs.Executor
 
 	log logrus.FieldLogger
 }
 
 // NewBackup creates a new backup instance
-func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *commonbitmap.Bitmap) (*Backup, error) {
+func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *commonBitmap.Bitmap) (*Backup, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"backupName":   backupName,
 		"volumeName":   volumeName,
@@ -74,7 +73,7 @@ func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotNa
 
 	log.Info("Initializing backup")
 
-	podIP, err := commonnet.GetIPForPod()
+	podIP, err := commonNet.GetIPForPod()
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +83,7 @@ func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotNa
 		return nil, err
 	}
 
-	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create executor")
 	}
@@ -167,10 +166,10 @@ func (b *Backup) OpenSnapshot(snapshotName, volumeName string) error {
 	}
 	b.initiator = initiator
 
-	b.log.Infof("Opening NVMe device %v", b.initiator.Endpoint)
+	b.log.Infof("Opening nvme device %v", b.initiator.Endpoint)
 	devFh, err := os.OpenFile(b.initiator.Endpoint, os.O_RDONLY, 0666)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open NVMe device %v for snapshot lvol bdev %v", b.initiator.Endpoint, lvolName)
+		return errors.Wrapf(err, "failed to open nvme device %v for snapshot lvol bdev %v", b.initiator.Endpoint, lvolName)
 	}
 	b.devFh = devFh
 
@@ -221,9 +220,9 @@ func (b *Backup) CloseSnapshot(snapshotName, volumeName string) error {
 	b.Lock()
 	defer b.Unlock()
 
-	b.log.Infof("Closing NVMe device %v", b.initiator.Endpoint)
+	b.log.Infof("Closing nvme device %v", b.initiator.Endpoint)
 	if err := b.devFh.Close(); err != nil {
-		return errors.Wrapf(err, "failed to close NVMe device %v", b.initiator.Endpoint)
+		return errors.Wrapf(err, "failed to close nvme device %v", b.initiator.Endpoint)
 	}
 
 	b.log.Info("Stopping NVMe initiator")

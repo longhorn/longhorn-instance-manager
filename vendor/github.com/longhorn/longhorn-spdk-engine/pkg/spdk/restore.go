@@ -10,11 +10,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
-
 	btypes "github.com/longhorn/backupstore/types"
-	commonns "github.com/longhorn/go-common-libs/ns"
-	commontypes "github.com/longhorn/go-common-libs/types"
+	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonTypes "github.com/longhorn/go-common-libs/types"
+	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -40,7 +39,7 @@ type Restore struct {
 
 	ip             string
 	port           int32
-	executor       *commonns.Executor
+	executor       *commonNs.Executor
 	subsystemNQN   string
 	controllerName string
 	initiator      *nvme.Initiator
@@ -59,7 +58,7 @@ func NewRestore(spdkClient *spdkclient.Client, lvolName, snapshotName, backupUrl
 		"backupName":   backupName,
 	})
 
-	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commonTypes.ProcDirectory)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create executor")
 	}
@@ -142,7 +141,7 @@ func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create NVMe initiator for lvol bdev %v", lvolName)
 	}
-	if _, err := initiator.Start(r.ip, strconv.Itoa(int(r.port)), true); err != nil {
+	if _, err := initiator.Start(r.ip, strconv.Itoa(int(r.port)), false); err != nil {
 		return nil, "", errors.Wrapf(err, "failed to start NVMe initiator for lvol bdev %v", lvolName)
 	}
 	r.initiator = initiator
@@ -157,9 +156,9 @@ func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 }
 
 func (r *Restore) CloseVolumeDev(volDev *os.File) error {
-	r.log.Infof("Closing NVMe device %v", r.initiator.Endpoint)
+	r.log.Infof("Closing nvme device %v", r.initiator.Endpoint)
 	if err := volDev.Close(); err != nil {
-		return errors.Wrapf(err, "failed to close NVMe device %v", r.initiator.Endpoint)
+		return errors.Wrapf(err, "failed to close nvme device %v", r.initiator.Endpoint)
 	}
 
 	r.log.Info("Stopping NVMe initiator")
