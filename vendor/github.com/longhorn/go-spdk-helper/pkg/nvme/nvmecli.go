@@ -149,12 +149,12 @@ func listSubsystems(devicePath string, executor *commonns.Executor) ([]Subsystem
 	}
 
 	if major == 1 {
-		return listSubsystemsV1(jsonStr, executor)
+		return listSubsystemsV1(jsonStr)
 	}
-	return listSubsystemsV2(jsonStr, executor)
+	return listSubsystemsV2(jsonStr)
 }
 
-func listSubsystemsV1(jsonStr string, executor *commonns.Executor) ([]Subsystem, error) {
+func listSubsystemsV1(jsonStr string) ([]Subsystem, error) {
 	output := map[string][]Subsystem{}
 	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ type ListSubsystemsV2Output struct {
 	Subsystems []Subsystem `json:"Subsystems"`
 }
 
-func listSubsystemsV2(jsonStr string, executor *commonns.Executor) ([]Subsystem, error) {
+func listSubsystemsV2(jsonStr string) ([]Subsystem, error) {
 	var output []ListSubsystemsV2Output
 	if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ type CliDevice struct {
 	SectorSize   int32  `json:"SectorSize,omitempty"`
 }
 
-func listControllers(executor *commonns.Executor) ([]CliDevice, error) {
+func listRecognizedNvmeDevices(executor *commonns.Executor) ([]CliDevice, error) {
 	opts := []string{
 		"list",
 		"-o", "json",
