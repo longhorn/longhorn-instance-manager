@@ -6,19 +6,19 @@ toolchain go1.23.4
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20241216064330-a7bd15ad3b19
-	github.com/longhorn/go-common-libs v0.0.0-20241216151853-f3a20a6d8f6e
+	github.com/longhorn/backupstore v0.0.0-20241217122650-1663643255d4
+	github.com/longhorn/go-common-libs v0.0.0-20241217111348-5bad87d5320c
 	github.com/longhorn/go-spdk-helper v0.0.0-20241216160651-bcce92add55b
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241215
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241217075946-84d08b48cd35
-	github.com/longhorn/types v0.0.0-20241216162524-6de6de5e9029
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241217132011-ffb4b58b37dd
+	github.com/longhorn/types v0.0.0-20241217083824-2e0ecb487ccf
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.16
 	golang.org/x/net v0.32.0
 	golang.org/x/sync v0.10.0
 	google.golang.org/grpc v1.69.0
-	google.golang.org/protobuf v1.35.2
+	google.golang.org/protobuf v1.36.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.32.0
 )
@@ -96,7 +96,7 @@ require (
 	k8s.io/client-go v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
-	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078 // indirect
+	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
