@@ -150,6 +150,18 @@ type BdevLvolRenameRequest struct {
 	NewName string `json:"new_name"`
 }
 
+type BdevLvolRegisterSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolGetSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolSnapshotChecksum struct {
+	Checksum uint64 `json:"checksum"`
+}
+
 func GetLvolAlias(lvsName, lvolName string) string {
 	return fmt.Sprintf("%s/%s", lvsName, lvolName)
 }
