@@ -6,11 +6,11 @@ toolchain go1.23.4
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20241217122650-1663643255d4
-	github.com/longhorn/go-common-libs v0.0.0-20241217111348-5bad87d5320c
-	github.com/longhorn/go-spdk-helper v0.0.0-20241216160651-bcce92add55b
+	github.com/longhorn/backupstore v0.0.0-20241218004307-b75ee1322085
+	github.com/longhorn/go-common-libs v0.0.0-20241217170247-b8a12cee7f65
+	github.com/longhorn/go-spdk-helper v0.0.0-20241218003628-6c9c87b76aa0
 	github.com/longhorn/longhorn-engine v1.8.0-dev-20241215
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241217132011-ffb4b58b37dd
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241218025415-8e79f4610fe9
 	github.com/longhorn/types v0.0.0-20241217083824-2e0ecb487ccf
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3

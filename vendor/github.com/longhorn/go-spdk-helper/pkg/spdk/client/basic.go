@@ -502,6 +502,44 @@ func (c *Client) BdevLvolGetFragmap(name string, offset, size uint64) (*spdktype
 	return &result, nil
 }
 
+// BdevLvolRegisterSnapshotChecksum compute and store checksum of snapshot's data. Overwrite old checksum if already registered.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolRegisterSnapshotChecksum(name string) (registered bool, err error) {
+	req := spdktypes.BdevLvolRegisterSnapshotChecksumRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_register_snapshot_checksum", req)
+	if err != nil {
+		return false, err
+	}
+
+	return registered, json.Unmarshal(cmdOutput, &registered)
+}
+
+// BdevLvolGetSnapshotChecksum gets snapshot's stored checksum. The checksum must has been previously registered.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum *uint64, err error) {
+	req := spdktypes.BdevLvolGetSnapshotChecksumRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_get_snapshot_checksum", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var snapshotChecksum spdktypes.BdevLvolSnapshotChecksum
+	err = json.Unmarshal(cmdOutput, &snapshotChecksum)
+	if err != nil {
+		return nil, err
+	}
+
+	return &snapshotChecksum.Checksum, nil
+}
+
 // BdevLvolRename renames a logical volume.
 //
 //	"oldName": Required. UUID or alias of the existing logical volume.
