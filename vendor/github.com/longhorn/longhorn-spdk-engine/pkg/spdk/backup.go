@@ -408,10 +408,9 @@ func (b *Backup) constructMappings() *btypes.Mappings {
 
 func (b *Backup) findIndex(lvolName string) int {
 	if lvolName == "" {
-		if b.replica.BackingImage != nil {
-			return 0
-		}
-		return 1
+		// Note that, 0 can be a backing image if ActiveChanin[0] is not nil.
+		// Caller should handle this case
+		return 0
 	}
 
 	for i, lvol := range b.replica.ActiveChain {
