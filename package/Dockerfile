@@ -17,7 +17,7 @@ RUN go install golang.org/x/lint/golint@latest
 
 # Build go-spdk-helper
 ENV GO_SPDK_HELPER_DIR /usr/src/go-spdk-helper
-ENV GO_SPDK_HELPER_COMMIT_ID 6a324e95979662be592bfda0e867d2678ecbc756
+ENV GO_SPDK_HELPER_COMMIT_ID f0c0c2a62a57d4dfec80a8928ef3dd3bc70bf6a7
 RUN git clone https://github.com/longhorn/go-spdk-helper.git ${GO_SPDK_HELPER_DIR} && \
     cd ${GO_SPDK_HELPER_DIR} && \
     git checkout ${GO_SPDK_HELPER_COMMIT_ID} && \
