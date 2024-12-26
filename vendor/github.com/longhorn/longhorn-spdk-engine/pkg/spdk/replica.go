@@ -249,7 +249,7 @@ func (r *Replica) construct(bdevLvolMap map[string]*spdktypes.BdevInfo) (err err
 	}()
 
 	switch r.State {
-	case types.InstanceStatePending:
+	case types.InstanceStateStopped, types.InstanceStatePending:
 		break
 	case types.InstanceStateRunning:
 		if r.isRebuilding {
@@ -735,6 +735,16 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 	if err := r.prepareHead(spdkClient, backingImage); err != nil {
 		return nil, err
 	}
+
+	// Construct the snapshot lvol map and the active chain
+	bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, r.replicaLvolFilter)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.construct(bdevLvolMap); err != nil {
+		return nil, err
+	}
+
 	r.State = types.InstanceStateStopped
 
 	podIP, err := commonnet.GetIPForPod()
