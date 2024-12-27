@@ -14,7 +14,7 @@ import (
 
 const (
 	DownloadBufferSize = 1 << 12
-	HTTPTimeout        = 4 * time.Second
+	HTTPTimeout        = 10 * time.Second
 )
 
 type ProgressUpdater interface {
