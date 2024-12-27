@@ -507,11 +507,20 @@ func (r *Replica) updateHeadCache(spdkClient *spdkclient.Client) (err error) {
 	} else {
 		r.ActiveChain[len(r.ActiveChain)-1] = r.Head
 	}
-	if r.ActiveChain[len(r.ActiveChain)-2] != nil {
-		if r.ActiveChain[len(r.ActiveChain)-2].Name != r.Head.Parent {
-			return fmt.Errorf("found the last entry of the active chain %v is not the head parent %v", r.ActiveChain[len(r.ActiveChain)-2].Name, r.Head.Parent)
+
+	index := len(r.ActiveChain) - 2
+	if index < 0 {
+		return fmt.Errorf("invalid active chain length %d when updating head cache", len(r.ActiveChain))
+	}
+	if index == 0 && r.BackingImage != nil {
+		r.BackingImage.Lock()
+		defer r.BackingImage.Unlock()
+	}
+	if r.ActiveChain[index] != nil {
+		if r.ActiveChain[index].Name != r.Head.Parent {
+			return fmt.Errorf("found the last entry of the active chain %v is not the head parent %v", r.ActiveChain[index].Name, r.Head.Parent)
 		}
-		r.ActiveChain[len(r.ActiveChain)-2].Children[r.Head.Name] = r.Head
+		r.ActiveChain[index].Children[r.Head.Name] = r.Head
 	}
 
 	return nil
