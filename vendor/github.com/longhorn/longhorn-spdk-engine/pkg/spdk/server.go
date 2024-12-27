@@ -440,7 +440,7 @@ func (s *Server) newReplica(req *spdkrpc.ReplicaCreateRequest) (*Replica, error)
 		if err != nil || !ready {
 			return nil, err
 		}
-		s.replicaMap[req.Name] = NewReplica(s.ctx, req.Name, req.LvsName, req.LvsUuid, req.SpecSize, 0, s.updateChs[types.InstanceTypeReplica])
+		return NewReplica(s.ctx, req.Name, req.LvsName, req.LvsUuid, req.SpecSize, 0, s.updateChs[types.InstanceTypeReplica]), nil
 	}
 
 	return s.replicaMap[req.Name], nil
@@ -459,22 +459,40 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 		return nil, err
 	}
 
+	defer func() {
+		// Always update the replica map
+		s.Lock()
+		s.replicaMap[req.Name] = r
+		s.Unlock()
+	}()
+
 	s.RLock()
 	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	var backingImage *BackingImage
 	if req.BackingImageName != "" {
-		backingImageSnapLvolName := GetBackingImageSnapLvolName(req.BackingImageName, req.LvsUuid)
-		s.RLock()
-		backingImage = s.backingImageMap[backingImageSnapLvolName]
-		s.RUnlock()
-		if backingImage == nil {
-			return nil, grpcstatus.Error(grpccodes.NotFound, "failed to find the backing image in the spdk server")
+		backingImage, err = s.getBackingImage(req.BackingImageName, req.LvsUuid)
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	return r.Create(spdkClient, req.PortCount, s.portAllocator, backingImage)
+}
+
+func (s *Server) getBackingImage(backingImageName, lvsUUID string) (backingImage *BackingImage, err error) {
+	backingImageSnapLvolName := GetBackingImageSnapLvolName(backingImageName, lvsUUID)
+
+	s.RLock()
+	backingImage = s.backingImageMap[backingImageSnapLvolName]
+	s.RUnlock()
+
+	if backingImage == nil {
+		return nil, grpcstatus.Error(grpccodes.NotFound, "failed to find the backing image in the spdk server")
+	}
+
+	return backingImage, nil
 }
 
 func (s *Server) ReplicaDelete(ctx context.Context, req *spdkrpc.ReplicaDeleteRequest) (ret *emptypb.Empty, err error) {
@@ -506,7 +524,7 @@ func (s *Server) ReplicaGet(ctx context.Context, req *spdkrpc.ReplicaGetRequest)
 	s.RUnlock()
 
 	if r == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v", req.Name)
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v (%+v)", req.Name, s.replicaMap)
 	}
 
 	return r.Get(), nil
