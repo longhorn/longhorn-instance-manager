@@ -23,6 +23,7 @@ const (
 	DiskTypeBlock      = "block"
 
 	ReplicaRebuildingLvolSuffix  = "rebuilding"
+	ReplicaExpiredLvolSuffix     = "expired"
 	RebuildingSnapshotNamePrefix = "rebuild"
 
 	BackingImageTempHeadLvolSuffix = "temp-head"
@@ -33,6 +34,9 @@ const (
 
 	maxNumRetries = 15
 	retryInterval = 1 * time.Second
+
+	MaxShallowCopyWaitTime   = 72 * time.Hour
+	ShallowCopyCheckInterval = 3 * time.Second
 )
 
 const (
@@ -72,6 +76,7 @@ type Lvol struct {
 	CreationTime      string
 	UserCreated       bool
 	SnapshotTimestamp string
+	SnapshotChecksum  string
 }
 
 func ServiceBackingImageLvolToProtoBackingImageLvol(lvol *Lvol) *spdkrpc.Lvol {
@@ -113,6 +118,7 @@ func ServiceLvolToProtoLvol(replicaName string, lvol *Lvol) *spdkrpc.Lvol {
 		CreationTime:      lvol.CreationTime,
 		UserCreated:       lvol.UserCreated,
 		SnapshotTimestamp: lvol.SnapshotTimestamp,
+		SnapshotChecksum:  lvol.SnapshotChecksum,
 	}
 
 	if lvol.Name == replicaName {
@@ -146,6 +152,7 @@ func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
 		CreationTime:      bdev.CreationTime,
 		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == strconv.FormatBool(true),
 		SnapshotTimestamp: bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotTimestamp],
+		SnapshotChecksum:  bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotChecksum],
 	}
 }
 
@@ -193,12 +200,20 @@ func GenerateRebuildingSnapshotName() string {
 	return fmt.Sprintf("%s-%s", RebuildingSnapshotNamePrefix, util.UUID()[:8])
 }
 
+func GenerateReplicaExpiredLvolName(replicaName string) string {
+	return fmt.Sprintf("%s-%s-%s", replicaName, ReplicaExpiredLvolSuffix, util.UUID()[:8])
+}
+
 func GetReplicaRebuildingLvolName(replicaName string) string {
 	return fmt.Sprintf("%s-%s", replicaName, ReplicaRebuildingLvolSuffix)
 }
 
 func IsRebuildingLvol(lvolName string) bool {
 	return strings.HasSuffix(lvolName, ReplicaRebuildingLvolSuffix)
+}
+
+func IsReplicaExpiredLvol(replicaName, lvolName string) bool {
+	return strings.HasPrefix(lvolName, fmt.Sprintf("%s-%s", replicaName, ReplicaExpiredLvolSuffix))
 }
 
 func GetReplicaNameFromRebuildingLvolName(lvolName string) string {

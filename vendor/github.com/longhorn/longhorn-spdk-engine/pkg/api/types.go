@@ -40,6 +40,7 @@ type Lvol struct {
 	CreationTime      string          `json:"creation_time"`
 	UserCreated       bool            `json:"user_created"`
 	SnapshotTimestamp string          `json:"snapshot_timestamp"`
+	SnapshotChecksum  string          `json:"snapshot_checksum"`
 }
 
 func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
@@ -56,6 +57,7 @@ func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
 		CreationTime:      l.CreationTime,
 		UserCreated:       l.UserCreated,
 		SnapshotTimestamp: l.SnapshotTimestamp,
+		SnapshotChecksum:  l.SnapshotChecksum,
 	}
 }
 
@@ -73,6 +75,7 @@ func LvolToProtoLvol(l *Lvol) *spdkrpc.Lvol {
 		CreationTime:      l.CreationTime,
 		UserCreated:       l.UserCreated,
 		SnapshotTimestamp: l.SnapshotTimestamp,
+		SnapshotChecksum:  l.SnapshotChecksum,
 	}
 }
 

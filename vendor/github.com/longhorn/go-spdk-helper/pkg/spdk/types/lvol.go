@@ -124,6 +124,10 @@ type BdevLvolDecoupleParentRequest struct {
 	Name string `json:"name"`
 }
 
+type BdevLvolDetachParentRequest struct {
+	Name string `json:"name"`
+}
+
 type BdevLvolSetParentRequest struct {
 	LvolName   string `json:"lvol_name"`
 	ParentName string `json:"parent_name"`
