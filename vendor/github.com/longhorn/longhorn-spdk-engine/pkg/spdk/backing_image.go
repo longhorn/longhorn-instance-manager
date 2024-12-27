@@ -578,7 +578,9 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 		return errors.Wrapf(err, "failed to get the current checksum of the backing image %v target device %v", bi.Name, headInitiator.Endpoint)
 	}
 	bi.log.Infof("Get the current checksum of the backing image %v: %v", bi.Name, currentChecksum)
+	bi.Lock()
 	bi.CurrentChecksum = currentChecksum
+	bi.Unlock()
 
 	return nil
 }
