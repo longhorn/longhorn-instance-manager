@@ -146,28 +146,6 @@ func disconnectNVMfBdev(spdkClient *spdkclient.Client, bdevName string) error {
 	return nil
 }
 
-// CleanupLvolTree retrieves the lvol tree with BFS. Then try its best effort to do cleanup bottom up.
-func CleanupLvolTree(spdkClient *spdkclient.Client, rootLvolName string, bdevLvolMap map[string]*spdktypes.BdevInfo, log logrus.FieldLogger) {
-	var queue []*spdktypes.BdevInfo
-	if bdevLvolMap[rootLvolName] != nil {
-		queue = []*spdktypes.BdevInfo{bdevLvolMap[rootLvolName]}
-	}
-	for idx := 0; idx < len(queue); idx++ {
-		for _, childLvolName := range queue[idx].DriverSpecific.Lvol.Clones {
-			if bdevLvolMap[childLvolName] != nil {
-				queue = append(queue, bdevLvolMap[childLvolName])
-			}
-		}
-	}
-	for idx := len(queue) - 1; idx >= 0; idx-- {
-		// This may fail since there may be a rebuilding failed replicas on the same host that leaves an orphan rebuilding lvol as a child of a snapshot lvol.
-		// Then this snapshot lvol would have multiple children then cannot be deleted.
-		if _, err := spdkClient.BdevLvolDelete(queue[idx].UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-			log.WithError(err).Errorf("Failed to delete lvol %v(%v) from the lvol tree with root %v(%s), this lvol may accidentally have some leftover orphans children %+v, will continue", queue[idx].Aliases[0], queue[idx].UUID, bdevLvolMap[rootLvolName].Aliases[0], bdevLvolMap[rootLvolName].UUID, queue[idx].DriverSpecific.Lvol.Clones)
-		}
-	}
-}
-
 func GetSnapXattr(spdkClient *spdkclient.Client, alias, key string) (string, error) {
 	value, err := spdkClient.BdevLvolGetXattr(alias, key)
 	if err != nil {

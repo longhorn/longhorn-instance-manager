@@ -30,6 +30,8 @@ import (
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
+
+	safelog "github.com/longhorn/longhorn-spdk-engine/pkg/log"
 )
 
 type BackingImage struct {
@@ -61,7 +63,7 @@ type BackingImage struct {
 
 	UpdateCh chan interface{}
 
-	log logrus.FieldLogger
+	log *safelog.SafeLogger
 }
 
 func ServiceBackingImageToProtoBackingImage(bi *BackingImage) *spdkrpc.BackingImage {
@@ -99,7 +101,7 @@ func NewBackingImage(ctx context.Context, backingImageName, backingImageUUID, lv
 		ExpectedChecksum: checksum,
 		State:            types.BackingImageStateStarting,
 		UpdateCh:         updateCh,
-		log:              log,
+		log:              safelog.NewSafeLogger(log),
 	}
 }
 
@@ -237,11 +239,14 @@ func (bi *BackingImage) ValidateAndUpdate(spdkClient *spdkclient.Client) (err er
 		return errors.Wrapf(err, "failed to get the lvs name for backing image %v with lvs uuid %v", bi.Name, bi.LvsUUID)
 	}
 
-	bi.log = logrus.StandardLogger().WithFields(logrus.Fields{
+	if errUpdateLogger := bi.log.UpdateLogger(logrus.Fields{
 		"backingImagename": bi.Name,
 		"lvsName":          bi.LvsName,
 		"lvsUUID":          bi.LvsUUID,
-	})
+	}); errUpdateLogger != nil {
+		bi.log.WithError(errUpdateLogger).Warn("Failed to update logger")
+	}
+
 	bi.LvsName = lvsName
 
 	bi.Alias = spdktypes.GetLvolAlias(bi.LvsName, biLvolName)
@@ -487,11 +492,15 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 		return errors.Wrapf(err, "failed to get the lvs name for backing image %v with lvs uuid %v", bi.Name, bi.LvsUUID)
 	}
 	bi.LvsName = lvsName
-	bi.log = logrus.StandardLogger().WithFields(logrus.Fields{
+
+	if errUpdateLogger := bi.log.UpdateLogger(logrus.Fields{
 		"backingImagename": bi.Name,
 		"lvsName":          bi.LvsName,
 		"lvsUUID":          bi.LvsUUID,
-	})
+	}); errUpdateLogger != nil {
+		bi.log.WithError(errUpdateLogger).Warn("Failed to update logger")
+	}
+
 	bi.Unlock()
 
 	// backingImageTempHeadName will be "bi-${biName}-disk-${lvsUUID}-temp-head"
