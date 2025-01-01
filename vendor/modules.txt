@@ -189,6 +189,9 @@ github.com/google/uuid
 # github.com/gorilla/handlers v1.5.2
 ## explicit; go 1.20
 github.com/gorilla/handlers
+# github.com/jinzhu/copier v0.4.0
+## explicit; go 1.13
+github.com/jinzhu/copier
 # github.com/jmespath/go-jmespath v0.4.0
 ## explicit; go 1.14
 github.com/jmespath/go-jmespath
@@ -261,10 +264,11 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20241227154304-5631393ec5a8
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20250101073741-4e39a99bf681
 ## explicit; go 1.23.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
+github.com/longhorn/longhorn-spdk-engine/pkg/log
 github.com/longhorn/longhorn-spdk-engine/pkg/spdk
 github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk
 github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/aio

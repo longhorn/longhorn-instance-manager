@@ -10,7 +10,7 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20241227132452-5a6ca245288a
 	github.com/longhorn/go-spdk-helper v0.0.0-20241227145830-6187c6354129
 	github.com/longhorn/longhorn-engine v1.8.0-rc2
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241227154304-5631393ec5a8
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250101073741-4e39a99bf681
 	github.com/longhorn/types v0.0.0-20241225162202-00d3a5fd7502
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -53,6 +53,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/gorilla/handlers v1.5.2 // indirect
+	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

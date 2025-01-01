@@ -93,7 +93,15 @@ func StartSPDKTgtDaemon() error {
 	return nil
 }
 
+func ForceStopSPDKTgtDaemon(timeout time.Duration) error {
+	return stopSPDKTgtDaemon(timeout, syscall.SIGKILL)
+}
+
 func StopSPDKTgtDaemon(timeout time.Duration) error {
+	return stopSPDKTgtDaemon(timeout, syscall.SIGTERM)
+}
+
+func stopSPDKTgtDaemon(timeout time.Duration, signal syscall.Signal) error {
 	processes, err := proc.FindProcessByCmdline("spdk_tgt")
 	if err != nil {
 		return errors.Wrap(err, "failed to find spdk_tgt")
@@ -101,8 +109,8 @@ func StopSPDKTgtDaemon(timeout time.Duration) error {
 
 	var errs error
 	for _, process := range processes {
-		if err := process.Signal(syscall.SIGTERM); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "failed to send SIGTERM to spdk_tgt %v", process.Pid))
+		if err := process.Signal(signal); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "failed to send signal %v to spdk_tgt %v", signal, process.Pid))
 		} else {
 			done := make(chan error, 1)
 			go func() {
@@ -113,10 +121,10 @@ func StopSPDKTgtDaemon(timeout time.Duration) error {
 
 			select {
 			case <-time.After(timeout):
-				logrus.Warnf("spdk_tgt %v failed to exit in time, sending SIGKILL", process.Pid)
-				err = process.Signal(syscall.SIGKILL)
+				logrus.Warnf("spdk_tgt %v failed to exit in time, sending signal %v", process.Pid, signal)
+				err = process.Signal(signal)
 				if err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to send SIGKILL to spdk_tgt %v", process.Pid))
+					errs = multierr.Append(errs, errors.Wrapf(err, "failed to send signal %v to spdk_tgt %v", signal, process.Pid))
 				}
 			case err := <-done:
 				if err != nil {
