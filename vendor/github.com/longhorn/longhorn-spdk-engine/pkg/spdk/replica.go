@@ -32,6 +32,8 @@ import (
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
+
+	safelog "github.com/longhorn/longhorn-spdk-engine/pkg/log"
 )
 
 const (
@@ -87,7 +89,7 @@ type Replica struct {
 	// UpdateCh should not be protected by the replica lock
 	UpdateCh chan interface{}
 
-	log logrus.FieldLogger
+	log *safelog.SafeLogger
 
 	// TODO: Record error message
 }
@@ -203,7 +205,7 @@ func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specS
 
 		UpdateCh: updateCh,
 
-		log: log,
+		log: safelog.NewSafeLogger(log),
 	}
 }
 
@@ -803,8 +805,8 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 		return nil, err
 	}
 
-	// In case of failed replica reuse being failed by r.validateAndUpdate(), we should make sure the caches are correct.
-	if r.reconstructRequired {
+	// In case of failed replica reuse/restart being errored by r.validateAndUpdate(), we should make sure the caches are correct.
+	if r.State == types.InstanceStatePending && r.reconstructRequired {
 		bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, r.replicaLvolFilter)
 		if err != nil {
 			return nil, err
@@ -952,14 +954,14 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 					if !IsReplicaLvol(r.Name, childLvolName) {
 						continue
 					}
-					CleanupLvolTree(spdkClient, childLvolName, bdevLvolMap, r.log)
+					r.CleanupLvolTree(spdkClient, childLvolName, bdevLvolMap)
 				}
 				continue
 			}
 			if bdevLvol.DriverSpecific.Lvol.BaseSnapshot == "" {
 				continue
 			}
-			CleanupLvolTree(spdkClient, lvolName, bdevLvolMap, r.log)
+			r.CleanupLvolTree(spdkClient, lvolName, bdevLvolMap)
 		}
 	}
 
@@ -2687,5 +2689,27 @@ func (r *Replica) SetErrorState() {
 	if r.State != types.InstanceStateStopped && r.State != types.InstanceStateError {
 		r.State = types.InstanceStateError
 		needUpdate = true
+	}
+}
+
+// CleanupLvolTree retrieves the lvol tree with BFS. Then try its best effort to do cleanup bottom up.
+func (r *Replica) CleanupLvolTree(spdkClient *spdkclient.Client, rootLvolName string, bdevLvolMap map[string]*spdktypes.BdevInfo) {
+	var queue []*spdktypes.BdevInfo
+	if bdevLvolMap[rootLvolName] != nil {
+		queue = []*spdktypes.BdevInfo{bdevLvolMap[rootLvolName]}
+	}
+	for idx := 0; idx < len(queue); idx++ {
+		for _, childLvolName := range queue[idx].DriverSpecific.Lvol.Clones {
+			if bdevLvolMap[childLvolName] != nil {
+				queue = append(queue, bdevLvolMap[childLvolName])
+			}
+		}
+	}
+	for idx := len(queue) - 1; idx >= 0; idx-- {
+		// This may fail since there may be a rebuilding failed replicas on the same host that leaves an orphan rebuilding lvol as a child of a snapshot lvol.
+		// Then this snapshot lvol would have multiple children then cannot be deleted.
+		if _, err := spdkClient.BdevLvolDelete(queue[idx].UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+			r.log.WithError(err).Errorf("Failed to delete lvol %v(%v) from the lvol tree with root %v(%s), this lvol may accidentally have some leftover orphans children %+v, will continue", queue[idx].Aliases[0], queue[idx].UUID, bdevLvolMap[rootLvolName].Aliases[0], bdevLvolMap[rootLvolName].UUID, queue[idx].DriverSpecific.Lvol.Clones)
+		}
 	}
 }

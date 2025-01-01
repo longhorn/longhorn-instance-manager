@@ -32,6 +32,8 @@ import (
 	"github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
+
+	safelog "github.com/longhorn/longhorn-spdk-engine/pkg/log"
 )
 
 type Engine struct {
@@ -71,7 +73,7 @@ type Engine struct {
 	// UpdateCh should not be protected by the engine lock
 	UpdateCh chan interface{}
 
-	log logrus.FieldLogger
+	log *safelog.SafeLogger
 }
 
 type EngineReplicaStatus struct {
@@ -111,7 +113,7 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 
 		UpdateCh: engineUpdateCh,
 
-		log: log,
+		log: safelog.NewSafeLogger(log),
 	}
 }
 
@@ -157,7 +159,7 @@ func (e *Engine) checkInitiatorAndTargetCreationRequirements(podIP, initiatorIP,
 }
 
 func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[string]string, portCount int32, superiorPortAllocator *commonbitmap.Bitmap, initiatorAddress, targetAddress string, salvageRequested bool) (ret *spdkrpc.Engine, err error) {
-	logrus.WithFields(logrus.Fields{
+	e.log.WithFields(logrus.Fields{
 		"portCount":         portCount,
 		"replicaAddressMap": replicaAddressMap,
 		"initiatorAddress":  initiatorAddress,
@@ -234,10 +236,12 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		e.TargetIP = targetIP
 	}
 
-	e.log = e.log.WithFields(logrus.Fields{
+	if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
 		"initiatorIP": e.IP,
 		"targetIP":    e.TargetIP,
-	})
+	}); errUpdateLogger != nil {
+		e.log.WithError(errUpdateLogger).Warn("Failed to update logger with initiator and target IP during engine creation")
+	}
 
 	if targetCreationRequired {
 		_, err := spdkClient.BdevRaidGet(e.Name, 0)
@@ -270,7 +274,12 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 				replicaBdevList = append(replicaBdevList, bdevName)
 			}
 		}
-		e.log = e.log.WithField("replicaStatusMap", e.ReplicaStatusMap)
+
+		if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
+			"replicaStatusMap": e.ReplicaStatusMap,
+		}); errUpdateLogger != nil {
+			e.log.WithError(errUpdateLogger).Warn("Failed to update logger with replica status map during engine creation")
+		}
 
 		e.checkAndUpdateInfoFromReplicaNoLock()
 
@@ -312,18 +321,26 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 			}
 		}
 
-		e.log = e.log.WithField("replicaAddressMap", replicaAddressMap)
+		if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
+			"replicaStatusMap": e.ReplicaStatusMap,
+		}); errUpdateLogger != nil {
+			e.log.WithError(errUpdateLogger).Warn("Failed to update logger with replica status map during engine creation")
+		}
+
 		e.log.Infof("Connected all available replicas %+v for engine reconstruction during upgrade", e.ReplicaStatusMap)
 	}
 
-	log := e.log.WithFields(logrus.Fields{
+	if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
 		"initiatorCreationRequired": initiatorCreationRequired,
 		"targetCreationRequired":    targetCreationRequired,
 		"initiatorAddress":          initiatorAddress,
 		"targetAddress":             targetAddress,
-	})
+	}); errUpdateLogger != nil {
+		e.log.WithError(errUpdateLogger).Warn("Failed to update logger with initiator and target creation requirements during engine creation")
+	}
 
-	log.Info("Handling frontend during engine creation")
+	e.log.Info("Handling frontend during engine creation")
+
 	if err := e.handleFrontend(spdkClient, superiorPortAllocator, portCount, targetAddress, initiatorCreationRequired, targetCreationRequired); err != nil {
 		return nil, err
 	}
@@ -450,11 +467,14 @@ func (e *Engine) handleFrontend(spdkClient *spdkclient.Client, superiorPortAlloc
 				e.initiator = initiator
 				e.dmDeviceIsBusy = dmDeviceIsBusy
 				e.Endpoint = initiator.GetEndpoint()
-				e.log = e.log.WithFields(logrus.Fields{
+
+				if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
 					"endpoint":   e.Endpoint,
 					"port":       e.Port,
 					"targetPort": e.TargetPort,
-				})
+				}); errUpdateLogger != nil {
+					e.log.WithError(errUpdateLogger).Warn("Failed to update logger with endpoint and port during engine creation")
+				}
 			}
 
 			e.log.Infof("Finished handling frontend for engine: %+v", e)
@@ -786,7 +806,11 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		}
 	}
 
-	e.log = e.log.WithField("replicaStatusMap", e.ReplicaStatusMap)
+	if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
+		"replicaStatusMap": e.ReplicaStatusMap,
+	}); errUpdateLogger != nil {
+		e.log.WithError(errUpdateLogger).Warn("Failed to update logger with replica status map during engine creation")
+	}
 
 	if !containValidReplica {
 		e.State = types.InstanceStateError
@@ -1135,7 +1159,13 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 					Address: dstReplicaAddress,
 				}
 			}
-			e.log = e.log.WithField("replicaStatusMap", e.ReplicaStatusMap)
+
+			if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
+				"replicaStatusMap": e.ReplicaStatusMap,
+			}); errUpdateLogger != nil {
+				e.log.WithError(errUpdateLogger).Warn("Failed to update logger with replica status map during engine creation")
+			}
+
 			e.log.WithError(err).Errorf("Engine failed to start replica %s rebuilding, will mark the rebuilding replica mode from %v to ERR", dstReplicaName, prevMode)
 			updateRequired = true
 		}
@@ -1164,24 +1194,24 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 			defer func() {
 				// Do not use e.log here. Since this deferred goroutine is not protected by a lock while e.log may change from time to time
 				if errClose := srcReplicaServiceCli.Close(); errClose != nil {
-					logrus.WithError(errClose).Errorf("Engine %s failed to close source replica %s client with address %s during add replica", e.Name, srcReplicaName, srcReplicaAddress)
+					e.log.WithError(errClose).Errorf("Engine %s failed to close source replica %s client with address %s during add replica", e.Name, srcReplicaName, srcReplicaAddress)
 				}
 				if errClose := dstReplicaServiceCli.Close(); errClose != nil {
-					logrus.WithError(errClose).Errorf("Engine %s failed to close dest replica %s client with address %s during add replica", e.Name, dstReplicaName, dstReplicaAddress)
+					e.log.WithError(errClose).Errorf("Engine %s failed to close dest replica %s client with address %s during add replica", e.Name, dstReplicaName, dstReplicaAddress)
 				}
 				// TODO: handle the floating connections after erroring out
 			}()
 
 			if err == nil && engineErr == nil {
 				if err = e.replicaShallowCopy(dstReplicaServiceCli, srcReplicaName, dstReplicaName, rebuildingSnapshotList); err != nil {
-					logrus.WithError(err).Errorf("Engine %s failed to do the shallow copy for replica %s add", e.Name, dstReplicaName)
+					e.log.WithError(err).Errorf("Engine %s failed to do the shallow copy for replica %s add", e.Name, dstReplicaName)
 				}
 			} else {
-				logrus.Errorf("Engine %s won't do shallow copy for replica %s add due to replica error: %v, or engine error %v", e.Name, dstReplicaName, err, engineErr)
+				e.log.Errorf("Engine %s won't do shallow copy for replica %s add due to replica error: %v, or engine error %v", e.Name, dstReplicaName, err, engineErr)
 			}
 			// Should be executed no matter if there is an error. It's used to clean up the replica add related resources.
 			if finishErr := e.replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli, srcReplicaName, dstReplicaName); finishErr != nil {
-				logrus.WithError(finishErr).Errorf("Engine %s failed to finish replica %s add", e.Name, dstReplicaName)
+				e.log.WithError(finishErr).Errorf("Engine %s failed to finish replica %s add", e.Name, dstReplicaName)
 			}
 		}()
 	}()
@@ -1248,7 +1278,11 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	// TODO: Mark the destination replica as WO mode here does not prevent the RAID bdev from using this. May need to have a SPDK API to control the corresponding base bdev mode.
 	// Reading data from this dst replica is not a good choice as the flow will be more zigzag than reading directly from the src replica:
 	// application -> RAID1 -> this base bdev (dest replica) -> the exposed snapshot (src replica).
-	e.log = e.log.WithField("replicaStatusMap", e.ReplicaStatusMap)
+	if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
+		"replicaStatusMap": e.ReplicaStatusMap,
+	}); errUpdateLogger != nil {
+		e.log.WithError(errUpdateLogger).Warn("Failed to update logger with replica status map during engine creation")
+	}
 
 	e.log.Infof("Engine started to rebuild replica %s from healthy replica %s", dstReplicaName, srcReplicaName)
 
@@ -1336,7 +1370,7 @@ func (e *Engine) replicaShallowCopy(dstReplicaServiceCli *client.SPDKClient, src
 					if continuousRetryCount > maxNumRetries {
 						return errors.Wrapf(err, "Engine failed to check the dst replica %s snapshot %s shallow copy status over %d times", dstReplicaName, currentSnapshotName, maxNumRetries)
 					}
-					logrus.WithError(err).Errorf("Engine failed to check the dst replica %s snapshot %s shallow copy status, retry count %d", dstReplicaName, currentSnapshotName, continuousRetryCount)
+					e.log.WithError(err).Errorf("Engine failed to check the dst replica %s snapshot %s shallow copy status, retry count %d", dstReplicaName, currentSnapshotName, continuousRetryCount)
 					continue
 				}
 				if shallowCopyStatus.State == helpertypes.ShallowCopyStateError || shallowCopyStatus.Error != "" {
@@ -1534,7 +1568,12 @@ func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, repli
 	}
 
 	delete(e.ReplicaStatusMap, replicaName)
-	e.log = e.log.WithField("replicaStatusMap", e.ReplicaStatusMap)
+
+	if errUpdateLogger := e.log.UpdateLogger(logrus.Fields{
+		"replicaStatusMap": e.ReplicaStatusMap,
+	}); errUpdateLogger != nil {
+		e.log.WithError(errUpdateLogger).Warn("Failed to update logger with replica status map during engine creation")
+	}
 
 	return nil
 }
@@ -1993,7 +2032,7 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 	defer func() {
 		go func() {
 			if err := e.completeBackupRestore(spdkClient); err != nil {
-				logrus.WithError(err).Warn("Failed to complete backup restore")
+				e.log.WithError(err).Warn("Failed to complete backup restore")
 			}
 		}()
 	}()
