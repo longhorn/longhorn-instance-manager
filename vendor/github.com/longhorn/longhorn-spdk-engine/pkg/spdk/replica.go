@@ -958,9 +958,6 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 				}
 				continue
 			}
-			if bdevLvol.DriverSpecific.Lvol.BaseSnapshot == "" {
-				continue
-			}
 			r.CleanupLvolTree(spdkClient, lvolName, bdevLvolMap)
 		}
 	}
