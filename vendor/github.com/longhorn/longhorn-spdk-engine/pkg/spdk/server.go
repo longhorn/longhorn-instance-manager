@@ -1365,12 +1365,18 @@ func (s *Server) ReplicaBackupStatus(ctx context.Context, req *spdkrpc.BackupSta
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find backup %v", req.Backup)
 	}
 
+	replicaAddress := ""
+	if backup.replica != nil {
+		replicaAddress = fmt.Sprintf("tcp://%s", backup.replica.GetAddress())
+	}
+
 	return &spdkrpc.BackupStatusResponse{
-		Progress:     int32(backup.Progress),
-		BackupUrl:    backup.BackupURL,
-		Error:        backup.Error,
-		SnapshotName: backup.SnapshotName,
-		State:        string(backup.State),
+		Progress:       int32(backup.Progress),
+		BackupUrl:      backup.BackupURL,
+		Error:          backup.Error,
+		SnapshotName:   backup.SnapshotName,
+		State:          string(backup.State),
+		ReplicaAddress: replicaAddress,
 	}, nil
 }
 
