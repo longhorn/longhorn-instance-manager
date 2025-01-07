@@ -43,6 +43,9 @@ ENV LIBJSONC_COMMIT_ID b4c371fa0cbc4dcbaccc359ce9e957a22988fb34
 # nvme-cli 2.10.2
 ENV NVME_CLI_COMMIT_ID eeaa08c9a0e9184f3889df0bff3d2a23db6d6294
 
+RUN zypper -n ref && \
+    zypper update -y
+
 RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
