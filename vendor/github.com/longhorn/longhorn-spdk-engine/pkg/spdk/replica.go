@@ -209,6 +209,12 @@ func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specS
 	}
 }
 
+func (r *Replica) GetAddress() string {
+	r.RLock()
+	defer r.RUnlock()
+	return net.JoinHostPort(r.IP, strconv.Itoa(int(r.PortStart)))
+}
+
 func (r *Replica) IsRebuilding() bool {
 	r.RLock()
 	defer r.RUnlock()
