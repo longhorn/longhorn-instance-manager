@@ -723,7 +723,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 	}()
 
 	if e.IsRestoring {
-		e.log.Info("Engine is restoring, will skip the validation and update")
+		e.log.Debug("Engine is restoring, will skip the validation and update")
 		return nil
 	}
 
@@ -1912,7 +1912,10 @@ func (e *Engine) BackupCreate(backupName, volumeName, engineName, snapshotName, 
 	e.log.Infof("Creating backup %s", backupName)
 
 	e.Lock()
-	defer e.Unlock()
+	defer func() {
+		e.Unlock()
+		e.UpdateCh <- nil
+	}()
 
 	replicaName, replicaAddress := "", ""
 	for name, replicaStatus := range e.ReplicaStatusMap {
@@ -2146,12 +2149,19 @@ func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
 			return err
 		}
 		e.log.Infof("Attaching replica %s with address %s before finishing restoration", replicaName, replicaAddress)
-		_, err = spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort,
+		nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort,
 			spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
 			int32(e.ctrlrLossTimeout), replicaReconnectDelaySec, int32(e.fastIOFailTimeoutSec), replicaMultipath)
 		if err != nil {
 			return err
 		}
+
+		if len(nvmeBdevNameList) != 1 {
+			return fmt.Errorf("got unexpected nvme bdev list %v", nvmeBdevNameList)
+		}
+
+		replicaStatus.BdevName = nvmeBdevNameList[0]
+
 		replicaBdevList = append(replicaBdevList, replicaStatus.BdevName)
 	}
 
