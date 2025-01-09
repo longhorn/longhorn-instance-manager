@@ -2630,8 +2630,17 @@ func (r *Replica) postFullRestoreOperations(spdkClient *spdkclient.Client, resto
 		return nil
 	}
 
-	r.log.Infof("Taking snapshot %v of the restored volume", restore.SnapshotName)
+	snapLvolName := GetReplicaSnapshotLvolName(r.Name, restore.SnapshotName)
+	if _, exists := r.SnapshotLvolMap[snapLvolName]; exists {
+		r.log.Infof("Deleting existing snapshot %v of the restored volume", snapLvolName)
+		_, err := r.SnapshotDelete(spdkClient, restore.SnapshotName)
+		if err != nil {
+			r.log.WithError(err).Errorf("Failed to delete existing snapshot %v of the restored volume", snapLvolName)
+			return errors.Wrapf(err, "failed to delete snapshot %v of the restored volume", snapLvolName)
+		}
+	}
 
+	r.log.Infof("Taking snapshot %v of the restored volume", restore.SnapshotName)
 	opts := &api.SnapshotOptions{
 		UserCreated: false,
 		Timestamp:   util.Now(),
