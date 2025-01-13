@@ -730,7 +730,7 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 
 	ctx, cancel := context.WithCancel(bi.ctx)
 	defer cancel()
-	_, err = util.IdleTimeoutCopy(ctx, cancel, srcFh, targetFh, bi, true)
+	_, err = util.IdleTimeoutCopy(ctx, cancel, srcFh, targetFh, bi, false)
 	if err != nil {
 		return errors.Wrapf(err, "failed to copy the source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
