@@ -82,7 +82,7 @@ func (h *HTTPHandler) DownloadFromURL(ctx context.Context, url string, outFh *os
 		return 0, fmt.Errorf("expected status code 200 from %s, got %s", url, resp.Status)
 	}
 
-	copied, err := IdleTimeoutCopy(ctx, cancel, resp.Body, outFh, updater, true)
+	copied, err := IdleTimeoutCopy(ctx, cancel, resp.Body, outFh, updater, false)
 	if err != nil {
 		return 0, err
 	}
