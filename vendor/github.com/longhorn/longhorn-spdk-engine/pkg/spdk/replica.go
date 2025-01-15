@@ -1645,7 +1645,7 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, srcReplicaNa
 	// Replica.Delete and Replica.Create do not guarantee that the previous rebuilding src replica info is cleaned up
 	if r.rebuildingDstCache.srcReplicaName != "" || r.rebuildingDstCache.srcReplicaAddress != "" || r.rebuildingDstCache.externalSnapshotName != "" || r.rebuildingDstCache.externalSnapshotBdevName != "" {
 		if err := r.doCleanupForRebuildingDst(spdkClient); err != nil {
-			return "", fmt.Errorf("failed to clean up the previous src replica info for dst replica rebuilding start, src replica name %s, address %s, external snapshot name %s, or external snapshot bdev name %s", r.rebuildingDstCache.srcReplicaName, r.rebuildingDstCache.srcReplicaAddress, r.rebuildingDstCache.externalSnapshotName, r.rebuildingDstCache.externalSnapshotBdevName)
+			return "", errors.Wrapf(err, "failed to clean up the previous rebuilding dst info for dst replica rebuilding start, src replica name %s, address %s, external snapshot name %s, or external snapshot bdev name %s", r.rebuildingDstCache.srcReplicaName, r.rebuildingDstCache.srcReplicaAddress, r.rebuildingDstCache.externalSnapshotName, r.rebuildingDstCache.externalSnapshotBdevName)
 		}
 	}
 	r.rebuildingDstCache.srcReplicaName = srcReplicaName
