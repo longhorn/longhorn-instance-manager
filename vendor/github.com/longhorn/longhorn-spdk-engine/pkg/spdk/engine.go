@@ -1433,11 +1433,6 @@ func (e *Engine) replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli *cl
 		}
 	}()
 
-	dstReplicaStatus := e.ReplicaStatusMap[dstReplicaName]
-	if dstReplicaStatus == nil {
-		return fmt.Errorf("cannot find the dst replica %s in the engine %s replica status map during replica add finish", dstReplicaName, e.Name)
-	}
-
 	// Pause the IO again by suspending the NVMe initiator
 	// If something goes wrong, the engine will be marked as error, then we don't need to do anything for replicas. The deletion logic will take over the responsibility of cleanup.
 	if e.Frontend == types.FrontendSPDKTCPBlockdev && e.Endpoint != "" {
@@ -1453,13 +1448,15 @@ func (e *Engine) replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli *cl
 
 	// The destination replica will change the parent of the head to the newly rebuilt snapshot chain and detach the external snapshot.
 	// Besides, it should clean up the attached rebuilding lvol if exists.
-	if dstReplicaStatus.Mode == types.ModeWO {
+	if e.ReplicaStatusMap[dstReplicaName] == nil {
+		e.log.Infof("Engine skipped finishing rebuilding dst replica %s as it was already removed", dstReplicaName)
+	} else if e.ReplicaStatusMap[dstReplicaName].Mode == types.ModeWO {
 		if dstReplicaErr := dstReplicaServiceCli.ReplicaRebuildingDstFinish(dstReplicaName); dstReplicaErr != nil {
-			e.log.WithError(dstReplicaErr).Errorf("Engine failed to finish rebuilding dst replica %s, will update the mode from %v to ERR then continue rebuilding src replica %s finish", dstReplicaName, dstReplicaStatus.Mode, srcReplicaName)
-			dstReplicaStatus.Mode = types.ModeERR
+			e.log.WithError(dstReplicaErr).Errorf("Engine failed to finish rebuilding dst replica %s, will update the mode from %v to ERR then continue rebuilding src replica %s finish", dstReplicaName, e.ReplicaStatusMap[dstReplicaName].Mode, srcReplicaName)
+			e.ReplicaStatusMap[dstReplicaName].Mode = types.ModeERR
 		} else {
-			e.log.Infof("Engine succeeded to finish rebuilding dst replica %s, will update the mode from %v to RW", dstReplicaName, dstReplicaStatus.Mode)
-			dstReplicaStatus.Mode = types.ModeRW
+			e.log.Infof("Engine succeeded to finish rebuilding dst replica %s, will update the mode from %v to RW", dstReplicaName, e.ReplicaStatusMap[dstReplicaName].Mode)
+			e.ReplicaStatusMap[dstReplicaName].Mode = types.ModeRW
 		}
 		updateRequired = true
 	}
