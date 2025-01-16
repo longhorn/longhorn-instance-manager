@@ -38,7 +38,10 @@ type Client struct {
 	sem               chan interface{}
 	msgWrapperQueue   chan *messageWrapper
 	respReceiverQueue chan *Response
-	responseChans     map[uint32]chan *Response
+
+	// TODO: may need to launch a cleanup mechanism for the entries that has been there for a long time.
+	responseChans       map[uint32]chan *Response
+	responseChanInfoMap map[uint32]string
 }
 
 type messageWrapper struct {
@@ -63,10 +66,11 @@ func NewClient(ctx context.Context, conn net.Conn) *Client {
 		encoder: json.NewEncoder(conn),
 		decoder: json.NewDecoder(conn),
 
-		sem:               make(chan interface{}, DefaultConcurrentLimit),
-		msgWrapperQueue:   make(chan *messageWrapper, DefaultConcurrentLimit),
-		respReceiverQueue: make(chan *Response, DefaultConcurrentLimit),
-		responseChans:     make(map[uint32]chan *Response),
+		sem:                 make(chan interface{}, DefaultConcurrentLimit),
+		msgWrapperQueue:     make(chan *messageWrapper, DefaultConcurrentLimit),
+		respReceiverQueue:   make(chan *Response, DefaultConcurrentLimit),
+		responseChans:       make(map[uint32]chan *Response),
+		responseChanInfoMap: make(map[uint32]string),
 	}
 	c.encoder.SetIndent("", "\t")
 
@@ -166,6 +170,7 @@ func (c *Client) handleSend(msgWrapper *messageWrapper) {
 
 	c.idCounter++
 	c.responseChans[id] = msgWrapper.responseChan
+	c.responseChanInfoMap[id] = fmt.Sprintf("method: %s, params: %+v", msgWrapper.method, msgWrapper.params)
 }
 
 func (c *Client) handleRecv(resp *Response) {
@@ -174,12 +179,14 @@ func (c *Client) handleRecv(resp *Response) {
 		logrus.Warnf("Cannot find the response channel during handleRecv, will discard response: %+v", resp)
 		return
 	}
+	info := c.responseChanInfoMap[resp.ID]
 	delete(c.responseChans, resp.ID)
+	delete(c.responseChanInfoMap, resp.ID)
 
 	select {
 	case ch <- resp:
 	default:
-		logrus.Errorf("Response receiver queue is full when sending response id %v", resp.ID)
+		logrus.Errorf("The caller is no longer waiting for the response %+v, %v", resp.Result, info)
 	}
 	close(ch)
 }
@@ -223,14 +230,12 @@ func (c *Client) read() {
 				continue
 			}
 
-			if !queueTimer.Stop() {
-				<-queueTimer.C
-			}
+			queueTimer.Stop()
 			queueTimer.Reset(DefaultQueueBlockingTimeout)
 			select {
 			case c.respReceiverQueue <- &resp:
 			case <-queueTimer.C:
-				logrus.Errorf("Response receiver queue is blocked for over %v second when sending response id %v", DefaultQueueBlockingTimeout, resp.ID)
+				logrus.Errorf("Response receiver queue is blocked for over %v second when sending response: %+v", DefaultQueueBlockingTimeout, resp)
 			}
 		}
 	}
@@ -259,13 +264,13 @@ func (c *Client) SendMsgAsyncWithTimeout(method string, params interface{}, time
 
 	select {
 	case <-c.ctx.Done():
-		return nil, fmt.Errorf("context done during async message send")
+		return nil, fmt.Errorf("context done during async message send, method %s, params %+v", method, params)
 	case c.sem <- nil:
 		defer func() {
 			<-c.sem
 		}()
 	case <-timer.C:
-		return nil, fmt.Errorf("timeout %v getting semaphores during async message send", timeout)
+		return nil, fmt.Errorf("timeout %v getting semaphores during async message send, method %s, params %+v", timeout, method, params)
 	}
 
 	marshaledParams, err := json.Marshal(params)
@@ -285,21 +290,21 @@ func (c *Client) SendMsgAsyncWithTimeout(method string, params interface{}, time
 
 	select {
 	case <-c.ctx.Done():
-		return nil, fmt.Errorf("context done during async message send")
+		return nil, fmt.Errorf("context done during async message send, method %s, params %+v", method, params)
 	case c.msgWrapperQueue <- msgWrapper:
 	case <-timer.C:
-		return nil, fmt.Errorf("timeout %v queueing message during async message send", timeout)
+		return nil, fmt.Errorf("timeout %v queueing message during async message send, method %s, params %+v", timeout, method, params)
 	}
 
 	select {
 	case <-c.ctx.Done():
-		return nil, fmt.Errorf("context done during async message send")
+		return nil, fmt.Errorf("context done during async message send, method %s, params %+v", method, params)
 	case resp = <-responseChan:
 		if resp == nil {
-			return nil, fmt.Errorf("received nil response during async message send, maybe the response channel somehow is closed")
+			return nil, fmt.Errorf("received nil response during async message send, maybe the response channel somehow is closed, method %s, params %+v", method, params)
 		}
 	case <-timer.C:
-		return nil, fmt.Errorf("timeout %v waiting for response during async message send", timeout)
+		return nil, fmt.Errorf("timeout %v waiting for response during async message send, method %s, params %+v", timeout, method, params)
 	}
 
 	if resp.ErrorInfo != nil {
