@@ -33,10 +33,13 @@ func (p *Proxy) SPDKBackingImageCreate(ctx context.Context, req *rpc.SPDKBacking
 		"Checksum":         req.Checksum,
 		"FromAddress":      req.FromAddress,
 		"SrcLvsUuid":       req.SrcLvsUuid,
+		"SrcBackingImage":  req.SrcBackingImageName,
+		"Encryption":       req.Encryption,
 	})
 
 	log.Info("Backing Image Server: Creating SPDk Backing Image")
-	ret, err := p.spdkLocalClient.BackingImageCreate(req.Name, req.BackingImageUuid, req.DiskUuid, req.Size, req.Checksum, req.FromAddress, req.SrcLvsUuid)
+	ret, err := p.spdkLocalClient.BackingImageCreate(req.Name, req.BackingImageUuid, req.DiskUuid, req.Size, req.Checksum,
+		req.FromAddress, req.SrcLvsUuid, req.SrcBackingImageName, req.Encryption, req.Credential)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}

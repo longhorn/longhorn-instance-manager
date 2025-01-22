@@ -286,7 +286,7 @@ func (s *Server) verify() (err error) {
 				logrus.WithError(err).Warnf("failed to extract backing image name and disk UUID from lvol name %v", lvolName)
 				continue
 			}
-			actualSize := bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
+			size := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
 			alias := bdevLvol.Aliases[0]
 			expectedChecksum, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrChecksum)
 			if err != nil {
@@ -298,7 +298,7 @@ func (s *Server) verify() (err error) {
 				logrus.WithError(err).Warnf("failed to retrieve backing image UUID attribute for snapshot %v", alias)
 				continue
 			}
-			backingImage := NewBackingImage(s.ctx, backingImageName, backingImageUUID, lvsUUID, actualSize, expectedChecksum, s.updateChs[types.InstanceTypeBackingImage])
+			backingImage := NewBackingImage(s.ctx, backingImageName, backingImageUUID, lvsUUID, size, expectedChecksum, s.updateChs[types.InstanceTypeBackingImage])
 			backingImage.Alias = alias
 			// For uncahced backing image, we set the state to pending first, so we can distinguish it from the cached but starting backing image
 			backingImage.State = types.BackingImageStatePending
@@ -1578,8 +1578,14 @@ func (s *Server) BackingImageCreate(ctx context.Context, req *spdkrpc.BackingIma
 	if req.LvsUuid == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "lvs UUID is required")
 	}
-	if req.Checksum == "" {
-		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "checksum is required")
+	// if req.Checksum == "" {
+	// 	return nil, grpcstatus.Error(grpccodes.InvalidArgument, "checksum is required")
+	// }
+	if req.SrcBackingImageName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "source backing image name is required")
+	}
+	if req.Encryption == "" {
+		req.Encryption = string(types.EncryptionTypeIgnore)
 	}
 
 	// Don't recreate the backing image
@@ -1609,7 +1615,7 @@ func (s *Server) BackingImageCreate(ctx context.Context, req *spdkrpc.BackingIma
 	spdkClient := s.spdkClient
 	s.RUnlock()
 
-	return bi.Create(spdkClient, s.portAllocator, req.FromAddress, req.SrcLvsUuid)
+	return bi.Create(spdkClient, s.portAllocator, req.FromAddress, req.SrcLvsUuid, req.SrcBackingImageName, types.EncryptionType(req.Encryption), req.Credential)
 }
 
 func (s *Server) BackingImageDelete(ctx context.Context, req *spdkrpc.BackingImageDeleteRequest) (ret *emptypb.Empty, err error) {

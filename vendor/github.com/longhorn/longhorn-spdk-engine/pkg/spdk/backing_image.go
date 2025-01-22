@@ -23,6 +23,7 @@ import (
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonnet "github.com/longhorn/go-common-libs/net"
 	commontypes "github.com/longhorn/go-common-libs/types"
+	lhtypes "github.com/longhorn/go-common-libs/types"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
@@ -30,6 +31,8 @@ import (
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
+
+	backingimagecrypto "github.com/longhorn/longhorn-spdk-engine/pkg/backing_image_crypto"
 
 	safelog "github.com/longhorn/longhorn-spdk-engine/pkg/log"
 )
@@ -106,7 +109,9 @@ func NewBackingImage(ctx context.Context, backingImageName, backingImageUUID, lv
 }
 
 // Create initiates the backing image, prepare the lvol, copy the data from the local backing file and create the snapshot.
-func (bi *BackingImage) Create(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap, fromAddress string, srcLvsUUID string) (ret *spdkrpc.BackingImage, err error) {
+func (bi *BackingImage) Create(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap,
+	fromAddress, srcLvsUUID, srcBackingImageName string, encryption types.EncryptionType, credential map[string]string) (ret *spdkrpc.BackingImage, err error) {
+
 	updateRequired := true
 
 	bi.Lock()
@@ -127,7 +132,7 @@ func (bi *BackingImage) Create(spdkClient *spdkclient.Client, superiorPortAlloca
 	}
 
 	go func() {
-		err := bi.prepareBackingImageSnapshot(spdkClient, superiorPortAllocator, fromAddress, srcLvsUUID)
+		err := bi.prepareBackingImageSnapshot(spdkClient, superiorPortAllocator, fromAddress, srcLvsUUID, srcBackingImageName, encryption, credential)
 		if err != nil {
 			bi.log.WithError(err).Error("Failed to create backing image")
 		}
@@ -412,7 +417,8 @@ func (bi *BackingImage) updateProgress(processedSize int64) {
 	}
 }
 
-func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap, fromAddress string, srcLvsUUID string) (err error) {
+func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap,
+	fromAddress string, srcLvsUUID string, srcBackingImageName string, encryption types.EncryptionType, credential map[string]string) (err error) {
 	// If we already create the temp head lvol, no matter it fails to prepare or not, we should create the snapshot for it.
 	// The state will be recorded in the xattr of the snapshot lvol so when the node is rebooted, we can pick it up and reconstruct the record.
 	// Controller will handle the failed backing image copy by deleting it and recreating it.
@@ -442,8 +448,17 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 				err = fmt.Errorf("invalid state %v for backing image %s creation after processing", bi.State, bi.Name)
 			}
 
+			if encryption == types.EncryptionTypeEncrypt {
+				bi.ProcessedSize += backingimagecrypto.EncryptionMetaSize
+			}
+
 			if bi.Size > 0 && bi.ProcessedSize != int64(bi.Size) {
 				err = fmt.Errorf("processed data size %v does not match the expected file size %v", bi.ProcessedSize, bi.Size)
+			}
+
+			// For cloning with encryption and decryption, the expected checksum is unknown, so we can't validate it.
+			if bi.ExpectedChecksum == "" {
+				bi.ExpectedChecksum = bi.CurrentChecksum
 			}
 
 			if bi.CurrentChecksum != bi.ExpectedChecksum {
@@ -552,31 +567,24 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	if _, err := headInitiator.Start(podIP, strconv.Itoa(int(port)), true); err != nil {
 		return errors.Wrapf(err, "failed to start NVMe initiator for head lvol %v", backingImageTempHeadName)
 	}
-	bi.log.Info("Created NVMe initiator for head lvol %v", backingImageTempHeadName)
-
-	headFh, err := os.OpenFile(headInitiator.Endpoint, os.O_RDWR, 0666)
 	defer func() {
-		// Stop the initiator
-		headFh.Close()
 		bi.log.Info("Stopping NVMe initiator")
 		if _, opErr := headInitiator.Stop(true, true, false); opErr != nil {
 			bi.log.WithError(opErr).Errorf("Failed to stop the backing image head NVMe initiator")
 		}
 	}()
-	if err != nil {
-		return errors.Wrapf(err, "failed to open NVMe device %v for lvol bdev %v", headInitiator.Endpoint, backingImageTempHeadName)
-	}
+	bi.log.Info("Created NVMe initiator for head lvol %v", backingImageTempHeadName)
 
 	// An SPDK backing image should only be created by downloading it from BIM if it's a first copy,
 	// or by syncing it from another SPDK server.
 	isSourceFromBIM := checkIsSourceFromBIM(fromAddress)
 	if isSourceFromBIM {
-		if err := bi.prepareFromURL(headFh, fromAddress); err != nil {
+		if err := bi.prepareFromURL(headInitiator, fromAddress); err != nil {
 			bi.log.WithError(err).Warnf("Failed to prepare the backing image %v from URL %v", bi.Name, fromAddress)
 			return errors.Wrapf(err, "failed to prepare the backing image %v from URL %v", bi.Name, fromAddress)
 		}
 	} else {
-		if err := bi.prepareFromSync(headFh, fromAddress, srcLvsUUID); err != nil {
+		if err := bi.prepareFromSync(headInitiator, fromAddress, srcLvsUUID, srcBackingImageName, encryption, credential); err != nil {
 			bi.log.WithError(err).Warnf("Failed to prepare the backing image %v by syncing from %v and srcLvsUUID %v", bi.Name, fromAddress, srcLvsUUID)
 			return errors.Wrapf(err, "failed to prepare the backing image %v by syncing from  %v and srcLvsUUID %v", bi.Name, fromAddress, srcLvsUUID)
 		}
@@ -647,7 +655,16 @@ func (bi *BackingImage) createSnapshotFromTempHead(spdkClient *spdkclient.Client
 	return nil
 }
 
-func (bi *BackingImage) prepareFromURL(targetFh *os.File, fromAddress string) (err error) {
+func (bi *BackingImage) prepareFromURL(headInitiator *nvme.Initiator, fromAddress string) (err error) {
+	targetFh, err := os.OpenFile(headInitiator.Endpoint, os.O_RDWR, 0666)
+	defer func() {
+		// Stop the initiator
+		targetFh.Close()
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "failed to open NVMe device %v", headInitiator.Endpoint)
+	}
+
 	httpHandler := util.HTTPHandler{}
 
 	// Parse the base URL into a URL object
@@ -675,24 +692,21 @@ func (bi *BackingImage) prepareFromURL(targetFh *os.File, fromAddress string) (e
 	return nil
 }
 
-func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUUID string) (err error) {
-	if fromAddress == "" || srcLvsUUID == "" {
-		return errors.Wrapf(err, "missing required source backing image service address %v or source lvsUUID %v", fromAddress, srcLvsUUID)
-	}
+func (bi *BackingImage) prepareFromSync(headInitiator *nvme.Initiator, fromAddress, srcLvsUUID, srcBackingImageName string, encryption types.EncryptionType, credential map[string]string) (err error) {
 	srcBackingImageServiceCli, err := GetServiceClient(fromAddress)
 	if err != nil {
 		return errors.Wrapf(err, "failed to init the source backing image spdk service client")
 	}
 	defer srcBackingImageServiceCli.Close()
-	exposedSnapshotLvolAddress, err := srcBackingImageServiceCli.BackingImageExpose(bi.Name, srcLvsUUID)
+	exposedSnapshotLvolAddress, err := srcBackingImageServiceCli.BackingImageExpose(srcBackingImageName, srcLvsUUID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to expose the source backing image %v", bi.Name)
+		return errors.Wrapf(err, "failed to expose the source backing image %v", srcBackingImageName)
 	}
-	externalSnapshotLvolName := GetBackingImageSnapLvolName(bi.Name, srcLvsUUID)
+	externalSnapshotLvolName := GetBackingImageSnapLvolName(srcBackingImageName, srcLvsUUID)
 	defer func() {
 		// Unexpose the source snapshot
-		if err := srcBackingImageServiceCli.BackingImageUnexpose(bi.Name, srcLvsUUID); err != nil {
-			bi.log.WithError(err).Warnf("failed to unsexpose the source backing image %v", bi.Name)
+		if err := srcBackingImageServiceCli.BackingImageUnexpose(srcBackingImageName, srcLvsUUID); err != nil {
+			bi.log.WithError(err).Warnf("failed to unsexpose the source backing image %v", srcBackingImageName)
 		}
 	}()
 
@@ -702,37 +716,56 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 	}
 	_, _, err = connectNVMeTarget(srcIP, srcPort, maxNumRetries, retryInterval)
 	if err != nil {
-		return errors.Wrapf(err, "failed to connect to NVMe target for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
+		return errors.Wrapf(err, "failed to connect to NVMe target for source backing image %v in lvsUUID %v with address %v", srcBackingImageName, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
 
-	bi.log.Info("Creating NVMe initiator for source backing image %v", bi.Name)
-	initiator, err := nvme.NewInitiator(externalSnapshotLvolName, helpertypes.GetNQN(externalSnapshotLvolName), nvme.HostProc)
+	bi.log.Info("Creating NVMe initiator for source backing image %v", srcBackingImageName)
+	sourceInitiator, err := nvme.NewInitiator(externalSnapshotLvolName, helpertypes.GetNQN(externalSnapshotLvolName), nvme.HostProc)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create NVMe initiator for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
+		return errors.Wrapf(err, "failed to create NVMe initiator for source backing image %v in lvsUUID %v with address %v", srcBackingImageName, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
-	if _, err := initiator.Start(srcIP, strconv.Itoa(int(srcPort)), true); err != nil {
-		return errors.Wrapf(err, "failed to start NVMe initiator for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
+	if _, err := sourceInitiator.Start(srcIP, strconv.Itoa(int(srcPort)), true); err != nil {
+		return errors.Wrapf(err, "failed to start NVMe initiator for source backing image %v in lvsUUID %v with address %v", srcBackingImageName, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
 
-	bi.log.Infof("Opening NVMe device %v", initiator.Endpoint)
-	srcFh, err := os.OpenFile(initiator.Endpoint, os.O_RDWR, 0666)
+	writeZero := false
+	if encryption == types.EncryptionTypeEncrypt {
+		writeZero = true
+	}
+
+	targetFh, err := bi.openTarget(headInitiator.Endpoint, bi.Name, encryption, credential)
 	defer func() {
-		srcFh.Close()
-		// Stop the source initiator
-		bi.log.Info("Stopping NVMe initiator")
-		if _, err := initiator.Stop(true, true, false); err != nil {
-			bi.log.WithError(err).Warnf("failed to stop NVMe initiator")
+		targetFh.Close()
+		if encryption == types.EncryptionTypeEncrypt {
+			bi.closeCryptoDevice(bi.Name)
 		}
 	}()
 	if err != nil {
-		return errors.Wrapf(err, "failed to open NVMe device %v for source backing image %v in lvsUUID %v with address %v", initiator.Endpoint, bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
+		return errors.Wrapf(err, "failed to open head NVMe device %v with encryption option %v", headInitiator.Endpoint, encryption)
+	}
+
+	srcFh, err := bi.openSource(sourceInitiator.Endpoint, srcBackingImageName, encryption, credential)
+	defer func() {
+		srcFh.Close()
+		if encryption == types.EncryptionTypeDecrypt {
+			// should be source name, in cloning, the name would be different
+			bi.closeCryptoDevice(srcBackingImageName)
+		}
+
+		bi.log.Info("Stopping source NVMe initiator")
+		if _, opErr := sourceInitiator.Stop(true, true, false); opErr != nil {
+			bi.log.WithError(opErr).Errorf("Failed to stop the source backing image NVMe initiator")
+		}
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "failed to open source NVMe device %v with encryption option %v", headInitiator.Endpoint, encryption)
 	}
 
 	ctx, cancel := context.WithCancel(bi.ctx)
 	defer cancel()
-	_, err = util.IdleTimeoutCopy(ctx, cancel, srcFh, targetFh, bi, false)
+	_, err = util.IdleTimeoutCopy(ctx, cancel, srcFh, targetFh, bi, writeZero)
 	if err != nil {
-		return errors.Wrapf(err, "failed to copy the source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
+		return errors.Wrapf(err, "failed to copy the source backing image %v in lvsUUID %v with address %v", srcBackingImageName, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
 
 	return nil
@@ -748,4 +781,88 @@ func cleanupOrphanBackingImageTempHead(spdkClient *spdkclient.Client, lvsName, b
 		return errors.Wrapf(err, "Failed to delete orphan backing image temp head %v", backingImageTempHeadName)
 	}
 	return nil
+}
+
+func (bi *BackingImage) openSource(sourcePath, srcBackingImageName string, encryption types.EncryptionType, credential map[string]string) (sourceFh *os.File, err error) {
+	bi.log.Infof("open source device: %v, encryption: %v", sourcePath, encryption)
+
+	if encryption == types.EncryptionTypeDecrypt {
+		// false means there is no need to format the crypto device, because we are reading from an encrypted source backing image
+		err := bi.setupCryptoDevice(sourcePath, srcBackingImageName, false, credential)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to setup the crypto device with the soruce %v during syncing", sourcePath)
+		}
+
+		// If it is decryption, after setup crypto device, we use the device mapper path for the source path
+		sourcePath = backingimagecrypto.BackingImageMapper(srcBackingImageName)
+	}
+
+	if _, err := os.Stat(sourcePath); err != nil {
+		return nil, errors.Wrapf(err, "%v not found during syncing", sourcePath)
+	}
+
+	sourceFh, err = os.OpenFile(sourcePath, os.O_RDWR, 0666)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error opening device %v", sourcePath)
+	}
+
+	return sourceFh, nil
+}
+
+func (bi *BackingImage) openTarget(targetPath, targetBackingImageName string, encryption types.EncryptionType, credential map[string]string) (targetFh *os.File, err error) {
+	bi.log.Infof("open target device: %v, encryption: %v", targetPath, encryption)
+
+	if encryption == types.EncryptionTypeEncrypt {
+		// true means we need to format the crypto device
+		err = bi.setupCryptoDevice(targetPath, targetBackingImageName, true, credential)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to setup the crypto device with the target %v during syncing", targetPath)
+		}
+
+		// If it is encryption, after setup crypto device, we use the device mapper path for the target path
+		targetPath = backingimagecrypto.BackingImageMapper(targetBackingImageName)
+	}
+
+	if _, err := os.Stat(targetPath); err != nil {
+		return nil, errors.Wrapf(err, "%v not found during syncing", targetPath)
+	}
+
+	targetFh, err = os.OpenFile(targetPath, os.O_RDWR, 0666)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error opening device %v", targetPath)
+	}
+
+	return targetFh, nil
+}
+
+func (bi *BackingImage) setupCryptoDevice(path, backingImageName string, needFormat bool, credential map[string]string) error {
+	keyProvider := credential[lhtypes.CryptoKeyProvider]
+	passphrase := credential[lhtypes.CryptoKeyValue]
+	if keyProvider != "" && keyProvider != "secret" {
+		return fmt.Errorf("unsupported key provider %v for encryption", keyProvider)
+	}
+	if len(passphrase) == 0 {
+		return fmt.Errorf("missing passphrase for encryption")
+	}
+
+	// If we are working on encryption, the target device has not been formatted with the cryptsetup and it needs to be formatted first.
+	// If we are working on decryption, the source is a encrypted file and we don't need to format the source device again or the metadata will be replaced.
+	if needFormat {
+		cryptoParams := backingimagecrypto.NewEncryptParams(keyProvider, credential[lhtypes.CryptoKeyCipher], credential[lhtypes.CryptoKeyHash], credential[lhtypes.CryptoKeySize], credential[lhtypes.CryptoPBKDF])
+		if err := backingimagecrypto.EncryptBackingImage(path, passphrase, cryptoParams); err != nil {
+			return err
+		}
+	}
+
+	if err := backingimagecrypto.OpenBackingImage(path, passphrase, backingImageName); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bi *BackingImage) closeCryptoDevice(name string) {
+	if err := backingimagecrypto.CloseBackingImage(name); err != nil {
+		bi.log.WithError(err).Warnf("failed to close the crypto device of backing file")
+	}
 }

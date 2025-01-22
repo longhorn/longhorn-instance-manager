@@ -825,8 +825,8 @@ func (c *SPDKClient) ReplicaRestoreStatus(replicaName string) (*spdkrpc.ReplicaR
 	})
 }
 
-func (c *SPDKClient) BackingImageCreate(name, backingImageUUID, lvsUUID string, size uint64, checksum string, fromAddress string, srcLvsUUID string) (*api.BackingImage, error) {
-	if name == "" || backingImageUUID == "" || checksum == "" || lvsUUID == "" || size == 0 {
+func (c *SPDKClient) BackingImageCreate(name, backingImageUUID, lvsUUID string, size uint64, checksum, fromAddress, srcLvsUUID, srcBackingImageName, encryption string, credential map[string]string) (*api.BackingImage, error) {
+	if name == "" || backingImageUUID == "" || lvsUUID == "" || srcBackingImageName == "" || size == 0 {
 		return nil, fmt.Errorf("failed to start SPDK backing image: missing required parameters")
 	}
 	client := c.getSPDKServiceClient()
@@ -834,13 +834,16 @@ func (c *SPDKClient) BackingImageCreate(name, backingImageUUID, lvsUUID string, 
 	defer cancel()
 
 	resp, err := client.BackingImageCreate(ctx, &spdkrpc.BackingImageCreateRequest{
-		Name:             name,
-		BackingImageUuid: backingImageUUID,
-		LvsUuid:          lvsUUID,
-		Size:             size,
-		Checksum:         checksum,
-		FromAddress:      fromAddress,
-		SrcLvsUuid:       srcLvsUUID,
+		Name:                name,
+		BackingImageUuid:    backingImageUUID,
+		LvsUuid:             lvsUUID,
+		Size:                size,
+		Checksum:            checksum,
+		FromAddress:         fromAddress,
+		SrcLvsUuid:          srcLvsUUID,
+		SrcBackingImageName: srcBackingImageName,
+		Encryption:          encryption,
+		Credential:          credential,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start SPDK backing image")

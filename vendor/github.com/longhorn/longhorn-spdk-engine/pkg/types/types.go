@@ -54,6 +54,14 @@ const (
 	BackingImageSnapshotAttrPrepareState     = "backing_image_prepare_state"
 )
 
+type EncryptionType string
+
+const (
+	EncryptionTypeEncrypt = EncryptionType("encrypt")
+	EncryptionTypeDecrypt = EncryptionType("decrypt")
+	EncryptionTypeIgnore  = EncryptionType("ignore")
+)
+
 const VolumeHead = "volume-head"
 
 const SPDKServicePort = 8504
