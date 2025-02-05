@@ -2,7 +2,7 @@
 FROM  registry.suse.com/bci/golang:1.23 AS gobuilder
 
 ARG ARCH=amd64
-ARG DEP_VERSION_FILE=versions.json
+ARG BRANCH=main
 
 RUN zypper -n ref && \
     zypper update -y
@@ -16,20 +16,16 @@ ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLA
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
 RUN go install golang.org/x/lint/golint@latest
 
-COPY ${DEP_VERSION_FILE} /versions.json
+RUN wget -q "https://raw.githubusercontent.com/longhorn/dep-versions/${BRANCH}/versions.json" -O /versions.json
+RUN git clone https://github.com/longhorn/dep-versions.git -b ${BRANCH} /usr/src/dep-versions
 
 # Build go-spdk-helper
-RUN export GO_SPDK_HELPER_REPO=$(jq -r '.["go-spdk-helper"].repo' /versions.json) && \
-    export GO_SPDK_HELPER_COMMIT_ID=$(jq -r '.["go-spdk-helper"].commit' /versions.json) && \
-    cd /usr/src && \
-    git clone ${GO_SPDK_HELPER_REPO} go-spdk-helper && \
-    cd go-spdk-helper && \
-    git checkout ${GO_SPDK_HELPER_COMMIT_ID} && \
-    go build && \
-    install -m 755 go-spdk-helper /usr/local/bin/go-spdk-helper
+RUN export REPO_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="" && \
+    bash /usr/src/dep-versions/scripts/build-go-spdk-helper.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Install grpc_health_probe
-RUN GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/repos/grpc-ecosystem/grpc-health-probe/releases/latest | jq -r '.assets[] | select(.name | test("linux.*'"${ARCH}"'"; "i")) | .browser_download_url') && \
+RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/repos/grpc-ecosystem/grpc-health-probe/releases/latest | jq -r '.assets[] | select(.name | test("linux.*'"${ARCH}"'"; "i")) | .browser_download_url') && \
     wget ${GRPC_HEALTH_PROBE_DOWNLOAD_URL} -O /usr/local/bin/grpc_health_probe && \
     chmod +x /usr/local/bin/grpc_health_probe
 
@@ -37,7 +33,7 @@ RUN GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/repos/grpc
 FROM registry.suse.com/bci/bci-base:15.6 AS cbuilder
 
 ARG ARCH=amd64
-ARG DEP_VERSION_FILE=versions.json
+ARG BRANCH=main
 
 RUN zypper -n ref && \
     zypper update -y
@@ -51,78 +47,35 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
     zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq
+RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
 
-COPY ${DEP_VERSION_FILE} /versions.json
+RUN wget -q "https://raw.githubusercontent.com/longhorn/dep-versions/${BRANCH}/versions.json" -O /versions.json
+RUN git clone https://github.com/longhorn/dep-versions.git -b ${BRANCH} /usr/src/dep-versions
 
 # Build liblonghorn
-RUN export LIBLONGHORN_REPO=$(jq -r '.["liblonghorn"].repo' /versions.json) && \
-    export LIBLONGHORN_COMMIT_ID=$(jq -r '.["liblonghorn"].commit' /versions.json) && \
-    cd /usr/src && \
-    git clone ${LIBLONGHORN_REPO} && \
-    cd liblonghorn && \
-    git checkout ${LIBLONGHORN_COMMIT_ID} && \
-    make && \
-    make install
+RUN export REPO_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="" && \
+    bash /usr/src/dep-versions/scripts/build-liblonghorn.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Build TGT
-RUN export TGT_REPO=$(jq -r '.["tgt"].repo' /versions.json) && \
-    export TGT_COMMIT_ID=$(jq -r '.["tgt"].commit' /versions.json) && \
-    cd /usr/src && \
-    git clone ${TGT_REPO} && \
-    cd tgt && \
-    git checkout ${TGT_COMMIT_ID} && \
-    make && \
-    make install
+RUN export REPO_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="" && \
+    bash /usr/src/dep-versions/scripts/build-tgt.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Build spdk
-RUN export SPDK_REPO=$(jq -r '.["spdk"].repo' /versions.json) && \
-    export SPDK_COMMIT_ID=$(jq -r '.["spdk"].commit' /versions.json) && \
-    cd /usr/src && \
-    git clone ${SPDK_REPO} spdk --recursive && \
-    cd spdk && \
-    git checkout ${SPDK_COMMIT_ID} && \
-    git submodule update --init && \
-    sed -i '/python3-pyelftools/d' ./scripts/pkgdep/sles.sh && \
-    sed -i 's/python3-/python311-/g' ./scripts/pkgdep/sles.sh && \
-    ./scripts/pkgdep.sh && \
-    pip3 install -r ./scripts/pkgdep/requirements.txt && \
-    if [ ${ARCH} = "amd64" ]; then \
-        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples && \
-        make -j$(nproc) && \
-        make install; \
-    elif [ ${ARCH} = "arm64" ]; then \
-        ./configure --target-arch=native --disable-tests --disable-unit-tests --disable-examples && \
-        DPDKBUILD_FLAGS="-Dplatform=generic" make -j$(nproc) && \
-        make install; \
-    else \
-        echo "Unsupported architecture: ${ARCH}"; \
-        exit 1; \
-    fi
+RUN export REPO_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="" && \
+    bash /usr/src/dep-versions/scripts/build-spdk.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}" "${ARCH}"
 
 # Build libjson-c-devel
-RUN export LIBJSONC_REPO=$(jq -r '.["libjsonc"].repo' /versions.json) && \
-    export LIBJSONC_COMMIT_ID=$(jq -r '.["libjsonc"].commit' /versions.json) && \
-    cd /usr/src && \
-    git clone ${LIBJSONC_REPO} && \
-    cd json-c && \
-    git checkout ${LIBJSONC_COMMIT_ID} && \
-    mkdir .build && \
-    cd .build && \
-    cmake ../ && \
-    make && \
-    make install
+RUN export REPO_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="" && \
+    bash /usr/src/dep-versions/scripts/build-libjsonc.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Build nvme-cli
-RUN export NVME_CLI_REPO=$(jq -r '.["nvme-cli"].repo' /versions.json) && \
-    export NVME_CLI_COMMIT_ID=$(jq -r '.["nvme-cli"].commit' /versions.json) && \
-    cd /usr/src && \
-    git clone ${NVME_CLI_REPO} && \
-    cd nvme-cli && \
-    git checkout ${NVME_CLI_COMMIT_ID} && \
-    meson setup --force-fallback-for=libnvme .build && \
-    meson compile -C .build && \
-    meson install -C .build
+RUN export REPO_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="" && \
+    bash /usr/src/dep-versions/scripts/build-nvme-cli.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Stage 3: copy binaries to release image
 FROM registry.suse.com/bci/bci-base:15.6 AS release
