@@ -339,7 +339,9 @@ func (ops V2DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.Engi
 	}
 	defer c.Close()
 
-	return nil, c.EngineReplicaDelete(req.ProxyEngineRequest.EngineName, req.ReplicaName, req.ReplicaAddress)
+	replicaAddress := strings.TrimPrefix(req.ReplicaAddress, "tcp://")
+
+	return nil, c.EngineReplicaDelete(req.ProxyEngineRequest.EngineName, req.ReplicaName, replicaAddress)
 }
 
 func (p *Proxy) ReplicaModeUpdate(ctx context.Context, req *rpc.EngineReplicaModeUpdateRequest) (resp *emptypb.Empty, err error) {
