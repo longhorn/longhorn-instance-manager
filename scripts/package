@@ -58,23 +58,21 @@ function get_branch() {
   local version=$(cat "$version_file")
   local branch=$(convert_version_to_major_minor_x "$version")
 
-  echo "${branch}"
+  # Fetch versions.json from the appropriate branch, fallback to main
+  wget -q "https://raw.githubusercontent.com/longhorn/dep-versions/${branch}/versions.json" -O /versions.json
+  if [ $? -eq 0 ]; then
+    echo "${branch}"
+  else
+    echo "main"
+  fi
 }
 
 BRANCH=$(get_branch)
 
-wget -q "https://raw.githubusercontent.com/longhorn/dep-versions/refs/heads/${BRANCH}/versions.json" -O package/versions.json || {
-  echo "Failed to fetch from branch $BRANCH, trying main branch..."
-  wget -q "https://raw.githubusercontent.com/longhorn/dep-versions/refs/heads/main/versions.json" -O package/versions.json || {
-    echo "Failed to fetch from main branch. Exiting."
-    exit 1
-  }
-}
-
 echo "Building ${IMAGE} with ARCH=${ARCH} BRANCH=${BRANCH}"
 docker build \
   --build-arg ARCH="${ARCH}" \
-  --build-arg DEP_VERSION_FILE=package/versions.json \
+  --build-arg BRANCH="${BRANCH}" \
   -t "${IMAGE}" \
   -f package/Dockerfile .
 
