@@ -164,7 +164,7 @@ func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyE
 		}
 		replica := &enginerpc.ControllerReplica{
 			Address: &enginerpc.ReplicaAddress{
-				Address: address,
+				Address: types.AddTcpPrefixForAddress(address),
 			},
 			Mode: replicaModeToGRPCReplicaMode(mode),
 		}
