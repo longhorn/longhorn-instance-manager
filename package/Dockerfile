@@ -16,7 +16,6 @@ ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLA
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
 RUN go install golang.org/x/lint/golint@latest
 
-RUN wget -q "https://raw.githubusercontent.com/longhorn/dep-versions/${BRANCH}/versions.json" -O /versions.json
 RUN git clone https://github.com/longhorn/dep-versions.git -b ${BRANCH} /usr/src/dep-versions
 
 # Build go-spdk-helper
@@ -49,7 +48,6 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
 
 RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
 
-RUN wget -q "https://raw.githubusercontent.com/longhorn/dep-versions/${BRANCH}/versions.json" -O /versions.json
 RUN git clone https://github.com/longhorn/dep-versions.git -b ${BRANCH} /usr/src/dep-versions
 
 # Build liblonghorn
