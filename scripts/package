@@ -67,12 +67,14 @@ function get_branch() {
   fi
 }
 
-BRANCH=$(get_branch)
+SRC_BRANCH=$(get_branch)
+SRC_TAG=$(git tag --points-at HEAD | head -n 1)
 
-echo "Building ${IMAGE} with ARCH=${ARCH} BRANCH=${BRANCH}"
+echo "Building ${IMAGE} with ARCH=${ARCH} SRC_BRANCH=${SRC_BRANCH} SRC_TAG=${SRC_TAG}"
 docker build \
   --build-arg ARCH="${ARCH}" \
-  --build-arg BRANCH="${BRANCH}" \
+  --build-arg SRC_BRANCH="${SRC_BRANCH}" \
+  --build-arg SRC_TAG="${SRC_TAG}" \
   -t "${IMAGE}" \
   -f package/Dockerfile .
 

@@ -2,7 +2,8 @@
 FROM  registry.suse.com/bci/golang:1.23 AS gobuilder
 
 ARG ARCH=amd64
-ARG BRANCH=main
+ARG SRC_BRANCH=main
+ARG SRC_TAG
 
 RUN zypper -n ref && \
     zypper update -y
@@ -16,7 +17,13 @@ ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLA
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
 RUN go install golang.org/x/lint/golint@latest
 
-RUN git clone https://github.com/longhorn/dep-versions.git -b ${BRANCH} /usr/src/dep-versions
+# If TAG is explicitly set and exists in the repo, switch to the tag
+RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
+    cd /usr/src/dep-versions && \
+    if [ -n "${SRC_TAG}" ] && git show-ref --tags ${SRC_TAG} > /dev/null 2>&1; then \
+        echo "Checking out tag ${SRC_TAG}"; \
+        cd /usr/src/dep-versions && git checkout tags/${SRC_TAG}; \
+    fi
 
 # Build go-spdk-helper
 RUN export REPO_OVERRIDE="" && \
@@ -32,7 +39,8 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
 FROM registry.suse.com/bci/bci-base:15.6 AS cbuilder
 
 ARG ARCH=amd64
-ARG BRANCH=main
+ARG SRC_BRANCH=main
+ARG SRC_TAG
 
 RUN zypper -n ref && \
     zypper update -y
@@ -48,7 +56,12 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
 
 RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
 
-RUN git clone https://github.com/longhorn/dep-versions.git -b ${BRANCH} /usr/src/dep-versions
+RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
+    cd /usr/src/dep-versions && \
+    if [ -n "${SRC_TAG}" ] && git show-ref --tags ${SRC_TAG} > /dev/null 2>&1; then \
+        echo "Checking out tag ${SRC_TAG}"; \
+        cd /usr/src/dep-versions && git checkout tags/${SRC_TAG}; \
+    fi
 
 # Build liblonghorn
 RUN export REPO_OVERRIDE="" && \
