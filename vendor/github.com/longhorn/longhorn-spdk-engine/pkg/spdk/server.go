@@ -286,7 +286,7 @@ func (s *Server) verify() (err error) {
 				logrus.WithError(err).Warnf("failed to extract backing image name and disk UUID from lvol name %v", lvolName)
 				continue
 			}
-			actualSize := bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
+			size := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
 			alias := bdevLvol.Aliases[0]
 			expectedChecksum, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrChecksum)
 			if err != nil {
@@ -298,7 +298,7 @@ func (s *Server) verify() (err error) {
 				logrus.WithError(err).Warnf("failed to retrieve backing image UUID attribute for snapshot %v", alias)
 				continue
 			}
-			backingImage := NewBackingImage(s.ctx, backingImageName, backingImageUUID, lvsUUID, actualSize, expectedChecksum, s.updateChs[types.InstanceTypeBackingImage])
+			backingImage := NewBackingImage(s.ctx, backingImageName, backingImageUUID, lvsUUID, size, expectedChecksum, s.updateChs[types.InstanceTypeBackingImage])
 			backingImage.Alias = alias
 			// For uncahced backing image, we set the state to pending first, so we can distinguish it from the cached but starting backing image
 			backingImage.State = types.BackingImageStatePending
