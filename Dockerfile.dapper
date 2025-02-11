@@ -3,6 +3,8 @@ FROM registry.suse.com/bci/golang:1.23
 ARG DAPPER_HOST_ARCH
 ARG http_proxy
 ARG https_proxy
+ARG SRC_BRANCH=main
+ARG SRC_TAG
 
 ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 ENV DAPPER_DOCKER_SOCKET true
@@ -10,6 +12,8 @@ ENV DAPPER_ENV TAG REPO DRONE_REPO DRONE_PULL_REQUEST DRONE_COMMIT_REF
 ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.venv:exec --tmpfs /go/src/github.com/longhorn/longhorn-engine/integration/.tox:exec -v /dev:/host/dev -v /proc:/host/proc
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
+ENV SRC_BRANCH ${SRC_BRANCH}
+ENV SRC_TAG ${SRC_TAG}
 
 ENV GOLANGCI_LINT_VERSION="v1.60.3"
 
