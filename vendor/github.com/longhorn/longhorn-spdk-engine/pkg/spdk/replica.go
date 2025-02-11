@@ -585,6 +585,7 @@ func (r *Replica) prepareHead(spdkClient *spdkclient.Client, backingImage *Backi
 	if backingImage != nil {
 		r.ActiveChain[0] = backingImage.Snapshot
 		r.BackingImage = r.ActiveChain[0]
+		r.log.WithField("backingImage", backingImage.Name)
 	}
 
 	if !isHeadAvailable {
@@ -1964,8 +1965,22 @@ func (r *Replica) rebuildingDstShallowCopyPrepare(spdkClient *spdkclient.Client,
 		return "", fmt.Errorf("cannot find snapshot %s in the rebuilding snapshot list for replica %s shallow copy prepare", snapshotName, r.Name)
 	}
 	if srcSnapSvcLvol.Parent != "" {
-		if r.BackingImage != nil && r.BackingImage.Name == srcSnapSvcLvol.Parent {
-			dstSnapshotParentLvolName = srcSnapSvcLvol.Parent
+		if IsBackingImageSnapLvolName(srcSnapSvcLvol.Parent) {
+			if r.BackingImage == nil {
+				return "", fmt.Errorf("found a src snapshot lvol %s has parent backing image %s but the dst backing image lvol is nil for dst replica %v rebuilding snapshot %s shallow copy prepare", srcSnapSvcLvol.Name, srcSnapSvcLvol.Parent, r.Name, snapshotName)
+			}
+			srcBIName, _, err := ExtractBackingImageAndDiskUUID(srcSnapSvcLvol.Parent)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to extract backing image name from the src snapshot lvol %s parent %s for dst replica %v rebuilding snapshot %s shallow copy prepare", srcSnapSvcLvol.Name, srcSnapSvcLvol.Parent, r.Name, snapshotName)
+			}
+			dstBIName, _, err := ExtractBackingImageAndDiskUUID(r.BackingImage.Name)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to extract backing image name from the dst backing image lvol %s for dst replica %v rebuilding snapshot %s shallow copy prepare", r.BackingImage.Name, r.Name, snapshotName)
+			}
+			if dstBIName != srcBIName {
+				return "", fmt.Errorf("found mismatching backing image name between the dst backing image lvol %s and the src snapshot %s parent %s for dst replica %v rebuilding snapshot shallow copy prepare", r.BackingImage.Name, snapshotName, srcSnapSvcLvol.Parent, r.Name)
+			}
+			dstSnapshotParentLvolName = r.BackingImage.Name
 		} else {
 			dstSnapshotParentLvolName = GetReplicaSnapshotLvolName(r.Name, srcSnapSvcLvol.Parent)
 		}
