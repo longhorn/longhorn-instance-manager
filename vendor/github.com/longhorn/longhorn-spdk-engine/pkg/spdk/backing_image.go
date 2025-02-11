@@ -131,7 +131,7 @@ func (bi *BackingImage) Create(spdkClient *spdkclient.Client, superiorPortAlloca
 		if err != nil {
 			bi.log.WithError(err).Error("Failed to create backing image")
 		}
-		// update the backing image afte preparing
+		// update the backing image after preparing
 		bi.UpdateCh <- nil
 	}()
 
