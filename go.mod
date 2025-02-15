@@ -7,8 +7,8 @@ toolchain go1.23.6
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20250209090923-c552364ab3ac
-	github.com/longhorn/go-common-libs v0.0.0-20250204050409-8ebd4432fd70
+	github.com/longhorn/backupstore v0.0.0-20250215022153-7ee3a979f2a9
+	github.com/longhorn/go-common-libs v0.0.0-20250214070119-c86a06c781f5
 	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
 	github.com/longhorn/longhorn-engine v1.6.4
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241218065641-755b61f12b0e
@@ -79,7 +79,7 @@ require (
 	github.com/slok/goresilience v0.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c // indirect
+	golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
