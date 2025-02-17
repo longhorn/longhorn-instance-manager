@@ -140,7 +140,7 @@ COPY --from=cbuilder \
 
 RUN ldconfig
 
-COPY package/bin/longhorn-instance-manager /usr/local/bin/
+COPY bin/longhorn-instance-manager /usr/local/bin/
 COPY package/instance-manager /usr/local/bin/
 COPY package/instance-manager-v2-prestop /usr/local/bin/
 
