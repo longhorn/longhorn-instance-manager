@@ -38,6 +38,8 @@ import (
 
 const (
 	restorePeriodicRefreshInterval = 2 * time.Second
+
+	checksumWaitPeriodAfterRebuilding = 10 * time.Second
 )
 
 type Replica struct {
@@ -78,6 +80,7 @@ type Replica struct {
 	// The rebuilding destination replica should cache this info
 	isRebuilding       bool
 	rebuildingDstCache RebuildingDstCache
+	lastRebuildingAt   time.Time
 
 	// The rebuilding source replica should cache this info
 	rebuildingSrcCache RebuildingSrcCache
@@ -248,6 +251,17 @@ func (r *Replica) Sync(spdkClient *spdkclient.Client) (err error) {
 			}
 			if bdevLvol.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotChecksum] != "" {
 				continue
+			}
+			parentBdevLvol := bdevLvolMap[bdevLvol.DriverSpecific.Lvol.BaseSnapshot]
+			if bdevLvol.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == "false" || (parentBdevLvol != nil && parentBdevLvol.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == "false") {
+				// Skip the checksum calculation of system created snapshot lvols during rebuilding as they may be purged later.
+				if r.isRebuilding {
+					continue
+				}
+				// Delay the checksum calculation of system created snapshot lvols a while after rebuilding as they may be purged later.
+				if !time.Now().After(r.lastRebuildingAt.Add(checksumWaitPeriodAfterRebuilding)) {
+					continue
+				}
 			}
 			// TODO: Use a goroutine pool
 			go func() {
@@ -1854,6 +1868,7 @@ func (r *Replica) RebuildingDstFinish(spdkClient *spdkclient.Client) (err error)
 
 	r.rebuildingDstCache.processingState = types.ProgressStateComplete
 	r.rebuildingDstCache.rebuildingState = types.ProgressStateComplete
+	r.lastRebuildingAt = time.Now()
 
 	return nil
 }
