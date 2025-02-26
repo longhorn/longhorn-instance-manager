@@ -52,6 +52,8 @@ type ProxyOps interface {
 	SnapshotBackupStatus(context.Context, *rpc.EngineSnapshotBackupStatusRequest) (*rpc.EngineSnapshotBackupStatusProxyResponse, error)
 	BackupRestore(context.Context, *rpc.EngineBackupRestoreRequest, map[string]string) error
 	BackupRestoreStatus(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineBackupRestoreStatusProxyResponse, error)
+
+	MetricsGet(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineMetricsGetProxyResponse, error)
 }
 
 type V1DataEngineProxyOps struct{}
