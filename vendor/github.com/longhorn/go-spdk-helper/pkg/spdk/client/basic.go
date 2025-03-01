@@ -1313,3 +1313,27 @@ func (c *Client) BdevVirtioDetachController(name string) (deleted bool, err erro
 
 	return deleted, json.Unmarshal(cmdOutput, &deleted)
 }
+
+// BdevGetIostat get I/O statistics of block devices (bdevs).
+//
+//	"name": Optional. If this is not specified, the function will list all block devices.
+//
+//	"per_channel": Optional. Display per channel data for specified block device.
+func (c *Client) BdevGetIostat(name string, perChannel bool) (resp *spdktypes.BdevIostatResponse, err error) {
+	req := spdktypes.BdevIostatRequest{
+		Name:       name,
+		PerChannel: perChannel,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_get_iostat", req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &spdktypes.BdevIostatResponse{}
+	if err := json.Unmarshal(cmdOutput, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to parse bdev_get_iostat response")
+	}
+
+	return resp, nil
+}
