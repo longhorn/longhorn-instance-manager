@@ -7,7 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20250215022153-7ee3a979f2a9
+	github.com/longhorn/backupstore v0.0.0-20250227220202-651bd33886fe
 	github.com/longhorn/go-common-libs v0.0.0-20250215052214-151615b29f8e
 	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
 	github.com/longhorn/longhorn-engine v1.6.4
