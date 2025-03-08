@@ -583,6 +583,22 @@ func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum string, err 
 	return strconv.FormatUint(snapshotChecksum.Checksum, 10), nil
 }
 
+// BdevLvolStopSnapshotChecksum stop an ongoing registration of a snapshot's checksum.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolStopSnapshotChecksum(name string) (registered bool, err error) {
+	req := spdktypes.BdevLvolStopSnapshotChecksumRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_stop_snapshot_checksum", req)
+	if err != nil {
+		return false, err
+	}
+
+	return registered, json.Unmarshal(cmdOutput, &registered)
+}
+
 // BdevLvolRename renames a logical volume.
 //
 //	"oldName": Required. UUID or alias of the existing logical volume.
@@ -1312,4 +1328,28 @@ func (c *Client) BdevVirtioDetachController(name string) (deleted bool, err erro
 	}
 
 	return deleted, json.Unmarshal(cmdOutput, &deleted)
+}
+
+// BdevGetIostat get I/O statistics of block devices (bdevs).
+//
+//	"name": Optional. If this is not specified, the function will list all block devices.
+//
+//	"per_channel": Optional. Display per channel data for specified block device.
+func (c *Client) BdevGetIostat(name string, perChannel bool) (resp *spdktypes.BdevIostatResponse, err error) {
+	req := spdktypes.BdevIostatRequest{
+		Name:       name,
+		PerChannel: perChannel,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_get_iostat", req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &spdktypes.BdevIostatResponse{}
+	if err := json.Unmarshal(cmdOutput, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to parse bdev_get_iostat response")
+	}
+
+	return resp, nil
 }
