@@ -583,6 +583,22 @@ func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum string, err 
 	return strconv.FormatUint(snapshotChecksum.Checksum, 10), nil
 }
 
+// BdevLvolStopSnapshotChecksum stop an ongoing registration of a snapshot's checksum.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolStopSnapshotChecksum(name string) (registered bool, err error) {
+	req := spdktypes.BdevLvolStopSnapshotChecksumRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_stop_snapshot_checksum", req)
+	if err != nil {
+		return false, err
+	}
+
+	return registered, json.Unmarshal(cmdOutput, &registered)
+}
+
 // BdevLvolRename renames a logical volume.
 //
 //	"oldName": Required. UUID or alias of the existing logical volume.
