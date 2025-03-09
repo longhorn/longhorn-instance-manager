@@ -3,10 +3,12 @@ package types
 type BdevProductName string
 
 const (
-	BdevProductNameAio  = BdevProductName("AIO disk")
-	BdevProductNameLvol = BdevProductName("Logical Volume")
-	BdevProductNameRaid = BdevProductName("Raid Volume")
-	BdevProductNameNvme = BdevProductName("NVMe disk")
+	BdevProductNameAio        = BdevProductName("AIO disk")
+	BdevProductNameLvol       = BdevProductName("Logical Volume")
+	BdevProductNameRaid       = BdevProductName("Raid Volume")
+	BdevProductNameNvme       = BdevProductName("NVMe disk")
+	BdevProductNameVirtioBlk  = BdevProductName("VirtioBlk Disk")
+	BdevProductNameVirtioScsi = BdevProductName("Virtio SCSI Disk")
 )
 
 type BdevType string
@@ -127,13 +129,36 @@ type BdevGetBdevsRequest struct {
 	Timeout uint64 `json:"timeout,omitempty"`
 }
 
-type BdevGetBdevsResponse struct {
-	bdevs []BdevInfo
-}
-
 type BdevLvolFragmap struct {
 	ClusterSize          uint64 `json:"cluster_size"`
 	NumClusters          uint64 `json:"num_clusters"`
 	NumAllocatedClusters uint64 `json:"num_allocated_clusters"`
 	Fragmap              string `json:"fragmap"`
+}
+
+type BdevIostatRequest struct {
+	Name       string `json:"name,omitempty"`
+	PerChannel bool   `json:"per_channel,omitempty"`
+}
+
+type BdevIostatResponse struct {
+	TickRate uint64      `json:"tick_rate"`
+	Ticks    uint64      `json:"ticks"`
+	Bdevs    []BdevStats `json:"bdevs"`
+}
+
+type BdevStats struct {
+	Name              string `json:"name"`
+	BytesRead         uint64 `json:"bytes_read"`
+	NumReadOps        uint64 `json:"num_read_ops"`
+	BytesWritten      uint64 `json:"bytes_written"`
+	NumWriteOps       uint64 `json:"num_write_ops"`
+	BytesUnmapped     uint64 `json:"bytes_unmapped"`
+	NumUnmapOps       uint64 `json:"num_unmap_ops"`
+	ReadLatencyTicks  uint64 `json:"read_latency_ticks"`
+	WriteLatencyTicks uint64 `json:"write_latency_ticks"`
+	UnmapLatencyTicks uint64 `json:"unmap_latency_ticks"`
+	QueueDepth        uint64 `json:"queue_depth"`
+	IoTime            uint64 `json:"io_time"`
+	WeightedIoTime    uint64 `json:"weighted_io_time"`
 }
