@@ -1,19 +1,25 @@
 package client
 
 import (
-	"github.com/pkg/errors"
-
+	"fmt"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+	"github.com/pkg/errors"
 )
 
-func (c *ProxyClient) MetricsGet(engineName, volumeName, serviceAddress string) (metrics *Metrics, err error) {
+func (c *ProxyClient) MetricsGet(dataEngine, engineName, volumeName, serviceAddress string) (metrics *Metrics, err error) {
 	input := map[string]string{
 		"engineName":     engineName,
 		"volumeName":     volumeName,
 		"serviceAddress": serviceAddress,
+		"dataEngine":     dataEngine,
 	}
 	if err := validateProxyMethodParameters(input); err != nil {
 		return nil, errors.Wrap(err, "failed to get metrics for volume")
+	}
+
+	driver, ok := rpc.DataEngine_value[getDataEngine(dataEngine)]
+	if !ok {
+		return nil, fmt.Errorf("failed to get metrics for volume: invalid data engine %v", dataEngine)
 	}
 
 	defer func() {
@@ -24,6 +30,7 @@ func (c *ProxyClient) MetricsGet(engineName, volumeName, serviceAddress string) 
 		Address:    serviceAddress,
 		EngineName: engineName,
 		VolumeName: volumeName,
+		DataEngine: rpc.DataEngine(driver),
 	}
 	resp, err := c.service.MetricsGet(getContextWithGRPCTimeout(c.ctx), req)
 	if err != nil {
