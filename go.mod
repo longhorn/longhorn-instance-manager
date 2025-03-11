@@ -6,9 +6,9 @@ toolchain go1.23.6
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20250227220202-651bd33886fe
+	github.com/longhorn/backupstore v0.0.0-20250309153321-c0c7e23f8438
 	github.com/longhorn/go-common-libs v0.0.0-20250306071949-f040e0263527
-	github.com/longhorn/go-spdk-helper v0.0.2-0.20250305082704-6f5842bff0c5
+	github.com/longhorn/go-spdk-helper v0.0.2-0.20250311000343-683110161f9b
 	github.com/longhorn/longhorn-engine v1.9.0-dev-20241215.0.20250225130735-e63c1afeb26b
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250219061406-58e9a4c0304b
 	github.com/longhorn/types v0.0.0-20250305071124-49ee76ca0eec
