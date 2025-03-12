@@ -1,22 +1,22 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.22.7
+go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.24.1
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20250227220202-651bd33886fe
-	github.com/longhorn/go-common-libs v0.0.0-20250215052214-151615b29f8e
-	github.com/longhorn/go-spdk-helper v0.0.0-20240308030201-9b252d6f7250
+	github.com/longhorn/backupstore v0.0.0-20250309153321-c0c7e23f8438
+	github.com/longhorn/go-common-libs v0.0.0-20250312065002-72871a09bee0
+	github.com/longhorn/go-spdk-helper v0.0.2-0.20250311000343-683110161f9b
 	github.com/longhorn/longhorn-engine v1.6.4
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20241218065641-755b61f12b0e
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.16
 	golang.org/x/net v0.33.0
-	golang.org/x/sync v0.11.0
+	golang.org/x/sync v0.12.0
 	google.golang.org/grpc v1.68.1
 	google.golang.org/protobuf v1.35.2
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
@@ -56,7 +56,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003 // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
@@ -79,7 +78,7 @@ require (
 	github.com/slok/goresilience v0.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
