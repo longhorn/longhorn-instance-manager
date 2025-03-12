@@ -8,8 +8,10 @@ ARG SRC_TAG
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:utilities/SLE_15/network:utilities.repo && \
-    zypper --gpg-auto-import-keys ref
+RUN for i in {1..10}; do \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:utilities/SLE_15/network:utilities.repo && \
+        zypper --gpg-auto-import-keys ref && break || sleep 1; \
+    done
 
 RUN zypper -n install wget jq
 
@@ -45,14 +47,16 @@ ARG SRC_TAG
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.6/devel:tools:building.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
-    zypper --gpg-auto-import-keys ref
+RUN for i in {1..10}; do \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.6/devel:tools:building.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
+        zypper --gpg-auto-import-keys ref && break || sleep 1; \
+    done
 
 RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
 
@@ -96,12 +100,14 @@ ARG ARCH=amd64
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
-    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
-    zypper --gpg-auto-import-keys ref
+RUN for i in {1..10}; do \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
+        zypper --gpg-auto-import-keys ref && break || sleep 1; \
+    done
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
     iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python311-base libcmocka-devel device-mapper netcat kmod jq util-linux procps fuse3-devel awk && \
@@ -110,7 +116,9 @@ RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
 # Install SPDK dependencies
 COPY --from=cbuilder /usr/src/spdk/scripts /usr/src/spdk/scripts
 COPY --from=cbuilder /usr/src/spdk/include /usr/src/spdk/include
-RUN bash /usr/src/spdk/scripts/pkgdep.sh
+RUN for i in {1..10}; do \
+        bash /usr/src/spdk/scripts/pkgdep.sh && break || sleep 1; \
+    done
 
 # Copy pre-built binaries from cbuilder and gobuilder
 COPY --from=gobuilder \
