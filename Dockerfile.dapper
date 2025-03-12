@@ -15,8 +15,6 @@ ENV DAPPER_SOURCE /go/src/github.com/longhorn/longhorn-instance-manager
 ENV SRC_BRANCH ${SRC_BRANCH}
 ENV SRC_TAG ${SRC_TAG}
 
-ENV GOLANGCI_LINT_VERSION="v1.64.6"
-
 WORKDIR ${DAPPER_SOURCE}
 
 ENTRYPOINT ["./scripts/entry"]
@@ -39,8 +37,7 @@ RUN zypper -n install cmake wget curl git less file \
     rm -rf /var/cache/zypp/*
 
 # Install golanci-lint
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANGCI_LINT_VERSION}
-
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
 # Install libqcow to resolve error:
 #   vendor/github.com/longhorn/longhorn-engine/pkg/qcow/libqcow.go:6:11: fatal error: libqcow.h: No such file or directory
 RUN curl -sSfL https://s3-us-west-1.amazonaws.com/rancher-longhorn/libqcow-alpha-20181117.tar.gz | tar xvzf - -C /usr/src && \
