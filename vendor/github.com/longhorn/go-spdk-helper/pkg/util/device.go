@@ -36,7 +36,7 @@ type BlockDevices struct {
 }
 
 type LonghornBlockDevice struct {
-	Nvme   BlockDevice
+	Source BlockDevice
 	Export BlockDevice
 }
 
@@ -81,14 +81,14 @@ func GetKnownDevices(executor *commonns.Executor) (map[string]*LonghornBlockDevi
 		f := strings.Fields(line)
 		if len(f) == 2 {
 			dev := &LonghornBlockDevice{
-				Nvme: BlockDevice{
+				Source: BlockDevice{
 					Name: f[0],
 				},
 			}
-			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Nvme.Major, &dev.Nvme.Minor); err != nil {
-				return nil, fmt.Errorf("invalid major:minor %s for NVMe device %s", dev.Nvme.Name, f[1])
+			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Source.Major, &dev.Source.Minor); err != nil {
+				return nil, fmt.Errorf("invalid major:minor %s for NVMe device %s", dev.Source.Name, f[1])
 			}
-			knownDevices[dev.Nvme.Name] = dev
+			knownDevices[dev.Source.Name] = dev
 		}
 	}
 
@@ -219,11 +219,11 @@ func DuplicateDevice(dev *LonghornBlockDevice, dest string) error {
 	dir := filepath.Dir(dest)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			logrus.WithError(err).Fatalf("device %v: Failed to create directory for %v", dev.Nvme.Name, dest)
+			logrus.WithError(err).Fatalf("device %v: Failed to create directory for %v", dev.Source.Name, dest)
 		}
 	}
 	if err := mknod(dest, dev.Export.Major, dev.Export.Minor); err != nil {
-		return errors.Wrapf(err, "cannot create device node %s for device %s", dest, dev.Nvme.Name)
+		return errors.Wrapf(err, "cannot create device node %s for device %s", dest, dev.Source.Name)
 	}
 	if err := os.Chmod(dest, 0660); err != nil {
 		return errors.Wrapf(err, "cannot change permission of the device %s", dest)

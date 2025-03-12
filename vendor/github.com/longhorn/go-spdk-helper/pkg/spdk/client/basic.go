@@ -583,6 +583,22 @@ func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum string, err 
 	return strconv.FormatUint(snapshotChecksum.Checksum, 10), nil
 }
 
+// BdevLvolStopSnapshotChecksum stop an ongoing registration of a snapshot's checksum.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolStopSnapshotChecksum(name string) (registered bool, err error) {
+	req := spdktypes.BdevLvolStopSnapshotChecksumRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_stop_snapshot_checksum", req)
+	if err != nil {
+		return false, err
+	}
+
+	return registered, json.Unmarshal(cmdOutput, &registered)
+}
+
 // BdevLvolRename renames a logical volume.
 //
 //	"oldName": Required. UUID or alias of the existing logical volume.
@@ -1312,4 +1328,97 @@ func (c *Client) BdevVirtioDetachController(name string) (deleted bool, err erro
 	}
 
 	return deleted, json.Unmarshal(cmdOutput, &deleted)
+}
+
+// BdevGetIostat get I/O statistics of block devices (bdevs).
+//
+//	"name": Optional. If this is not specified, the function will list all block devices.
+//
+//	"per_channel": Optional. Display per channel data for specified block device.
+func (c *Client) BdevGetIostat(name string, perChannel bool) (resp *spdktypes.BdevIostatResponse, err error) {
+	req := spdktypes.BdevIostatRequest{
+		Name:       name,
+		PerChannel: perChannel,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_get_iostat", req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &spdktypes.BdevIostatResponse{}
+	if err := json.Unmarshal(cmdOutput, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to parse bdev_get_iostat response")
+	}
+
+	return resp, nil
+}
+
+func (c *Client) UblkCreateTarget(cpumask string, disableUserCopy bool) (err error) {
+	req := spdktypes.UblkCreateTargetRequest{
+		Cpumask:         cpumask,
+		DisableUserCopy: disableUserCopy,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("ublk_create_target", req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to UblkCreateTarget: %v", string(cmdOutput))
+	}
+	return nil
+}
+
+func (c *Client) UblkDestroyTarget() (err error) {
+	cmdOutput, err := c.jsonCli.SendCommand("ublk_destroy_target", struct{}{})
+	if err != nil {
+		return errors.Wrapf(err, "failed to UblkDestroyTarget: %v", string(cmdOutput))
+	}
+	return nil
+}
+
+// UblkGetDisks displays full or specified ublk device list
+func (c *Client) UblkGetDisks(ublkID int) (ublkDeviceList []spdktypes.UblkDevice, err error) {
+	req := spdktypes.UblkGetDisksRequest{
+		UblkId: ublkID,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("ublk_get_disks", req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create UblkGetDisks: %v", string(cmdOutput))
+	}
+	return ublkDeviceList, json.Unmarshal(cmdOutput, &ublkDeviceList)
+}
+
+func (c *Client) UblkStartDisk(bdevName string, ublkId, queueDepth, numQueues int) (err error) {
+	req := spdktypes.UblkStartDiskRequest{
+		BdevName:   bdevName,
+		UblkId:     ublkId,
+		QueueDepth: queueDepth,
+		NumQueues:  numQueues,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("ublk_start_disk", req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to UblkStartDisk: %v", string(cmdOutput))
+	}
+	return nil
+}
+
+func (c *Client) UblkRecoverDisk(bdevName string, ublkId int) (err error) {
+	req := spdktypes.UblkRecoverDiskRequest{
+		BdevName: bdevName,
+		UblkId:   ublkId,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("ublk_recover_disk", req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to UblkRecoverDisk: %v", string(cmdOutput))
+	}
+	return nil
+}
+
+func (c *Client) UblkStopDisk(ublkId int) (err error) {
+	req := spdktypes.UblkStopDiskRequest{
+		UblkId: ublkId,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("ublk_stop_disk", req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to UblkStopDisk: %v", string(cmdOutput))
+	}
+	return nil
 }

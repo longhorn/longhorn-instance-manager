@@ -158,11 +158,11 @@ func (b *Backup) OpenSnapshot(snapshotName, volumeName string) error {
 	b.controllerName = controllerName
 
 	b.log.Infof("Creating NVMe initiator for snapshot lvol bdev %v", lvolName)
-	initiator, err := nvme.NewInitiator(lvolName, helpertypes.GetNQN(lvolName), nvme.HostProc)
+	initiator, err := nvme.NewInitiator(false, lvolName, helpertypes.GetNQN(lvolName), nvme.HostProc)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for snapshot lvol bdev %v", lvolName)
 	}
-	if _, err := initiator.Start(b.IP, strconv.Itoa(int(b.Port)), false); err != nil {
+	if _, err := initiator.StartNvmeTcpInitiator(b.IP, strconv.Itoa(int(b.Port)), false); err != nil {
 		return errors.Wrapf(err, "failed to start NVMe initiator for snapshot lvol bdev %v", lvolName)
 	}
 	b.initiator = initiator
@@ -227,7 +227,7 @@ func (b *Backup) CloseSnapshot(snapshotName, volumeName string) error {
 	}
 
 	b.log.Info("Stopping NVMe initiator")
-	if _, err := b.initiator.Stop(true, true, true); err != nil {
+	if _, err := b.initiator.Stop(nil, true, true, true); err != nil {
 		return errors.Wrapf(err, "failed to stop NVMe initiator")
 	}
 

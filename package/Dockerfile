@@ -26,8 +26,8 @@ RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr
     fi
 
 # Build go-spdk-helper
-RUN export REPO_OVERRIDE="" && \
-    export COMMIT_ID_OVERRIDE="" && \
+RUN export REPO_OVERRIDE="https://github.com/PhanLe1010/go-spdk-helper.git" && \
+    export COMMIT_ID_OVERRIDE="22d7e5ab2b891062bad811cd79b66abea69736ee" && \
     bash /usr/src/dep-versions/scripts/build-go-spdk-helper.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Install grpc_health_probe
@@ -54,9 +54,15 @@ RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/syste
     zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
     zypper --gpg-auto-import-keys ref
 
+
+RUN zypper -n install liburing-devel
+
+#RUN modprobe ublk_drv
+
+
 RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
 
-RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
+RUN git clone https://github.com/PhanLe1010/dep-versions.git -b ublk-9456 /usr/src/dep-versions && \
     cd /usr/src/dep-versions && \
     if [ -n "${SRC_TAG}" ] && git show-ref --tags ${SRC_TAG} > /dev/null 2>&1; then \
         echo "Checking out tag ${SRC_TAG}"; \
@@ -76,6 +82,7 @@ RUN export REPO_OVERRIDE="" && \
 # Build spdk
 RUN export REPO_OVERRIDE="" && \
     export COMMIT_ID_OVERRIDE="" && \
+    cat /usr/src/dep-versions/scripts/build-spdk.sh && \
     bash /usr/src/dep-versions/scripts/build-spdk.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}" "${ARCH}"
 
 # Build libjson-c-devel
