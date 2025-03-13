@@ -2,8 +2,10 @@ package client
 
 import (
 	"fmt"
-	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+
 	"github.com/pkg/errors"
+
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
 
 func (c *ProxyClient) MetricsGet(dataEngine, engineName, volumeName, serviceAddress string) (metrics *Metrics, err error) {
