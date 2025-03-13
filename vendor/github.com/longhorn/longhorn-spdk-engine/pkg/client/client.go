@@ -1047,3 +1047,19 @@ func (c *SPDKClient) LogGetFlags() (string, error) {
 	}
 	return resp.Flags, nil
 }
+
+func (c *SPDKClient) MetricsGet(name string) (*spdkrpc.Metrics, error) {
+	if name == "" {
+		return nil, fmt.Errorf("failed to get SPDK engine metrics: missing required parameter")
+	}
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+	resp, err := client.MetricsGet(ctx, &spdkrpc.MetricsRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get SPDK engine %v metrics", name)
+	}
+	return resp, nil
+}
