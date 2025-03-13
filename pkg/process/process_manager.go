@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -22,6 +21,7 @@ import (
 	lhBitmap "github.com/longhorn/go-common-libs/bitmap"
 	lhKubernetes "github.com/longhorn/go-common-libs/kubernetes"
 	lhLonghorn "github.com/longhorn/go-common-libs/longhorn"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
