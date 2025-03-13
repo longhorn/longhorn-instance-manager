@@ -52,7 +52,6 @@ RUN for i in {1..10}; do \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.6/devel:tools:building.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
@@ -105,7 +104,6 @@ RUN for i in {1..10}; do \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
