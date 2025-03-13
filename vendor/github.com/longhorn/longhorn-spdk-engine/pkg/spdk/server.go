@@ -55,6 +55,9 @@ type Server struct {
 	broadcasters map[types.InstanceType]*broadcaster.Broadcaster
 	broadcastChs map[types.InstanceType]chan interface{}
 	updateChs    map[types.InstanceType]chan interface{}
+
+	currentBdevIostat *spdktypes.BdevIostatResponse
+	bdevMetricMap     map[string]*spdkrpc.Metrics
 }
 
 func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
@@ -336,6 +339,7 @@ func (s *Server) verify() (err error) {
 	}
 	s.replicaMap = replicaMap
 	s.backingImageMap = backingImageMap
+	s.UpdateEngineMetrics()
 	s.Unlock()
 
 	for _, r := range replicaMapForSync {
@@ -1777,4 +1781,79 @@ func (s *Server) BackingImageUnexpose(ctx context.Context, req *spdkrpc.BackingI
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to unexpose backing image %v in lvs %v", req.Name, req.LvsUuid).Error())
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) UpdateEngineMetrics() {
+	previousBdevIostat := s.currentBdevIostat
+	bdevIostat, err := s.spdkClient.BdevGetIostat("", false)
+	if err != nil {
+		logrus.WithError(err).Error("failed to get bdev iostat")
+		return
+	}
+	s.currentBdevIostat = bdevIostat
+	// If this is the first execution, there is no previous data, so exit
+	if previousBdevIostat == nil {
+		return
+	}
+	// Calculate the elapsed time in ticks
+	tickElapsed := s.currentBdevIostat.Ticks - previousBdevIostat.Ticks
+	if tickElapsed == 0 {
+		return
+	}
+	// Convert ticks to seconds
+	elapsedSeconds := float64(tickElapsed) / float64(s.currentBdevIostat.TickRate)
+
+	// Convert previous Bdev data into a map for quick lookup
+	prevBdevMap := make(map[string]spdktypes.BdevStats)
+	for _, prevBdev := range previousBdevIostat.Bdevs {
+		prevBdevMap[prevBdev.Name] = prevBdev
+	}
+
+	// Initialize a new BdevMetricMap
+	s.bdevMetricMap = make(map[string]*spdkrpc.Metrics)
+	for _, bdev := range s.currentBdevIostat.Bdevs {
+		prevBdev, exists := prevBdevMap[bdev.Name]
+		if !exists {
+			continue
+		}
+
+		// Calculate differences in operations and data
+		readOpsDiff := bdev.NumReadOps - prevBdev.NumReadOps
+		writeOpsDiff := bdev.NumWriteOps - prevBdev.NumWriteOps
+		bytesReadDiff := bdev.BytesRead - prevBdev.BytesRead
+		bytesWrittenDiff := bdev.BytesWritten - prevBdev.BytesWritten
+		readLatencyDiff := bdev.ReadLatencyTicks - prevBdev.ReadLatencyTicks
+		writeLatencyDiff := bdev.WriteLatencyTicks - prevBdev.WriteLatencyTicks
+
+		// Convert latency from ticks to nanoseconds
+		readLatency := calculateLatencyInNs(readLatencyDiff, readOpsDiff, s.currentBdevIostat.TickRate)
+		writeLatency := calculateLatencyInNs(writeLatencyDiff, writeOpsDiff, s.currentBdevIostat.TickRate)
+
+		s.bdevMetricMap[bdev.Name] = &spdkrpc.Metrics{
+			ReadIOPS:        uint64(float64(readOpsDiff) / elapsedSeconds),
+			WriteIOPS:       uint64(float64(writeOpsDiff) / elapsedSeconds),
+			ReadThroughput:  uint64(float64(bytesReadDiff) / elapsedSeconds),
+			WriteThroughput: uint64(float64(bytesWrittenDiff) / elapsedSeconds),
+			ReadLatency:     readLatency,
+			WriteLatency:    writeLatency,
+		}
+	}
+}
+
+// Converts latency from ticks to nanoseconds
+func calculateLatencyInNs(latencyTicks, opsDiff, tickRate uint64) uint64 {
+	if opsDiff == 0 {
+		return 0 // Prevent division by zero
+	}
+	return uint64((float64(latencyTicks) / float64(opsDiff)) * (1e9 / float64(tickRate)))
+}
+
+func (s *Server) MetricsGet(ctx context.Context, req *spdkrpc.MetricsRequest) (ret *spdkrpc.Metrics, err error) {
+	s.RLock()
+	defer s.RUnlock()
+	m, ok := s.bdevMetricMap[req.Name]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine metrics: %s", req.Name)
+	}
+	return m, nil
 }
