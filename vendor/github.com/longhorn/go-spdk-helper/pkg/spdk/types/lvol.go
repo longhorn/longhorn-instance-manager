@@ -42,6 +42,17 @@ type LvolInfo struct {
 	} `json:"lvs"`
 }
 
+type ShallowCopy struct {
+	OperationId uint32 `json:"operation_id"`
+}
+
+type ShallowCopyStatus struct {
+	State          string `json:"state"`
+	CopiedClusters uint64 `json:"copied_clusters"`
+	TotalClusters  uint64 `json:"total_clusters"`
+	Error          string `json:"error,omitempty"`
+}
+
 type BdevLvolCreateLvstoreRequest struct {
 	BdevName string `json:"bdev_name"`
 	LvsName  string `json:"lvs_name"`
@@ -103,13 +114,28 @@ type BdevLvolCloneRequest struct {
 	CloneName    string `json:"clone_name"`
 }
 
+type BdevLvolCloneBdevRequest struct {
+	Bdev      string `json:"bdev"`
+	LvsName   string `json:"lvs_name"`
+	CloneName string `json:"clone_name"`
+}
+
 type BdevLvolDecoupleParentRequest struct {
 	Name string `json:"name"`
 }
 
-type BdevLvolResizeRequest struct {
+type BdevLvolDetachParentRequest struct {
 	Name string `json:"name"`
-	Size uint64 `json:"size"`
+}
+
+type BdevLvolSetParentRequest struct {
+	LvolName   string `json:"lvol_name"`
+	ParentName string `json:"parent_name"`
+}
+
+type BdevLvolResizeRequest struct {
+	Name      string `json:"name"`
+	SizeInMib uint64 `json:"size_in_mib"`
 }
 
 type BdevLvolShallowCopyRequest struct {
@@ -121,6 +147,27 @@ type BdevLvolGetFragmapRequest struct {
 	Name   string `json:"name"`
 	Offset uint64 `json:"offset"`
 	Size   uint64 `json:"size"`
+}
+
+type BdevLvolRenameRequest struct {
+	OldName string `json:"old_name"`
+	NewName string `json:"new_name"`
+}
+
+type BdevLvolRegisterSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolGetSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolSnapshotChecksum struct {
+	Checksum uint64 `json:"checksum"`
+}
+
+type BdevLvolStopSnapshotChecksumRequest struct {
+	Name string `json:"name"`
 }
 
 func GetLvolAlias(lvsName, lvolName string) string {
