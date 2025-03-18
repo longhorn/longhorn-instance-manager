@@ -74,6 +74,9 @@ type Replica struct {
 	IsExposed               bool
 	SnapshotChecksumEnabled bool
 
+	// SnapshotLvolHashStatusMap map[<snapshot lvol name>]LvolHashStatus.
+	SnapshotLvolHashStatusMap sync.Map
+
 	// reconstructRequired will be set to true when stopping an errored replica
 	reconstructRequired bool
 
@@ -95,6 +98,13 @@ type Replica struct {
 	log *safelog.SafeLogger
 
 	// TODO: Record error message
+}
+
+type LvolHashStatus struct {
+	State            string
+	Error            string
+	Checksum         string
+	PreviousChecksum string
 }
 
 type RebuildingDstCache struct {
@@ -198,6 +208,8 @@ func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specS
 
 		SnapshotChecksumEnabled: true,
 
+		SnapshotLvolHashStatusMap: sync.Map{},
+
 		rebuildingDstCache: RebuildingDstCache{
 			rebuildingSnapshotMap: map[string]*api.Lvol{},
 			processedSnapshotList: []string{},
@@ -242,36 +254,6 @@ func (r *Replica) Sync(spdkClient *spdkclient.Client) (err error) {
 	bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, r.replicaLvolFilter)
 	if err != nil {
 		return err
-	}
-
-	if r.SnapshotChecksumEnabled {
-		for _, bdevLvol := range bdevLvolMap {
-			if !bdevLvol.DriverSpecific.Lvol.Snapshot {
-				continue
-			}
-			if bdevLvol.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotChecksum] != "" {
-				continue
-			}
-			parentBdevLvol := bdevLvolMap[bdevLvol.DriverSpecific.Lvol.BaseSnapshot]
-			if bdevLvol.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == "false" || (parentBdevLvol != nil && parentBdevLvol.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == "false") {
-				// Skip the checksum calculation of system created snapshot lvols during rebuilding as they may be purged later.
-				if r.isRebuilding {
-					continue
-				}
-				// Delay the checksum calculation of system created snapshot lvols a while after rebuilding as they may be purged later.
-				if !time.Now().After(r.lastRebuildingAt.Add(checksumWaitPeriodAfterRebuilding)) {
-					continue
-				}
-			}
-			// TODO: Use a goroutine pool
-			go func() {
-				logrus.Debugf("Replica %v is registering checksum for snapshot %v", r.Name, bdevLvol.Aliases[0])
-				_, err := spdkClient.BdevLvolRegisterSnapshotChecksum(bdevLvol.Aliases[0])
-				if err != nil {
-					logrus.Errorf("Replica %v failed to register checksum for snapshot %v: %v", r.Name, bdevLvol.Name, err)
-				}
-			}()
-		}
 	}
 
 	if r.State == types.InstanceStatePending {
@@ -380,7 +362,7 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 		return fmt.Errorf("replica current active snapshot lvol map length %d is not the same as the latest snapshot lvol map length %d", len(r.SnapshotLvolMap), len(newSnapshotLvolMap))
 	}
 	for snapshotLvolName := range r.SnapshotLvolMap {
-		if err := compareSvcLvols(r.SnapshotLvolMap[snapshotLvolName], newSnapshotLvolMap[snapshotLvolName], true, true); err != nil {
+		if err := r.compareSvcLvols(r.SnapshotLvolMap[snapshotLvolName], newSnapshotLvolMap[snapshotLvolName], true, true); err != nil {
 			return err
 		}
 	}
@@ -411,7 +393,7 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 			continue
 		}
 
-		if err := compareSvcLvols(svcLvol, newSvcLvol, true, svcLvol.Name != r.Name); err != nil {
+		if err := r.compareSvcLvols(svcLvol, newSvcLvol, true, svcLvol.Name != r.Name); err != nil {
 			return err
 		}
 		// Then update the actual size for the head lvol
@@ -459,7 +441,7 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 	return nil
 }
 
-func compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSize bool) error {
+func (r *Replica) compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSize bool) error {
 	if prev == nil && cur == nil {
 		return nil
 	}
@@ -487,17 +469,33 @@ func compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSize bool) error
 		logrus.Warnf("Found mismatching lvol actual size %v with recorded prev lvol actual size %v when validating lvol %s", cur.ActualSize, prev.ActualSize, prev.Name)
 	}
 
-	if prev.SnapshotChecksum == "" {
-		prev.SnapshotChecksum = cur.SnapshotChecksum
-	}
-	if cur.SnapshotChecksum == "" {
-		prev.SnapshotChecksum = ""
-	}
-	if prev.SnapshotChecksum != cur.SnapshotChecksum {
-		return fmt.Errorf("found mismatching lvol snapshot checksum %v with recorded prev lvol snapshot checksum %v when validating lvol %s", cur.SnapshotChecksum, prev.SnapshotChecksum, prev.Name)
-	}
+	r.SyncSnapshotHashStatus(cur)
+	prev.SnapshotChecksum = cur.SnapshotChecksum
 
 	return nil
+}
+
+func (r *Replica) SyncSnapshotHashStatus(snapSvcLvol *Lvol) {
+	if snapSvcLvol == nil {
+		return
+	}
+
+	var hashStatus LvolHashStatus
+	hashStatusValue, hashStatusExists := r.SnapshotLvolHashStatusMap.Load(snapSvcLvol.Name)
+	if hashStatusExists {
+		hashStatus = hashStatusValue.(LvolHashStatus)
+	}
+	if snapSvcLvol.SnapshotChecksum != "" {
+		hashStatus.State = types.ProgressStateComplete
+		hashStatus.Checksum = snapSvcLvol.SnapshotChecksum
+		hashStatus.Error = ""
+		r.SnapshotLvolHashStatusMap.Store(snapSvcLvol.Name, hashStatus)
+	} else {
+		// If the snapshot checksum calculation may be in-progress or failed, there is no need to clean up the status cache.
+		if hashStatus.State == types.ProgressStateComplete || hashStatus.State == types.ProgressStateError {
+			r.SnapshotLvolHashStatusMap.Delete(snapSvcLvol.Name)
+		}
+	}
 }
 
 func getExposedPort(subsystem *spdktypes.NvmfSubsystem) (exposedPort int32, err error) {
@@ -1123,6 +1121,8 @@ func (r *Replica) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName str
 		}
 	}()
 
+	// TODO: Stop the in-progress snapshot checksum calculation
+	r.SnapshotLvolHashStatusMap.Delete(snapSvcLvol.Name)
 	if _, err := spdkClient.BdevLvolDelete(snapSvcLvol.UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 		return nil, err
 	}
@@ -1133,6 +1133,8 @@ func (r *Replica) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName str
 		if err != nil {
 			return nil, err
 		}
+		// TODO: Stop the in-progress children snapshot checksum calculation
+		r.SnapshotLvolHashStatusMap.Delete(childSvcLvol.Name)
 		childSvcLvol.ActualSize = bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * defaultClusterSize
 		childSvcLvol.SnapshotChecksum = ""
 	}
@@ -1315,6 +1317,8 @@ func (r *Replica) SnapshotPurge(spdkClient *spdkclient.Client) (err error) {
 		if snapSvcLvol.Children[r.Name] != nil {
 			continue
 		}
+		// TODO: Stop the in-progress snapshot checksum calculation
+		r.SnapshotLvolHashStatusMap.Delete(snapSvcLvol.Name)
 		if _, err := spdkClient.BdevLvolDelete(snapSvcLvol.UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 			return err
 		}
@@ -1332,6 +1336,128 @@ func (r *Replica) SnapshotPurge(spdkClient *spdkclient.Client) (err error) {
 		updateRequired = true
 	}
 	return nil
+}
+
+// SnapshotHash asks the replica to calculate checksum for a snapshot lvol
+func (r *Replica) SnapshotHash(spdkClient *spdkclient.Client, snapshotName string, rehash bool) (err error) {
+	updateRequired := false
+
+	r.Lock()
+	defer func() {
+		r.Unlock()
+
+		if updateRequired {
+			r.UpdateCh <- nil
+		}
+	}()
+
+	defer func() {
+		if err != nil {
+			r.log.Warnf("Replica failed to register checksum for snapshot %s: %v", snapshotName, err)
+		}
+	}()
+
+	if len(r.ActiveChain) < 2 {
+		r.State = types.InstanceStateError
+		updateRequired = true
+		return fmt.Errorf("invalid chain length %d for replica snapshot purge", len(r.ActiveChain))
+	}
+
+	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
+	snapSvcLvol := r.SnapshotLvolMap[snapLvolName]
+	if snapSvcLvol == nil {
+		return fmt.Errorf("cannot find snapshot %s(%s) for replica %s snapshot hash", snapshotName, snapLvolName, r.Name)
+	}
+	if !rehash && snapSvcLvol.SnapshotChecksum != "" {
+		return nil
+	}
+
+	snapParentSvcLvol := r.SnapshotLvolMap[snapSvcLvol.Parent]
+	if !snapSvcLvol.UserCreated || (snapParentSvcLvol != nil && !snapParentSvcLvol.UserCreated) {
+		if r.isRebuilding || r.rebuildingSrcCache.dstReplicaName != "" {
+			return fmt.Errorf("cannot calculate checksum for system created snapshot %s(%s)(%s) while the replica is rebuilding", snapshotName, snapLvolName, snapSvcLvol.UUID)
+		}
+		// Delay the checksum calculation of system created snapshot lvols a while after rebuilding as they may be purged later.
+		if !time.Now().After(r.lastRebuildingAt.Add(checksumWaitPeriodAfterRebuilding)) {
+			return fmt.Errorf("cannot calculate checksum for system created snapshot %s(%s)(%s) while the replica just finished rebuilding", snapshotName, snapLvolName, snapSvcLvol.UUID)
+		}
+	}
+
+	hashStatusValue, exists := r.SnapshotLvolHashStatusMap.Load(snapLvolName)
+	hashStatus, ok := hashStatusValue.(LvolHashStatus)
+	if exists && ok {
+		if hashStatus.State == types.ProgressStateInProgress {
+			return fmt.Errorf("replica %s hashing snapshot %s(%s)(%s) is in progress", r.Name, snapshotName, snapLvolName, snapSvcLvol.UUID)
+		}
+		if hashStatus.State == types.ProgressStateError {
+			r.log.Infof("Replica %s previously failed to hash snapshot %s(%s)(%s), will restart it. previous error: %s", r.Name, snapshotName, snapLvolName, snapSvcLvol.UUID, hashStatus.Error)
+		}
+		// TODO: If we need to handle `hashStatus.State == types.ProgressStateComplete` when `snapSvcLvol.SnapshotChecksum == ""`
+	}
+
+	logrus.Debugf("Replica %v is registering checksum for snapshot %v", r.Name, snapSvcLvol.Alias)
+	hashStatus = LvolHashStatus{
+		State: types.ProgressStateInProgress,
+	}
+	if rehash {
+		hashStatus.PreviousChecksum = snapSvcLvol.SnapshotChecksum
+	}
+	r.SnapshotLvolHashStatusMap.Store(snapLvolName, hashStatus)
+
+	go func() {
+		_, err := spdkClient.BdevLvolRegisterSnapshotChecksum(snapSvcLvol.Alias)
+		if err != nil {
+			hashStatus.State = types.ProgressStateError
+			hashStatus.Error = err.Error()
+			r.SnapshotLvolHashStatusMap.Store(snapLvolName, hashStatus)
+			logrus.Errorf("Replica %v failed to register checksum for snapshot %s(%s)(%s): %v", r.Name, snapshotName, snapLvolName, snapSvcLvol.UUID, err)
+			return
+		}
+	}()
+
+	return nil
+}
+
+// SnapshotHashStatus asks the replica snapshot lvol checksum status
+func (r *Replica) SnapshotHashStatus(snapshotName string) (state, checksum, errMsg string, silentlyCorrupted bool, err error) {
+	updateRequired := false
+
+	r.Lock()
+	defer func() {
+		r.Unlock()
+
+		if updateRequired {
+			r.UpdateCh <- nil
+		}
+	}()
+
+	defer func() {
+		if err != nil && r.State != types.InstanceStateError {
+			r.State = types.InstanceStateError
+			updateRequired = true
+		}
+	}()
+
+	if len(r.ActiveChain) < 2 {
+		return "", "", "", false, fmt.Errorf("invalid chain length %d for replica snapshot purge", len(r.ActiveChain))
+	}
+
+	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
+	snapSvcLvol := r.SnapshotLvolMap[snapLvolName]
+	if snapSvcLvol == nil {
+		return "", "", "", false, fmt.Errorf("cannot find snapshot %s(%s) for replica %s snapshot hash status", snapshotName, snapLvolName, r.Name)
+	}
+	r.SyncSnapshotHashStatus(snapSvcLvol)
+
+	hashStatusValue, ok := r.SnapshotLvolHashStatusMap.Load(snapLvolName)
+	if !ok {
+		return "", "", "", false, nil
+	}
+
+	hashStatus := hashStatusValue.(LvolHashStatus)
+	// TODO: For now we will try to find a better way to detect silently corrupted snapshots rather than relying on hashStatus.PreviousChecksum.
+	//silentlyCorrupted = hashStatus.PreviousChecksum != "" && hashStatus.Checksum != "" && hashStatus.PreviousChecksum != hashStatus.Checksum
+	return hashStatus.State, hashStatus.Checksum, hashStatus.Error, silentlyCorrupted, nil
 }
 
 // RebuildingSrcStart asks the source replica to check the parent snapshot of the head and expose it as a NVMf bdev if necessary.
@@ -1509,7 +1635,7 @@ func (r *Replica) RebuildingSrcShallowCopyStart(spdkClient *spdkclient.Client, s
 				case <-timer.C:
 					r.log.Errorf("Timeout waiting for the src replica %s shallow copy %v complete before detaching the rebuilding lvol of the dst replica %s, will give up", r.Name, shallowCopyOpID, r.rebuildingSrcCache.dstReplicaName)
 					stopWaiting = true
-					break
+					break // nolint: staticcheck
 				case <-ticker.C:
 					r.Lock()
 					if r.rebuildingSrcCache.shallowCopyOpID != shallowCopyOpID || r.rebuildingSrcCache.shallowCopySnapshotName != snapshotName {
@@ -1532,7 +1658,7 @@ func (r *Replica) RebuildingSrcShallowCopyStart(spdkClient *spdkclient.Client, s
 					continuousRetryCount = 0
 					if status.State == types.ProgressStateError || status.State == types.ProgressStateComplete {
 						stopWaiting = true
-						break
+						break // nolint: staticcheck
 					}
 				}
 			}
@@ -1769,6 +1895,8 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, srcReplicaNa
 				}
 			}
 		}
+		// TODO: Stop the in-progress snapshot checksum calculation
+		r.SnapshotLvolHashStatusMap.Delete(lvol.Name)
 		if _, err := spdkClient.BdevLvolDelete(lvol.UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 			return "", err
 		}

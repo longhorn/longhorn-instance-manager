@@ -109,6 +109,7 @@ func stopSPDKTgtDaemon(timeout time.Duration, signal syscall.Signal) error {
 
 	var errs error
 	for _, process := range processes {
+		logrus.Infof("Sending signal %v to spdk_tgt %v", signal, process.Pid)
 		if err := process.Signal(signal); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to send signal %v to spdk_tgt %v", signal, process.Pid))
 		} else {
@@ -144,7 +145,11 @@ func GetFileChunkChecksum(filePath string, start, size int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if errClose := f.Close(); errClose != nil {
+			logrus.WithError(errClose).Errorf("Failed to close file %s", filePath)
+		}
+	}()
 
 	if _, err = f.Seek(start, 0); err != nil {
 		return "", err
@@ -266,7 +271,11 @@ func GetFileChecksum(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if errClose := f.Close(); errClose != nil {
+			logrus.WithError(errClose).Errorf("Failed to close file %s", filePath)
+		}
+	}()
 
 	h := sha512.New()
 	if _, err := io.Copy(h, f); err != nil {
