@@ -587,8 +587,23 @@ func (ops V1DataEngineProxyOps) SnapshotHash(ctx context.Context, req *rpc.Engin
 }
 
 func (ops V2DataEngineProxyOps) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: implement this */
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	err = c.EngineSnapshotHash(req.ProxyEngineRequest.EngineName, req.SnapshotName, req.Rehash)
+	return &emptypb.Empty{}, err
 }
 
 func (p *Proxy) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
@@ -635,6 +650,37 @@ func (ops V1DataEngineProxyOps) SnapshotHashStatus(ctx context.Context, req *rpc
 }
 
 func (ops V2DataEngineProxyOps) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
-	/* TODO: implement this */
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	recv, err := c.EngineSnapshotHashStatus(req.ProxyEngineRequest.EngineName, req.SnapshotName)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &rpc.EngineSnapshotHashStatusProxyResponse{
+		Status: map[string]*enginerpc.SnapshotHashStatusResponse{},
+	}
+	for k, v := range recv.Status {
+		resp.Status[k] = &enginerpc.SnapshotHashStatusResponse{
+			State:             v.State,
+			Checksum:          v.Checksum,
+			Error:             v.Error,
+			SilentlyCorrupted: v.SilentlyCorrupted,
+		}
+	}
+
+	return resp, nil
 }
