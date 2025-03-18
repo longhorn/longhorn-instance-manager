@@ -1875,6 +1875,9 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 			if snapshotName == "" {
 				return "", fmt.Errorf("empty snapshot name for engine %s snapshot deletion", e.Name)
 			}
+			if e.SnapshotMap[snapshotName] == nil {
+				return "", fmt.Errorf("engine %s does not contain snapshot %s during snapshot deletion", e.Name, snapshotName)
+			}
 			if replicaStatus.Mode == types.ModeWO {
 				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot %s delete", e.Name, replicaName, snapshotName)
 			}
