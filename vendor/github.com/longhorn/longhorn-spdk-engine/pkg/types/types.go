@@ -48,10 +48,6 @@ const (
 
 const (
 	BackingImagePortCount = 1
-
-	BackingImageSnapshotAttrChecksum         = "checksum"
-	BackingImageSnapshotAttrBackingImageUUID = "backing_image_uuid"
-	BackingImageSnapshotAttrPrepareState     = "backing_image_prepare_state"
 )
 
 const VolumeHead = "volume-head"
@@ -94,4 +90,11 @@ const (
 
 	// SPDKShallowCopyStateNew is the state returned from spdk_tgt. There is no underscore in the string.
 	SPDKShallowCopyStateInProgress = "in progress"
+)
+
+// Longhorn defined snapshot attributes
+const (
+	LonghornBackingImageSnapshotAttrChecksum     = "longhorn_backing_image_checksum"
+	LonghornBackingImageSnapshotAttrUUID         = "longhorn_backing_image_uuid"
+	LonghornBackingImageSnapshotAttrPrepareState = "longhorn_backing_image_prepare_state"
 )
