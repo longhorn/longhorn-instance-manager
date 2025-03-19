@@ -124,14 +124,18 @@ type BdevLvolDecoupleParentRequest struct {
 	Name string `json:"name"`
 }
 
+type BdevLvolDetachParentRequest struct {
+	Name string `json:"name"`
+}
+
 type BdevLvolSetParentRequest struct {
 	LvolName   string `json:"lvol_name"`
 	ParentName string `json:"parent_name"`
 }
 
 type BdevLvolResizeRequest struct {
-	Name string `json:"name"`
-	Size uint64 `json:"size"`
+	Name      string `json:"name"`
+	SizeInMib uint64 `json:"size_in_mib"`
 }
 
 type BdevLvolShallowCopyRequest struct {
@@ -143,6 +147,23 @@ type BdevLvolGetFragmapRequest struct {
 	Name   string `json:"name"`
 	Offset uint64 `json:"offset"`
 	Size   uint64 `json:"size"`
+}
+
+type BdevLvolRenameRequest struct {
+	OldName string `json:"old_name"`
+	NewName string `json:"new_name"`
+}
+
+type BdevLvolRegisterSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolGetSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolSnapshotChecksum struct {
+	Checksum uint64 `json:"checksum"`
 }
 
 func GetLvolAlias(lvsName, lvolName string) string {
