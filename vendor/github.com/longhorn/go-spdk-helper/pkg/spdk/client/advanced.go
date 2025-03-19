@@ -1,12 +1,14 @@
 package client
 
 import (
-	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"path/filepath"
+
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
+// AddDevice adds a device with the given device path, name, and cluster size.
 func (c *Client) AddDevice(devicePath, name string, clusterSize uint32) (bdevAioName, lvsName, lvsUUID string, err error) {
 	// Use the file name as aio name and lvs name if name is not specified.
 	if name == "" {
@@ -38,6 +40,7 @@ func (c *Client) AddDevice(devicePath, name string, clusterSize uint32) (bdevAio
 	return name, name, lvsUUID, nil
 }
 
+// DeleteDevice deletes the device with the given bdevAioName and lvsName.
 func (c *Client) DeleteDevice(bdevAioName, lvsName string) (err error) {
 	if _, err := c.BdevLvolDeleteLvstore(lvsName, ""); err != nil {
 		return err
@@ -50,7 +53,8 @@ func (c *Client) DeleteDevice(bdevAioName, lvsName string) (err error) {
 	return nil
 }
 
-func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
+// StartExposeBdev exposes the bdev with the given nqn, bdevName, nguid, ip, and port.
+func (c *Client) StartExposeBdev(nqn, bdevName, nguid, ip, port string) error {
 	nvmfTransportList, err := c.NvmfGetTransports("", "")
 	if err != nil {
 		return err
@@ -65,7 +69,7 @@ func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
 		return err
 	}
 
-	if _, err := c.NvmfSubsystemAddNs(nqn, bdevName); err != nil {
+	if _, err := c.NvmfSubsystemAddNs(nqn, bdevName, nguid); err != nil {
 		return err
 	}
 
@@ -76,8 +80,10 @@ func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
 	return nil
 }
 
+// StopExposeBdev stops exposing the bdev with the given nqn.
 func (c *Client) StopExposeBdev(nqn string) error {
 	var subsystem *spdktypes.NvmfSubsystem
+
 	subsystemList, err := c.NvmfGetSubsystems("", "")
 	if err != nil {
 		return err
