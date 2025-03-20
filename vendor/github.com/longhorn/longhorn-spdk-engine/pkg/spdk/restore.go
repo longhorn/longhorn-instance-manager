@@ -138,7 +138,7 @@ func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 	r.log.Infof("Exposed snapshot lvol bdev %v, subsystemNQN=%v, controllerName %v", lvolName, subsystemNQN, controllerName)
 
 	r.log.Info("Creating NVMe initiator for lvol bdev")
-	initiator, err := nvme.NewInitiator(false, lvolName, helpertypes.GetNQN(lvolName), nvme.HostProc)
+	initiator, err := nvme.NewInitiator(false, lvolName, "", helpertypes.GetNQN(lvolName), nvme.HostProc)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create NVMe initiator for lvol bdev %v", lvolName)
 	}

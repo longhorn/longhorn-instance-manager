@@ -545,7 +545,7 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	bi.Unlock()
 	bi.log.Infof("Exposed head lvol %v, subsystemNQN %v, controllerName %v", backingImageTempHeadName, subsystemNQN, controllerName)
 
-	headInitiator, err := nvme.NewInitiator(false, backingImageTempHeadName, helpertypes.GetNQN(backingImageTempHeadName), nvme.HostProc)
+	headInitiator, err := nvme.NewInitiator(false, backingImageTempHeadName, "", helpertypes.GetNQN(backingImageTempHeadName), nvme.HostProc)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for head lvol %v", backingImageTempHeadName)
 	}
@@ -706,7 +706,7 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 	}
 
 	bi.log.Info("Creating NVMe initiator for source backing image %v", bi.Name)
-	initiator, err := nvme.NewInitiator(false, externalSnapshotLvolName, helpertypes.GetNQN(externalSnapshotLvolName), nvme.HostProc)
+	initiator, err := nvme.NewInitiator(false, externalSnapshotLvolName, "", helpertypes.GetNQN(externalSnapshotLvolName), nvme.HostProc)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}

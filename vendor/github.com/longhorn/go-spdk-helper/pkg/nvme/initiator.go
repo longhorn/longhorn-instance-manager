@@ -2,8 +2,6 @@ package nvme
 
 import (
 	"fmt"
-	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
-	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,6 +14,8 @@ import (
 	commonns "github.com/longhorn/go-common-libs/ns"
 	commontypes "github.com/longhorn/go-common-libs/types"
 
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
@@ -27,7 +27,11 @@ const (
 	HostProc = "/host/proc"
 
 	validateDiskCreationTimeout = 30 // seconds
-	UnInitializedUblkId         = -1
+
+	UnInitializedUblkId      = -1
+	MaxUblkId                = 65535
+	DefaultUblkQueueDepth    = 128
+	DefaultUblkNumberOfQueue = 1
 )
 
 const (
@@ -36,6 +40,11 @@ const (
 
 	maxWaitDeviceRetries = 60
 	waitDeviceInterval   = 1 * time.Second
+)
+
+var (
+	iDGenerator         IDGenerator
+	isUblkTargetCreated = false
 )
 
 type Initiator struct {
@@ -68,7 +77,7 @@ type UblkInfo struct {
 }
 
 // NewInitiator creates a new NVMe-oF initiator
-func NewInitiator(isUblkFrontend bool, name, subsystemNQN, hostProc string) (*Initiator, error) {
+func NewInitiator(isUblkFrontend bool, name, bdevName, subsystemNQN, hostProc string) (*Initiator, error) {
 	if name == "" {
 		return nil, fmt.Errorf("empty name for initiator creation")
 	}
@@ -84,7 +93,8 @@ func NewInitiator(isUblkFrontend bool, name, subsystemNQN, hostProc string) (*In
 		}
 	} else {
 		ublkInfo = &UblkInfo{
-			UblkID: UnInitializedUblkId,
+			BdevName: bdevName,
+			UblkID:   UnInitializedUblkId,
 		}
 	}
 	// If transportAddress or transportServiceID is empty, the initiator is still valid for stopping
@@ -264,21 +274,21 @@ func (i *Initiator) resumeLinearDmDevice() error {
 func (i *Initiator) replaceDmDeviceTarget() error {
 	suspended, err := i.IsSuspended()
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if linear dm device is suspended for NVMe-oF initiator %s", i.Name)
+		return errors.Wrapf(err, "failed to check if linear dm device is suspended for initiator %s", i.Name)
 	}
 
 	if !suspended {
 		if err := i.suspendLinearDmDevice(true, false); err != nil {
-			return errors.Wrapf(err, "failed to suspend linear dm device for NVMe-oF initiator %s", i.Name)
+			return errors.Wrapf(err, "failed to suspend linear dm device for initiator %s", i.Name)
 		}
 	}
 
 	if err := i.reloadLinearDmDevice(); err != nil {
-		return errors.Wrapf(err, "failed to reload linear dm device for NVMe-oF initiator %s", i.Name)
+		return errors.Wrapf(err, "failed to reload linear dm device for initiator %s", i.Name)
 	}
 
 	if err := i.resumeLinearDmDevice(); err != nil {
-		return errors.Wrapf(err, "failed to resume linear dm device for NVMe-oF initiator %s", i.Name)
+		return errors.Wrapf(err, "failed to resume linear dm device for initiator %s", i.Name)
 	}
 	return nil
 }
@@ -402,14 +412,20 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 		defer lock.Unlock()
 	}
 
+	if !isUblkTargetCreated {
+		if err := spdkClient.UblkCreateTarget("", true); err != nil {
+			return false, err
+		}
+		isUblkTargetCreated = true
+	}
+
 	ublkDeviceList, err := spdkClient.UblkGetDisks(0)
 	if err != nil {
 		return false, err
 	}
-
 	for _, ublkDevice := range ublkDeviceList {
 		if ublkDevice.BdevName == i.UblkInfo.BdevName {
-			if err := spdkClient.UblkStopDisk(ublkDevice.ID); err != nil {
+			if err := spdkClient.UblkStopDisk(ublkDevice.ID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 				return false, err
 			}
 		}
@@ -419,18 +435,14 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 	if err != nil {
 		return false, err
 	}
-	avaibleUblkID := 1
-	for _, ublkDevice := range ublkDeviceList {
-		if ublkDevice.ID >= avaibleUblkID {
-			avaibleUblkID = ublkDevice.ID + 1
-		}
-	}
-
-	if err := spdkClient.UblkStartDisk(i.UblkInfo.BdevName, avaibleUblkID, 128, 1); err != nil {
+	availableUblkID, err := iDGenerator.GetAvailableID(ublkDeviceList)
+	if err != nil {
 		return false, err
 	}
-
-	i.UblkInfo.UblkID = avaibleUblkID
+	if err := spdkClient.UblkStartDisk(i.UblkInfo.BdevName, availableUblkID, DefaultUblkQueueDepth, DefaultUblkNumberOfQueue); err != nil {
+		return false, err
+	}
+	i.UblkInfo.UblkID = availableUblkID
 
 	ublkDeviceList, err = spdkClient.UblkGetDisks(i.UblkInfo.UblkID)
 	if err != nil {
@@ -455,11 +467,10 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 		Source: *dev,
 	}
 
-	// TODO: implement stop before launcing
-	//i.logger.Info("Stopping ublk initiator blindly before starting")
+	i.logger.Info("Stopping ublk initiator blindly before starting")
 	dmDeviceIsBusy, err = i.stopWithoutLock(spdkClient, dmDeviceAndEndpointCleanupRequired, false, false)
 	if err != nil {
-		return dmDeviceIsBusy, errors.Wrapf(err, "failed to stop the mismatching NVMe-oF initiator %s before starting", i.Name)
+		return dmDeviceIsBusy, errors.Wrapf(err, "failed to stop the ublk initiator %s before starting", i.Name)
 	}
 	i.logger.Info("Launching ublk initiator")
 	if dmDeviceAndEndpointCleanupRequired {
@@ -486,10 +497,10 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 	i.logger.Infof("Creating endpoint %v", i.Endpoint)
 	exist, err := i.isEndpointExist()
 	if err != nil {
-		return dmDeviceIsBusy, errors.Wrapf(err, "failed to check if endpoint %v exists for NVMe-oF initiator %s", i.Endpoint, i.Name)
+		return dmDeviceIsBusy, errors.Wrapf(err, "failed to check if endpoint %v exists for ublk initiator %s", i.Endpoint, i.Name)
 	}
 	if exist {
-		i.logger.Infof("Skipping endpoint %v creation for NVMe-oF initiator", i.Endpoint)
+		i.logger.Infof("Skipping endpoint %v creation for ublk initiator", i.Endpoint)
 	} else {
 		if err := i.makeEndpoint(); err != nil {
 			return dmDeviceIsBusy, err

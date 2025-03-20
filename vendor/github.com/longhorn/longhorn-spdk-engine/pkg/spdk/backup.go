@@ -158,7 +158,7 @@ func (b *Backup) OpenSnapshot(snapshotName, volumeName string) error {
 	b.controllerName = controllerName
 
 	b.log.Infof("Creating NVMe initiator for snapshot lvol bdev %v", lvolName)
-	initiator, err := nvme.NewInitiator(false, lvolName, helpertypes.GetNQN(lvolName), nvme.HostProc)
+	initiator, err := nvme.NewInitiator(false, lvolName, "", helpertypes.GetNQN(lvolName), nvme.HostProc)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for snapshot lvol bdev %v", lvolName)
 	}
