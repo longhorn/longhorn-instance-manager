@@ -57,6 +57,8 @@ RUN for i in {1..10}; do \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
+
+RUN zypper -n install liburing-devel
 RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
 
 RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
@@ -79,6 +81,7 @@ RUN export REPO_OVERRIDE="" && \
 # Build spdk
 RUN export REPO_OVERRIDE="" && \
     export COMMIT_ID_OVERRIDE="" && \
+    cat /usr/src/dep-versions/scripts/build-spdk.sh && \
     bash /usr/src/dep-versions/scripts/build-spdk.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}" "${ARCH}"
 
 # Build libjson-c-devel

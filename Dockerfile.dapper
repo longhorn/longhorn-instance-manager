@@ -31,7 +31,7 @@ RUN for i in {1..10}; do \
     done
 
 # Install packages
-RUN zypper -n install cmake wget curl git less file \
+RUN zypper --no-gpg-checks -n install cmake wget curl git less file \
     libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
     psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
     bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
