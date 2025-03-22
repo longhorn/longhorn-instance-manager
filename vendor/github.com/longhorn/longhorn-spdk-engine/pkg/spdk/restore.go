@@ -138,11 +138,11 @@ func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 	r.log.Infof("Exposed snapshot lvol bdev %v, subsystemNQN=%v, controllerName %v", lvolName, subsystemNQN, controllerName)
 
 	r.log.Info("Creating NVMe initiator for lvol bdev")
-	initiator, err := nvme.NewInitiator(lvolName, helpertypes.GetNQN(lvolName), nvme.HostProc)
+	initiator, err := nvme.NewInitiator(false, lvolName, "", helpertypes.GetNQN(lvolName), nvme.HostProc)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create NVMe initiator for lvol bdev %v", lvolName)
 	}
-	if _, err := initiator.Start(r.ip, strconv.Itoa(int(r.port)), true); err != nil {
+	if _, err := initiator.StartNvmeTcpInitiator(r.ip, strconv.Itoa(int(r.port)), true); err != nil {
 		return nil, "", errors.Wrapf(err, "failed to start NVMe initiator for lvol bdev %v", lvolName)
 	}
 	r.initiator = initiator
@@ -163,7 +163,7 @@ func (r *Restore) CloseVolumeDev(volDev *os.File) error {
 	}
 
 	r.log.Info("Stopping NVMe initiator")
-	if _, err := r.initiator.Stop(true, true, false); err != nil {
+	if _, err := r.initiator.Stop(nil, true, true, false); err != nil {
 		return errors.Wrapf(err, "failed to stop NVMe initiator")
 	}
 
