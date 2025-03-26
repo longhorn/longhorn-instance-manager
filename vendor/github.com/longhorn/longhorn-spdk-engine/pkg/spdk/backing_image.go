@@ -259,7 +259,7 @@ func (bi *BackingImage) ValidateAndUpdate(spdkClient *spdkclient.Client) (err er
 	}
 	snapSvcLvol := BdevLvolInfoToServiceLvol(&bdevLvolList[0])
 	bi.Snapshot = snapSvcLvol
-	state, err := GetSnapXattr(spdkClient, bi.Alias, types.BackingImageSnapshotAttrPrepareState)
+	state, err := GetSnapXattr(spdkClient, bi.Alias, types.LonghornBackingImageSnapshotAttrPrepareState)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get the prepare state for backing image snapshot %v", bi.Name)
 	}
@@ -612,17 +612,17 @@ func (bi *BackingImage) createSnapshotFromTempHead(spdkClient *spdkclient.Client
 
 	var xattrs []spdkclient.Xattr
 	checksum := spdkclient.Xattr{
-		Name:  types.BackingImageSnapshotAttrChecksum,
+		Name:  types.LonghornBackingImageSnapshotAttrChecksum,
 		Value: bi.ExpectedChecksum,
 	}
 	xattrs = append(xattrs, checksum)
 	backingImageUUID := spdkclient.Xattr{
-		Name:  types.BackingImageSnapshotAttrBackingImageUUID,
+		Name:  types.LonghornBackingImageSnapshotAttrUUID,
 		Value: bi.BackingImageUUID,
 	}
 	xattrs = append(xattrs, backingImageUUID)
 	prepareState := spdkclient.Xattr{
-		Name:  types.BackingImageSnapshotAttrPrepareState,
+		Name:  types.LonghornBackingImageSnapshotAttrPrepareState,
 		Value: string(bi.State),
 	}
 	xattrs = append(xattrs, prepareState)

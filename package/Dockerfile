@@ -29,7 +29,7 @@ RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr
 
 # Build go-spdk-helper
 RUN export REPO_OVERRIDE="https://github.com/PhanLe1010/go-spdk-helper.git" && \
-    export COMMIT_ID_OVERRIDE="22d7e5ab2b891062bad811cd79b66abea69736ee" && \
+    export COMMIT_ID_OVERRIDE="a5daa80b90207d20a4d17fb6894657b599bc6907" && \
     bash /usr/src/dep-versions/scripts/build-go-spdk-helper.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Install grpc_health_probe

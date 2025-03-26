@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20250315040513-2fb98aebc16a
 	github.com/longhorn/go-common-libs v0.0.0-20250312065002-72871a09bee0
-	github.com/longhorn/go-spdk-helper v0.0.2-0.20250313071458-3dd5863e9249
+	github.com/longhorn/go-spdk-helper v0.0.2-0.20250317050445-36b195dfc91f
 	github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250307042641-6bced35f0eac
 	github.com/longhorn/types v0.0.0-20250311092239-23a07a51e0ba
@@ -98,7 +98,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.31.3 // indirect
-	k8s.io/apimachinery v0.32.2 // indirect
+	k8s.io/apimachinery v0.32.3 // indirect
 	k8s.io/client-go v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect

@@ -431,6 +431,14 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 		}
 	}
 
+	i.logger.Info("Stopping ublk initiator blindly before starting")
+	dmDeviceIsBusy, err = i.stopWithoutLock(spdkClient, dmDeviceAndEndpointCleanupRequired, false, false)
+	if err != nil {
+		return dmDeviceIsBusy, errors.Wrapf(err, "failed to stop the ublk initiator %s before starting", i.Name)
+	}
+
+	i.logger.Info("Launching ublk initiator")
+
 	ublkDeviceList, err = spdkClient.UblkGetDisks(0)
 	if err != nil {
 		return false, err
@@ -467,12 +475,6 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 		Source: *dev,
 	}
 
-	i.logger.Info("Stopping ublk initiator blindly before starting")
-	dmDeviceIsBusy, err = i.stopWithoutLock(spdkClient, dmDeviceAndEndpointCleanupRequired, false, false)
-	if err != nil {
-		return dmDeviceIsBusy, errors.Wrapf(err, "failed to stop the ublk initiator %s before starting", i.Name)
-	}
-	i.logger.Info("Launching ublk initiator")
 	if dmDeviceAndEndpointCleanupRequired {
 		if dmDeviceIsBusy {
 			// Endpoint is already created, just replace the target device
@@ -606,6 +608,9 @@ func (i *Initiator) stopWithoutLock(spdkClient *client.Client, dmDeviceAndEndpoi
 	// stopping ublk initiator
 	if spdkClient == nil || i.UblkInfo == nil {
 		return dmDeviceIsBusy, fmt.Errorf("failed to stop ublk initiator because spdkClient or UblkInfo is nil: spdkClient: %v, UblkInfo: %v", spdkClient, i.UblkInfo)
+	}
+	if i.UblkInfo.UblkID == UnInitializedUblkId {
+		return dmDeviceIsBusy, nil
 	}
 	if err := spdkClient.UblkStopDisk(i.UblkInfo.UblkID); err != nil {
 		if jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
