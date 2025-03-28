@@ -45,7 +45,11 @@ func version(c *cli.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize client")
 		}
-		defer cli.Close()
+		defer func() {
+			if closeErr := cli.Close(); closeErr != nil {
+				logrus.WithError(closeErr).Warn("Failed to close client")
+			}
+		}()
 
 		version, err := cli.VersionGet()
 		if err != nil {
