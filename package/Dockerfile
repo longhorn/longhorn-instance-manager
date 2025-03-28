@@ -140,6 +140,10 @@ COPY --from=cbuilder \
    /usr/local/lib64 \
    /usr/local/lib64
 
+COPY --from=cbuilder \
+   /usr/lib64 \
+   /usr/lib64
+
 RUN ldconfig
 
 COPY bin/longhorn-instance-manager /usr/local/bin/
