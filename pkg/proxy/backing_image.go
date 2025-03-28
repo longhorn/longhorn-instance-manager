@@ -92,7 +92,9 @@ func (p *Proxy) SPDKBackingImageWatch(req *emptypb.Empty, srv rpc.ProxyEngineSer
 		<-done
 		logrus.Info("Stopped clients for watching SPDK backing image")
 		if spdkClient != nil {
-			spdkClient.Close()
+			if closeErr := spdkClient.Close(); closeErr != nil {
+				logrus.WithError(closeErr).Warn("Failed to close SPDK client")
+			}
 		}
 		close(done)
 	}()
