@@ -291,12 +291,12 @@ func (s *Server) verify() (err error) {
 			}
 			size := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
 			alias := bdevLvol.Aliases[0]
-			expectedChecksum, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrChecksum)
+			expectedChecksum, err := GetSnapXattr(spdkClient, alias, types.LonghornBackingImageSnapshotAttrChecksum)
 			if err != nil {
 				logrus.WithError(err).Warnf("failed to retrieve checksum attribute for backing image snapshot %v", alias)
 				continue
 			}
-			backingImageUUID, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrBackingImageUUID)
+			backingImageUUID, err := GetSnapXattr(spdkClient, alias, types.LonghornBackingImageSnapshotAttrUUID)
 			if err != nil {
 				logrus.WithError(err).Warnf("failed to retrieve backing image UUID attribute for snapshot %v", alias)
 				continue
