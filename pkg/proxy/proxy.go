@@ -108,7 +108,11 @@ func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineReques
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	recv, err := c.VersionDetailGet()
 	if err != nil {

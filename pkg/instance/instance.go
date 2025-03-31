@@ -133,7 +133,17 @@ func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
-	defer pmClient.Close()
+
+	defer func() {
+		if closeErr := pmClient.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":            req.Spec.Name,
+				"type":            req.Spec.Type,
+				"dataEngine":      req.Spec.DataEngine,
+				"upgradeRequired": req.Spec.UpgradeRequired,
+			}).WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	process, err := pmClient.ProcessCreate(req.Spec.Name, req.Spec.ProcessInstanceSpec.Binary, int(req.Spec.PortCount), req.Spec.ProcessInstanceSpec.Args, req.Spec.PortArgs)
 	if err != nil {
@@ -147,7 +157,16 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":            req.Spec.Name,
+				"type":            req.Spec.Type,
+				"dataEngine":      req.Spec.DataEngine,
+				"upgradeRequired": req.Spec.UpgradeRequired,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
@@ -191,7 +210,17 @@ func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
-	defer pmClient.Close()
+	defer func() {
+		if closeErr := pmClient.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":            req.Name,
+				"type":            req.Type,
+				"dataEngine":      req.DataEngine,
+				"diskUuid":        req.DiskUuid,
+				"cleanupRequired": req.CleanupRequired,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	process, err := pmClient.ProcessDelete(req.Name)
 	if err != nil {
@@ -205,7 +234,17 @@ func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":            req.Name,
+				"type":            req.Type,
+				"dataEngine":      req.DataEngine,
+				"diskUuid":        req.DiskUuid,
+				"cleanupRequired": req.CleanupRequired,
+			}).WithError(closeErr).Warn("Failed to close SPDK Client")
+		}
+	}()
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
@@ -253,7 +292,15 @@ func (ops V1DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
-	defer pmClient.Close()
+	defer func() {
+		if closeErr := pmClient.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":       req.Name,
+				"type":       req.Type,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to ProcessManager client")
+		}
+	}()
 
 	process, err := pmClient.ProcessGet(req.Name)
 	if err != nil {
@@ -267,7 +314,15 @@ func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":       req.Name,
+				"type":       req.Type,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
@@ -316,7 +371,11 @@ func (ops V1DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
-	defer pmClient.Close()
+	defer func() {
+		if closeErr := pmClient.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	processes, err := pmClient.ProcessList()
 	if err != nil {
@@ -337,7 +396,11 @@ func (ops V2DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	replicas, err := c.ReplicaList()
 	if err != nil {
@@ -382,7 +445,15 @@ func (ops V1DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceReque
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
-	defer pmClient.Close()
+	defer func() {
+		if closeErr := pmClient.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":       req.Spec.Name,
+				"type":       req.Spec.Type,
+				"dataEngine": req.Spec.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	process, err := pmClient.ProcessReplace(req.Spec.Name,
 		req.Spec.ProcessInstanceSpec.Binary, int(req.Spec.PortCount), req.Spec.ProcessInstanceSpec.Args, req.Spec.PortArgs, req.TerminateSignal)
@@ -418,7 +489,15 @@ func (ops V1DataEngineInstanceOps) InstanceLog(req *rpc.InstanceLogRequest, srv 
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
-	defer pmClient.Close()
+	defer func() {
+		if closeErr := pmClient.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":       req.Name,
+				"type":       req.Type,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	stream, err := pmClient.ProcessLog(context.Background(), req.Name)
 	if err != nil {
@@ -473,9 +552,13 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 		for name, c := range clients {
 			switch c := c.(type) {
 			case *client.ProcessManagerClient:
-				c.Close()
+				if closeErr := c.Close(); closeErr != nil {
+					logrus.WithError(closeErr).Warn("Failed to close ProcessManager client")
+				}
 			case *spdkclient.SPDKClient:
-				c.Close()
+				if closeErr := c.Close(); closeErr != nil {
+					logrus.WithError(closeErr).Warn("Failed to close SPDK client")
+				}
 			}
 			delete(clients, name)
 		}
@@ -756,7 +839,15 @@ func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendReque
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":       req.Name,
+				"type":       req.Type,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
@@ -795,7 +886,15 @@ func (ops V2DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":       req.Name,
+				"type":       req.Type,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
@@ -835,7 +934,16 @@ func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":          req.Name,
+				"type":          req.Type,
+				"dataEngine":    req.DataEngine,
+				"targetAddress": req.TargetAddress,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
@@ -874,7 +982,15 @@ func (ops V2DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteT
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"name":       req.Name,
+				"type":       req.Type,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
