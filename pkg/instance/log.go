@@ -6,12 +6,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
-	grpccodes "google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -60,7 +61,11 @@ func (ops V2DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.Log
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	err = c.LogSetLevel(spdkLevel)
 	if err != nil {
@@ -88,7 +93,11 @@ func (ops V2DataEngineInstanceOps) LogSetFlags(ctx context.Context, req *rpc.Log
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	err = c.LogSetFlags(req.Flags)
 	if err != nil {
@@ -135,7 +144,11 @@ func (ops V2DataEngineInstanceOps) LogGetFlags(ctx context.Context, req *rpc.Log
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	flags, err := c.LogGetFlags()
 	if err != nil {

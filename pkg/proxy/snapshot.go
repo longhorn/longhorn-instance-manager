@@ -6,15 +6,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/longhorn/types/pkg/generated/enginerpc"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
-	"github.com/longhorn/longhorn-instance-manager/pkg/util"
-	"github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+
+	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
 
 func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
@@ -39,7 +42,16 @@ func (ops V1DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	recv, err := c.VolumeSnapshot(req.SnapshotVolume.Name, req.SnapshotVolume.Labels, req.SnapshotVolume.FreezeFilesystem)
 	if err != nil {
@@ -58,7 +70,16 @@ func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	snapshotName := req.SnapshotVolume.Name
 	if snapshotName == "" {
@@ -97,7 +118,16 @@ func (ops V1DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	recv, err := c.ReplicaList()
 	if err != nil {
@@ -133,7 +163,16 @@ func (ops V2DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	engine, err := c.EngineGet(req.EngineName)
 	if err != nil {
@@ -187,18 +226,33 @@ func (p *Proxy) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneR
 }
 
 func (ops V1DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
+	})
+
 	cFrom, err := eclient.NewControllerClient(req.FromEngineAddress, req.FromVolumeName, req.FromEngineName)
 	if err != nil {
 		return nil, err
 	}
-	defer cFrom.Close()
+	defer func() {
+		if closeErr := cFrom.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	cTo, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
-	defer cTo.Close()
+	defer func() {
+		if closeErr := cTo.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	err = esync.CloneSnapshot(cTo, cFrom, req.ProxyEngineRequest.VolumeName, req.FromVolumeName, req.SnapshotName,
 		req.ExportBackingImageIfExist, int(req.FileSyncHttpClientTimeout), req.GrpcTimeoutSeconds)
@@ -234,7 +288,16 @@ func (ops V1DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	recv, err := esync.CloneStatus(c, req.VolumeName)
 	if err != nil {
@@ -287,7 +350,16 @@ func (ops V1DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.Eng
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	if err := c.VolumeRevert(req.Name); err != nil {
 		return nil, err
@@ -301,7 +373,16 @@ func (ops V2DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.Eng
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	err = c.EngineSnapshotRevert(req.ProxyEngineRequest.EngineName, req.Name)
 	if err != nil {
@@ -346,7 +427,16 @@ func (ops V2DataEngineProxyOps) SnapshotPurge(ctx context.Context, req *rpc.Engi
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	// For v2 Data Engine, snapshot purge is no longer a time-consuming operation
 	err = c.EngineSnapshotPurge(req.ProxyEngineRequest.EngineName)
@@ -443,7 +533,16 @@ func (ops V2DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.Eng
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	var lastErr error
 	for _, name := range req.Names {

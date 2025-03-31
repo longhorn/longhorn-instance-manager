@@ -57,9 +57,13 @@ func createProcess(c *cli.Context) error {
 
 	cli, err := getProcessManagerClient(c, ctx, cancel)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize client")
+		return errors.Wrap(err, "failed to initialize ProcessManager client")
 	}
-	defer cli.Close()
+	defer func() {
+		if closeErr := cli.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	process, err := cli.ProcessCreate(c.String("name"), c.String("binary"),
 		c.Int("port-count"), c.Args(), c.StringSlice("port-args"))
@@ -91,9 +95,13 @@ func deleteProcess(c *cli.Context) error {
 
 	cli, err := getProcessManagerClient(c, ctx, cancel)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize client")
+		return errors.Wrap(err, "failed to initialize ProcessManager client")
 	}
-	defer cli.Close()
+	defer func() {
+		if closeErr := cli.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	process, err := cli.ProcessDelete(c.String("name"))
 	if err != nil {
@@ -123,9 +131,13 @@ func getProcess(c *cli.Context) error {
 	defer cancel()
 	cli, err := getProcessManagerClient(c, ctx, cancel)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize client")
+		return errors.Wrap(err, "failed to initialize ProcessManager client")
 	}
-	defer cli.Close()
+	defer func() {
+		if closeErr := cli.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	process, err := cli.ProcessGet(c.String("name"))
 	if err != nil {
@@ -151,9 +163,13 @@ func listProcess(c *cli.Context) error {
 	defer cancel()
 	cli, err := getProcessManagerClient(c, ctx, cancel)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize client")
+		return errors.Wrap(err, "failed to initialize ProcessManager client")
 	}
-	defer cli.Close()
+	defer func() {
+		if closeErr := cli.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	processes, err := cli.ProcessList()
 	if err != nil {
@@ -198,9 +214,13 @@ func replaceProcess(c *cli.Context) error {
 	defer cancel()
 	cli, err := getProcessManagerClient(c, ctx, cancel)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize client")
+		return errors.Wrap(err, "failed to initialize ProcessManager client")
 	}
-	defer cli.Close()
+	defer func() {
+		if closeErr := cli.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close ProcessManager client")
+		}
+	}()
 
 	process, err := cli.ProcessReplace(c.String("name"), c.String("binary"),
 		c.Int("port-count"), c.Args(), c.StringSlice("port-args"), c.String("terminate-signal"))
@@ -223,7 +243,7 @@ func getProcessManagerClient(c *cli.Context, ctx context.Context, ctxCancel cont
 		if err == nil {
 			return imClient, err
 		}
-		logrus.WithError(err).Info("Falling back to non tls client")
+		logrus.WithError(err).Info("Falling back to non tls ProcessManager client")
 	}
 
 	return client.NewProcessManagerClient(ctx, ctxCancel, url, nil)
