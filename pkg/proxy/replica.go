@@ -7,15 +7,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/longhorn/types/pkg/generated/enginerpc"
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
-	"github.com/longhorn/types/pkg/generated/enginerpc"
+
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
@@ -75,7 +78,22 @@ func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL":     req.ProxyEngineRequest.Address,
+				"engineName":     req.ProxyEngineRequest.EngineName,
+				"volumeName":     req.ProxyEngineRequest.VolumeName,
+				"replicaName":    req.ReplicaName,
+				"replicaAddress": req.ReplicaAddress,
+				"restore":        req.Restore,
+				"size":           req.Size,
+				"currentSize":    req.CurrentSize,
+				"fastSync":       req.FastSync,
+				"localSync":      req.LocalSync,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	replicaAddress := strings.TrimPrefix(req.ReplicaAddress, "tcp://")
 
@@ -107,7 +125,16 @@ func (ops V1DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyE
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	recv, err := c.ReplicaList()
 	if err != nil {
@@ -149,7 +176,16 @@ func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyE
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	recv, err := c.EngineGet(req.EngineName)
 	if err != nil {
@@ -222,11 +258,22 @@ func (ops V1DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 }
 
 func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildStatusProxyResponse, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.Address,
+		"engineName": req.EngineName,
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
+	})
+
 	engineCli, err := getSPDKClientFromAddress(req.Address)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
-	defer engineCli.Close()
+	defer func() {
+		if closeErr := engineCli.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	e, err := engineCli.EngineGet(req.EngineName)
 	if err != nil {
@@ -250,7 +297,11 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 		if err != nil {
 			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from replica address %v: %v", replicaAddress, err)
 		}
-		defer replicaCli.Close()
+		defer func() {
+			if closeErr := replicaCli.Close(); closeErr != nil {
+				log.WithError(closeErr).Warn("Failed to close SPDK client")
+			}
+		}()
 
 		shallowCopyResp, err := replicaCli.ReplicaRebuildingDstShallowCopyCheck(replicaName)
 		if err != nil {
@@ -327,7 +378,17 @@ func (ops V1DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.Engi
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL":     req.ProxyEngineRequest.Address,
+				"engineName":     req.ProxyEngineRequest.EngineName,
+				"volumeName":     req.ProxyEngineRequest.VolumeName,
+				"replicaName":    req.ReplicaName,
+				"replicaAddress": req.ReplicaAddress,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	return nil, c.ReplicaDelete(req.ReplicaAddress)
 }
@@ -337,7 +398,17 @@ func (ops V2DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.Engi
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL":     req.ProxyEngineRequest.Address,
+				"engineName":     req.ProxyEngineRequest.EngineName,
+				"volumeName":     req.ProxyEngineRequest.VolumeName,
+				"replicaName":    req.ReplicaName,
+				"replicaAddress": req.ReplicaAddress,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	replicaAddress := strings.TrimPrefix(req.ReplicaAddress, "tcp://")
 
@@ -367,7 +438,11 @@ func (ops V1DataEngineProxyOps) ReplicaModeUpdate(ctx context.Context, req *rpc.
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	if _, err = c.ReplicaUpdate(req.ReplicaAddress, etypes.GRPCReplicaModeToReplicaMode(req.Mode)); err != nil {
 		return nil, err

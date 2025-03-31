@@ -9,9 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	backupstore "github.com/longhorn/backupstore"
 	butil "github.com/longhorn/backupstore/util"
@@ -95,7 +96,16 @@ func (ops V2DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.Eng
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	snapshotName := req.SnapshotName
 	if snapshotName == "" {
@@ -144,12 +154,23 @@ func (p *Proxy) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapsho
 }
 
 func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *rpc.EngineSnapshotBackupStatusRequest) (resp *rpc.EngineSnapshotBackupStatusProxyResponse, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
+	})
+
 	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
 		req.ProxyEngineRequest.EngineName)
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	replicas, err := ops.ReplicaList(ctx, req.ProxyEngineRequest)
 	if err != nil {
@@ -171,12 +192,14 @@ func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *r
 			cReplica, err := rclient.NewReplicaClient(r.Address.Address, req.ProxyEngineRequest.VolumeName,
 				r.Address.InstanceName)
 			if err != nil {
-				logrus.WithError(err).Debugf("Failed to create replica client with %v", r.Address.Address)
+				log.WithError(err).Debugf("Failed to create Replica client with %v", r.Address.Address)
 				continue
 			}
 
 			_, err = esync.FetchBackupStatus(cReplica, req.BackupName, r.Address.Address)
-			cReplica.Close()
+			if closeErr := cReplica.Close(); closeErr != nil {
+				log.WithError(closeErr).Warn("Failed to close Replica client")
+			}
 			if err == nil {
 				replicaAddress = r.Address.Address
 				break
@@ -201,9 +224,13 @@ func (ops V1DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *r
 	// We may know replicaName here. If we don't, we pass an empty string, which disables validation.
 	cReplica, err := rclient.NewReplicaClient(replicaAddress, req.ProxyEngineRequest.VolumeName, req.ReplicaName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create replica client with %v", replicaAddress)
+		return nil, errors.Wrapf(err, "failed to create Replica client with %v", replicaAddress)
 	}
-	defer cReplica.Close()
+	defer func() {
+		if closeErr := cReplica.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close Replica client")
+		}
+	}()
 
 	status, err := esync.FetchBackupStatus(cReplica, req.BackupName, replicaAddress)
 	if err != nil {
@@ -225,7 +252,16 @@ func (ops V2DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *r
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	status, err := c.EngineBackupStatus(req.BackupName, req.ProxyEngineRequest.EngineName, req.ReplicaAddress)
 	if err != nil {
@@ -299,7 +335,16 @@ func (ops V2DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.Engi
 	if err != nil {
 		return grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	return c.EngineBackupRestore(&spdkclient.BackupRestoreRequest{
 		BackupUrl:       req.Url,
@@ -360,7 +405,16 @@ func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rp
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	recv, err := c.EngineRestoreStatus(req.EngineName)
 	if err != nil {

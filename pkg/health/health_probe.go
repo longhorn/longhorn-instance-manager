@@ -30,7 +30,7 @@ func (hc *CheckServer) Check(context.Context, *healthpb.HealthCheckRequest) (*he
 
 	return &healthpb.HealthCheckResponse{
 		Status: healthpb.HealthCheckResponse_NOT_SERVING,
-	}, fmt.Errorf("Engine Manager or Process Manager or Instance Manager is not running")
+	}, fmt.Errorf("engine Manager or Process Manager or Instance Manager is not running")
 }
 
 func (hc *CheckServer) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
