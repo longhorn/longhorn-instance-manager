@@ -43,9 +43,13 @@ func version(c *cli.Context) error {
 	if !c.Bool("client-only") {
 		cli, err := getProcessManagerClient(c, ctx, cancel)
 		if err != nil {
-			return errors.Wrap(err, "failed to initialize client")
+			return errors.Wrap(err, "failed to initialize ProcessManagerClient")
 		}
-		defer cli.Close()
+		defer func() {
+			if closeErr := cli.Close(); closeErr != nil {
+				logrus.WithError(closeErr).Warn("Failed to close ProcessManagerClient")
+			}
+		}()
 
 		version, err := cli.VersionGet()
 		if err != nil {

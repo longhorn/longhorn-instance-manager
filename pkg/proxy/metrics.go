@@ -4,8 +4,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
-	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
 	"github.com/longhorn/types/pkg/generated/enginerpc"
+
+	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
 
@@ -17,7 +21,16 @@ func (p *Proxy) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (re
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"volume":     req.VolumeName,
+				"instance":   req.EngineName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	metrics, err := c.MetricsGet()
 	if err != nil {
@@ -32,6 +45,39 @@ func (p *Proxy) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (re
 			WriteLatency:    metrics.TotalLatency.Write,
 			ReadIOPS:        metrics.IOPS.Read,
 			WriteIOPS:       metrics.IOPS.Write,
+		},
+	}, nil
+}
+
+func (ops V2DataEngineProxyOps) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineMetricsGetProxyResponse, err error) {
+	c, err := getSPDKClientFromAddress(req.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"volume":     req.VolumeName,
+				"instance":   req.EngineName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	metrics, err := c.MetricsGet(req.EngineName)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v: %v", req.EngineName, err)
+	}
+
+	return &rpc.EngineMetricsGetProxyResponse{
+		Metrics: &enginerpc.Metrics{
+			ReadThroughput:  metrics.ReadThroughput,
+			WriteThroughput: metrics.WriteThroughput,
+			ReadLatency:     metrics.ReadLatency,
+			WriteLatency:    metrics.WriteLatency,
+			ReadIOPS:        metrics.ReadIOPS,
+			WriteIOPS:       metrics.WriteIOPS,
 		},
 	}, nil
 }

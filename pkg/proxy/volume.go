@@ -4,16 +4,19 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 
+	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
+	"github.com/longhorn/types/pkg/generated/enginerpc"
+
 	lhns "github.com/longhorn/go-common-libs/ns"
 	lhtypes "github.com/longhorn/go-common-libs/types"
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
-	"github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
-	grpccodes "google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
@@ -39,7 +42,16 @@ func (ops V1DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	recv, err := c.VolumeGet()
 	if err != nil {
@@ -69,7 +81,16 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	recv, err := c.EngineGet(req.EngineName)
 	if err != nil {
@@ -114,7 +135,16 @@ func (ops V1DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.Engin
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	err = c.VolumeExpand(req.Expand.Size)
 	if err != nil {
@@ -151,7 +181,16 @@ func (ops V1DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rp
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	err = c.VolumeFrontendStart(req.FrontendStart.Frontend)
 	if err != nil {
@@ -187,7 +226,16 @@ func (ops V1DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	err = c.VolumeFrontendShutdown()
 	if err != nil {
@@ -224,7 +272,16 @@ func (ops V1DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.C
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	err = c.VolumeUnmapMarkSnapChainRemovedSet(req.UnmapMarkSnap.Enabled)
 	if err != nil {
@@ -261,7 +318,16 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, r
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	err = c.VolumeSnapshotMaxCountSet(int(req.Count.Count))
 	if err != nil {
@@ -298,7 +364,16 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	err = c.VolumeSnapshotMaxSizeSet(req.Size.Size)
 	if err != nil {
