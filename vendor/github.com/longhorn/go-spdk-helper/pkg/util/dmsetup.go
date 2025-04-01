@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonns "github.com/longhorn/go-common-libs/ns"
 
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
@@ -15,7 +15,7 @@ const (
 )
 
 // DmsetupCreate creates a device mapper device with the given name and table
-func DmsetupCreate(dmDeviceName, table string, executor *commonNs.Executor) error {
+func DmsetupCreate(dmDeviceName, table string, executor *commonns.Executor) error {
 	opts := []string{
 		"create", dmDeviceName, "--table", table,
 	}
@@ -24,7 +24,7 @@ func DmsetupCreate(dmDeviceName, table string, executor *commonNs.Executor) erro
 }
 
 // DmsetupSuspend suspends the device mapper device with the given name
-func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, executor *commonNs.Executor) error {
+func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, executor *commonns.Executor) error {
 	opts := []string{
 		"suspend", dmDeviceName,
 	}
@@ -42,7 +42,7 @@ func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, executor *commo
 }
 
 // DmsetupResume removes the device mapper device with the given name
-func DmsetupResume(dmDeviceName string, executor *commonNs.Executor) error {
+func DmsetupResume(dmDeviceName string, executor *commonns.Executor) error {
 	opts := []string{
 		"resume", dmDeviceName,
 	}
@@ -51,7 +51,7 @@ func DmsetupResume(dmDeviceName string, executor *commonNs.Executor) error {
 }
 
 // DmsetupReload reloads the table of the device mapper device with the given name and table
-func DmsetupReload(dmDeviceName, table string, executor *commonNs.Executor) error {
+func DmsetupReload(dmDeviceName, table string, executor *commonns.Executor) error {
 	opts := []string{
 		"reload", dmDeviceName, "--table", table,
 	}
@@ -60,7 +60,7 @@ func DmsetupReload(dmDeviceName, table string, executor *commonNs.Executor) erro
 }
 
 // DmsetupRemove removes the device mapper device with the given name
-func DmsetupRemove(dmDeviceName string, force, deferred bool, executor *commonNs.Executor) error {
+func DmsetupRemove(dmDeviceName string, force, deferred bool, executor *commonns.Executor) error {
 	opts := []string{
 		"remove", dmDeviceName,
 	}
@@ -75,7 +75,7 @@ func DmsetupRemove(dmDeviceName string, force, deferred bool, executor *commonNs
 }
 
 // DmsetupDeps returns the dependent devices of the device mapper device with the given name
-func DmsetupDeps(dmDeviceName string, executor *commonNs.Executor) ([]string, error) {
+func DmsetupDeps(dmDeviceName string, executor *commonns.Executor) ([]string, error) {
 	opts := []string{
 		"deps", dmDeviceName, "-o", "devname",
 	}
@@ -116,7 +116,7 @@ type DeviceInfo struct {
 }
 
 // DmsetupInfo returns the information of the device mapper device with the given name
-func DmsetupInfo(dmDeviceName string, executor *commonNs.Executor) ([]*DeviceInfo, error) {
+func DmsetupInfo(dmDeviceName string, executor *commonns.Executor) ([]*DeviceInfo, error) {
 	opts := []string{
 		"info",
 		"--columns",
