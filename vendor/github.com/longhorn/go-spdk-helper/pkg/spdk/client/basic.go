@@ -213,6 +213,22 @@ func (c *Client) BdevLvolCreate(lvstoreName, lvstoreUUID, lvolName string, sizeI
 	return uuid, json.Unmarshal(cmdOutput, &uuid)
 }
 
+// BdevLvolSetXattr sets extended attribute of a logical volume.
+func (c *Client) BdevLvolSetXattr(name, xattrName string, xattrValue string) (set bool, err error) {
+	req := spdktypes.BdevLvolSetXattrRequest{
+		Name:       name,
+		XattrName:  xattrName,
+		XattrValue: xattrValue,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_set_xattr", req)
+	if err != nil {
+		return false, err
+	}
+
+	return set, json.Unmarshal(cmdOutput, &set)
+}
+
 // BdevLvolGetXattr gets the value of an extended attribute of a logical volume.
 func (c *Client) BdevLvolGetXattr(name, xattrName string) (value string, err error) {
 	req := spdktypes.BdevLvolGetXattrRequest{
