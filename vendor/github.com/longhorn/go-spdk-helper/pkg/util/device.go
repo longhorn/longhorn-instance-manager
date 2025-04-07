@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonns "github.com/longhorn/go-common-libs/ns"
 
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
@@ -35,35 +35,36 @@ type BlockDevices struct {
 	Devices []BlockDevice `json:"blockdevices"`
 }
 
-type KernelDevice struct {
+type LonghornBlockDevice struct {
 	Nvme   BlockDevice
 	Export BlockDevice
 }
 
 // RemoveDevice removes the given device
-func RemoveDevice(dev string) error {
-	if _, err := os.Stat(dev); err == nil {
-		if err := remove(dev); err != nil {
-			return errors.Wrapf(err, "failed to removing device %s", dev)
+func RemoveDevice(devPath string) error {
+	if _, err := os.Stat(devPath); err != nil {
+		if os.IsNotExist(err) {
+			return nil
 		}
 	}
-	return nil
+
+	// Still try to remove the device node
+	return remove(devPath)
 }
 
 // GetKnownDevices returns the path of the device with the given major and minor numbers
-func GetKnownDevices(executor *commonNs.Executor) (map[string]*KernelDevice, error) {
-	knownDevices := make(map[string]*KernelDevice)
+func GetKnownDevices(executor *commonns.Executor) (map[string]*LonghornBlockDevice, error) {
+	knownDevices := make(map[string]*LonghornBlockDevice)
 
-	/* Example command output
-	   $ lsblk -l -n -o NAME,MAJ:MIN
-	   sda           8:0
-	   sdb           8:16
-	   sdc           8:32
-	   nvme0n1     259:0
-	   nvme0n1p1   259:1
-	   nvme0n1p128 259:2
-	   nvme1n1     259:3
-	*/
+	// Example command output
+	//   $ lsblk -l -n -o NAME,MAJ:MIN
+	//   sda           8:0
+	//   sdb           8:16
+	//   sdc           8:32
+	//   nvme0n1     259:0
+	//   nvme0n1p1   259:1
+	//   nvme0n1p128 259:2
+	//   nvme1n1     259:3
 
 	opts := []string{
 		"-l", "-n", "-o", "NAME,MAJ:MIN",
@@ -79,7 +80,7 @@ func GetKnownDevices(executor *commonNs.Executor) (map[string]*KernelDevice, err
 		line := scanner.Text()
 		f := strings.Fields(line)
 		if len(f) == 2 {
-			dev := &KernelDevice{
+			dev := &LonghornBlockDevice{
 				Nvme: BlockDevice{
 					Name: f[0],
 				},
@@ -95,14 +96,13 @@ func GetKnownDevices(executor *commonNs.Executor) (map[string]*KernelDevice, err
 }
 
 // DetectDevice detects the device with the given path
-func DetectDevice(path string, executor *commonNs.Executor) (*KernelDevice, error) {
-	/* Example command output
-	   $ lsblk -l -n <Device Path> -o NAME,MAJ:MIN
-	   nvme1n1     259:3
-	*/
+func DetectDevice(path string, executor *commonns.Executor) (*BlockDevice, error) {
+	// Example command output
+	// $ lsblk -l -n <Device Path> -o NAME,MAJ:MIN
+	// nvme1n1     259:3
 
 	opts := []string{
-		"-l", "-n", path, "-o", "NAME,MAJ:MIN",
+		path, "-n", "-o", "NAME,MAJ:MIN", "--nodeps",
 	}
 
 	output, err := executor.Execute(nil, lsblkBinary, opts, types.ExecuteTimeout)
@@ -110,22 +110,21 @@ func DetectDevice(path string, executor *commonNs.Executor) (*KernelDevice, erro
 		return nil, err
 	}
 
-	var dev *KernelDevice
+	var dev *BlockDevice
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
 		f := strings.Fields(line)
 		if len(f) == 2 {
-			dev = &KernelDevice{
-				Nvme: BlockDevice{
-					Name: f[0],
-				},
+			dev = &BlockDevice{
+				Name: f[0],
 			}
-			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Nvme.Major, &dev.Nvme.Minor); err != nil {
-				return nil, fmt.Errorf("invalid major:minor %s for device %s with path %s", dev.Nvme.Name, f[1], path)
+			_, err = fmt.Sscanf(f[1], "%d:%d", &dev.Major, &dev.Minor)
+			if err != nil {
+				return nil, fmt.Errorf("invalid major:minor %s for device %s with path %s", dev.Name, f[1], path)
 			}
 		}
-		break
+		break // nolint:staticcheck
 	}
 	if dev == nil {
 		return nil, fmt.Errorf("failed to get device with path %s", path)
@@ -183,7 +182,7 @@ func parseNumber(str string) (int, error) {
 }
 
 // GetDeviceSectorSize returns the sector size of the given device
-func GetDeviceSectorSize(devPath string, executor *commonNs.Executor) (int64, error) {
+func GetDeviceSectorSize(devPath string, executor *commonns.Executor) (int64, error) {
 	opts := []string{
 		"--getsz", devPath,
 	}
@@ -197,7 +196,7 @@ func GetDeviceSectorSize(devPath string, executor *commonNs.Executor) (int64, er
 }
 
 // GetDeviceNumbers returns the major and minor numbers of the given device
-func GetDeviceNumbers(devPath string, executor *commonNs.Executor) (int, int, error) {
+func GetDeviceNumbers(devPath string, executor *commonns.Executor) (int, int, error) {
 	opts := []string{
 		"-l", "-J", "-n", "-o", "MAJ:MIN", devPath,
 	}
@@ -210,7 +209,7 @@ func GetDeviceNumbers(devPath string, executor *commonNs.Executor) (int, int, er
 }
 
 // DuplicateDevice creates a device node for the given device
-func DuplicateDevice(dev *KernelDevice, dest string) error {
+func DuplicateDevice(dev *LonghornBlockDevice, dest string) error {
 	if dev == nil {
 		return fmt.Errorf("found nil device for device duplication")
 	}

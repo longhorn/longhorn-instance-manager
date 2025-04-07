@@ -7,11 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	commonNs "github.com/longhorn/go-common-libs/ns"
+	commonns "github.com/longhorn/go-common-libs/ns"
+
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
 
 // DiscoverTarget discovers a target
-func DiscoverTarget(ip, port string, executor *commonNs.Executor) (subnqn string, err error) {
+func DiscoverTarget(ip, port string, executor *commonns.Executor) (subnqn string, err error) {
 	hostID, err := getHostID(executor)
 	if err != nil {
 		return "", err
@@ -36,7 +38,7 @@ func DiscoverTarget(ip, port string, executor *commonNs.Executor) (subnqn string
 }
 
 // ConnectTarget connects to a target
-func ConnectTarget(ip, port, nqn string, executor *commonNs.Executor) (controllerName string, err error) {
+func ConnectTarget(ip, port, nqn string, executor *commonns.Executor) (controllerName string, err error) {
 	// Trying to connect an existing subsystem will error out with exit code 114.
 	// Hence, it's better to check the existence first.
 	if devices, err := GetDevices(ip, port, nqn, executor); err == nil && len(devices) > 0 {
@@ -55,35 +57,34 @@ func ConnectTarget(ip, port, nqn string, executor *commonNs.Executor) (controlle
 	return connect(hostID, hostNQN, nqn, DefaultTransportType, ip, port, executor)
 }
 
-// DisconnectTarget disconnects a target
-func DisconnectTarget(nqn string, executor *commonNs.Executor) error {
+// DisconnectTarget disconnects from a target
+func DisconnectTarget(nqn string, executor *commonns.Executor) error {
 	return disconnect(nqn, executor)
 }
 
 // GetDevices returns all devices
-func GetDevices(ip, port, nqn string, executor *commonNs.Executor) (devices []Device, err error) {
+func GetDevices(ip, port, nqn string, executor *commonns.Executor) (devices []Device, err error) {
 	defer func() {
 		err = errors.Wrapf(err, "failed to get devices for address %s:%s and nqn %s", ip, port, nqn)
 	}()
 
 	devices = []Device{}
 
-	nvmeDevices, err := listControllers(executor)
+	nvmeDevices, err := listRecognizedNvmeDevices(executor)
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range nvmeDevices {
-		// Get subsystem
 		subsystems, err := listSubsystems(d.DevicePath, executor)
 		if err != nil {
-			logrus.WithError(err).Warnf("failed to get subsystem for nvme device %s", d.DevicePath)
+			logrus.WithError(err).Warnf("failed to list subsystems for NVMe device %s", d.DevicePath)
 			continue
 		}
 		if len(subsystems) == 0 {
-			return nil, fmt.Errorf("no subsystem found for nvme device %s", d.DevicePath)
+			return nil, fmt.Errorf("no subsystem found for NVMe device %s", d.DevicePath)
 		}
 		if len(subsystems) > 1 {
-			return nil, fmt.Errorf("multiple subsystems found for nvme device %s", d.DevicePath)
+			return nil, fmt.Errorf("multiple subsystems found for NVMe device %s", d.DevicePath)
 		}
 		sys := subsystems[0]
 
@@ -162,12 +163,17 @@ func GetDevices(ip, port, nqn string, executor *commonNs.Executor) (devices []De
 			}
 		}
 
-		return nil, fmt.Errorf("cannot find a valid nvme device with subsystem NQN %s and address %s:%s", nqn, ip, port)
+		return nil, fmt.Errorf(types.ErrorMessageCannotFindValidNvmeDevice+" with subsystem NQN %s and address %s:%s", nqn, ip, port)
 	}
 	return res, nil
 }
 
 // GetSubsystems returns all devices
-func GetSubsystems(executor *commonNs.Executor) (subsystems []Subsystem, err error) {
+func GetSubsystems(executor *commonns.Executor) (subsystems []Subsystem, err error) {
 	return listSubsystems("", executor)
+}
+
+// Flush commits data and metadata associated with the specified namespace(s) to nonvolatile media.
+func Flush(device, namespaceID string, executor *commonns.Executor) (output string, err error) {
+	return flush(device, namespaceID, executor)
 }
