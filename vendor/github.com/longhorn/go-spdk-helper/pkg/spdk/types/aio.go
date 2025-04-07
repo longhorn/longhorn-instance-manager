@@ -15,7 +15,7 @@ type BdevAioDriverSpecificInfo struct {
 type BdevAioCreateRequest struct {
 	Name      string `json:"name"`
 	Filename  string `json:"filename"`
-	BlockSize uint64 `json:"block_size"`
+	BlockSize uint64 `json:"block_size,omitzero"`
 }
 
 type BdevAioDeleteRequest struct {
