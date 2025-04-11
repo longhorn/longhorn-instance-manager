@@ -21,7 +21,6 @@ import (
 
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonnet "github.com/longhorn/go-common-libs/net"
-	commontypes "github.com/longhorn/go-common-libs/types"
 	commonutils "github.com/longhorn/go-common-libs/utils"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -1236,9 +1235,12 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 	opts := &api.SnapshotOptions{
 		Timestamp: util.Now(),
 	}
-	updateRequired, err = e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, SnapshotOperationCreate, opts)
-	if err != nil {
-		return err
+	updateRequired, replicasErr, engineErr := e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, SnapshotOperationCreate, opts, nil)
+	if replicasErr != nil {
+		return replicasErr
+	}
+	if engineErr != nil {
+		return engineErr
 	}
 	e.checkAndUpdateInfoFromReplicaNoLock()
 
@@ -1384,7 +1386,7 @@ func (e *Engine) replicaShallowCopy(dstReplicaServiceCli *client.SPDKClient, src
 					}
 					e.log.Infof("Shallow copied snapshot %s", shallowCopyStatus.SnapshotName)
 					finished = true
-					break
+					break // nolint: staticcheck
 				}
 			}
 		}
@@ -1582,9 +1584,10 @@ const (
 	SnapshotOperationDelete = SnapshotOperationType("snapshot-delete")
 	SnapshotOperationRevert = SnapshotOperationType("snapshot-revert")
 	SnapshotOperationPurge  = SnapshotOperationType("snapshot-purge")
+	SnapshotOperationHash   = SnapshotOperationType("snapshot-hash")
 )
 
-func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName string) (snapshotName string, err error) {
+func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName string, labels map[string]string) (snapshotName string, err error) {
 	e.log.Infof("Creating snapshot %s", inputSnapshotName)
 
 	opts := &api.SnapshotOptions{
@@ -1592,54 +1595,39 @@ func (e *Engine) SnapshotCreate(spdkClient *spdkclient.Client, inputSnapshotName
 		Timestamp:   util.Now(),
 	}
 
-	return e.snapshotOperation(spdkClient, inputSnapshotName, SnapshotOperationCreate, opts)
+	return e.snapshotOperation(spdkClient, inputSnapshotName, SnapshotOperationCreate, opts, labels)
 }
 
 func (e *Engine) SnapshotDelete(spdkClient *spdkclient.Client, snapshotName string) (err error) {
 	e.log.Infof("Deleting snapshot %s", snapshotName)
 
-	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationDelete, nil)
+	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationDelete, nil, nil)
 	return err
 }
 
 func (e *Engine) SnapshotRevert(spdkClient *spdkclient.Client, snapshotName string) (err error) {
 	e.log.Infof("Reverting snapshot %s", snapshotName)
 
-	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationRevert, nil)
+	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationRevert, nil, nil)
 	return err
 }
 
 func (e *Engine) SnapshotPurge(spdkClient *spdkclient.Client) (err error) {
 	e.log.Infof("Purging snapshots")
 
-	_, err = e.snapshotOperation(spdkClient, "", SnapshotOperationPurge, nil)
+	_, err = e.snapshotOperation(spdkClient, "", SnapshotOperationPurge, nil, nil)
 	return err
 }
 
-func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotName string, snapshotOp SnapshotOperationType, opts *api.SnapshotOptions) (snapshotName string, err error) {
-	updateRequired := false
+func (e *Engine) SnapshotHash(spdkClient *spdkclient.Client, snapshotName string, rehash bool) (err error) {
+	e.log.Infof("Hashing snapshot")
 
-	if snapshotOp == SnapshotOperationCreate {
-		e.RLock()
-		devicePath := ""
-		if e.State == types.InstanceStateRunning && e.Frontend == types.FrontendSPDKTCPBlockdev {
-			devicePath = e.Endpoint
-		}
-		e.RUnlock()
-		if devicePath != "" {
-			ne, err := helperutil.NewExecutor(commontypes.HostProcDirectory)
-			if err != nil {
-				e.log.WithError(err).Errorf("WARNING: failed to get the executor for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
-			} else {
-				e.log.Infof("Requesting system sync %v before snapshot", devicePath)
-				// TODO: only sync the device path rather than all filesystems
-				if _, err := ne.Execute(nil, "sync", []string{}, SyncTimeout); err != nil {
-					// sync should never fail though, so it more like due to the nsenter
-					e.log.WithError(err).Errorf("WARNING: failed to sync for snapshot op %v with snapshot %s, will skip the sync and continue", snapshotOp, inputSnapshotName)
-				}
-			}
-		}
-	}
+	_, err = e.snapshotOperation(spdkClient, snapshotName, SnapshotOperationHash, rehash, nil)
+	return err
+}
+
+func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotName string, snapshotOp SnapshotOperationType, opts any, labels map[string]string) (snapshotName string, err error) {
+	updateRequired := false
 
 	e.Lock()
 	defer func() {
@@ -1665,13 +1653,14 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 		return "", err
 	}
 
+	var engineErr, replicasErr error
 	defer func() {
-		if err != nil {
+		if engineErr != nil {
 			if e.State != types.InstanceStateError {
 				e.State = types.InstanceStateError
 				updateRequired = true
 			}
-			e.ErrorMsg = err.Error()
+			e.ErrorMsg = engineErr.Error()
 		} else {
 			if e.State != types.InstanceStateError {
 				e.ErrorMsg = ""
@@ -1679,8 +1668,32 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 		}
 	}()
 
-	if updateRequired, err = e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, snapshotOp, opts); err != nil {
-		return "", err
+	if snapshotOp == SnapshotOperationCreate {
+		// Pause the IO, flush outstanding IO and attempt to synchronize filesystem by suspending the NVMe initiator
+		if e.Frontend == types.FrontendSPDKTCPBlockdev && e.Endpoint != "" {
+			e.log.Infof("Requesting initiator suspend before to create snapshot %s", snapshotName)
+			if err = e.initiator.Suspend(false, false); err != nil {
+				return "", errors.Wrapf(err, "failed to suspend NVMe initiator before the creation of snapshot %s", snapshotName)
+			}
+			e.log.Infof("Engine suspended initiator before the creation of snapshot %s", snapshotName)
+
+			defer func() {
+				if resumeErr := e.initiator.Resume(); resumeErr != nil {
+					e.log.Errorf("Failed to resume initiator after the creation of snapshot %s", snapshotName)
+					engineErr = errors.Wrapf(resumeErr, "failed to resume NVMe initiator after the creation of snapshot %s", snapshotName)
+					return
+				}
+				e.log.Infof("Engine resumed initiator after the creation of snapshot %s", snapshotName)
+			}()
+		}
+	}
+
+	updateRequired, replicasErr, engineErr = e.snapshotOperationWithoutLock(spdkClient, replicaClients, snapshotName, snapshotOp, opts, labels)
+	if replicasErr != nil {
+		return "", replicasErr
+	}
+	if engineErr != nil {
+		return "", engineErr
 	}
 
 	e.checkAndUpdateInfoFromReplicaNoLock()
@@ -1769,6 +1782,11 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot purge", e.Name, replicaName)
 			}
 			// TODO: Do we need to verify that all replicas hold the same system snapshot list?
+		case SnapshotOperationHash:
+			if replicaStatus.Mode == types.ModeWO {
+				return "", fmt.Errorf("engine %s contains WO replica %s during snapshot hash", e.Name, replicaName)
+			}
+			// TODO: Do we need to verify that all replicas hold the same system snapshot list?
 		default:
 			return "", fmt.Errorf("unknown replica snapshot operation %s", snapshotOp)
 		}
@@ -1777,25 +1795,30 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 	return snapshotName, nil
 }
 
-func (e *Engine) snapshotOperationWithoutLock(spdkClient *spdkclient.Client, replicaClients map[string]*client.SPDKClient, snapshotName string, snapshotOp SnapshotOperationType, opts *api.SnapshotOptions) (updated bool, err error) {
+func (e *Engine) snapshotOperationWithoutLock(spdkClient *spdkclient.Client, replicaClients map[string]*client.SPDKClient, snapshotName string, snapshotOp SnapshotOperationType, opts any, labels map[string]string) (updated bool, replicasErr error, engineErr error) {
 	if snapshotOp == SnapshotOperationRevert {
 		if _, err := spdkClient.BdevRaidDelete(e.Name); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 			e.log.WithError(err).Errorf("Failed to delete RAID after snapshot %s revert", snapshotName)
-			return false, err
+			return false, err, err
 		}
 	}
 
+	replicaErrorList := []error{}
 	for replicaName := range replicaClients {
 		replicaStatus := e.ReplicaStatusMap[replicaName]
 		if replicaStatus == nil {
-			return false, fmt.Errorf("cannot find replica %s in the engine %s replica status map during snapshot %s operation", replicaName, e.Name, snapshotName)
+			return false, fmt.Errorf("cannot find replica %s in the engine %s replica status map during snapshot %s operation", replicaName, e.Name, snapshotName), nil
 		}
-		if err := e.replicaSnapshotOperation(spdkClient, replicaClients[replicaName], replicaName, snapshotName, snapshotOp, opts); err != nil && replicaStatus.Mode != types.ModeERR {
-			e.log.WithError(err).Errorf("Engine failed to issue operation %s for replica %s snapshot %s, will mark the replica mode from %v to ERR", snapshotOp, replicaName, snapshotName, replicaStatus.Mode)
-			replicaStatus.Mode = types.ModeERR
-			updated = true
+		if err := e.replicaSnapshotOperation(spdkClient, replicaClients[replicaName], replicaName, snapshotName, snapshotOp, opts, labels); err != nil && replicaStatus.Mode != types.ModeERR {
+			replicaErrorList = append(replicaErrorList, err)
+			if snapshotOp != SnapshotOperationHash {
+				e.log.WithError(err).Errorf("Engine failed to issue operation %s for replica %s snapshot %s, will mark the replica mode from %v to ERR", snapshotOp, replicaName, snapshotName, replicaStatus.Mode)
+				replicaStatus.Mode = types.ModeERR
+				updated = true
+			}
 		}
 	}
+	replicasErr = util.CombineErrors(replicaErrorList...)
 
 	if snapshotOp == SnapshotOperationRevert {
 		replicaBdevList := []string{}
@@ -1808,20 +1831,23 @@ func (e *Engine) snapshotOperationWithoutLock(spdkClient *spdkclient.Client, rep
 			}
 			replicaBdevList = append(replicaBdevList, replicaStatus.BdevName)
 		}
-		if _, err := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList); err != nil {
-			e.log.WithError(err).Errorf("Failed to re-create RAID after snapshot %s revert", snapshotName)
-			return false, err
+		if _, raidErr := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList); raidErr != nil {
+			engineErr = errors.Wrapf(raidErr, "engine %s failed to re-create RAID after snapshot %s revert", e.Name, snapshotName)
 		}
 	}
 
-	return updated, nil
+	return updated, replicasErr, engineErr
 }
 
-func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replicaClient *client.SPDKClient, replicaName, snapshotName string, snapshotOp SnapshotOperationType, opts *api.SnapshotOptions) error {
+func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replicaClient *client.SPDKClient, replicaName, snapshotName string, snapshotOp SnapshotOperationType, opts any, labels map[string]string) error {
 	switch snapshotOp {
 	case SnapshotOperationCreate:
 		// TODO: execute `sync` for the NVMe initiator before snapshot start
-		return replicaClient.ReplicaSnapshotCreate(replicaName, snapshotName, opts)
+		optsPtr, ok := opts.(*api.SnapshotOptions)
+		if !ok {
+			return fmt.Errorf("invalid opts types %+v for snapshot create operation", opts)
+		}
+		return replicaClient.ReplicaSnapshotCreate(replicaName, snapshotName, optsPtr, labels)
 	case SnapshotOperationDelete:
 		return replicaClient.ReplicaSnapshotDelete(replicaName, snapshotName)
 	case SnapshotOperationRevert:
@@ -1846,11 +1872,56 @@ func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replica
 		}
 	case SnapshotOperationPurge:
 		return replicaClient.ReplicaSnapshotPurge(replicaName)
+	case SnapshotOperationHash:
+		rehash, ok := opts.(bool)
+		if !ok {
+			return fmt.Errorf("rehash should be a boolean value for snapshot hash operation")
+		}
+		if err := replicaClient.ReplicaSnapshotHash(replicaName, snapshotName, rehash); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown replica snapshot operation %s", snapshotOp)
 	}
 
 	return nil
+}
+
+func (e *Engine) SnapshotHashStatus(snapshotName string) (*spdkrpc.EngineSnapshotHashStatusResponse, error) {
+	resp := &spdkrpc.EngineSnapshotHashStatusResponse{
+		Status: map[string]*spdkrpc.ReplicaSnapshotHashStatusResponse{},
+	}
+
+	e.Lock()
+	defer e.Unlock()
+
+	for replicaName, replicaStatus := range e.ReplicaStatusMap {
+		if replicaStatus.Mode != types.ModeRW {
+			continue
+		}
+
+		replicaSnapshotHashStatusResponse, err := e.getReplicaSnapshotHashStatus(replicaName, replicaStatus.Address, snapshotName)
+		if err != nil {
+			return nil, err
+		}
+		resp.Status[replicaStatus.Address] = replicaSnapshotHashStatusResponse
+	}
+
+	return resp, nil
+}
+
+func (e *Engine) getReplicaSnapshotHashStatus(replicaName, replicaAddress, snapshotName string) (*spdkrpc.ReplicaSnapshotHashStatusResponse, error) {
+	replicaServiceCli, err := GetServiceClient(replicaAddress)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if errClose := replicaServiceCli.Close(); errClose != nil {
+			e.log.WithError(errClose).Errorf("Failed to close replica client with address %s during get hash status", replicaAddress)
+		}
+	}()
+
+	return replicaServiceCli.ReplicaSnapshotHashStatus(replicaName, snapshotName)
 }
 
 func (e *Engine) ReplicaList(spdkClient *spdkclient.Client) (ret map[string]*api.Replica, err error) {
@@ -2124,7 +2195,11 @@ func (e *Engine) isReplicaRestoreCompleted(replicaName, replicaAddress string) (
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get replica %v service client %s", replicaName, replicaAddress)
 	}
-	defer replicaServiceCli.Close()
+	defer func() {
+		if errClose := replicaServiceCli.Close(); errClose != nil {
+			log.WithError(errClose).Errorf("Failed to close replica %s client with address %s during check restore status", replicaName, replicaAddress)
+		}
+	}()
 
 	status, err := replicaServiceCli.ReplicaRestoreStatus(replicaName)
 	if err != nil {

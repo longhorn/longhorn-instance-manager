@@ -11,7 +11,7 @@ require (
 	github.com/longhorn/go-spdk-helper v0.0.2-0.20250402013425-f54098d7face
 	github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250319070720-21fdf9aadb3c
-	github.com/longhorn/types v0.0.0-20250311092239-23a07a51e0ba
+	github.com/longhorn/types v0.0.0-20250407153258-74fbf95c1346
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.16
@@ -102,3 +102,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/longhorn/types v0.0.0-20250407153258-74fbf95c1346 => github.com/DamiaSan/types v0.0.0-20250409115014-1b9032629fe1
+
+replace github.com/longhorn/longhorn-spdk-engine v0.0.0-20250319070720-21fdf9aadb3c => github.com/DamiaSan/longhorn-spdk-engine v0.0.0-20250410082357-82cfa456f88a

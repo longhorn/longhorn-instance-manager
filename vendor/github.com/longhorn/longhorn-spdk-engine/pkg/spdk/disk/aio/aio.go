@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	commontypes "github.com/longhorn/go-common-libs/types"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
@@ -63,7 +64,11 @@ func getDiskDeviceSize(path string) (int64, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to open %s", path)
 	}
-	defer file.Close()
+	defer func() {
+		if errClose := file.Close(); errClose != nil {
+			logrus.WithError(errClose).Errorf("Failed to close disk device %s", path)
+		}
+	}()
 
 	pos, err := file.Seek(0, io.SeekEnd)
 	if err != nil {

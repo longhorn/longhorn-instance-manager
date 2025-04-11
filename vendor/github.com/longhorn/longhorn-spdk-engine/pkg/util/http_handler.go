@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -42,7 +44,11 @@ func (h *HTTPHandler) GetSizeFromURL(url string) (size int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if errClose := resp.Body.Close(); errClose != nil {
+			logrus.WithError(errClose).Errorf("Failed to close response body for %s", url)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("expected status code 200 from %s, got %s", url, resp.Status)
@@ -76,7 +82,11 @@ func (h *HTTPHandler) DownloadFromURL(ctx context.Context, url string, outFh *os
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if errClose := resp.Body.Close(); errClose != nil {
+			logrus.WithError(errClose).Errorf("Failed to close response body for %s", url)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("expected status code 200 from %s, got %s", url, resp.Status)
@@ -157,7 +167,7 @@ func IdleTimeoutCopy(ctx context.Context, cancel context.CancelFunc, src io.Read
 				if rErr != io.EOF {
 					err = rErr
 				}
-				break
+				break // nolint: staticcheck
 			}
 		}
 	}

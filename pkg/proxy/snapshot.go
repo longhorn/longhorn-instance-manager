@@ -86,7 +86,7 @@ func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 		snapshotName = util.UUID()
 	}
 
-	_, err = c.EngineSnapshotCreate(req.ProxyEngineRequest.EngineName, snapshotName)
+	_, err = c.EngineSnapshotCreate(req.ProxyEngineRequest.EngineName, snapshotName, req.SnapshotVolume.Labels)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create snapshot %v: %v", snapshotName, err)
 	}
