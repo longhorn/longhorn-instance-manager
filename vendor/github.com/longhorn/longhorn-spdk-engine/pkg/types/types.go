@@ -13,6 +13,7 @@ const (
 const (
 	FrontendSPDKTCPNvmf     = "spdk-tcp-nvmf"
 	FrontendSPDKTCPBlockdev = "spdk-tcp-blockdev"
+	FrontendUBLK            = "ublk"
 	FrontendEmpty           = ""
 )
 
@@ -79,7 +80,11 @@ func GRPCReplicaModeToReplicaMode(replicaMode spdkrpc.ReplicaMode) Mode {
 }
 
 func IsFrontendSupported(frontend string) bool {
-	return frontend == FrontendEmpty || frontend == FrontendSPDKTCPNvmf || frontend == FrontendSPDKTCPBlockdev
+	return frontend == FrontendEmpty || frontend == FrontendSPDKTCPNvmf || frontend == FrontendSPDKTCPBlockdev || frontend == FrontendUBLK
+}
+
+func IsUblkFrontend(frontend string) bool {
+	return frontend == FrontendUBLK
 }
 
 const (

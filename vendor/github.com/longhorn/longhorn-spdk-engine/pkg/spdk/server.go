@@ -933,7 +933,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	if req.SpecSize == 0 {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine spec size is required")
 	}
-	if req.Frontend != types.FrontendSPDKTCPBlockdev && req.Frontend != types.FrontendSPDKTCPNvmf && req.Frontend != types.FrontendEmpty {
+	if req.Frontend != types.FrontendSPDKTCPBlockdev && req.Frontend != types.FrontendSPDKTCPNvmf && req.Frontend != types.FrontendEmpty && req.Frontend != types.FrontendUBLK {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine frontend is required")
 	}
 
@@ -960,7 +960,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 }
 
 func localTargetExists(e *Engine) bool {
-	return e.Port != 0 && e.TargetPort != 0
+	return e.NvmeTcpFrontend != nil && e.NvmeTcpFrontend.Port != 0 && e.NvmeTcpFrontend.TargetPort != 0
 }
 
 func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequest) (ret *emptypb.Empty, err error) {
@@ -1066,8 +1066,8 @@ func (s *Server) EngineDeleteTarget(ctx context.Context, req *spdkrpc.EngineDele
 		if err == nil {
 			s.Lock()
 			// Only delete the engine if both initiator (e.Port) and target (e.TargetPort) are not exists.
-			if e.Port == 0 && e.TargetPort == 0 {
-				e.log.Infof("Deleting engine %s", req.Name)
+			if e.NvmeTcpFrontend.Port == 0 && e.NvmeTcpFrontend.TargetPort == 0 {
+				e.log.Info("Deleting engine %s", req.Name)
 				delete(s.engineMap, req.Name)
 			}
 			s.Unlock()

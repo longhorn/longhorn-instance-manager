@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
 	commontypes "github.com/longhorn/go-common-libs/types"
@@ -32,14 +32,14 @@ func connectNVMeTarget(srcIP string, srcPort int32, maxRetries int, retryInterva
 	subsystemNQN := ""
 	controllerName := ""
 	for r := 0; r < maxRetries; r++ {
-		subsystemNQN, err = nvme.DiscoverTarget(srcIP, strconv.Itoa(int(srcPort)), executor)
+		subsystemNQN, err = initiator.DiscoverTarget(srcIP, strconv.Itoa(int(srcPort)), executor)
 		if err != nil {
 			logrus.WithError(err).Warnf("Failed to discover target for with address %v:%v", srcIP, srcPort)
 			time.Sleep(retryInterval)
 			continue
 		}
 
-		controllerName, err = nvme.ConnectTarget(srcIP, strconv.Itoa(int(srcPort)), subsystemNQN, executor)
+		controllerName, err = initiator.ConnectTarget(srcIP, strconv.Itoa(int(srcPort)), subsystemNQN, executor)
 		if err != nil {
 			logrus.WithError(err).Warnf("Failed to connect target with address %v:%v", srcIP, srcPort)
 			time.Sleep(retryInterval)
@@ -71,14 +71,14 @@ func exposeSnapshotLvolBdev(spdkClient *spdkclient.Client, lvsName, lvolName, ip
 	}
 
 	for r := 0; r < maxNumRetries; r++ {
-		subsystemNQN, err = nvme.DiscoverTarget(ip, portStr, executor)
+		subsystemNQN, err = initiator.DiscoverTarget(ip, portStr, executor)
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to discover target for snapshot lvol bdev %v", lvolName)
 			time.Sleep(retryInterval)
 			continue
 		}
 
-		controllerName, err = nvme.ConnectTarget(ip, portStr, subsystemNQN, executor)
+		controllerName, err = initiator.ConnectTarget(ip, portStr, subsystemNQN, executor)
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to connect target for snapshot lvol bdev %v", lvolName)
 			time.Sleep(retryInterval)

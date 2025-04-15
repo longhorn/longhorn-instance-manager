@@ -114,12 +114,12 @@ github.com/longhorn/go-common-libs v0.0.0-20250412054242-0dd2ad39fd02 h1:WMiKgxZ
 github.com/longhorn/go-common-libs v0.0.0-20250412054242-0dd2ad39fd02/go.mod h1:zUt3YlXyj5wI5SC/jI0ayT42NYlVUXJd2is9Azo0DTw=
 github.com/longhorn/go-iscsi-helper v0.0.0-20250111093313-7e1930499625 h1:d39A3041RyFve26tIuKUuzrh2CkBY970xlGIXgMA998=
 github.com/longhorn/go-iscsi-helper v0.0.0-20250111093313-7e1930499625/go.mod h1:yIm3sGRuYOw/Y3XzRhG5+3FlZBOfrU5EZOavzwL2jVs=
-github.com/longhorn/go-spdk-helper v0.0.2-0.20250413065740-52d1caf5f7a7 h1:ep5IXU/LK61KQ0BY+hiM7BqJrl7TLN0wJ/dPDpKq1UI=
-github.com/longhorn/go-spdk-helper v0.0.2-0.20250413065740-52d1caf5f7a7/go.mod h1:k1MUTmyAIXuabuyviT3shOnN618449WqmamtCJlsh4c=
+github.com/longhorn/go-spdk-helper v0.0.2-0.20250415000716-f22355d4e0fa h1:Toubcr6ADUkjIANoupTcv7ILpxcVE2u5dHPpoSeXix4=
+github.com/longhorn/go-spdk-helper v0.0.2-0.20250415000716-f22355d4e0fa/go.mod h1:k1MUTmyAIXuabuyviT3shOnN618449WqmamtCJlsh4c=
 github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d h1:JdkTIIaKT0uUU80Ncl26JeAqT727PgPJMaqjf0OUfAE=
 github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d/go.mod h1:qTsHK0nU6Myh4XGnuqfsPG4FpeLh7Vki2hLl/1P0iuc=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20250409164041-9125fc466faf h1:Tb3DSmUOQTXcSwZCqxFlnD43RXk3I8EcPXukydOvSao=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20250409164041-9125fc466faf/go.mod h1:dMcKWK4CHNSBz9ZsjBw/XxQW1tDFZXBNe85qlS8sbkE=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20250415073054-e79c3d827109 h1:7wbPxxTbds3n8bh0qcBNFQV70vsPY1VEeDJevV476Eo=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20250415073054-e79c3d827109/go.mod h1:LbnlHPNow1B79MLzY7GJVGv6mdsmNMC8uP2ow5Sm56s=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c h1:OFz3haCSPdgiiJvXLBeId/4dPu0dxIEqkQkfNMufLwc=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c/go.mod h1:dfbJqfI8+T9ZCp5zhTYcBi/64hPBNt5/vFF3gTlfMmc=
 github.com/longhorn/types v0.0.0-20250410134731-b46ad9302858 h1:1Qe0hwY5i5NMipBg91O2ON4lp3OLO0V1AW7ynQdBtjY=
