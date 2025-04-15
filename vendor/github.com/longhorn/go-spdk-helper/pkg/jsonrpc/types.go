@@ -55,7 +55,7 @@ type JSONClientError struct {
 }
 
 func (re JSONClientError) Error() string {
-	return fmt.Sprintf("error sending message, id %d, method %s, params %v: %v",
+	return fmt.Sprintf("error sending message, id %d, method %s, params %+v: %v",
 		re.ID, re.Method, re.Params, re.ErrorDetail)
 }
 

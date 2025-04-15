@@ -16,8 +16,8 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
@@ -545,11 +545,14 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	bi.Unlock()
 	bi.log.Infof("Exposed head lvol %v, subsystemNQN %v, controllerName %v", backingImageTempHeadName, subsystemNQN, controllerName)
 
-	headInitiator, err := nvme.NewInitiator(backingImageTempHeadName, helpertypes.GetNQN(backingImageTempHeadName), nvme.HostProc)
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: helpertypes.GetNQN(backingImageTempHeadName),
+	}
+	headInitiator, err := initiator.NewInitiator(backingImageTempHeadName, initiator.HostProc, nvmeTCPInfo, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for head lvol %v", backingImageTempHeadName)
 	}
-	if _, err := headInitiator.Start(podIP, strconv.Itoa(int(port)), true); err != nil {
+	if _, err := headInitiator.StartNvmeTCPInitiator(podIP, strconv.Itoa(int(port)), true); err != nil {
 		return errors.Wrapf(err, "failed to start NVMe initiator for head lvol %v", backingImageTempHeadName)
 	}
 	bi.log.Infof("Created NVMe initiator for head lvol %v", backingImageTempHeadName)
@@ -561,7 +564,7 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 			bi.log.WithError(errClose).Error("Failed to close the backing image")
 		}
 		bi.log.Info("Stopping NVMe initiator")
-		if _, opErr := headInitiator.Stop(true, true, false); opErr != nil {
+		if _, opErr := headInitiator.Stop(nil, true, true, false); opErr != nil {
 			bi.log.WithError(opErr).Error("Failed to stop the backing image head NVMe initiator")
 		}
 	}()
@@ -711,29 +714,32 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 		return errors.Wrapf(err, "failed to connect to NVMe target for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
 
-	bi.log.Infof("Creating NVMe initiator for source backing image %v", bi.Name)
-	initiator, err := nvme.NewInitiator(externalSnapshotLvolName, helpertypes.GetNQN(externalSnapshotLvolName), nvme.HostProc)
+	bi.log.Info("Creating NVMe initiator for source backing image %v", bi.Name)
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: helpertypes.GetNQN(externalSnapshotLvolName),
+	}
+	i, err := initiator.NewInitiator(externalSnapshotLvolName, initiator.HostProc, nvmeTCPInfo, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
-	if _, err := initiator.Start(srcIP, strconv.Itoa(int(srcPort)), true); err != nil {
+	if _, err := i.StartNvmeTCPInitiator(srcIP, strconv.Itoa(int(srcPort)), true); err != nil {
 		return errors.Wrapf(err, "failed to start NVMe initiator for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
 
-	bi.log.Infof("Opening NVMe device %v", initiator.Endpoint)
-	srcFh, err := os.OpenFile(initiator.Endpoint, os.O_RDWR, 0666)
+	bi.log.Infof("Opening NVMe device %v", i.Endpoint)
+	srcFh, err := os.OpenFile(i.Endpoint, os.O_RDWR, 0666)
 	defer func() {
 		if errClose := srcFh.Close(); errClose != nil {
 			bi.log.WithError(errClose).Error("Failed to close the source backing image")
 		}
 		// Stop the source initiator
 		bi.log.Info("Stopping NVMe initiator")
-		if _, err := initiator.Stop(true, true, false); err != nil {
+		if _, err := i.Stop(nil, true, true, false); err != nil {
 			bi.log.WithError(err).Warnf("failed to stop NVMe initiator")
 		}
 	}()
 	if err != nil {
-		return errors.Wrapf(err, "failed to open NVMe device %v for source backing image %v in lvsUUID %v with address %v", initiator.Endpoint, bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
+		return errors.Wrapf(err, "failed to open NVMe device %v for source backing image %v in lvsUUID %v with address %v", i.Endpoint, bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
 
 	ctx, cancel := context.WithCancel(bi.ctx)
