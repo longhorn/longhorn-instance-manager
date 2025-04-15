@@ -81,7 +81,6 @@ RUN export REPO_OVERRIDE="" && \
 # Build spdk
 RUN export REPO_OVERRIDE="" && \
     export COMMIT_ID_OVERRIDE="" && \
-    cat /usr/src/dep-versions/scripts/build-spdk.sh && \
     bash /usr/src/dep-versions/scripts/build-spdk.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}" "${ARCH}"
 
 # Build libjson-c-devel

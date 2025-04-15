@@ -24,14 +24,8 @@ CMD ["ci"]
 RUN zypper -n ref && \
     zypper update -y
 
-RUN for i in {1..10}; do \
-        zypper refresh && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-        zypper -n --gpg-auto-import-keys ref && break || sleep 1; \
-    done
-
 # Install packages
-RUN zypper --no-gpg-checks -n install cmake wget curl git less file \
+RUN zypper -n install cmake wget curl git less file \
     libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
     psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
     bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
