@@ -812,6 +812,7 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			StandbyTargetPortStart: e.StandbyTargetPort,
 			StandbyTargetPortEnd:   e.StandbyTargetPort,
 			Conditions:             make(map[string]bool),
+			UblkId:                 e.UblkID,
 		},
 	}
 }

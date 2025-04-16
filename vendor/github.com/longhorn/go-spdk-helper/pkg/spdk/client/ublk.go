@@ -30,7 +30,7 @@ func (c *Client) UblkDestroyTarget() (err error) {
 }
 
 // UblkGetDisks displays full or specified ublk device list
-func (c *Client) UblkGetDisks(ublkID int) (ublkDeviceList []spdktypes.UblkDevice, err error) {
+func (c *Client) UblkGetDisks(ublkID int32) (ublkDeviceList []spdktypes.UblkDevice, err error) {
 	req := spdktypes.UblkGetDisksRequest{
 		UblkId: ublkID,
 	}
@@ -41,7 +41,7 @@ func (c *Client) UblkGetDisks(ublkID int) (ublkDeviceList []spdktypes.UblkDevice
 	return ublkDeviceList, json.Unmarshal(cmdOutput, &ublkDeviceList)
 }
 
-func (c *Client) UblkStartDisk(bdevName string, ublkId, queueDepth, numQueues int) (err error) {
+func (c *Client) UblkStartDisk(bdevName string, ublkId, queueDepth, numQueues int32) (err error) {
 	req := spdktypes.UblkStartDiskRequest{
 		BdevName:   bdevName,
 		UblkId:     ublkId,
@@ -55,7 +55,7 @@ func (c *Client) UblkStartDisk(bdevName string, ublkId, queueDepth, numQueues in
 	return nil
 }
 
-func (c *Client) UblkRecoverDisk(bdevName string, ublkId int) (err error) {
+func (c *Client) UblkRecoverDisk(bdevName string, ublkId int32) (err error) {
 	req := spdktypes.UblkRecoverDiskRequest{
 		BdevName: bdevName,
 		UblkId:   ublkId,
@@ -67,7 +67,7 @@ func (c *Client) UblkRecoverDisk(bdevName string, ublkId int) (err error) {
 	return nil
 }
 
-func (c *Client) UblkStopDisk(ublkId int) (err error) {
+func (c *Client) UblkStopDisk(ublkId int32) (err error) {
 	req := spdktypes.UblkStopDiskRequest{
 		UblkId: ublkId,
 	}
@@ -78,7 +78,7 @@ func (c *Client) UblkStopDisk(ublkId int) (err error) {
 	return nil
 }
 
-func (c *Client) FindUblkDevicePath(ublkID int) (string, error) {
+func (c *Client) FindUblkDevicePath(ublkID int32) (string, error) {
 	ublkDeviceList, err := c.UblkGetDisks(ublkID)
 	if err != nil {
 		return "", err

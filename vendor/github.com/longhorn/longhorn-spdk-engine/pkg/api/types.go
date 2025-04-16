@@ -152,6 +152,7 @@ type Engine struct {
 	Endpoint          string                `json:"endpoint"`
 	State             string                `json:"state"`
 	ErrorMsg          string                `json:"error_msg"`
+	UblkID            int32                 `json:"ublk_id"`
 }
 
 func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
@@ -173,6 +174,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		Endpoint:          e.Endpoint,
 		State:             e.State,
 		ErrorMsg:          e.ErrorMsg,
+		UblkID:            e.UblkId,
 	}
 	for rName, mode := range e.ReplicaModeMap {
 		res.ReplicaModeMap[rName] = types.GRPCReplicaModeToReplicaMode(mode)

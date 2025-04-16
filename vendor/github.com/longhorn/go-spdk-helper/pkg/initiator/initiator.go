@@ -73,7 +73,7 @@ type NVMeTCPInfo struct {
 
 type UblkInfo struct {
 	BdevName string
-	UblkID   int
+	UblkID   int32
 }
 
 // NewInitiator creates a new initiator
