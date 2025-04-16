@@ -87,7 +87,7 @@ type NvmeTcpFrontend struct {
 }
 
 type UblkFrontend struct {
-	UblkID int
+	UblkID int32
 }
 
 func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineUpdateCh chan interface{}) *Engine {
@@ -782,6 +782,10 @@ func (e *Engine) getWithoutLock() (res *spdkrpc.Engine) {
 		res.TargetIp = e.NvmeTcpFrontend.TargetIP
 		res.TargetPort = e.NvmeTcpFrontend.TargetPort
 		res.StandbyTargetPort = e.NvmeTcpFrontend.StandbyTargetPort
+	}
+
+	if e.UblkFrontend != nil {
+		res.UblkId = e.UblkFrontend.UblkID
 	}
 
 	for replicaName, replicaStatus := range e.ReplicaStatusMap {

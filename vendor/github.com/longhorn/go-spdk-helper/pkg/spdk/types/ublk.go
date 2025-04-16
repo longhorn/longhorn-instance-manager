@@ -6,29 +6,29 @@ type UblkCreateTargetRequest struct {
 }
 
 type UblkGetDisksRequest struct {
-	UblkId int `json:"ublk_id"`
+	UblkId int32 `json:"ublk_id"`
 }
 
 type UblkDevice struct {
 	BdevName   string `json:"bdev_name"`
-	ID         int    `json:"id"`
-	NumQueues  int    `json:"num_queues"`
-	QueueDepth int    `json:"queue_depth"`
+	ID         int32  `json:"id"`
+	NumQueues  int32  `json:"num_queues"`
+	QueueDepth int32  `json:"queue_depth"`
 	UblkDevice string `json:"ublk_device"`
 }
 
 type UblkStartDiskRequest struct {
 	BdevName   string `json:"bdev_name"`
-	UblkId     int    `json:"ublk_id"`
-	QueueDepth int    `json:"queue_depth"`
-	NumQueues  int    `json:"num_queues"`
+	UblkId     int32  `json:"ublk_id"`
+	QueueDepth int32  `json:"queue_depth"`
+	NumQueues  int32  `json:"num_queues"`
 }
 
 type UblkRecoverDiskRequest struct {
 	BdevName string `json:"bdev_name"`
-	UblkId   int    `json:"ublk_id"`
+	UblkId   int32  `json:"ublk_id"`
 }
 
 type UblkStopDiskRequest struct {
-	UblkId int `json:"ublk_id"`
+	UblkId int32 `json:"ublk_id"`
 }
