@@ -58,7 +58,7 @@ RUN for i in {1..10}; do \
     done
 
 
-RUN zypper -n install liburing-devel
+RUN zypper -n install liburing2-devel
 RUN zypper -n install cmake gcc xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
 
 RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
