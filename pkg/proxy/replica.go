@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -280,6 +279,7 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v: %v", req.EngineName, err)
 	}
 
+	// TODO: By design, there is one rebuilding replica at most for each volume; hence no need to return a map for rebuilding status.
 	resp = &rpc.EngineReplicaRebuildStatusProxyResponse{
 		Status: make(map[string]*enginerpc.ReplicaRebuildStatusResponse),
 	}
@@ -305,10 +305,8 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 
 		shallowCopyResp, err := replicaCli.ReplicaRebuildingDstShallowCopyCheck(replicaName)
 		if err != nil {
-			resp.Status[tcpReplicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
-				Error: fmt.Sprintf("failed to get replica rebuild status of %v: %v", replicaAddress, err),
-			}
-			continue
+			// Let the upper layer to handle this error rather than considering it as the error message of a rebuilding failure
+			return nil, err
 		}
 		resp.Status[tcpReplicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
 			Error:              shallowCopyResp.Error,

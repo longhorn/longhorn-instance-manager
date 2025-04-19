@@ -114,12 +114,10 @@ github.com/longhorn/go-common-libs v0.0.0-20250412054242-0dd2ad39fd02 h1:WMiKgxZ
 github.com/longhorn/go-common-libs v0.0.0-20250412054242-0dd2ad39fd02/go.mod h1:zUt3YlXyj5wI5SC/jI0ayT42NYlVUXJd2is9Azo0DTw=
 github.com/longhorn/go-iscsi-helper v0.0.0-20250111093313-7e1930499625 h1:d39A3041RyFve26tIuKUuzrh2CkBY970xlGIXgMA998=
 github.com/longhorn/go-iscsi-helper v0.0.0-20250111093313-7e1930499625/go.mod h1:yIm3sGRuYOw/Y3XzRhG5+3FlZBOfrU5EZOavzwL2jVs=
-github.com/longhorn/go-spdk-helper v0.0.0-20250416235331-b97c02bd0b57 h1:57jJiOMqRVIoFSY2DO9DYHnI4H4uwaUGFGpFqcVDLns=
-github.com/longhorn/go-spdk-helper v0.0.0-20250416235331-b97c02bd0b57/go.mod h1:k1MUTmyAIXuabuyviT3shOnN618449WqmamtCJlsh4c=
+github.com/longhorn/go-spdk-helper v0.0.0-20250418061607-6992821f5686 h1:MDji0xsB72DUsScrQ7Z3LLrfBTRCCihRM3QgtNsskRM=
+github.com/longhorn/go-spdk-helper v0.0.0-20250418061607-6992821f5686/go.mod h1:k1MUTmyAIXuabuyviT3shOnN618449WqmamtCJlsh4c=
 github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d h1:JdkTIIaKT0uUU80Ncl26JeAqT727PgPJMaqjf0OUfAE=
 github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d/go.mod h1:qTsHK0nU6Myh4XGnuqfsPG4FpeLh7Vki2hLl/1P0iuc=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20250417025732-c02213b70a28 h1:AkQ+E59NgyCqkh8PqPs17mpjL6my5hqH5ijBKUhJyEs=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20250417025732-c02213b70a28/go.mod h1:kZMwCV534EKpYDWXU3oixEbuX6icabTZ6GVw4OQwgv4=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c h1:OFz3haCSPdgiiJvXLBeId/4dPu0dxIEqkQkfNMufLwc=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c/go.mod h1:dfbJqfI8+T9ZCp5zhTYcBi/64hPBNt5/vFF3gTlfMmc=
 github.com/longhorn/types v0.0.0-20250416235128-0c407ad2b792 h1:+KWYQQKGCBnoy7Our2ryJ9HtUksKf3OPaLVMfsxPzMk=
@@ -179,6 +177,8 @@ github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/shirou/gopsutil/v3 v3.24.5 h1:i0t8kL+kQTvpAYToeuiVk3TgDeKOFioZO3Ztz/iZ9pI=
 github.com/shirou/gopsutil/v3 v3.24.5/go.mod h1:bsoOS1aStSs9ErQ1WWfxllSeS1K5D+U30r2NfcubMVk=
+github.com/shuo-wu/longhorn-spdk-engine v0.0.0-20250419050630-aff7e013b549 h1:qKP0OVI6VILBaxJRXx8Uu4DCgwgXramkXIVkTY6Osxk=
+github.com/shuo-wu/longhorn-spdk-engine v0.0.0-20250419050630-aff7e013b549/go.mod h1:zabLv2Prpg2tAPjq5ebKvxOs3Ib0bbVR+2zQbpeVCJw=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/slok/goresilience v0.2.0 h1:dagdIiWlhTm7BK/r/LRKz+zvw0SCNk+nHf7obdsbzxQ=

@@ -140,20 +140,26 @@ func ServiceLvolToProtoLvol(replicaName string, lvol *Lvol) *spdkrpc.Lvol {
 }
 
 func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
-	return &Lvol{
-		Name:       spdktypes.GetLvolNameFromAlias(bdev.Aliases[0]),
-		Alias:      bdev.Aliases[0],
-		UUID:       bdev.UUID,
-		SpecSize:   bdev.NumBlocks * uint64(bdev.BlockSize),
-		ActualSize: bdev.DriverSpecific.Lvol.NumAllocatedClusters * defaultClusterSize,
-		Parent:     bdev.DriverSpecific.Lvol.BaseSnapshot,
-		// Need to update this separately
+	svcLvol := &Lvol{
+		Name:              spdktypes.GetLvolNameFromAlias(bdev.Aliases[0]),
+		Alias:             bdev.Aliases[0],
+		UUID:              bdev.UUID,
+		SpecSize:          bdev.NumBlocks * uint64(bdev.BlockSize),
+		ActualSize:        bdev.DriverSpecific.Lvol.NumAllocatedClusters * defaultClusterSize,
+		Parent:            bdev.DriverSpecific.Lvol.BaseSnapshot,
 		Children:          map[string]*Lvol{},
 		CreationTime:      bdev.CreationTime,
 		UserCreated:       bdev.DriverSpecific.Lvol.Xattrs[spdkclient.UserCreated] == strconv.FormatBool(true),
 		SnapshotTimestamp: bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotTimestamp],
 		SnapshotChecksum:  bdev.DriverSpecific.Lvol.Xattrs[spdkclient.SnapshotChecksum],
 	}
+
+	// Need to further update this separately
+	for _, childLvolName := range bdev.DriverSpecific.Lvol.Clones {
+		svcLvol.Children[childLvolName] = nil
+	}
+
+	return svcLvol
 }
 
 func GetBackingImageSnapLvolName(backingImageName string, lvsUUID string) string {
