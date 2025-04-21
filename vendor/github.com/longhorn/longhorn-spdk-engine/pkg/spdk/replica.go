@@ -1729,9 +1729,14 @@ func (r *Replica) RebuildingSrcShallowCopyStart(spdkClient *spdkclient.Client, s
 		return errors.Wrapf(err, "failed to stop snapshot %s(%s) checksum hashing before replica %s rebuilding src starts shallow copy from it", snapLvolName, snapshotName, r.Name)
 	}
 
+	if err := spdkClient.BdevSetQosLimit(r.rebuildingSrcCache.dstRebuildingBdevName, 0, 0, 0, 100); err != nil {
+		r.log.WithError(err).Warnf("failed to set write QoS on dst bdev %s", r.rebuildingSrcCache.dstRebuildingBdevName)
+	}
+
 	if shallowCopyOpID, err = spdkClient.BdevLvolStartShallowCopy(snapLvol.UUID, r.rebuildingSrcCache.dstRebuildingBdevName); err != nil {
 		return err
 	}
+
 	r.rebuildingSrcCache.shallowCopySnapshotName = snapshotName
 	r.rebuildingSrcCache.shallowCopyOpID = shallowCopyOpID
 	r.rebuildingSrcCache.shallowCopyStatus = spdktypes.ShallowCopyStatus{}

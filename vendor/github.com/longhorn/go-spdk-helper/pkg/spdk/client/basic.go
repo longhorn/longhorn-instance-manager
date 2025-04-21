@@ -1369,3 +1369,40 @@ func (c *Client) BdevGetIostat(name string, perChannel bool) (resp *spdktypes.Bd
 
 	return resp, nil
 }
+
+
+// BdevSetQosLimit sets the quality of service rate limits on a bdev.
+//
+//		"name": Required. Block device name to apply QoS settings to.
+//
+//		"rw_ios_per_sec": Optional. Number of R/W I/Os per second to allow. 0 means unlimited.
+//
+//		"rw_mbytes_per_sec": Optional. Number of R/W megabytes per second to allow. 0 means unlimited.
+//
+//		"r_mbytes_per_sec": Optional. Number of Read megabytes per second to allow. 0 means unlimited.
+//
+//		"w_mbytes_per_sec": Optional. Number of Write megabytes per second to allow. 0 means unlimited.
+func (c *Client) BdevSetQosLimit(bdevName string, rwIOsPerSec, rwMBPerSec, rMBPerSec, wMBPerSec int) error {
+	params := map[string]interface{}{
+		"name":               bdevName,
+		"rw_ios_per_sec":     rwIOsPerSec,
+		"rw_mbytes_per_sec":  rwMBPerSec,
+		"r_mbytes_per_sec":   rMBPerSec,
+		"w_mbytes_per_sec":   wMBPerSec,
+	}
+
+	resp, err := c.jsonCli.SendCommand("bdev_set_qos_limit", params)
+	if err != nil {
+		return errors.Wrap(err, "failed to send bdev_set_qos_limit")
+	}
+
+	var result bool
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return errors.Wrapf(err, "invalid response format: %s", string(resp))
+	}
+	if !result {
+		return fmt.Errorf("SPDK returned false for bdev_set_qos_limit")
+	}
+
+	return nil
+}
