@@ -1864,7 +1864,10 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, srcReplicaNa
 		return "", err
 	}
 	for lvolName, lvol := range bdevLvolMap {
-		if lvolName == r.Name || (r.ActiveChain[0] != nil && lvolName == r.ActiveChain[0].Name) {
+		if IsBackingImageSnapLvolName(lvolName) {
+			continue
+		}
+		if lvolName == r.Name {
 			continue
 		}
 		if IsReplicaExpiredLvol(r.Name, lvolName) {
@@ -1900,7 +1903,7 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, srcReplicaNa
 		if _, err := spdkClient.BdevLvolDelete(lvol.UUID); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 			return "", err
 		}
-		r.log.Debugf("Replica found and deleted the redundant lvol %s(%s) for dst replica %v rebuilding start", lvol.Aliases[0], lvol.UUID, r.Name)
+		r.log.Infof("Replica found and deleted the redundant lvol %s(%s) for dst replica %v rebuilding start", lvol.Aliases[0], lvol.UUID, r.Name)
 	}
 
 	r.rebuildingDstCache.rebuildingError = ""
@@ -2059,6 +2062,9 @@ func (r *Replica) doCleanupForRebuildingDst(spdkClient *spdkclient.Client) error
 			chainLvolMap[inChainLvol.Name] = inChainLvol
 		}
 		for lvolName, lvol := range bdevLvolMap {
+			if IsBackingImageSnapLvolName(lvolName) {
+				continue
+			}
 			if lvolName == r.Name || IsRebuildingLvol(lvolName) || IsReplicaExpiredLvol(r.Name, lvolName) {
 				continue
 			}
@@ -2081,7 +2087,7 @@ func (r *Replica) doCleanupForRebuildingDst(spdkClient *spdkclient.Client) error
 			if _, err := spdkClient.BdevLvolDelete(lvol.Aliases[0]); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 				return err
 			}
-			r.log.Debugf("Replica found and deleted the redundant lvol %s(%s) for dst replica %v rebuilding cleanup", lvol.Aliases[0], lvol.UUID, r.Name)
+			r.log.Infof("Replica found and deleted the redundant lvol %s(%s) for dst replica %v rebuilding cleanup", lvol.Aliases[0], lvol.UUID, r.Name)
 		}
 	}
 
