@@ -258,7 +258,7 @@ func (r *Replica) stopSnapshotHash(spdkClient *spdkclient.Client, parentLvol *Lv
 		return nil
 	}
 	if hashStatus.State == types.ProgressStateInProgress {
-		if _, err := spdkClient.BdevLvolStopSnapshotChecksum(parentLvol.Alias); err != nil && jsonrpc.IsJSONRPCRespErrorNoSuchProcess(err) {
+		if _, err := spdkClient.BdevLvolStopSnapshotChecksum(parentLvol.Alias); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchProcess(err) {
 			return err
 		}
 		r.SnapshotLvolHashStatusMap.Delete(parentLvol.Name)
@@ -1465,26 +1465,17 @@ func (r *Replica) SnapshotHash(spdkClient *spdkclient.Client, snapshotName strin
 
 // SnapshotHashStatus asks the replica snapshot lvol checksum status
 func (r *Replica) SnapshotHashStatus(snapshotName string) (state, checksum, errMsg string, silentlyCorrupted bool, err error) {
-	updateRequired := false
-
 	r.Lock()
 	defer func() {
 		r.Unlock()
 
-		if updateRequired {
-			r.UpdateCh <- nil
-		}
-	}()
-
-	defer func() {
 		if err != nil && r.State != types.InstanceStateError {
-			r.State = types.InstanceStateError
-			updateRequired = true
+			r.log.WithError(err).Warnf("Replica %v failed to get hash status for snapshot %s", r.Name, snapshotName)
 		}
 	}()
 
 	if len(r.ActiveChain) < 2 {
-		return "", "", "", false, fmt.Errorf("invalid chain length %d for replica snapshot purge", len(r.ActiveChain))
+		return "", "", "", false, fmt.Errorf("invalid chain length %d for replica snapshot hash status", len(r.ActiveChain))
 	}
 
 	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
