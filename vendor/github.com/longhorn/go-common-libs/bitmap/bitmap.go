@@ -18,7 +18,7 @@ type Bitmap struct {
 // NewBitmap allocate a bitmap range from [start, end], notice the end is included
 func NewBitmap(start, end int32) (*Bitmap, error) {
 	if end < start {
-		return nil, fmt.Errorf("Invalid range, end (%v) cannot be less than start (%v)", end, start)
+		return nil, fmt.Errorf("invalid range, end (%v) cannot be less than start (%v)", end, start)
 	}
 
 	size := end - start + 1
