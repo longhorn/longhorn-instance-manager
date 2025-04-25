@@ -116,8 +116,13 @@ github.com/longhorn/go-iscsi-helper v0.0.0-20250413065808-b76b395d7da9 h1:hW2szu
 github.com/longhorn/go-iscsi-helper v0.0.0-20250413065808-b76b395d7da9/go.mod h1:T+ZI2dPPt9tj4suw8pBiOh3E0930/abnIe4Nr71WCs4=
 github.com/longhorn/go-spdk-helper v0.0.0-20250422073040-bb5fe0ae1d17 h1:zkhXghEfmRNpyI6qZACc2LvpQqF3VEZF2Z40veEeEZY=
 github.com/longhorn/go-spdk-helper v0.0.0-20250422073040-bb5fe0ae1d17/go.mod h1:92fHXPUhed51zY2ZzlaNDwN5+p3n/iJgBz4C0Y1ADgc=
+<<<<<<< HEAD
 github.com/longhorn/longhorn-engine v1.9.0-dev-20250420 h1:/X9iL0Mnj9SBhQ/HBhaD95C489hvWewgLF+35rqdjns=
 github.com/longhorn/longhorn-engine v1.9.0-dev-20250420/go.mod h1:XNzVRcOdJHxy3QmDjAYDEKWgdD/+U6qM6BVj3UiPaHo=
+=======
+github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d h1:JdkTIIaKT0uUU80Ncl26JeAqT727PgPJMaqjf0OUfAE=
+github.com/longhorn/longhorn-engine v1.9.0-dev-20250223.0.20250225091521-921f63f3a87d/go.mod h1:qTsHK0nU6Myh4XGnuqfsPG4FpeLh7Vki2hLl/1P0iuc=
+>>>>>>> eb3f9b2 (fix: update vendor for v2 snapshot hash bugs)
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20250425092624-ced3040fe3e8 h1:26qIY3JwgDCEIGTpMUt23ZLYQkkzUUma3gJmW0068xk=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20250425092624-ced3040fe3e8/go.mod h1:nPCGGwihcFThXMXtqlVw2pCKHVshRbLzXatza9m/BNw=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c h1:OFz3haCSPdgiiJvXLBeId/4dPu0dxIEqkQkfNMufLwc=
