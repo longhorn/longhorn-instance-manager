@@ -31,6 +31,7 @@ type ProxyOps interface {
 	ReplicaAdd(context.Context, *rpc.EngineReplicaAddRequest) (*emptypb.Empty, error)
 	ReplicaList(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineReplicaListProxyResponse, error)
 	ReplicaRebuildingStatus(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineReplicaRebuildStatusProxyResponse, error)
+	ReplicaRebuildingQosSet(context.Context, *rpc.EngineReplicaRebuildingQosSetRequest) (*emptypb.Empty, error)
 	ReplicaRemove(context.Context, *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error)
 	ReplicaVerifyRebuild(context.Context, *rpc.EngineReplicaVerifyRebuildRequest) (*emptypb.Empty, error)
 	ReplicaModeUpdate(context.Context, *rpc.EngineReplicaModeUpdateRequest) (*emptypb.Empty, error)
