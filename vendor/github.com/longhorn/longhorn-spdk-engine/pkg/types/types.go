@@ -1,6 +1,11 @@
 package types
 
-import "github.com/longhorn/types/pkg/generated/spdkrpc"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+)
 
 type Mode string
 
@@ -103,3 +108,20 @@ const (
 	LonghornBackingImageSnapshotAttrUUID         = "longhorn_backing_image_uuid"
 	LonghornBackingImageSnapshotAttrPrepareState = "longhorn_backing_image_prepare_state"
 )
+
+// Backing image related utility functions
+const (
+	BackingImageTempHeadLvolSuffix = "temp-head"
+)
+
+func IsBackingImageSnapLvolName(lvolName string) bool {
+	return strings.HasPrefix(lvolName, "bi-") && !strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
+}
+
+func GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName string) string {
+	return strings.TrimSuffix(lvolName, fmt.Sprintf("-%s", BackingImageTempHeadLvolSuffix))
+}
+
+func IsBackingImageTempHead(lvolName string) bool {
+	return strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
+}

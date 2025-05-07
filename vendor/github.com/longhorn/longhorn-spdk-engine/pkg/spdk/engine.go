@@ -1045,13 +1045,13 @@ func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
 					currentReplicaAncestorName := ancestorApiLvol.Name
 					// The ancestor can be backing image, so we need to extract the backing image name from the lvol name
 					// Notice that, the disks are not the same for all the replicas, so their backing image lvol names are not the same.
-					if IsBackingImageSnapLvolName(candidateReplicaAncestorName) {
+					if types.IsBackingImageSnapLvolName(candidateReplicaAncestorName) {
 						candidateReplicaAncestorName, _, err = ExtractBackingImageAndDiskUUID(candidateReplicaAncestorName)
 						if err != nil {
 							e.log.WithError(err).Warnf("BUG: ancestor name %v is from backingImage.Snapshot lvol name, it should be a valid backing image lvol name", candidateReplicaAncestorName)
 						}
 					}
-					if IsBackingImageSnapLvolName(currentReplicaAncestorName) {
+					if types.IsBackingImageSnapLvolName(currentReplicaAncestorName) {
 						currentReplicaAncestorName, _, err = ExtractBackingImageAndDiskUUID(currentReplicaAncestorName)
 						if err != nil {
 							e.log.WithError(err).Warnf("BUG: ancestor name %v is from backingImage.Snapshot lvol name, it should be a valid backing image lvol name", currentReplicaAncestorName)
@@ -1626,7 +1626,7 @@ func getRebuildingSnapshotList(srcReplicaServiceCli *client.SPDKClient, srcRepli
 	ancestorSnapshotName, latestSnapshotName := "", ""
 	for snapshotName, snapApiLvol := range rpcSrcReplica.Snapshots {
 		// If parent is empty or the parent is a backing image snapshot, it's the ancestor snapshot
-		if snapApiLvol.Parent == "" || IsBackingImageSnapLvolName(snapApiLvol.Parent) {
+		if snapApiLvol.Parent == "" || types.IsBackingImageSnapLvolName(snapApiLvol.Parent) {
 			ancestorSnapshotName = snapshotName
 		}
 		if snapApiLvol.Children[types.VolumeHead] {

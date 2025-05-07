@@ -26,8 +26,6 @@ const (
 	ReplicaExpiredLvolSuffix     = "expired"
 	RebuildingSnapshotNamePrefix = "rebuild"
 
-	BackingImageTempHeadLvolSuffix = "temp-head"
-
 	SyncTimeout = 60 * time.Minute
 
 	nvmeNguidLength = 32
@@ -166,20 +164,8 @@ func GetBackingImageSnapLvolName(backingImageName string, lvsUUID string) string
 	return fmt.Sprintf("bi-%s-disk-%s", backingImageName, lvsUUID)
 }
 
-func IsBackingImageSnapLvolName(lvolName string) bool {
-	return strings.HasPrefix(lvolName, "bi-") && !strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
-}
-
 func GetBackingImageTempHeadLvolName(backingImageName string, lvsUUID string) string {
 	return fmt.Sprintf("bi-%s-disk-%s-temp-head", backingImageName, lvsUUID)
-}
-
-func GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName string) string {
-	return strings.TrimSuffix(lvolName, fmt.Sprintf("-%s", BackingImageTempHeadLvolSuffix))
-}
-
-func IsBackingImageTempHead(lvolName string) bool {
-	return strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
 }
 
 func GetReplicaSnapshotLvolNamePrefix(replicaName string) string {
