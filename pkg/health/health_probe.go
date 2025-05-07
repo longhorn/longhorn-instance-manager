@@ -53,3 +53,13 @@ func (hc *CheckServer) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Healt
 		time.Sleep(time.Second)
 	}
 }
+
+func (hc *CheckServer) List(context.Context, *healthpb.HealthListRequest) (*healthpb.HealthListResponse, error) {
+	return &healthpb.HealthListResponse{
+		Statuses: map[string]*healthpb.HealthCheckResponse{
+			"grpc": {
+				Status: healthpb.HealthCheckResponse_SERVING,
+			},
+		},
+	}, nil
+}
