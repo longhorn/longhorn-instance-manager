@@ -242,7 +242,7 @@ func (r *Replica) replicaLvolFilter(bdev *spdktypes.BdevInfo) bool {
 	}
 	lvolName := spdktypes.GetLvolNameFromAlias(bdev.Aliases[0])
 	// it is okay to have backing image snapshot in the results, because we exclude it when finding root or construct the snapshot map
-	return IsReplicaLvol(r.Name, lvolName) || IsBackingImageSnapLvolName(lvolName)
+	return IsReplicaLvol(r.Name, lvolName) || types.IsBackingImageSnapLvolName(lvolName)
 }
 
 func (r *Replica) stopSnapshotHash(spdkClient *spdkclient.Client, parentLvol *Lvol) error {
@@ -996,7 +996,7 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 			return err
 		}
 		for lvolName, bdevLvol := range bdevLvolMap {
-			if IsBackingImageSnapLvolName(lvolName) {
+			if types.IsBackingImageSnapLvolName(lvolName) {
 				for _, childLvolName := range bdevLvol.DriverSpecific.Lvol.Clones {
 					if !IsReplicaLvol(r.Name, childLvolName) {
 						continue
@@ -1907,7 +1907,7 @@ func (r *Replica) RebuildingDstStart(spdkClient *spdkclient.Client, srcReplicaNa
 		return "", err
 	}
 	for lvolName, lvol := range bdevLvolMap {
-		if IsBackingImageSnapLvolName(lvolName) {
+		if types.IsBackingImageSnapLvolName(lvolName) {
 			continue
 		}
 		if lvolName == r.Name {
@@ -2108,7 +2108,7 @@ func (r *Replica) doCleanupForRebuildingDst(spdkClient *spdkclient.Client) error
 			chainLvolMap[inChainLvol.Name] = inChainLvol
 		}
 		for lvolName, lvol := range bdevLvolMap {
-			if IsBackingImageSnapLvolName(lvolName) {
+			if types.IsBackingImageSnapLvolName(lvolName) {
 				continue
 			}
 			if lvolName == r.Name || IsRebuildingLvol(lvolName) || IsReplicaExpiredLvol(r.Name, lvolName) {
@@ -2160,7 +2160,7 @@ func (r *Replica) rebuildingDstShallowCopyPrepare(spdkClient *spdkclient.Client,
 		return "", fmt.Errorf("cannot find snapshot %s in the rebuilding snapshot list for replica %s shallow copy prepare", snapshotName, r.Name)
 	}
 	if srcSnapSvcLvol.Parent != "" {
-		if IsBackingImageSnapLvolName(srcSnapSvcLvol.Parent) {
+		if types.IsBackingImageSnapLvolName(srcSnapSvcLvol.Parent) {
 			if r.BackingImage == nil {
 				return "", fmt.Errorf("found a src snapshot lvol %s has parent backing image %s but the dst backing image lvol is nil for dst replica %v rebuilding snapshot %s shallow copy prepare", srcSnapSvcLvol.Name, srcSnapSvcLvol.Parent, r.Name, snapshotName)
 			}

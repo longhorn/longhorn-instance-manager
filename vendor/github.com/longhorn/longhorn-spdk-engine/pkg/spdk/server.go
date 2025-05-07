@@ -258,11 +258,11 @@ func (s *Server) verify() (err error) {
 	// Backing image lvol name will be "bi-${biName}-disk-${lvsUUID}"
 	// Backing image temp lvol name will be "bi-${biName}-disk-${lvsUUID}-temp-head"
 	for lvolName, bdevLvol := range bdevLvolMap {
-		if bdevLvol.DriverSpecific.Lvol.Snapshot && !IsBackingImageSnapLvolName(lvolName) {
+		if bdevLvol.DriverSpecific.Lvol.Snapshot && !types.IsBackingImageSnapLvolName(lvolName) {
 			continue
 		}
-		if IsBackingImageTempHead(lvolName) {
-			if s.backingImageMap[GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName)] == nil {
+		if types.IsBackingImageTempHead(lvolName) {
+			if s.backingImageMap[types.GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName)] == nil {
 				lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
 				logrus.Infof("Found one backing image temp head lvol %v while there is no backing image record in the server", lvolName)
 				if err := cleanupOrphanBackingImageTempHead(spdkClient, lvsUUIDNameMap[lvsUUID], lvolName); err != nil {
@@ -282,7 +282,7 @@ func (s *Server) verify() (err error) {
 				continue
 			}
 		}
-		if IsBackingImageSnapLvolName(lvolName) {
+		if types.IsBackingImageSnapLvolName(lvolName) {
 			lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
 			backingImageName, _, err := ExtractBackingImageAndDiskUUID(lvolName)
 			if err != nil {

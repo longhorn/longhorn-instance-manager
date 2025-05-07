@@ -47,12 +47,16 @@ func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
 	if l == nil {
 		return nil
 	}
+	parent := l.Parent
+	if types.IsBackingImageSnapLvolName(parent) {
+		parent = ""
+	}
 	return &Lvol{
 		Name: l.Name,
 		// UUID:         l.Uuid,
 		SpecSize:          l.SpecSize,
 		ActualSize:        l.ActualSize,
-		Parent:            l.Parent,
+		Parent:            parent,
 		Children:          l.Children,
 		CreationTime:      l.CreationTime,
 		UserCreated:       l.UserCreated,
