@@ -2,7 +2,7 @@
 FROM  registry.suse.com/bci/golang:1.24 AS gobuilder
 
 ARG ARCH=amd64
-ARG SRC_BRANCH=main
+ARG SRC_BRANCH=master
 ARG SRC_TAG
 
 RUN zypper -n ref && \
@@ -41,7 +41,7 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
 FROM registry.suse.com/bci/bci-base:15.6 AS cbuilder
 
 ARG ARCH=amd64
-ARG SRC_BRANCH=main
+ARG SRC_BRANCH=master
 ARG SRC_TAG
 
 RUN zypper -n ref && \
