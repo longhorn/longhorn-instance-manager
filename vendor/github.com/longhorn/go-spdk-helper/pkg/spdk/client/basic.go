@@ -513,7 +513,39 @@ func (c *Client) BdevLvolStartShallowCopy(srcLvolName, dstBdevName string) (oper
 	return shallowCopy.OperationId, nil
 }
 
+// BdevLvolStartRangeShallowCopy start a range shallow copy of lvol over a given bdev.
+// For the indexes specified in the array, clusters allocated to the lvol will be written on the bdev,
+// for the others an unmap command is sent to the bdev.
+// Returns the operation ID needed to check the shallow copy status with BdevLvolCheckShallowCopy.
+//
+//	"srcLvolName": Required. UUID or alias of lvol to create a copy from.
+//
+//	"dstBdevName": Required. Name of the bdev that acts as destination for the copy.
+//
+//	"clusters": Required. Array of clusters indexes to be synchronized with copy or unmap.
+func (c *Client) BdevLvolStartRangeShallowCopy(srcLvolName, dstBdevName string, clusters []uint64) (operationId uint32, err error) {
+	req := spdktypes.BdevLvolRangeShallowCopyRequest{
+		SrcLvolName: srcLvolName,
+		DstBdevName: dstBdevName,
+		Clusters:    clusters,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_start_range_shallow_copy", req)
+	if err != nil {
+		return 0, err
+	}
+
+	shallowCopy := spdktypes.ShallowCopy{}
+	err = json.Unmarshal(cmdOutput, &shallowCopy)
+	if err != nil {
+		return 0, err
+	}
+
+	return shallowCopy.OperationId, nil
+}
+
 // BdevLvolCheckShallowCopy check the status of a shallow copy previously started.
+// It can be used to check both BdevLvolStartShallowCopy and BdevLvolStartRangeShallowCopy.
 //
 //	"operationId": Required. Operation ID of the shallow copy to check.
 func (c *Client) BdevLvolCheckShallowCopy(operationId uint32) (*spdktypes.ShallowCopyStatus, error) {
@@ -599,7 +631,57 @@ func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum string, err 
 	return strconv.FormatUint(snapshotChecksum.Checksum, 10), nil
 }
 
+// BdevLvolRegisterRangeChecksums compute and store a checksum for the whole snapshot and a checksum for every snapshot's cluster data. Overwrite old checksums if already registered.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolRegisterRangeChecksums(name string) (registered bool, err error) {
+	req := spdktypes.BdevLvolRegisterRangeChecksumsRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_register_snapshot_range_checksums", req)
+	if err != nil {
+		return false, err
+	}
+
+	return registered, json.Unmarshal(cmdOutput, &registered)
+}
+
+// BdevLvolGetRangeChecksums gets snapshot's stored checksums for the clusters in the range. The checksums must have been previously registered.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+//
+//	"clusterStartIndex": Required. The index of the first cluster in the range.
+//
+//	"clusterCount": Required. The number of clusters in the range.
+func (c *Client) BdevLvolGetRangeChecksums(name string, clusterStartIndex, clusterCount uint64) (dataChecksums map[uint64]uint64, err error) {
+	req := spdktypes.BdevLvolGetRangeChecksumsRequest{
+		Name:              name,
+		ClusterStartIndex: clusterStartIndex,
+		ClusterCount:      clusterCount,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_get_snapshot_range_checksums", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var rangeChecksums []spdktypes.BdevLvolRangeChecksum
+	err = json.Unmarshal(cmdOutput, &rangeChecksums)
+	if err != nil {
+		return nil, err
+	}
+
+	dataChecksums = make(map[uint64]uint64)
+	for _, clusterChecksum := range rangeChecksums {
+		dataChecksums[clusterChecksum.ClusterIndex] = clusterChecksum.Checksum
+	}
+
+	return dataChecksums, nil
+}
+
 // BdevLvolStopSnapshotChecksum stop an ongoing registration of a snapshot's checksum.
+// It can be used to stop both BdevLvolRegisterSnapshotChecksum and BdevLvolRegisterRangeChecksums.
 //
 //	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
 func (c *Client) BdevLvolStopSnapshotChecksum(name string) (registered bool, err error) {

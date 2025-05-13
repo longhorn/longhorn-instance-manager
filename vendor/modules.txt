@@ -112,8 +112,8 @@ github.com/c9s/goprocinfo/linux
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/cpuguy83/go-md2man/v2 v2.0.5
-## explicit; go 1.11
+# github.com/cpuguy83/go-md2man/v2 v2.0.7
+## explicit; go 1.12
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
@@ -234,7 +234,7 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.0.0-20250511111201-ed9e6caeaf23
+# github.com/longhorn/go-spdk-helper v0.0.0-20250513010708-f55efaeb7369
 ## explicit; go 1.23.0
 github.com/longhorn/go-spdk-helper/pkg/initiator
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
