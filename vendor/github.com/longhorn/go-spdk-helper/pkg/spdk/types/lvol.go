@@ -47,10 +47,11 @@ type ShallowCopy struct {
 }
 
 type ShallowCopyStatus struct {
-	State          string `json:"state"`
-	CopiedClusters uint64 `json:"copied_clusters"`
-	TotalClusters  uint64 `json:"total_clusters"`
-	Error          string `json:"error,omitempty"`
+	State            string `json:"state"`
+	CopiedClusters   uint64 `json:"copied_clusters"`
+	UnmappedClusters uint64 `json:"unmapped_clusters,omitempty"`
+	TotalClusters    uint64 `json:"total_clusters"`
+	Error            string `json:"error,omitempty"`
 }
 
 type BdevLvolCreateLvstoreRequest struct {
@@ -149,6 +150,12 @@ type BdevLvolShallowCopyRequest struct {
 	DstBdevName string `json:"dst_bdev_name"`
 }
 
+type BdevLvolRangeShallowCopyRequest struct {
+	SrcLvolName string   `json:"src_lvol_name"`
+	DstBdevName string   `json:"dst_bdev_name"`
+	Clusters    []uint64 `json:"clusters"`
+}
+
 type BdevLvolGetFragmapRequest struct {
 	Name   string `json:"name"`
 	Offset uint64 `json:"offset"`
@@ -164,12 +171,27 @@ type BdevLvolRegisterSnapshotChecksumRequest struct {
 	Name string `json:"name"`
 }
 
+type BdevLvolRegisterRangeChecksumsRequest struct {
+	Name string `json:"name"`
+}
+
 type BdevLvolGetSnapshotChecksumRequest struct {
 	Name string `json:"name"`
 }
 
+type BdevLvolGetRangeChecksumsRequest struct {
+	Name              string `json:"name"`
+	ClusterStartIndex uint64 `json:"cluster_start_index"`
+	ClusterCount      uint64 `json:"cluster_count"`
+}
+
 type BdevLvolSnapshotChecksum struct {
 	Checksum uint64 `json:"checksum"`
+}
+
+type BdevLvolRangeChecksum struct {
+	ClusterIndex uint64 `json:"cluster_index"`
+	Checksum     uint64 `json:"checksum"`
 }
 
 type BdevLvolStopSnapshotChecksumRequest struct {

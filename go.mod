@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20250421031654-0ef762b84472
 	github.com/longhorn/go-common-libs v0.0.0-20250510103049-801acb30430c
-	github.com/longhorn/go-spdk-helper v0.0.0-20250422073040-bb5fe0ae1d17
+	github.com/longhorn/go-spdk-helper v0.0.0-20250513010708-f55efaeb7369
 	github.com/longhorn/longhorn-engine v1.9.0-rc2
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250507054315-c1b689d69709
 	github.com/longhorn/types v0.0.0-20250416235128-0c407ad2b792
@@ -34,7 +34,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.16.0 // indirect
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
