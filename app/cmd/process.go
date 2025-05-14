@@ -80,6 +80,11 @@ func ProcessDeleteCmd() cli.Command {
 			cli.StringFlag{
 				Name: "name",
 			},
+			cli.StringFlag{
+				Name:     "uuid",
+				Required: false,
+				Usage:    "Validate the process UUID. If provided, the process will be deleted only when both name and UUID are matched.",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := deleteProcess(c); err != nil {
@@ -103,7 +108,7 @@ func deleteProcess(c *cli.Context) error {
 		}
 	}()
 
-	process, err := cli.ProcessDelete(c.String("name"))
+	process, err := cli.ProcessDelete(c.String("name"), c.String("uuid"))
 	if err != nil {
 		return errors.Wrap(err, "failed to delete process")
 	}
