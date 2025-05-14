@@ -28,6 +28,7 @@ type Replica struct {
 	ErrorMsg         string           `json:"error_msg"`
 	Rebuilding       bool             `json:"rebuilding"`
 	BackingImageName string           `json:"backing_image_name"`
+	UUID             string           `json:"uuid"`
 }
 
 type Lvol struct {
@@ -98,6 +99,7 @@ func ProtoReplicaToReplica(r *spdkrpc.Replica) *Replica {
 		State:      r.State,
 		ErrorMsg:   r.ErrorMsg,
 		Rebuilding: r.Rebuilding,
+		UUID:       r.Uuid,
 	}
 	for snapName, snapProtoLvol := range r.Snapshots {
 		res.Snapshots[snapName] = ProtoLvolToLvol(snapProtoLvol)
@@ -130,6 +132,7 @@ func ReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 		Rebuilding: r.Rebuilding,
 		State:      r.State,
 		ErrorMsg:   r.ErrorMsg,
+		Uuid:       r.UUID,
 	}
 
 	if r.BackingImageName != "" {
@@ -157,6 +160,7 @@ type Engine struct {
 	State             string                `json:"state"`
 	ErrorMsg          string                `json:"error_msg"`
 	UblkID            int32                 `json:"ublk_id"`
+	UUID              string                `json:"uuid"`
 }
 
 func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
@@ -179,6 +183,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		State:             e.State,
 		ErrorMsg:          e.ErrorMsg,
 		UblkID:            e.UblkId,
+		UUID:              e.Uuid,
 	}
 	for rName, mode := range e.ReplicaModeMap {
 		res.ReplicaModeMap[rName] = types.GRPCReplicaModeToReplicaMode(mode)
