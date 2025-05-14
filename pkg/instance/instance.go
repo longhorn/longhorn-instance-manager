@@ -190,6 +190,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
 		"name":            req.Name,
+		"uuid":            req.Uuid,
 		"type":            req.Type,
 		"dataEngine":      req.DataEngine,
 		"diskUuid":        req.DiskUuid,
@@ -214,6 +215,7 @@ func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		if closeErr := pmClient.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
 				"name":            req.Name,
+				"uuid":            req.Uuid,
 				"type":            req.Type,
 				"dataEngine":      req.DataEngine,
 				"diskUuid":        req.DiskUuid,
@@ -222,7 +224,7 @@ func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		}
 	}()
 
-	process, err := pmClient.ProcessDelete(req.Name)
+	process, err := pmClient.ProcessDelete(req.Name, req.Uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +240,7 @@ func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
 				"name":            req.Name,
+				"uuid":            req.Uuid,
 				"type":            req.Type,
 				"dataEngine":      req.DataEngine,
 				"diskUuid":        req.DiskUuid,
@@ -245,6 +248,10 @@ func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 			}).WithError(closeErr).Warn("Failed to close SPDK Client")
 		}
 	}()
+
+	if req.Uuid != "" {
+		logrus.Debugf("Deleting instance %v with UUID %v", req.Name, req.Uuid)
+	}
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
