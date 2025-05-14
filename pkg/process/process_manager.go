@@ -230,13 +230,17 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 }
 
 // ProcessDelete will delete the process named by the request.
+// If UUID is specified, the process will be deleted only if the UUID matches.
 // If the process doesn't exist, the deletion will return with ErrorNotFound
 func (pm *Manager) ProcessDelete(ctx context.Context, req *rpc.ProcessDeleteRequest) (ret *rpc.ProcessResponse, err error) {
-	logrus.Infof("Process Manager: prepare to delete process %v", req.Name)
+	logrus.Infof("Process Manager: prepare to delete process %v, UUID %v", req.Name, req.Uuid)
 
 	p := pm.findProcess(req.Name)
 	if p == nil {
 		return nil, status.Errorf(codes.NotFound, "cannot find process %v", req.Name)
+	}
+	if req.Uuid != "" && p.UUID != req.Uuid {
+		return nil, status.Errorf(codes.NotFound, "cannot find process %v with UUID %v", req.Name, req.Uuid)
 	}
 
 	p.Stop()
