@@ -129,6 +129,7 @@ func (p *Process) RPCResponse() *rpc.ProcessResponse {
 			PortStart:  p.PortStart,
 			PortEnd:    p.PortEnd,
 			Conditions: p.Conditions,
+			Uuid:       p.UUID,
 		},
 	}
 }
