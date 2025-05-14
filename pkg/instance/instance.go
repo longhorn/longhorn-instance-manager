@@ -769,6 +769,7 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse, processType strin
 			TargetPortEnd:   targetPortEnd,
 			ErrorMsg:        p.Status.ErrorMsg,
 			Conditions:      p.Status.Conditions,
+			Uuid:            p.Status.Uuid,
 		},
 		Deleted: p.Deleted,
 	}
@@ -789,6 +790,7 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 			PortStart:  r.PortStart,
 			PortEnd:    r.PortEnd,
 			Conditions: make(map[string]bool),
+			Uuid:       r.UUID,
 		},
 	}
 }
@@ -813,6 +815,7 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			StandbyTargetPortEnd:   e.StandbyTargetPort,
 			Conditions:             make(map[string]bool),
 			UblkId:                 e.UblkID,
+			Uuid:                   e.UUID,
 		},
 	}
 }
