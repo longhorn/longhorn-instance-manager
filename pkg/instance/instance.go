@@ -190,6 +190,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
 		"name":            req.Name,
+		"uuid":            req.Uuid,
 		"type":            req.Type,
 		"dataEngine":      req.DataEngine,
 		"diskUuid":        req.DiskUuid,
@@ -214,6 +215,7 @@ func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		if closeErr := pmClient.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
 				"name":            req.Name,
+				"uuid":            req.Uuid,
 				"type":            req.Type,
 				"dataEngine":      req.DataEngine,
 				"diskUuid":        req.DiskUuid,
@@ -222,7 +224,7 @@ func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		}
 	}()
 
-	process, err := pmClient.ProcessDelete(req.Name)
+	process, err := pmClient.ProcessDelete(req.Name, req.Uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +240,7 @@ func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
 				"name":            req.Name,
+				"uuid":            req.Uuid,
 				"type":            req.Type,
 				"dataEngine":      req.DataEngine,
 				"diskUuid":        req.DiskUuid,
@@ -769,6 +772,7 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse, processType strin
 			TargetPortEnd:   targetPortEnd,
 			ErrorMsg:        p.Status.ErrorMsg,
 			Conditions:      p.Status.Conditions,
+			Uuid:            p.Status.Uuid,
 		},
 		Deleted: p.Deleted,
 	}
@@ -789,6 +793,7 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 			PortStart:  r.PortStart,
 			PortEnd:    r.PortEnd,
 			Conditions: make(map[string]bool),
+			Uuid:       r.UUID,
 		},
 	}
 }
@@ -813,6 +818,7 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			StandbyTargetPortEnd:   e.StandbyTargetPort,
 			Conditions:             make(map[string]bool),
 			UblkId:                 e.UblkID,
+			Uuid:                   e.UUID,
 		},
 	}
 }
