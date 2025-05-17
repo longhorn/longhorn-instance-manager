@@ -1625,7 +1625,8 @@ func getRebuildingSnapshotList(srcReplicaServiceCli *client.SPDKClient, srcRepli
 	}
 	ancestorSnapshotName, latestSnapshotName := "", ""
 	for snapshotName, snapApiLvol := range rpcSrcReplica.Snapshots {
-		// If parent is empty or the parent is a backing image snapshot, it's the ancestor snapshot
+		// If the parent is empty, it's the ancestor snapshot
+		// Notice that the ancestor snapshot parent is still empty even if there is a backing image
 		if snapApiLvol.Parent == "" || types.IsBackingImageSnapLvolName(snapApiLvol.Parent) {
 			ancestorSnapshotName = snapshotName
 		}
