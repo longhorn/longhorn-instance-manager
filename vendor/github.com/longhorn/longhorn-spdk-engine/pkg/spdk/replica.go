@@ -2159,26 +2159,14 @@ func (r *Replica) rebuildingDstShallowCopyPrepare(spdkClient *spdkclient.Client,
 	if srcSnapSvcLvol == nil {
 		return "", fmt.Errorf("cannot find snapshot %s in the rebuilding snapshot list for replica %s shallow copy prepare", snapshotName, r.Name)
 	}
-	if srcSnapSvcLvol.Parent != "" {
-		if types.IsBackingImageSnapLvolName(srcSnapSvcLvol.Parent) {
-			if r.BackingImage == nil {
-				return "", fmt.Errorf("found a src snapshot lvol %s has parent backing image %s but the dst backing image lvol is nil for dst replica %v rebuilding snapshot %s shallow copy prepare", srcSnapSvcLvol.Name, srcSnapSvcLvol.Parent, r.Name, snapshotName)
-			}
-			srcBIName, _, err := ExtractBackingImageAndDiskUUID(srcSnapSvcLvol.Parent)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to extract backing image name from the src snapshot lvol %s parent %s for dst replica %v rebuilding snapshot %s shallow copy prepare", srcSnapSvcLvol.Name, srcSnapSvcLvol.Parent, r.Name, snapshotName)
-			}
-			dstBIName, _, err := ExtractBackingImageAndDiskUUID(r.BackingImage.Name)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to extract backing image name from the dst backing image lvol %s for dst replica %v rebuilding snapshot %s shallow copy prepare", r.BackingImage.Name, r.Name, snapshotName)
-			}
-			if dstBIName != srcBIName {
-				return "", fmt.Errorf("found mismatching backing image name between the dst backing image lvol %s and the src snapshot %s parent %s for dst replica %v rebuilding snapshot shallow copy prepare", r.BackingImage.Name, snapshotName, srcSnapSvcLvol.Parent, r.Name)
-			}
+
+	// For the ancestor snapshot of the rebuilding snapshot list, its parent will not record the backing image info
+	if srcSnapSvcLvol.Parent == "" {
+		if r.BackingImage != nil {
 			dstSnapshotParentLvolName = r.BackingImage.Name
-		} else {
-			dstSnapshotParentLvolName = GetReplicaSnapshotLvolName(r.Name, srcSnapSvcLvol.Parent)
 		}
+	} else {
+		dstSnapshotParentLvolName = GetReplicaSnapshotLvolName(r.Name, srcSnapSvcLvol.Parent)
 	}
 
 	// Blindly clean up the existing rebuilding lvol
@@ -2517,17 +2505,26 @@ func (r *Replica) RebuildingDstSnapshotCreate(spdkClient *spdkclient.Client, sna
 			return fmt.Errorf("cannot find snapshot %s in the rebuilding snapshot list during dst replica %s rebuilding snapshot creation", snapshotName, r.Name)
 		}
 		// Guarantee the reused snapshot lvol has the correct parent
-		if GetSnapshotNameFromReplicaSnapshotLvolName(r.Name, snapSvcLvol.Parent) != srcSnapSvcLvol.Parent {
-			if srcSnapSvcLvol.Parent == "" {
+		dstSnapParentLvolName := ""
+		if srcSnapSvcLvol.Parent == "" {
+			if r.BackingImage != nil {
+				dstSnapParentLvolName = r.BackingImage.Name
+			}
+		} else {
+			dstSnapParentLvolName = GetReplicaSnapshotLvolName(r.Name, srcSnapSvcLvol.Parent)
+		}
+		if snapSvcLvol.Parent != dstSnapParentLvolName {
+			// Corner case: the parent field of the src snapshot lvol will be empty even if its actual parent is the backing image
+			if dstSnapParentLvolName == "" {
 				if _, err := spdkClient.BdevLvolDetachParent(snapSvcLvol.Alias); err != nil {
 					return err
 				}
-			} else if !IsReplicaLvol(r.rebuildingDstCache.srcReplicaName, srcSnapSvcLvol.Parent) { // The parent should be the backing image
+			} else if !IsReplicaLvol(r.rebuildingDstCache.srcReplicaName, dstSnapParentLvolName) { // The parent should be the backing image
 				if _, err := spdkClient.BdevLvolSetParent(snapSvcLvol.Alias, spdktypes.GetLvolAlias(r.LvsName, srcSnapSvcLvol.Parent)); err != nil {
 					return err
 				}
 			} else { // The parent should be a regular snapshot lvol
-				if _, err := spdkClient.BdevLvolSetParent(snapSvcLvol.Alias, spdktypes.GetLvolAlias(r.LvsName, GetReplicaSnapshotLvolName(r.Name, srcSnapSvcLvol.Parent))); err != nil {
+				if _, err := spdkClient.BdevLvolSetParent(snapSvcLvol.Alias, spdktypes.GetLvolAlias(r.LvsName, dstSnapParentLvolName)); err != nil {
 					return err
 				}
 			}
