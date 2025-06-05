@@ -320,6 +320,93 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 	return resp, nil
 }
 
+func (p *Proxy) ReplicaRebuildingQosSet(ctx context.Context, req *rpc.EngineReplicaRebuildingQosSetRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":   req.ProxyEngineRequest.Address,
+		"engineName":   req.ProxyEngineRequest.EngineName,
+		"volumeName":   req.ProxyEngineRequest.VolumeName,
+		"dataEngine":   req.ProxyEngineRequest.DataEngine,
+		"qosLimitMbps": req.QosLimitMbps,
+	})
+	log.Trace("Setting qos on replica rebuilding")
+
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return ops.ReplicaRebuildingQosSet(ctx, req)
+}
+
+func (ops V1DataEngineProxyOps) ReplicaRebuildingQosSet(ctx context.Context, req *rpc.EngineReplicaRebuildingQosSetRequest) (resp *emptypb.Empty, err error) {
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+}
+
+func (ops V2DataEngineProxyOps) ReplicaRebuildingQosSet(ctx context.Context, req *rpc.EngineReplicaRebuildingQosSetRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":   req.ProxyEngineRequest.Address,
+		"engineName":   req.ProxyEngineRequest.EngineName,
+		"volumeName":   req.ProxyEngineRequest.VolumeName,
+		"dataEngine":   req.ProxyEngineRequest.DataEngine,
+		"qosLimitMbps": req.QosLimitMbps,
+	})
+
+	engineCli, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
+	}
+	defer func() {
+		if closeErr := engineCli.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close SPDK engine client")
+		}
+	}()
+
+	engine, err := engineCli.EngineGet(req.ProxyEngineRequest.EngineName)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v: %v", req.ProxyEngineRequest.EngineName, err)
+	}
+
+	for replicaName, mode := range engine.ReplicaModeMap {
+		if mode != spdktypes.ModeWO {
+			continue
+		}
+
+		replicaAddress := engine.ReplicaAddressMap[replicaName]
+		if replicaAddress == "" {
+			log.WithField("replicaName", replicaName).Warn("Empty replica address, skipping QoS set")
+			continue
+		}
+
+		replicaCli, err := getSPDKClientFromAddress(replicaAddress)
+		if err != nil {
+			log.WithError(err).WithField("replicaAddress", replicaAddress).
+				Warn("Failed to get SPDK client from replica address")
+			continue
+		}
+		defer func() {
+			if closeErr := replicaCli.Close(); closeErr != nil {
+				log.WithError(closeErr).Warn("Failed to close SPDK replica client")
+			}
+		}()
+
+		if err := replicaCli.ReplicaRebuildingDstSetQosLimit(replicaName, req.QosLimitMbps); err != nil {
+			log.WithError(err).WithFields(logrus.Fields{
+				"replicaName":  replicaName,
+				"replicaAddr":  replicaAddress,
+				"qosLimitMbps": req.QosLimitMbps,
+			}).Warn("Failed to set QoS on replica")
+			continue
+		}
+
+		log.WithFields(logrus.Fields{
+			"replicaName":  replicaName,
+			"replicaAddr":  replicaAddress,
+			"qosLimitMbps": req.QosLimitMbps,
+		}).Trace("Successfully set QoS on replica")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (p *Proxy) ReplicaVerifyRebuild(ctx context.Context, req *rpc.EngineReplicaVerifyRebuildRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
 		"serviceURL": req.ProxyEngineRequest.Address,
