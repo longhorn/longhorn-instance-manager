@@ -199,7 +199,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20250608034139-079a7cc0a3c7
+# github.com/longhorn/backupstore v0.0.0-20250615123957-ffd0212901a3
 ## explicit; go 1.23.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -212,7 +212,7 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-common-libs v0.0.0-20250604144850-3295fad1e72f
+# github.com/longhorn/go-common-libs v0.0.0-20250615123925-72e27d7660fa
 ## explicit; go 1.23.0
 github.com/longhorn/go-common-libs/backup
 github.com/longhorn/go-common-libs/bitmap
@@ -370,7 +370,7 @@ github.com/yusufpapurcu/wmi
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
-# golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
+# golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476
 ## explicit; go 1.23.0
 golang.org/x/exp/constraints
 # golang.org/x/net v0.40.0
@@ -388,7 +388,7 @@ golang.org/x/net/trace
 ## explicit; go 1.18
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sync v0.14.0
+# golang.org/x/sync v0.15.0
 ## explicit; go 1.23.0
 golang.org/x/sync/errgroup
 # golang.org/x/sys v0.33.0
