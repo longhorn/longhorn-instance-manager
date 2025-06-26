@@ -3,6 +3,7 @@ package spdk
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -158,6 +159,11 @@ func BdevLvolInfoToServiceLvol(bdev *spdktypes.BdevInfo) *Lvol {
 	}
 
 	return svcLvol
+}
+
+func IsProbablyReplicaName(name string) bool {
+	matched, _ := regexp.MatchString("^.+-r-[a-zA-Z0-9]{8}$", name)
+	return matched
 }
 
 func GetBackingImageSnapLvolName(backingImageName string, lvsUUID string) string {
