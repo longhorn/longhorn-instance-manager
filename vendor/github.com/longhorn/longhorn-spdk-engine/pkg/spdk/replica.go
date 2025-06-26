@@ -675,6 +675,9 @@ func (r *Replica) prepareHead(spdkClient *spdkclient.Client, backingImage *Backi
 			}
 			r.log.Info("Replica created a new head lvol")
 		}
+	} else {
+		// The head lvol is already available, so we need to update the head cache
+		r.log.Info("Replica head lvol is already available, will directly reuse it")
 	}
 
 	// Blindly clean up then update the caches for the head
