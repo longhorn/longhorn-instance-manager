@@ -166,10 +166,6 @@ type BdevLvolSnapshotChecksum struct {
 	Checksum uint64 `json:"checksum"`
 }
 
-type BdevLvolStopSnapshotChecksumRequest struct {
-	Name string `json:"name"`
-}
-
 func GetLvolAlias(lvsName, lvolName string) string {
 	return fmt.Sprintf("%s/%s", lvsName, lvolName)
 }
