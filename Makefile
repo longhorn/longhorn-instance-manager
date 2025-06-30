@@ -9,6 +9,8 @@ DEFAULT_PLATFORMS := linux/amd64,linux/arm64
 export SRC_BRANCH := $(shell bash -c 'source <(curl -s "https://raw.githubusercontent.com/longhorn/dep-versions/master/scripts/common.sh") && get_branch')
 export SRC_TAG := $(shell git tag --points-at HEAD | head -n 1)
 
+export CACHEBUST := $(shell date +%s)
+
 .dapper:
 	@echo Downloading dapper
 	@curl -sL https://releases.rancher.com/dapper/latest/dapper-`uname -s`-`uname -m` > .dapper.tmp
