@@ -27,20 +27,28 @@ RUN zypper -n ref && \
 # Install packages
 RUN zypper -n install cmake wget curl git less file \
     libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
-    psmisc tox qemu-tools fuse python3-devel git zlib-devel zlib-devel-static \
+    psmisc tox qemu-tools fuse python3-devel zlib-devel zlib-devel-static \
     bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
-    perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 libdevmapper1_03 iproute2 jq docker gcc gcc-c++ && \
+    perl-Config-General libaio-devel glibc-devel-static glibc-devel iptables libltdl7 \
+    libdevmapper1_03 iproute2 jq docker gcc gcc-c++ automake gettext gettext-tools libtool && \
     rm -rf /var/cache/zypp/*
 
 # Install golanci-lint
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
+
+# If TAG is explicitly set and exists in the repo, switch to the tag
+RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
+    cd /usr/src/dep-versions && \
+    if [ -n "${SRC_TAG}" ] && git show-ref --tags ${SRC_TAG} > /dev/null 2>&1; then \
+        echo "Checking out tag ${SRC_TAG}"; \
+        cd /usr/src/dep-versions && git checkout tags/${SRC_TAG}; \
+    fi
+
 # Install libqcow to resolve error:
 #   vendor/github.com/longhorn/longhorn-engine/pkg/qcow/libqcow.go:6:11: fatal error: libqcow.h: No such file or directory
-RUN curl -sSfL https://s3-us-west-1.amazonaws.com/rancher-longhorn/libqcow-alpha-20181117.tar.gz | tar xvzf - -C /usr/src && \
-    cd /usr/src/libqcow-20181117 && \
-    ./configure && \
-    make -j$(nproc) && \
-    make install && \
+RUN export REPO_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="" && \
+    bash /usr/src/dep-versions/scripts/build-libqcow.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}" && \
     ldconfig
 
 # Docker Builx: The docker version in dapper is too old to have buildx. Install it manually.
