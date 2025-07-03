@@ -72,7 +72,7 @@ type ReplicaRebuildStatus struct {
 	Progress              int
 	State                 string
 	FromReplicaAddress    string
-	AppliedRebuildingMbps int64
+	AppliedRebuildingMBps int64
 }
 
 type SnapshotHashStatus struct {
