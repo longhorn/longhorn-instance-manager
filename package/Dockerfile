@@ -38,7 +38,7 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
     chmod +x /usr/local/bin/grpc_health_probe
 
 # Stage 2: build binary from c source code
-FROM registry.suse.com/bci/bci-base:15.6 AS cbuilder
+FROM registry.suse.com/bci/bci-base:15.7 AS cbuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
@@ -50,10 +50,10 @@ RUN zypper -n ref && \
 RUN for i in {1..10}; do \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.7/devel:libraries:c_c++.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.6/devel:tools:building.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.6/filesystems.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.7/devel:tools:building.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.7/filesystems.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
@@ -93,7 +93,7 @@ RUN export REPO_OVERRIDE="" && \
     bash /usr/src/dep-versions/scripts/build-nvme-cli.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Stage 3: copy binaries to release image
-FROM registry.suse.com/bci/bci-base:15.6 AS release
+FROM registry.suse.com/bci/bci-base:15.7 AS release
 
 ARG ARCH=amd64
 
@@ -103,7 +103,7 @@ RUN zypper -n ref && \
 RUN for i in {1..10}; do \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.7/devel:libraries:c_c++.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
