@@ -8,6 +8,7 @@ import (
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	enginerpc "github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ type DiskOps interface {
 	DiskGet(req *rpc.DiskGetRequest) (*rpc.Disk, error)
 	DiskReplicaInstanceList(*rpc.DiskReplicaInstanceListRequest) (*rpc.DiskReplicaInstanceListResponse, error)
 	DiskReplicaInstanceDelete(*rpc.DiskReplicaInstanceDeleteRequest) (*emptypb.Empty, error)
+	MetricsGet(*rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error)
 }
 
 type FilesystemDiskOps struct{}
@@ -265,6 +267,49 @@ func (ops BlockDiskOps) DiskReplicaInstanceDelete(req *rpc.DiskReplicaInstanceDe
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) MetricsGet(ctx context.Context, req *rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error) {
+	log := logrus.WithFields(logrus.Fields{
+		"diskType": req.DiskType,
+		"diskName": req.DiskName,
+		"diskPath": req.DiskPath,
+	})
+
+	log.Trace("Disk Server: Getting disk metrics")
+
+	if req.DiskName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name is required")
+	}
+
+	ops, ok := s.ops[req.DiskType]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported disk type %v", req.DiskType)
+	}
+	return ops.MetricsGet(req)
+}
+
+func (ops FilesystemDiskOps) MetricsGet(req *rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error) {
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported disk type %v", req.DiskType)
+}
+
+func (ops BlockDiskOps) MetricsGet(req *rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error) {
+	metrics, err := ops.spdkClient.MetricsGet(req.DiskName)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
+	}
+
+	// Convert SPDK metrics to ptypes.Metrics format
+	return &rpc.DiskMetricsGetReply{
+		Metrics: &enginerpc.Metrics{
+			ReadThroughput:  metrics.ReadThroughput,
+			WriteThroughput: metrics.WriteThroughput,
+			ReadLatency:     metrics.ReadLatency,
+			WriteLatency:    metrics.WriteLatency,
+			ReadIOPS:        metrics.ReadIOPS,
+			WriteIOPS:       metrics.WriteIOPS,
+		},
+	}, nil
 }
 
 func spdkDiskToDisk(disk *spdkrpc.Disk) *rpc.Disk {
