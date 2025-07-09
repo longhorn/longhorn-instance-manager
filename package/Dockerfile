@@ -109,7 +109,8 @@ RUN for i in {1..10}; do \
     done
 
 RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python311-base libcmocka-devel device-mapper netcat kmod jq util-linux procps fuse3-devel awk && \
+    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python311-base \
+    libcmocka-devel device-mapper netcat kmod jq util-linux procps fuse3-devel awk logrotate && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
