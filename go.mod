@@ -11,7 +11,7 @@ require (
 	github.com/longhorn/go-spdk-helper v0.0.3-0.20250628151439-b5bf3dd40b0e
 	github.com/longhorn/longhorn-engine v1.9.0
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250702033138-07866abda0ed
-	github.com/longhorn/types v0.0.0-20250613005741-b79d2bcff04b
+	github.com/longhorn/types v0.0.0-20250710112743-e3a1e9e2a9c1
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.17
