@@ -68,6 +68,10 @@ func StartCmd() cli.Command {
 				Name:  "spdk-enabled",
 				Usage: "enable SPDK support",
 			},
+			cli.BoolFlag{
+				Name:  "spdk-interrupt-mode-enabled",
+				Usage: "enable setup for SPDK interrupt mode",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := start(c); err != nil {
@@ -143,6 +147,7 @@ func start(c *cli.Context) (err error) {
 	processPortRange := c.String("port-range")
 	spdkPortRange := c.String("spdk-port-range")
 	spdkEnabled := c.Bool("spdk-enabled")
+	spdkInterruptModeEnabled := c.Bool("spdk-interrupt-mode-enabled")
 
 	defer func() {
 		if spdkEnabled {
@@ -246,7 +251,7 @@ func start(c *cli.Context) (err error) {
 
 	// Start spdk server
 	if spdkEnabled {
-		spdkGRPCServer, spdkGRPCListener, err := setupSPDKGRPCServer(ctx, spdkPortRange, addresses[types.SpdkGrpcService])
+		spdkGRPCServer, spdkGRPCListener, err := setupSPDKGRPCServer(ctx, spdkPortRange, addresses[types.SpdkGrpcService], spdkInterruptModeEnabled)
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to set up %s", types.SpdkGrpcService)
 			return err
@@ -353,13 +358,13 @@ func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string,
 	return grpcServer, rpcListener, nil
 }
 
-func setupSPDKGRPCServer(ctx context.Context, portRange, listen string) (*grpc.Server, net.Listener, error) {
+func setupSPDKGRPCServer(ctx context.Context, portRange, listen string, interruptModeEnabled bool) (*grpc.Server, net.Listener, error) {
 	portStart, portEnd, err := util.ParsePortRange(portRange)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	srv, err := spdk.NewServer(ctx, portStart, portEnd)
+	srv, err := spdk.NewServer(ctx, portStart, portEnd, interruptModeEnabled)
 	if err != nil {
 		return nil, nil, err
 	}
