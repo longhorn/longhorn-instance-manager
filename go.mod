@@ -6,7 +6,7 @@ toolchain go1.24.5
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20250624115502-f6e828377c27
+	github.com/longhorn/backupstore v0.0.0-20250716050439-d920cc13cf0f
 	github.com/longhorn/go-common-libs v0.0.0-20250712065607-11215ac4de96
 	github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838
 	github.com/longhorn/longhorn-engine v1.9.0
@@ -20,7 +20,7 @@ require (
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.33.2
+	k8s.io/mount-utils v0.33.3
 )
 
 require (
