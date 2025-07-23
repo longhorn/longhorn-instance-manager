@@ -23,6 +23,8 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bits-and-blooms/bitset v1.12.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/bits-and-blooms/bitset v1.16.0 h1:G3lirLlhFTcW/7ym/SLtYYLHQS0hBOcC8fPNJxbTYm4=
 github.com/bits-and-blooms/bitset v1.16.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
+github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20250723081548-84647e4e1dd6 h1:qIddxPh5CA2qnSkI8AmswrZmiNarQ5wryYvLk/dHML4=
+github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20250723081548-84647e4e1dd6/go.mod h1:9EnnUUTjFOIYZrMdFw6qUmuQe0IF+V8XCWHtKh6jScQ=
 github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 h1:SjZ2GvvOononHOpK84APFuMvxqsk3tEIaKH/z4Rpu3g=
 github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8/go.mod h1:uEyr4WpAH4hio6LFriaPkL938XnrvLpNPmQHBdrmbIE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
@@ -118,8 +120,6 @@ github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838 h1:j3PgI
 github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838/go.mod h1:QOzb0AX/CUcVtf5h6DMyr0W/7EkQrjKn2N593t35UWs=
 github.com/longhorn/longhorn-engine v1.9.0 h1:NSQNwAFQZdF+nywTJbyW0qJBKIWPE6J2Vy0qWCsup4I=
 github.com/longhorn/longhorn-engine v1.9.0/go.mod h1:dvVqPWauvH2hrMlI6sDd3y8wsA4wsAtCX7WB+JwcbwA=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20250702033138-07866abda0ed h1:G4hY2NNJ4lsBqB8Oo8ADKO7t5fMycbLDnwT5r/ZvuTA=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20250702033138-07866abda0ed/go.mod h1:iWEUN82bM1aEopJLZ/dhSvJSpq5Kqmq9Lrye7vpVeRs=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c h1:OFz3haCSPdgiiJvXLBeId/4dPu0dxIEqkQkfNMufLwc=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c/go.mod h1:dfbJqfI8+T9ZCp5zhTYcBi/64hPBNt5/vFF3gTlfMmc=
 github.com/longhorn/types v0.0.0-20250710112743-e3a1e9e2a9c1 h1:Lox/NlebN9jOc9JXokB270iyeMlyUw9gRePBy5LKwz0=

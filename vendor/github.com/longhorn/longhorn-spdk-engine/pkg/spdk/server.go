@@ -60,7 +60,7 @@ type Server struct {
 	bdevMetricMap     map[string]*spdkrpc.Metrics
 }
 
-func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
+func NewServer(ctx context.Context, portStart, portEnd int32, interruptModeEnabled bool) (*Server, error) {
 	cli, err := spdkclient.NewClient(ctx)
 	if err != nil {
 		return nil, err
@@ -71,12 +71,32 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 		return nil, err
 	}
 
+	replicaKeepAliveTimeout := int32(replicaKeepAliveTimeoutMs)
+	if interruptModeEnabled {
+		// Disabled for NVMe-oF TCP:
+		// In PCIe NVMe, Keep Alive works by sending periodic admin commands,
+		// typically triggered by hardware interrupts. In contrast, NVMe-oF TCP,
+		// especially in interrupt mode, does not process admin queues the same
+		// way, as it relies on socket events and poll groups instead of hardware
+		// interrupts. As a result, Keep Alive commands may not be sent or handled
+		// reliably, leading to false timeouts or I/O hangs.
+		replicaKeepAliveTimeout = replicaKeepAliveTimeoutMsDisable
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"replicaCtrlrLossTimeoutSec":  replicaCtrlrLossTimeoutSec,
+		"replicaReconnectDelaySec":    replicaReconnectDelaySec,
+		"replicaFastIOFailTimeoutSec": replicaFastIOFailTimeoutSec,
+		"replicaTransportAckTimeout":  replicaTransportAckTimeout,
+		"replicaKeepAliveTimeout":     replicaKeepAliveTimeout,
+	}).Infof("spdk gRPC server: setting bdev NVMe options")
+
 	if _, err = cli.BdevNvmeSetOptions(
 		replicaCtrlrLossTimeoutSec,
 		replicaReconnectDelaySec,
 		replicaFastIOFailTimeoutSec,
 		replicaTransportAckTimeout,
-		replicaKeepAliveTimeoutMs); err != nil {
+		replicaKeepAliveTimeout); err != nil {
 		return nil, errors.Wrap(err, "failed to set NVMe options")
 	}
 
