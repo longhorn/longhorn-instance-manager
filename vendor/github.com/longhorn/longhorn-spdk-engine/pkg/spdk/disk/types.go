@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -39,6 +40,18 @@ func GetDiskDriver(diskDriver commontypes.DiskDriver, diskPathOrBdf string) (com
 	return getDiskDriverForPath(diskDriver, diskPathOrBdf)
 }
 
+// isVfioPci checks if the given driver is vfio_pci or a variant of it.
+func isVfioPci(driver string) bool {
+	normalized := strings.ReplaceAll(driver, "-", "_")
+	return normalized == string(commontypes.DiskDriverVfioPci)
+}
+
+// isUioPciGeneric checks if the given driver is uio_pci_generic or a variant of it.
+func isUioPciGeneric(driver string) bool {
+	normalized := strings.ReplaceAll(driver, "-", "_")
+	return normalized == string(commontypes.DiskDriverUioPciGeneric)
+}
+
 func getDiskDriverForBDF(diskDriver commontypes.DiskDriver, bdf string) (commontypes.DiskDriver, error) {
 	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
@@ -53,8 +66,7 @@ func getDiskDriverForBDF(diskDriver commontypes.DiskDriver, bdf string) (commont
 	switch diskDriver {
 	case commontypes.DiskDriverAuto:
 		diskPath := ""
-		if diskStatus.Driver != string(commontypes.DiskDriverVfioPci) &&
-			diskStatus.Driver != string(commontypes.DiskDriverUioPciGeneric) {
+		if !isVfioPci(diskStatus.Driver) && !isUioPciGeneric(diskStatus.Driver) {
 			devName, err := util.GetDevNameFromBDF(bdf)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to get device name from BDF %s", bdf)

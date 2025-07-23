@@ -52,12 +52,13 @@ const (
 	//
 	// If an I/O operation to a replica (base bdev) is unresponsive within 10 seconds, an I/O error is returned,
 	// and the base bdev is deleted after 5 seconds.
-	replicaCtrlrLossTimeoutSec  = 15
-	replicaReconnectDelaySec    = 2
-	replicaFastIOFailTimeoutSec = 10
-	replicaTransportAckTimeout  = 10
-	replicaKeepAliveTimeoutMs   = 10000
-	replicaMultipath            = "disable"
+	replicaCtrlrLossTimeoutSec       = 15
+	replicaReconnectDelaySec         = 2
+	replicaFastIOFailTimeoutSec      = 10
+	replicaTransportAckTimeout       = 10
+	replicaKeepAliveTimeoutMs        = 10000
+	replicaKeepAliveTimeoutMsDisable = 0
+	replicaMultipath                 = "disable"
 )
 
 type Lvol struct {
