@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/pkg/errors"
 )
 
 func (c *Client) UblkCreateTarget(cpumask string, disableUserCopy bool) (err error) {
@@ -14,17 +13,17 @@ func (c *Client) UblkCreateTarget(cpumask string, disableUserCopy bool) (err err
 		Cpumask:         cpumask,
 		DisableUserCopy: disableUserCopy,
 	}
-	cmdOutput, err := c.jsonCli.SendCommand("ublk_create_target", req)
+	_, err = c.jsonCli.SendCommand("ublk_create_target", req)
 	if err != nil {
-		return errors.Wrapf(err, "failed to UblkCreateTarget: %v", string(cmdOutput))
+		return err
 	}
 	return nil
 }
 
 func (c *Client) UblkDestroyTarget() (err error) {
-	cmdOutput, err := c.jsonCli.SendCommand("ublk_destroy_target", struct{}{})
+	_, err = c.jsonCli.SendCommand("ublk_destroy_target", struct{}{})
 	if err != nil {
-		return errors.Wrapf(err, "failed to UblkDestroyTarget: %v", string(cmdOutput))
+		return err
 	}
 	return nil
 }
@@ -48,9 +47,9 @@ func (c *Client) UblkStartDisk(bdevName string, ublkId, queueDepth, numQueues in
 		QueueDepth: queueDepth,
 		NumQueues:  numQueues,
 	}
-	cmdOutput, err := c.jsonCli.SendCommand("ublk_start_disk", req)
+	_, err = c.jsonCli.SendCommand("ublk_start_disk", req)
 	if err != nil {
-		return errors.Wrapf(err, "failed to UblkStartDisk: %v", string(cmdOutput))
+		return err
 	}
 	return nil
 }
@@ -60,9 +59,9 @@ func (c *Client) UblkRecoverDisk(bdevName string, ublkId int32) (err error) {
 		BdevName: bdevName,
 		UblkId:   ublkId,
 	}
-	cmdOutput, err := c.jsonCli.SendCommand("ublk_recover_disk", req)
+	_, err = c.jsonCli.SendCommand("ublk_recover_disk", req)
 	if err != nil {
-		return errors.Wrapf(err, "failed to UblkRecoverDisk: %v", string(cmdOutput))
+		return err
 	}
 	return nil
 }
@@ -71,7 +70,7 @@ func (c *Client) UblkStopDisk(ublkId int32) (err error) {
 	req := spdktypes.UblkStopDiskRequest{
 		UblkId: ublkId,
 	}
-	cmdOutput, err := c.jsonCli.SendCommand("ublk_stop_disk", req)
+	_, err = c.jsonCli.SendCommand("ublk_stop_disk", req)
 	if err != nil {
 		return err
 	}
