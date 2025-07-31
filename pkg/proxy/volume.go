@@ -155,8 +155,27 @@ func (ops V1DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.Engin
 }
 
 func (ops V2DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
-	// TODO: Implement this
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	err = c.EngineExpand(ctx, req.ProxyEngineRequest.EngineName, uint64(req.Expand.Size))
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func (p *Proxy) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
