@@ -73,7 +73,7 @@ func (c *Client) UblkStopDisk(ublkId int32) (err error) {
 	}
 	cmdOutput, err := c.jsonCli.SendCommand("ublk_stop_disk", req)
 	if err != nil {
-		return errors.Wrapf(err, "failed to UblkStopDisk: %v", string(cmdOutput))
+		return err
 	}
 	return nil
 }
