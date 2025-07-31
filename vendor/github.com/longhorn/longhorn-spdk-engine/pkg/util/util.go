@@ -284,3 +284,28 @@ func GetFileChecksum(filePath string) (string, error) {
 
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
+
+func BackoffRetry(attempts int, baseDelay, maxDelay time.Duration, exponentialBackoff float64, backoffFunc func() error) error {
+	delay := baseDelay
+	var lastErr error
+
+	for i := 0; i < attempts; i++ {
+		if err := backoffFunc(); err != nil {
+			lastErr = err
+			time.Sleep(delay)
+
+			// Safe duration multiplication
+			next := delay * time.Duration(exponentialBackoff)
+			if next > maxDelay {
+				delay = maxDelay
+			} else {
+				delay = next
+			}
+
+			continue
+		}
+		return nil
+	}
+
+	return fmt.Errorf("condition not met after %d attempts: last error: %w", attempts, lastErr)
+}
