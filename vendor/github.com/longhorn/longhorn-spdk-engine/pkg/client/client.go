@@ -111,6 +111,22 @@ func (c *SPDKClient) ReplicaGet(name string) (*api.Replica, error) {
 	return api.ProtoReplicaToReplica(resp), nil
 }
 
+func (c *SPDKClient) ReplicaExpand(name string, size uint64) error {
+	if name == "" {
+		return fmt.Errorf("failed to delete SPDK replica: missing required parameter")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.ReplicaExpand(ctx, &spdkrpc.ReplicaExpandRequest{
+		Name: name,
+		Size: size,
+	})
+	return errors.Wrapf(err, "failed to expand SPDK replica %v", name)
+}
+
 func (c *SPDKClient) ReplicaList() (map[string]*api.Replica, error) {
 	client := c.getSPDKServiceClient()
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
@@ -677,6 +693,25 @@ func (c *SPDKClient) EngineWatch(ctx context.Context) (*api.EngineStream, error)
 	}
 
 	return api.NewEngineStream(stream), nil
+}
+
+func (c *SPDKClient) EngineExpand(ctx context.Context, name string, size uint64) error {
+	if name == "" {
+		return fmt.Errorf("failed to delete target for engine: missing required parameter")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(ctx, GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineExpand(ctx, &spdkrpc.EngineExpandRequest{
+		Name: name,
+		Size: size,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to expand engine %v", name)
+	}
+	return nil
 }
 
 func (c *SPDKClient) EngineSnapshotCreate(name, snapshotName string) (string, error) {

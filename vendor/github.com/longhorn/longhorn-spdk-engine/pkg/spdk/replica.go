@@ -1043,6 +1043,74 @@ func (r *Replica) Get() (pReplica *spdkrpc.Replica) {
 	return ServiceReplicaToProtoReplica(r)
 }
 
+func (r *Replica) Expand(spdkClient *spdkclient.Client, size uint64) error {
+	r.Lock()
+	defer r.Unlock()
+
+	r.log.WithFields(logrus.Fields{
+		"name":     r.Name,
+		"alias":    r.Alias,
+		"specSize": r.SpecSize,
+		"newSize":  size,
+	}).Info("Expanding replica")
+
+	if r.SpecSize > size {
+		return fmt.Errorf("cannot expand replica %s to a smaller size %v, current spec size %v", r.Name, size, r.SpecSize)
+	} else if r.SpecSize == size {
+		r.log.Infof("Replica %s had been expanded to size %v", r.Name, size)
+		return nil
+	}
+
+	roundedSize := util.RoundUp(size, helpertypes.MiB)
+	if roundedSize != size {
+		return fmt.Errorf("replica %s rounded up spec size from %v to %v since the spec size should be multiple of MiB", r.Name, size, roundedSize)
+	}
+
+	resized, err := spdkClient.BdevLvolResize(r.Alias, util.BytesToMiB(size))
+	if err != nil {
+		return errors.Wrapf(err, "bdev lvol resize error")
+	} else if !resized {
+		return fmt.Errorf("no error, but replica %s not resized", r.Name)
+	}
+
+	var (
+		attempts           = 10
+		baseDelay          = time.Second
+		maxDelay           = time.Second * 10
+		exponentialBackoff = 1.5
+	)
+	// wait the bdev is certainly updated
+	if err := util.BackoffRetry(attempts, baseDelay, maxDelay, exponentialBackoff, func() error {
+		headBdevLvol, err := spdkClient.BdevLvolGetByName(r.Alias, 0)
+		if err != nil {
+			return err
+		}
+		head := BdevLvolInfoToServiceLvol(&headBdevLvol)
+
+		if head.SpecSize != size {
+			return fmt.Errorf("lvol expand complete but lvol reported size %d != expected %d", head.SpecSize, size)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	// Blindly clean up then update the caches for the head
+	r.Head = nil
+	if r.ActiveChain[len(r.ActiveChain)-1] != nil &&
+		r.ActiveChain[len(r.ActiveChain)-1].Name == r.Name {
+		r.ActiveChain = r.ActiveChain[:len(r.ActiveChain)-1]
+	}
+
+	if err := r.updateHeadCache(spdkClient); err != nil {
+		return err
+	}
+
+	r.SpecSize = size
+	return nil
+}
+
 func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName string, opts *api.SnapshotOptions) (pReplica *spdkrpc.Replica, err error) {
 	updateRequired := false
 
