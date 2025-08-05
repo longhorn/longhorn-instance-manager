@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/pkg/errors"
 )
 
 func (c *Client) UblkCreateTarget(cpumask string, disableUserCopy bool) (err error) {
