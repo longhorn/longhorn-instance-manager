@@ -207,7 +207,11 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
+<<<<<<< HEAD
 # github.com/longhorn/backupstore v0.0.0-20250624115502-f6e828377c27
+=======
+# github.com/longhorn/backupstore v0.0.0-20250804022317-794abf817297
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 ## explicit; go 1.23.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -220,7 +224,11 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
+<<<<<<< HEAD
 # github.com/longhorn/go-common-libs v0.0.0-20250624104228-81fc0ee0e090
+=======
+# github.com/longhorn/go-common-libs v0.0.0-20250725014231-2c0bac610814
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 ## explicit; go 1.23.0
 github.com/longhorn/go-common-libs/backup
 github.com/longhorn/go-common-libs/bitmap
@@ -264,8 +272,13 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
+<<<<<<< HEAD
 # github.com/longhorn/longhorn-spdk-engine v0.0.0-20250219061406-58e9a4c0304b
 ## explicit; go 1.23.0
+=======
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555
+## explicit; go 1.24.0
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
 github.com/longhorn/longhorn-spdk-engine/pkg/log
@@ -378,7 +391,11 @@ github.com/yusufpapurcu/wmi
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
+<<<<<<< HEAD
 # golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
+=======
+# golang.org/x/exp v0.0.0-20250718183923-645b1fa84792
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 ## explicit; go 1.23.0
 golang.org/x/exp/constraints
 # golang.org/x/net v0.38.0

@@ -10,7 +10,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+<<<<<<< HEAD
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
+=======
+	"github.com/longhorn/backupstore"
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 
 	btypes "github.com/longhorn/backupstore/types"
 	commonns "github.com/longhorn/go-common-libs/ns"
@@ -50,6 +54,8 @@ type Restore struct {
 
 	log logrus.FieldLogger
 }
+
+var _ backupstore.DeltaRestoreOperations = (*Restore)(nil)
 
 func NewRestore(spdkClient *spdkclient.Client, lvolName, snapshotName, backupUrl, backupName string, replica *Replica) (*Restore, error) {
 	log := logrus.WithFields(logrus.Fields{

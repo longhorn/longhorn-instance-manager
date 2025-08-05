@@ -108,6 +108,7 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
+<<<<<<< HEAD
 github.com/longhorn/backupstore v0.0.0-20250624115502-f6e828377c27 h1:Kf9L7JbsTqfUG+WrwahxfLO28xwrWmN/43Ukl143ns4=
 github.com/longhorn/backupstore v0.0.0-20250624115502-f6e828377c27/go.mod h1:+sMmPD1PWsFGhHiytIYODa3vfDuXFdJsw9eNxOST9I0=
 github.com/longhorn/go-common-libs v0.0.0-20250624104228-81fc0ee0e090 h1:Su0qrRx72OOZGOLmxt9RWMCvIvt5PErz9HUcl9mwO18=
@@ -120,6 +121,20 @@ github.com/longhorn/longhorn-engine v1.9.0-dev-20241215.0.20250225130735-e63c1af
 github.com/longhorn/longhorn-engine v1.9.0-dev-20241215.0.20250225130735-e63c1afeb26b/go.mod h1:EcaLgV0X66DKKBrWnChd59mofY5CkLx40LZxk21zYJQ=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20250219061406-58e9a4c0304b h1:ktrSi7znfz2KiIV2pQMlwN0RarnjCTLjdK05cypO6fM=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20250219061406-58e9a4c0304b/go.mod h1:A9CPl2oTlEYzWHyka9bXEvBE6yfBgxpQEboMsFcw3iQ=
+=======
+github.com/longhorn/backupstore v0.0.0-20250804022317-794abf817297 h1:KVnOHFT3wuwgyhV7/Rue8NMt13NkpIkZ3B7eVR0C8yM=
+github.com/longhorn/backupstore v0.0.0-20250804022317-794abf817297/go.mod h1:j5TiUyvRBYaSaPY/p6GIFOk1orfWcngk9hIWxDDJ5mg=
+github.com/longhorn/go-common-libs v0.0.0-20250725014231-2c0bac610814 h1:9qcRV8oIOS2J+QWLIk//BxsTMTaM63LceKCXTPG3f8Y=
+github.com/longhorn/go-common-libs v0.0.0-20250725014231-2c0bac610814/go.mod h1:c7BqzWJP4iuRwl/Di+OPGIfC18SoIXy5+SokJsmmKMg=
+github.com/longhorn/go-iscsi-helper v0.0.0-20250628151415-4c3f08918bb0 h1:TwtCNOqppvJcYjQqBx7nKTITjNQoZgBD/E63whWj4Mk=
+github.com/longhorn/go-iscsi-helper v0.0.0-20250628151415-4c3f08918bb0/go.mod h1:Cmtm777Xa2TNs50+ipLMiYshVWtKsaFKbpWX/PKBgFM=
+github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838 h1:j3PgIRQihtn7R94mnVyTvc8YStYKH7JumiEI2yP4YQI=
+github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838/go.mod h1:QOzb0AX/CUcVtf5h6DMyr0W/7EkQrjKn2N593t35UWs=
+github.com/longhorn/longhorn-engine v1.9.1 h1:DlkcXhwmR2b6ATwZeaQr8hG4i8Mf4SLcXcIzgnl6jaI=
+github.com/longhorn/longhorn-engine v1.9.1/go.mod h1:40+Fw+/PV78DDFYWXUfJHmrZ8QGfFaisC9m9YRnw4xg=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555 h1:KGL+tVjp1lDZkIPrEAuJZmL8Px2aSP0T/HyK/6zApnc=
+github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555/go.mod h1:5mFiFUmywRI40lmIixelcvxZ3kmmv0ACmgarK65UJ74=
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c h1:OFz3haCSPdgiiJvXLBeId/4dPu0dxIEqkQkfNMufLwc=
 github.com/longhorn/sparse-tools v0.0.0-20241216160947-2b328f0fa59c/go.mod h1:dfbJqfI8+T9ZCp5zhTYcBi/64hPBNt5/vFF3gTlfMmc=
 github.com/longhorn/types v0.0.0-20250613005741-b79d2bcff04b h1:Y/AySVFU2coY5g8uIrChKNc58eM4oVqpHB1/dwMAn2M=
@@ -226,10 +241,17 @@ go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN8
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
+<<<<<<< HEAD
 golang.org/x/crypto v0.36.0 h1:AnAEvhDddvBdpY+uR+MyHmuZzzNqXSe/GvuDeob5L34=
 golang.org/x/crypto v0.36.0/go.mod h1:Y4J0ReaxCR1IMaabaSMugxJES1EpwhBHhv2bDHklZvc=
 golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b h1:M2rDM6z3Fhozi9O7NWsxAkg/yqS/lQJ6PmkyIV3YP+o=
 golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b/go.mod h1:3//PLf8L/X+8b4vuAfHzxeRUl04Adcb341+IGKfnqS8=
+=======
+golang.org/x/crypto v0.40.0 h1:r4x+VvoG5Fm+eJcxMaY8CQM7Lb0l1lsmjGBQ6s8BfKM=
+golang.org/x/crypto v0.40.0/go.mod h1:Qr1vMER5WyS2dfPHAlsOj01wgLbsyWtFn/aY+5+ZdxY=
+golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 h1:R9PFI6EUdfVKgwKjZef7QIwGcBKu86OEFpJ9nUEP2l4=
+golang.org/x/exp v0.0.0-20250718183923-645b1fa84792/go.mod h1:A+z0yzpGtvnG90cToK5n2tu8UJVP2XUATh+r+sfOOOc=
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 golang.org/x/mod v0.2.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.3.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/net v0.0.0-20181201002055-351d144fa1fc/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

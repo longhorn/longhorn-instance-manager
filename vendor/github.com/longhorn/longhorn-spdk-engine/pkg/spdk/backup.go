@@ -26,10 +26,6 @@ import (
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 )
 
-const (
-	backupBlockSize = 2 << 20 // 2MiB
-)
-
 type Fragmap struct {
 	Map         bitmap.Bitmap
 	ClusterSize uint64
@@ -63,6 +59,8 @@ type Backup struct {
 
 	log logrus.FieldLogger
 }
+
+var _ backupstore.DeltaBlockBackupOperations = (*Backup)(nil)
 
 // NewBackup creates a new backup instance
 func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *commonbitmap.Bitmap) (*Backup, error) {
@@ -178,7 +176,7 @@ func (b *Backup) OpenSnapshot(snapshotName, volumeName string) error {
 }
 
 // CompareSnapshot compares the data between two snapshots and returns the mappings
-func (b *Backup) CompareSnapshot(snapshotName, compareSnapshotName, volumeName string) (*btypes.Mappings, error) {
+func (b *Backup) CompareSnapshot(snapshotName, compareSnapshotName, volumeName string, blockSize int64) (*btypes.Mappings, error) {
 	b.log.Infof("Comparing snapshots from %v to %v", snapshotName, compareSnapshotName)
 
 	lvolName := GetReplicaSnapshotLvolName(b.replica.Name, snapshotName)
@@ -204,7 +202,7 @@ func (b *Backup) CompareSnapshot(snapshotName, compareSnapshotName, volumeName s
 			lvolName, from, compareLvolName, to)
 	}
 
-	return b.constructMappings(), nil
+	return b.constructMappings(blockSize), nil
 }
 
 // ReadSnapshot reads the data from the block device exposed by NVMe-oF TCP
@@ -375,11 +373,11 @@ func (b *Backup) findSnapshotRange(lvolName, compareLvolName string) (from, to i
 	return from, to, nil
 }
 
-func (b *Backup) constructMappings() *btypes.Mappings {
+func (b *Backup) constructMappings(blockSize int64) *btypes.Mappings {
 	b.log.Info("Constructing mappings")
 
 	mappings := &btypes.Mappings{
-		BlockSize: backupBlockSize,
+		BlockSize: blockSize,
 	}
 
 	mapping := btypes.Mapping{
@@ -390,11 +388,11 @@ func (b *Backup) constructMappings() *btypes.Mappings {
 	for i = 0; i < b.fragmap.NumClusters; i++ {
 		if b.fragmap.Map.IsSet(uint64(i)) {
 			offset := int64(i) * int64(b.fragmap.ClusterSize)
-			offset -= (offset % backupBlockSize)
+			offset -= (offset % blockSize)
 			if mapping.Offset != offset {
 				mapping = btypes.Mapping{
 					Offset: offset,
-					Size:   backupBlockSize,
+					Size:   blockSize,
 				}
 				mappings.Mappings = append(mappings.Mappings, mapping)
 			}

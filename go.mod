@@ -6,12 +6,21 @@ toolchain go1.23.6
 
 require (
 	github.com/google/uuid v1.6.0
+<<<<<<< HEAD
 	github.com/longhorn/backupstore v0.0.0-20250624115502-f6e828377c27
 	github.com/longhorn/go-common-libs v0.0.0-20250624104228-81fc0ee0e090
 	github.com/longhorn/go-spdk-helper v0.0.1
 	github.com/longhorn/longhorn-engine v1.9.0-dev-20241215.0.20250225130735-e63c1afeb26b
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250219061406-58e9a4c0304b
 	github.com/longhorn/types v0.0.0-20250613005741-b79d2bcff04b
+=======
+	github.com/longhorn/backupstore v0.0.0-20250804022317-794abf817297
+	github.com/longhorn/go-common-libs v0.0.0-20250725014231-2c0bac610814
+	github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838
+	github.com/longhorn/longhorn-engine v1.9.1
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555
+	github.com/longhorn/types v0.0.0-20250710112743-e3a1e9e2a9c1
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.17
@@ -83,6 +92,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+<<<<<<< HEAD
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
@@ -90,6 +100,15 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
+=======
+	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/term v0.33.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
+	golang.org/x/time v0.9.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
+>>>>>>> 75af0fc (fix(deps): update spdk engine)
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.31.3 // indirect
