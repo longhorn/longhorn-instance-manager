@@ -1,4 +1,4 @@
-package nvme
+package initiator
 
 import (
 	"encoding/json"

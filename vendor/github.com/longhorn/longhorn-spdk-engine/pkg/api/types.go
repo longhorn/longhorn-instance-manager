@@ -28,6 +28,7 @@ type Replica struct {
 	ErrorMsg         string           `json:"error_msg"`
 	Rebuilding       bool             `json:"rebuilding"`
 	BackingImageName string           `json:"backing_image_name"`
+	UUID             string           `json:"uuid"`
 }
 
 type Lvol struct {
@@ -47,12 +48,16 @@ func ProtoLvolToLvol(l *spdkrpc.Lvol) *Lvol {
 	if l == nil {
 		return nil
 	}
+	parent := l.Parent
+	if types.IsBackingImageSnapLvolName(parent) {
+		parent = ""
+	}
 	return &Lvol{
 		Name: l.Name,
 		// UUID:         l.Uuid,
 		SpecSize:          l.SpecSize,
 		ActualSize:        l.ActualSize,
-		Parent:            l.Parent,
+		Parent:            parent,
 		Children:          l.Children,
 		CreationTime:      l.CreationTime,
 		UserCreated:       l.UserCreated,
@@ -94,6 +99,7 @@ func ProtoReplicaToReplica(r *spdkrpc.Replica) *Replica {
 		State:      r.State,
 		ErrorMsg:   r.ErrorMsg,
 		Rebuilding: r.Rebuilding,
+		UUID:       r.Uuid,
 	}
 	for snapName, snapProtoLvol := range r.Snapshots {
 		res.Snapshots[snapName] = ProtoLvolToLvol(snapProtoLvol)
@@ -126,6 +132,7 @@ func ReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
 		Rebuilding: r.Rebuilding,
 		State:      r.State,
 		ErrorMsg:   r.ErrorMsg,
+		Uuid:       r.UUID,
 	}
 
 	if r.BackingImageName != "" {
@@ -152,6 +159,8 @@ type Engine struct {
 	Endpoint          string                `json:"endpoint"`
 	State             string                `json:"state"`
 	ErrorMsg          string                `json:"error_msg"`
+	UblkID            int32                 `json:"ublk_id"`
+	UUID              string                `json:"uuid"`
 }
 
 func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
@@ -173,6 +182,8 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		Endpoint:          e.Endpoint,
 		State:             e.State,
 		ErrorMsg:          e.ErrorMsg,
+		UblkID:            e.UblkId,
+		UUID:              e.Uuid,
 	}
 	for rName, mode := range e.ReplicaModeMap {
 		res.ReplicaModeMap[rName] = types.GRPCReplicaModeToReplicaMode(mode)

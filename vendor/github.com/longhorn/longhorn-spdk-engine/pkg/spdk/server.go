@@ -55,6 +55,9 @@ type Server struct {
 	broadcasters map[types.InstanceType]*broadcaster.Broadcaster
 	broadcastChs map[types.InstanceType]chan interface{}
 	updateChs    map[types.InstanceType]chan interface{}
+
+	currentBdevIostat *spdktypes.BdevIostatResponse
+	bdevMetricMap     map[string]*spdkrpc.Metrics
 }
 
 func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
@@ -255,11 +258,11 @@ func (s *Server) verify() (err error) {
 	// Backing image lvol name will be "bi-${biName}-disk-${lvsUUID}"
 	// Backing image temp lvol name will be "bi-${biName}-disk-${lvsUUID}-temp-head"
 	for lvolName, bdevLvol := range bdevLvolMap {
-		if bdevLvol.DriverSpecific.Lvol.Snapshot && !IsBackingImageSnapLvolName(lvolName) {
+		if bdevLvol.DriverSpecific.Lvol.Snapshot && !types.IsBackingImageSnapLvolName(lvolName) {
 			continue
 		}
-		if IsBackingImageTempHead(lvolName) {
-			if s.backingImageMap[GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName)] == nil {
+		if types.IsBackingImageTempHead(lvolName) {
+			if s.backingImageMap[types.GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName)] == nil {
 				lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
 				logrus.Infof("Found one backing image temp head lvol %v while there is no backing image record in the server", lvolName)
 				if err := cleanupOrphanBackingImageTempHead(spdkClient, lvsUUIDNameMap[lvsUUID], lvolName); err != nil {
@@ -279,7 +282,7 @@ func (s *Server) verify() (err error) {
 				continue
 			}
 		}
-		if IsBackingImageSnapLvolName(lvolName) {
+		if types.IsBackingImageSnapLvolName(lvolName) {
 			lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
 			backingImageName, _, err := ExtractBackingImageAndDiskUUID(lvolName)
 			if err != nil {
@@ -288,12 +291,12 @@ func (s *Server) verify() (err error) {
 			}
 			size := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
 			alias := bdevLvol.Aliases[0]
-			expectedChecksum, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrChecksum)
+			expectedChecksum, err := GetSnapXattr(spdkClient, alias, types.LonghornBackingImageSnapshotAttrChecksum)
 			if err != nil {
 				logrus.WithError(err).Warnf("failed to retrieve checksum attribute for backing image snapshot %v", alias)
 				continue
 			}
-			backingImageUUID, err := GetSnapXattr(spdkClient, alias, types.BackingImageSnapshotAttrBackingImageUUID)
+			backingImageUUID, err := GetSnapXattr(spdkClient, alias, types.LonghornBackingImageSnapshotAttrUUID)
 			if err != nil {
 				logrus.WithError(err).Warnf("failed to retrieve backing image UUID attribute for snapshot %v", alias)
 				continue
@@ -304,12 +307,13 @@ func (s *Server) verify() (err error) {
 			backingImage.State = types.BackingImageStatePending
 			backingImageMapForSync[lvolName] = backingImage
 			backingImageMap[lvolName] = backingImage
-		} else {
+		} else if IsProbablyReplicaName(lvolName) {
 			lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
 			specSize := bdevLvol.NumBlocks * uint64(bdevLvol.BlockSize)
 			actualSize := bdevLvol.DriverSpecific.Lvol.NumAllocatedClusters * uint64(defaultClusterSize)
 			replicaMap[lvolName] = NewReplica(s.ctx, lvolName, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, actualSize, s.updateChs[types.InstanceTypeReplica])
 			replicaMapForSync[lvolName] = replicaMap[lvolName]
+			logrus.Infof("Detected one possible existing replica %s(%s) with disk %s(%s), spec size %d, actual size %d", bdevLvol.Aliases[0], bdevLvol.UUID, lvsUUIDNameMap[lvsUUID], lvsUUID, specSize, actualSize)
 		}
 	}
 	for replicaName, r := range replicaMap {
@@ -336,6 +340,7 @@ func (s *Server) verify() (err error) {
 	}
 	s.replicaMap = replicaMap
 	s.backingImageMap = backingImageMap
+	s.UpdateEngineMetrics()
 	s.Unlock()
 
 	for _, r := range replicaMapForSync {
@@ -524,7 +529,7 @@ func (s *Server) ReplicaGet(ctx context.Context, req *spdkrpc.ReplicaGetRequest)
 	s.RUnlock()
 
 	if r == nil {
-		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v (%+v)", req.Name, s.replicaMap)
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v", req.Name)
 	}
 
 	return r.Get(), nil
@@ -657,6 +662,66 @@ func (s *Server) ReplicaSnapshotPurge(ctx context.Context, req *spdkrpc.Snapshot
 	return &emptypb.Empty{}, err
 }
 
+func (s *Server) ReplicaSnapshotHash(ctx context.Context, req *spdkrpc.SnapshotHashRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during snapshot hash", req.Name)
+	}
+
+	err = r.SnapshotHash(spdkClient, req.SnapshotName, req.Rehash)
+	return &emptypb.Empty{}, err
+}
+
+func (s *Server) ReplicaSnapshotHashStatus(ctx context.Context, req *spdkrpc.SnapshotHashStatusRequest) (ret *spdkrpc.ReplicaSnapshotHashStatusResponse, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s for snapshot hash status", req.Name)
+	}
+
+	state, checksum, errMsg, silentlyCorrupted, err := r.SnapshotHashStatus(req.SnapshotName)
+	return &spdkrpc.ReplicaSnapshotHashStatusResponse{
+		State:             state,
+		Checksum:          checksum,
+		Error:             errMsg,
+		SilentlyCorrupted: silentlyCorrupted,
+	}, err
+}
+
+func (s *Server) ReplicaSnapshotRangeHashGet(ctx context.Context, req *spdkrpc.ReplicaSnapshotRangeHashGetRequest) (ret *spdkrpc.ReplicaSnapshotRangeHashGetResponse, err error) {
+	if req.Name == "" || req.SnapshotName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name and snapshot name are required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s for snapshot range hash get", req.Name)
+	}
+
+	rangeHashMap, err := r.SnapshotRangeHashGet(spdkClient, req.SnapshotName, req.ClusterStartIndex, req.ClusterCount)
+	return &spdkrpc.ReplicaSnapshotRangeHashGetResponse{
+		RangeHashMap: rangeHashMap,
+	}, err
+}
+
 func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcStartRequest) (ret *spdkrpc.ReplicaRebuildingSrcStartResponse, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
@@ -734,6 +799,36 @@ func (s *Server) ReplicaRebuildingSrcShallowCopyStart(ctx context.Context, req *
 	return &emptypb.Empty{}, nil
 }
 
+func (s *Server) ReplicaRebuildingSrcRangeShallowCopyStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcRangeShallowCopyStartRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
+	}
+	if req.SnapshotName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica snapshot name is required")
+	}
+	if req.DstRebuildingLvolAddress == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "dst rebuilding lvol address is required")
+	}
+	if len(req.MismatchingClusterList) < 1 {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "mismatching cluster list is required")
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src snapshot %s range shallow copy start", req.Name, req.SnapshotName)
+	}
+
+	if err := r.RebuildingSrcRangeShallowCopyStart(spdkClient, req.SnapshotName, req.DstRebuildingLvolAddress, req.MismatchingClusterList); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Server) ReplicaRebuildingSrcShallowCopyCheck(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcShallowCopyCheckRequest) (ret *spdkrpc.ReplicaRebuildingSrcShallowCopyCheckResponse, err error) {
 	if req.Name == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
@@ -750,17 +845,7 @@ func (s *Server) ReplicaRebuildingSrcShallowCopyCheck(ctx context.Context, req *
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during rebuilding src snapshot %s shallow copy check", req.Name, req.SnapshotName)
 	}
 
-	status, err := r.RebuildingSrcShallowCopyCheck(req.SnapshotName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &spdkrpc.ReplicaRebuildingSrcShallowCopyCheckResponse{
-		State:          status.State,
-		CopiedClusters: status.CopiedClusters,
-		TotalClusters:  status.TotalClusters,
-		ErrorMsg:       status.Error,
-	}, nil
+	return r.RebuildingSrcShallowCopyCheck(req.SnapshotName)
 }
 
 func (s *Server) ReplicaRebuildingDstStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingDstStartRequest) (ret *spdkrpc.ReplicaRebuildingDstStartResponse, err error) {
@@ -882,6 +967,33 @@ func (s *Server) ReplicaRebuildingDstSnapshotCreate(ctx context.Context, req *sp
 	return &emptypb.Empty{}, nil
 }
 
+func (s *Server) ReplicaRebuildingDstSetQosLimit(
+	ctx context.Context,
+	req *spdkrpc.ReplicaRebuildingDstSetQosLimitRequest,
+) (*emptypb.Empty, error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "replica name is required")
+	}
+	if req.QosLimitMbps < 0 {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "QoS limit must not be negative, got %d", req.QosLimitMbps)
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s for QoS setting", req.Name)
+	}
+
+	if err := r.RebuildingDstSetQos(spdkClient, req.QosLimitMbps); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to set QoS limit on replica %s: %v", req.Name, err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequest) (ret *spdkrpc.Engine, err error) {
 	if req.Name == "" || req.VolumeName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name and volume name are required")
@@ -889,7 +1001,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	if req.SpecSize == 0 {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine spec size is required")
 	}
-	if req.Frontend != types.FrontendSPDKTCPBlockdev && req.Frontend != types.FrontendSPDKTCPNvmf && req.Frontend != types.FrontendEmpty {
+	if req.Frontend != types.FrontendSPDKTCPBlockdev && req.Frontend != types.FrontendSPDKTCPNvmf && req.Frontend != types.FrontendEmpty && req.Frontend != types.FrontendUBLK {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine frontend is required")
 	}
 
@@ -916,7 +1028,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 }
 
 func localTargetExists(e *Engine) bool {
-	return e.Port != 0 && e.TargetPort != 0
+	return e.NvmeTcpFrontend != nil && e.NvmeTcpFrontend.Port != 0 && e.NvmeTcpFrontend.TargetPort != 0
 }
 
 func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequest) (ret *emptypb.Empty, err error) {
@@ -1022,7 +1134,7 @@ func (s *Server) EngineDeleteTarget(ctx context.Context, req *spdkrpc.EngineDele
 		if err == nil {
 			s.Lock()
 			// Only delete the engine if both initiator (e.Port) and target (e.TargetPort) are not exists.
-			if e.Port == 0 && e.TargetPort == 0 {
+			if e.NvmeTcpFrontend.Port == 0 && e.NvmeTcpFrontend.TargetPort == 0 {
 				e.log.Info("Deleting engine %s", req.Name)
 				delete(s.engineMap, req.Name)
 			}
@@ -1244,6 +1356,43 @@ func (s *Server) EngineSnapshotPurge(ctx context.Context, req *spdkrpc.SnapshotR
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineSnapshotHash(ctx context.Context, req *spdkrpc.SnapshotHashRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" || req.SnapshotName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name and snapshot name are required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot hash", req.Name)
+	}
+
+	if err := e.SnapshotHash(spdkClient, req.SnapshotName, req.Rehash); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) EngineSnapshotHashStatus(ctx context.Context, req *spdkrpc.SnapshotHashStatusRequest) (ret *spdkrpc.EngineSnapshotHashStatusResponse, err error) {
+	if req.Name == "" || req.SnapshotName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name and snapshot name are required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot hash status", req.Name)
+	}
+
+	return e.SnapshotHashStatus(req.SnapshotName)
 }
 
 func (s *Server) EngineBackupCreate(ctx context.Context, req *spdkrpc.BackupCreateRequest) (ret *spdkrpc.BackupCreateResponse, err error) {
@@ -1468,7 +1617,33 @@ func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest)
 	spdkClient := s.spdkClient
 	s.RUnlock()
 
-	return svcDiskCreate(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize)
+	ret, err = svcDiskCreate(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize)
+	if err != nil {
+		return nil, err
+	}
+
+	waitForScan := true
+	timer := time.NewTimer(3 * time.Minute)
+	defer timer.Stop()
+	ticker := time.NewTicker(MonitorInterval)
+	defer ticker.Stop()
+	for waitForScan {
+		select {
+		case <-s.ctx.Done():
+			logrus.Infof("SPDK gRPC server: cannot scan the newly added disk %s(%s) with path %s due to the context done", req.DiskName, req.DiskUuid, req.DiskPath)
+		case <-timer.C:
+			logrus.Infof("SPDK gRPC server: 3 minutes time out scanning the newly added disk %s(%s) with path %s, will continue", req.DiskName, req.DiskUuid, req.DiskPath)
+			waitForScan = false
+		case <-ticker.C:
+			err := s.verify()
+			if err == nil {
+				logrus.Infof("SPDK gRPC server: Scanned the newly added disk %s(%s) with path %s", req.DiskName, req.DiskUuid, req.DiskPath)
+				waitForScan = false
+			}
+		}
+	}
+
+	return ret, nil
 }
 
 func (s *Server) DiskDelete(ctx context.Context, req *spdkrpc.DiskDeleteRequest) (ret *emptypb.Empty, err error) {
@@ -1777,4 +1952,79 @@ func (s *Server) BackingImageUnexpose(ctx context.Context, req *spdkrpc.BackingI
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to unexpose backing image %v in lvs %v", req.Name, req.LvsUuid).Error())
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) UpdateEngineMetrics() {
+	previousBdevIostat := s.currentBdevIostat
+	bdevIostat, err := s.spdkClient.BdevGetIostat("", false)
+	if err != nil {
+		logrus.WithError(err).Error("failed to get bdev iostat")
+		return
+	}
+	s.currentBdevIostat = bdevIostat
+	// If this is the first execution, there is no previous data, so exit
+	if previousBdevIostat == nil {
+		return
+	}
+	// Calculate the elapsed time in ticks
+	tickElapsed := s.currentBdevIostat.Ticks - previousBdevIostat.Ticks
+	if tickElapsed == 0 {
+		return
+	}
+	// Convert ticks to seconds
+	elapsedSeconds := float64(tickElapsed) / float64(s.currentBdevIostat.TickRate)
+
+	// Convert previous Bdev data into a map for quick lookup
+	prevBdevMap := make(map[string]spdktypes.BdevStats)
+	for _, prevBdev := range previousBdevIostat.Bdevs {
+		prevBdevMap[prevBdev.Name] = prevBdev
+	}
+
+	// Initialize a new BdevMetricMap
+	s.bdevMetricMap = make(map[string]*spdkrpc.Metrics)
+	for _, bdev := range s.currentBdevIostat.Bdevs {
+		prevBdev, exists := prevBdevMap[bdev.Name]
+		if !exists {
+			continue
+		}
+
+		// Calculate differences in operations and data
+		readOpsDiff := bdev.NumReadOps - prevBdev.NumReadOps
+		writeOpsDiff := bdev.NumWriteOps - prevBdev.NumWriteOps
+		bytesReadDiff := bdev.BytesRead - prevBdev.BytesRead
+		bytesWrittenDiff := bdev.BytesWritten - prevBdev.BytesWritten
+		readLatencyDiff := bdev.ReadLatencyTicks - prevBdev.ReadLatencyTicks
+		writeLatencyDiff := bdev.WriteLatencyTicks - prevBdev.WriteLatencyTicks
+
+		// Convert latency from ticks to nanoseconds
+		readLatency := calculateLatencyInNs(readLatencyDiff, readOpsDiff, s.currentBdevIostat.TickRate)
+		writeLatency := calculateLatencyInNs(writeLatencyDiff, writeOpsDiff, s.currentBdevIostat.TickRate)
+
+		s.bdevMetricMap[bdev.Name] = &spdkrpc.Metrics{
+			ReadIOPS:        uint64(float64(readOpsDiff) / elapsedSeconds),
+			WriteIOPS:       uint64(float64(writeOpsDiff) / elapsedSeconds),
+			ReadThroughput:  uint64(float64(bytesReadDiff) / elapsedSeconds),
+			WriteThroughput: uint64(float64(bytesWrittenDiff) / elapsedSeconds),
+			ReadLatency:     readLatency,
+			WriteLatency:    writeLatency,
+		}
+	}
+}
+
+// Converts latency from ticks to nanoseconds
+func calculateLatencyInNs(latencyTicks, opsDiff, tickRate uint64) uint64 {
+	if opsDiff == 0 {
+		return 0 // Prevent division by zero
+	}
+	return uint64((float64(latencyTicks) / float64(opsDiff)) * (1e9 / float64(tickRate)))
+}
+
+func (s *Server) MetricsGet(ctx context.Context, req *spdkrpc.MetricsRequest) (ret *spdkrpc.Metrics, err error) {
+	s.RLock()
+	defer s.RUnlock()
+	m, ok := s.bdevMetricMap[req.Name]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine metrics: %s", req.Name)
+	}
+	return m, nil
 }

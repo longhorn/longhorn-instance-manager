@@ -12,22 +12,18 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/backupstore"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 
 	btypes "github.com/longhorn/backupstore/types"
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
 	commonnet "github.com/longhorn/go-common-libs/net"
 	commonns "github.com/longhorn/go-common-libs/ns"
 	commontypes "github.com/longhorn/go-common-libs/types"
+	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
-)
-
-const (
-	backupBlockSize = 2 << 20 // 2MiB
 )
 
 type Fragmap struct {
@@ -57,12 +53,14 @@ type Backup struct {
 
 	subsystemNQN   string
 	controllerName string
-	initiator      *nvme.Initiator
+	initiator      *initiator.Initiator
 	devFh          *os.File
 	executor       *commonns.Executor
 
 	log logrus.FieldLogger
 }
+
+var _ backupstore.DeltaBlockBackupOperations = (*Backup)(nil)
 
 // NewBackup creates a new backup instance
 func NewBackup(spdkClient *spdkclient.Client, backupName, volumeName, snapshotName string, replica *Replica, superiorPortAllocator *commonbitmap.Bitmap) (*Backup, error) {
@@ -158,14 +156,17 @@ func (b *Backup) OpenSnapshot(snapshotName, volumeName string) error {
 	b.controllerName = controllerName
 
 	b.log.Infof("Creating NVMe initiator for snapshot lvol bdev %v", lvolName)
-	initiator, err := nvme.NewInitiator(lvolName, helpertypes.GetNQN(lvolName), nvme.HostProc)
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: helpertypes.GetNQN(lvolName),
+	}
+	i, err := initiator.NewInitiator(lvolName, initiator.HostProc, nvmeTCPInfo, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for snapshot lvol bdev %v", lvolName)
 	}
-	if _, err := initiator.Start(b.IP, strconv.Itoa(int(b.Port)), false); err != nil {
+	if _, err := i.StartNvmeTCPInitiator(b.IP, strconv.Itoa(int(b.Port)), false); err != nil {
 		return errors.Wrapf(err, "failed to start NVMe initiator for snapshot lvol bdev %v", lvolName)
 	}
-	b.initiator = initiator
+	b.initiator = i
 
 	b.log.Infof("Opening NVMe device %v", b.initiator.Endpoint)
 	devFh, err := os.OpenFile(b.initiator.Endpoint, os.O_RDONLY, 0666)
@@ -178,7 +179,7 @@ func (b *Backup) OpenSnapshot(snapshotName, volumeName string) error {
 }
 
 // CompareSnapshot compares the data between two snapshots and returns the mappings
-func (b *Backup) CompareSnapshot(snapshotName, compareSnapshotName, volumeName string) (*btypes.Mappings, error) {
+func (b *Backup) CompareSnapshot(snapshotName, compareSnapshotName, volumeName string, blockSize int64) (*btypes.Mappings, error) {
 	b.log.Infof("Comparing snapshots from %v to %v", snapshotName, compareSnapshotName)
 
 	lvolName := GetReplicaSnapshotLvolName(b.replica.Name, snapshotName)
@@ -204,7 +205,7 @@ func (b *Backup) CompareSnapshot(snapshotName, compareSnapshotName, volumeName s
 			lvolName, from, compareLvolName, to)
 	}
 
-	return b.constructMappings(), nil
+	return b.constructMappings(blockSize), nil
 }
 
 // ReadSnapshot reads the data from the block device exposed by NVMe-oF TCP
@@ -227,7 +228,7 @@ func (b *Backup) CloseSnapshot(snapshotName, volumeName string) error {
 	}
 
 	b.log.Info("Stopping NVMe initiator")
-	if _, err := b.initiator.Stop(true, true, true); err != nil {
+	if _, err := b.initiator.Stop(nil, true, true, true); err != nil {
 		return errors.Wrapf(err, "failed to stop NVMe initiator")
 	}
 
@@ -375,11 +376,11 @@ func (b *Backup) findSnapshotRange(lvolName, compareLvolName string) (from, to i
 	return from, to, nil
 }
 
-func (b *Backup) constructMappings() *btypes.Mappings {
+func (b *Backup) constructMappings(blockSize int64) *btypes.Mappings {
 	b.log.Info("Constructing mappings")
 
 	mappings := &btypes.Mappings{
-		BlockSize: backupBlockSize,
+		BlockSize: blockSize,
 	}
 
 	mapping := btypes.Mapping{
@@ -390,11 +391,11 @@ func (b *Backup) constructMappings() *btypes.Mappings {
 	for i = 0; i < b.fragmap.NumClusters; i++ {
 		if b.fragmap.Map.IsSet(uint64(i)) {
 			offset := int64(i) * int64(b.fragmap.ClusterSize)
-			offset -= (offset % backupBlockSize)
+			offset -= (offset % blockSize)
 			if mapping.Offset != offset {
 				mapping = btypes.Mapping{
 					Offset: offset,
-					Size:   backupBlockSize,
+					Size:   blockSize,
 				}
 				mappings.Mappings = append(mappings.Mappings, mapping)
 			}

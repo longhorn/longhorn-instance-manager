@@ -10,11 +10,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
+	"github.com/longhorn/backupstore"
 
 	btypes "github.com/longhorn/backupstore/types"
 	commonns "github.com/longhorn/go-common-libs/ns"
 	commontypes "github.com/longhorn/go-common-libs/types"
+	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
@@ -43,13 +44,15 @@ type Restore struct {
 	executor       *commonns.Executor
 	subsystemNQN   string
 	controllerName string
-	initiator      *nvme.Initiator
+	initiator      *initiator.Initiator
 
 	stopOnce sync.Once
 	stopChan chan struct{}
 
 	log logrus.FieldLogger
 }
+
+var _ backupstore.DeltaRestoreOperations = (*Restore)(nil)
 
 func NewRestore(spdkClient *spdkclient.Client, lvolName, snapshotName, backupUrl, backupName string, replica *Replica) (*Restore, error) {
 	log := logrus.WithFields(logrus.Fields{
@@ -138,14 +141,17 @@ func (r *Restore) OpenVolumeDev(volDevName string) (*os.File, string, error) {
 	r.log.Infof("Exposed snapshot lvol bdev %v, subsystemNQN=%v, controllerName %v", lvolName, subsystemNQN, controllerName)
 
 	r.log.Info("Creating NVMe initiator for lvol bdev")
-	initiator, err := nvme.NewInitiator(lvolName, helpertypes.GetNQN(lvolName), nvme.HostProc)
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: helpertypes.GetNQN(lvolName),
+	}
+	i, err := initiator.NewInitiator(lvolName, initiator.HostProc, nvmeTCPInfo, nil)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create NVMe initiator for lvol bdev %v", lvolName)
 	}
-	if _, err := initiator.Start(r.ip, strconv.Itoa(int(r.port)), true); err != nil {
+	if _, err := i.StartNvmeTCPInitiator(r.ip, strconv.Itoa(int(r.port)), true); err != nil {
 		return nil, "", errors.Wrapf(err, "failed to start NVMe initiator for lvol bdev %v", lvolName)
 	}
-	r.initiator = initiator
+	r.initiator = i
 
 	r.log.Infof("Opening NVMe device %v", r.initiator.Endpoint)
 	fh, err := os.OpenFile(r.initiator.Endpoint, os.O_RDONLY, 0666)
@@ -163,7 +169,7 @@ func (r *Restore) CloseVolumeDev(volDev *os.File) error {
 	}
 
 	r.log.Info("Stopping NVMe initiator")
-	if _, err := r.initiator.Stop(true, true, false); err != nil {
+	if _, err := r.initiator.Stop(nil, true, true, false); err != nil {
 		return errors.Wrapf(err, "failed to stop NVMe initiator")
 	}
 
