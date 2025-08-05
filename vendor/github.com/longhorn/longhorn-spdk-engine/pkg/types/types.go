@@ -1,6 +1,11 @@
 package types
 
-import "github.com/longhorn/types/pkg/generated/spdkrpc"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+)
 
 type Mode string
 
@@ -13,6 +18,7 @@ const (
 const (
 	FrontendSPDKTCPNvmf     = "spdk-tcp-nvmf"
 	FrontendSPDKTCPBlockdev = "spdk-tcp-blockdev"
+	FrontendUBLK            = "ublk"
 	FrontendEmpty           = ""
 )
 
@@ -48,10 +54,6 @@ const (
 
 const (
 	BackingImagePortCount = 1
-
-	BackingImageSnapshotAttrChecksum         = "checksum"
-	BackingImageSnapshotAttrBackingImageUUID = "backing_image_uuid"
-	BackingImageSnapshotAttrPrepareState     = "backing_image_prepare_state"
 )
 
 const VolumeHead = "volume-head"
@@ -83,7 +85,11 @@ func GRPCReplicaModeToReplicaMode(replicaMode spdkrpc.ReplicaMode) Mode {
 }
 
 func IsFrontendSupported(frontend string) bool {
-	return frontend == FrontendEmpty || frontend == FrontendSPDKTCPNvmf || frontend == FrontendSPDKTCPBlockdev
+	return frontend == FrontendEmpty || frontend == FrontendSPDKTCPNvmf || frontend == FrontendSPDKTCPBlockdev || frontend == FrontendUBLK
+}
+
+func IsUblkFrontend(frontend string) bool {
+	return frontend == FrontendUBLK
 }
 
 const (
@@ -95,3 +101,27 @@ const (
 	// SPDKShallowCopyStateNew is the state returned from spdk_tgt. There is no underscore in the string.
 	SPDKShallowCopyStateInProgress = "in progress"
 )
+
+// Longhorn defined snapshot attributes
+const (
+	LonghornBackingImageSnapshotAttrChecksum     = "longhorn_backing_image_checksum"
+	LonghornBackingImageSnapshotAttrUUID         = "longhorn_backing_image_uuid"
+	LonghornBackingImageSnapshotAttrPrepareState = "longhorn_backing_image_prepare_state"
+)
+
+// Backing image related utility functions
+const (
+	BackingImageTempHeadLvolSuffix = "temp-head"
+)
+
+func IsBackingImageSnapLvolName(lvolName string) bool {
+	return strings.HasPrefix(lvolName, "bi-") && !strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
+}
+
+func GetBackingImageSnapLvolNameFromTempHeadLvolName(lvolName string) string {
+	return strings.TrimSuffix(lvolName, fmt.Sprintf("-%s", BackingImageTempHeadLvolSuffix))
+}
+
+func IsBackingImageTempHead(lvolName string) bool {
+	return strings.HasSuffix(lvolName, BackingImageTempHeadLvolSuffix)
+}

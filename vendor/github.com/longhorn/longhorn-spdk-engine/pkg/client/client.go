@@ -206,6 +206,55 @@ func (c *SPDKClient) ReplicaSnapshotPurge(name string) error {
 	return errors.Wrapf(err, "failed to purge SPDK replica %s", name)
 }
 
+func (c *SPDKClient) ReplicaSnapshotHash(name, snapshotName string, rehash bool) error {
+	if name == "" || snapshotName == "" {
+		return fmt.Errorf("failed to hash SPDK replica snapshot: missing required parameter name or snapshot name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.ReplicaSnapshotHash(ctx, &spdkrpc.SnapshotHashRequest{
+		Name:         name,
+		SnapshotName: snapshotName,
+		Rehash:       rehash,
+	})
+	return errors.Wrapf(err, "failed to hash SPDK replica %s snapshot %s", name, snapshotName)
+}
+
+func (c *SPDKClient) ReplicaSnapshotHashStatus(name, snapshotName string) (*spdkrpc.ReplicaSnapshotHashStatusResponse, error) {
+	if name == "" || snapshotName == "" {
+		return nil, fmt.Errorf("failed to check hash status for SPDK replica snapshot: missing required parameter name or snapshot name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	return client.ReplicaSnapshotHashStatus(ctx, &spdkrpc.SnapshotHashStatusRequest{
+		Name:         name,
+		SnapshotName: snapshotName,
+	})
+}
+
+func (c *SPDKClient) ReplicaSnapshotRangeHashGet(name, snapshotName string, clusterStartIndex, clusterCount uint64) (*spdkrpc.ReplicaSnapshotRangeHashGetResponse, error) {
+	if name == "" || snapshotName == "" {
+		return nil, fmt.Errorf("failed to get range hash for SPDK replica snapshot: missing required parameter name or snapshot name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	return client.ReplicaSnapshotRangeHashGet(ctx, &spdkrpc.ReplicaSnapshotRangeHashGetRequest{
+		Name:              name,
+		SnapshotName:      snapshotName,
+		ClusterStartIndex: clusterStartIndex,
+		ClusterCount:      clusterCount,
+	})
+}
+
 // ReplicaRebuildingSrcStart asks the source replica to check the parent snapshot of the head and expose it as a NVMf bdev if necessary.
 // If the source replica and the destination replica have different IPs, the API will expose the snapshot lvol as a NVMf bdev and return the address <IP>:<Port>.
 // Otherwise, the API will directly return the snapshot lvol alias.
@@ -281,8 +330,36 @@ func (c *SPDKClient) ReplicaRebuildingSrcShallowCopyStart(srcReplicaName, snapsh
 	return nil
 }
 
+// ReplicaRebuildingSrcRangeShallowCopyStart asks the src replica to start a range/delta shallow copy from the specified clusters of its snapshot lvol to the dst rebuilding lvol.
+func (c *SPDKClient) ReplicaRebuildingSrcRangeShallowCopyStart(srcReplicaName, snapshotName, dstRebuildingLvolAddress string, mismatchingClusterList []uint64) error {
+	if srcReplicaName == "" || snapshotName == "" {
+		return fmt.Errorf("failed to start rebuilding src replica range shallow copy: missing required parameter replica name or snapshot name")
+	}
+	if dstRebuildingLvolAddress == "" {
+		return fmt.Errorf("failed to start rebuilding src replica range shallow copy: missing required parameter dst rebuilding lvol address")
+	}
+	if len(mismatchingClusterList) == 0 {
+		return fmt.Errorf("failed to start rebuilding src replica range shallow copy: missing required parameter mismatching cluster list")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceMedTimeout)
+	defer cancel()
+
+	_, err := client.ReplicaRebuildingSrcRangeShallowCopyStart(ctx, &spdkrpc.ReplicaRebuildingSrcRangeShallowCopyStartRequest{
+		Name:                     srcReplicaName,
+		SnapshotName:             snapshotName,
+		DstRebuildingLvolAddress: dstRebuildingLvolAddress,
+		MismatchingClusterList:   mismatchingClusterList,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to start rebuilding src replica %v range shallow copy snapshot %v", srcReplicaName, snapshotName)
+	}
+	return nil
+}
+
 // ReplicaRebuildingSrcShallowCopyCheck asks the src replica to check the shallow copy progress and status via the snapshot name
-func (c *SPDKClient) ReplicaRebuildingSrcShallowCopyCheck(srcReplicaName, dstReplicaName, snapshotName string) (state string, copiedClusters, totalClusters uint64, errorMsg string, err error) {
+func (c *SPDKClient) ReplicaRebuildingSrcShallowCopyCheck(srcReplicaName, dstReplicaName, snapshotName string) (state string, handledClusters, totalClusters uint64, errorMsg string, err error) {
 	if srcReplicaName == "" || dstReplicaName == "" {
 		return "", 0, 0, "", fmt.Errorf("failed to check rebuilding src replica shallow copy: missing required parameter src replica name or dst replica name")
 	}
@@ -302,7 +379,7 @@ func (c *SPDKClient) ReplicaRebuildingSrcShallowCopyCheck(srcReplicaName, dstRep
 	if err != nil {
 		return "", 0, 0, "", errors.Wrapf(err, "failed to check rebuilding src replica %v shallow copy snapshot %v for dst replica %s", srcReplicaName, snapshotName, dstReplicaName)
 	}
-	return resp.State, resp.CopiedClusters, resp.TotalClusters, resp.ErrorMsg, nil
+	return resp.State, resp.HandledClusters, resp.TotalClusters, resp.ErrorMsg, nil
 }
 
 // ReplicaRebuildingDstStart asks the dst replica to create a new head lvol based on the external snapshot of the src replica and blindly expose it as a NVMf bdev.
@@ -413,6 +490,32 @@ func (c *SPDKClient) ReplicaRebuildingDstSnapshotCreate(name, snapshotName strin
 
 	_, err := client.ReplicaRebuildingDstSnapshotCreate(ctx, &snapshotRequest)
 	return errors.Wrapf(err, "failed to create dst SPDK replica %s rebuilding snapshot %s", name, snapshotName)
+}
+
+// ReplicaRebuildingDstSetQosLimit sets a QoS limit (in MB/s) on the destination replica
+// during the shallow copy (rebuilding) process. The limit controls write throughput to reduce rebuild impact.
+// A QoS limit of 0 disables throttling (i.e., unlimited bandwidth).
+func (c *SPDKClient) ReplicaRebuildingDstSetQosLimit(replicaName string, qosLimitMbps int64) error {
+	if replicaName == "" {
+		return fmt.Errorf("failed to set QoS on replica: missing replica name")
+	}
+	if qosLimitMbps < 0 {
+		return fmt.Errorf("invalid QoS limit: must not be negative, got %d", qosLimitMbps)
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceMedTimeout)
+	defer cancel()
+
+	_, err := client.ReplicaRebuildingDstSetQosLimit(ctx, &spdkrpc.ReplicaRebuildingDstSetQosLimitRequest{
+		Name:         replicaName,
+		QosLimitMbps: qosLimitMbps,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to set QoS limit %d MB/s on replica %s", qosLimitMbps, replicaName)
+	}
+
+	return nil
 }
 
 func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string, portCount int32,
@@ -640,6 +743,38 @@ func (c *SPDKClient) EngineSnapshotPurge(name string) error {
 		Name: name,
 	})
 	return errors.Wrapf(err, "failed to purge SPDK engine %s", name)
+}
+
+func (c *SPDKClient) EngineSnapshotHash(name, snapshotName string, rehash bool) error {
+	if name == "" || snapshotName == "" {
+		return fmt.Errorf("failed to hash SPDK engine snapshot: missing required parameter name or snapshot name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineSnapshotHash(ctx, &spdkrpc.SnapshotHashRequest{
+		Name:         name,
+		SnapshotName: snapshotName,
+		Rehash:       rehash,
+	})
+	return errors.Wrapf(err, "failed to hash SPDK engine %s snapshot %s", name, snapshotName)
+}
+
+func (c *SPDKClient) EngineSnapshotHashStatus(name, snapshotName string) (response *spdkrpc.EngineSnapshotHashStatusResponse, err error) {
+	if name == "" || snapshotName == "" {
+		return nil, fmt.Errorf("failed to check hash status for SPDK engine snapshot: missing required parameter name or snapshot name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	return client.EngineSnapshotHashStatus(ctx, &spdkrpc.SnapshotHashStatusRequest{
+		Name:         name,
+		SnapshotName: snapshotName,
+	})
 }
 
 func (c *SPDKClient) EngineReplicaAdd(engineName, replicaName, replicaAddress string) error {
@@ -1046,4 +1181,20 @@ func (c *SPDKClient) LogGetFlags() (string, error) {
 		return "", err
 	}
 	return resp.Flags, nil
+}
+
+func (c *SPDKClient) MetricsGet(name string) (*spdkrpc.Metrics, error) {
+	if name == "" {
+		return nil, fmt.Errorf("failed to get SPDK engine metrics: missing required parameter")
+	}
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+	resp, err := client.MetricsGet(ctx, &spdkrpc.MetricsRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get SPDK engine %v metrics", name)
+	}
+	return resp, nil
 }

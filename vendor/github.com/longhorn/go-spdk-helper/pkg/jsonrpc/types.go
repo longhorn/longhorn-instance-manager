@@ -27,8 +27,9 @@ type RespErrorMsg string
 type RespErrorCode int32
 
 const (
-	RespErrorCodeNoFileExists = -17
-	RespErrorCodeNoSuchDevice = -19
+	RespErrorCodeNoSuchProcess = -3
+	RespErrorCodeNoFileExists  = -17
+	RespErrorCodeNoSuchDevice  = -19
 )
 
 type Response struct {
@@ -55,8 +56,21 @@ type JSONClientError struct {
 }
 
 func (re JSONClientError) Error() string {
-	return fmt.Sprintf("error sending message, id %d, method %s, params %v: %v",
+	return fmt.Sprintf("error sending message, id %d, method %s, params %+v: %v",
 		re.ID, re.Method, re.Params, re.ErrorDetail)
+}
+
+func IsJSONRPCRespErrorNoSuchProcess(err error) bool {
+	jsonRPCError, ok := err.(JSONClientError)
+	if !ok {
+		return false
+	}
+	responseError, ok := jsonRPCError.ErrorDetail.(*ResponseError)
+	if !ok {
+		return false
+	}
+
+	return responseError.Code == RespErrorCodeNoSuchProcess
 }
 
 func IsJSONRPCRespErrorNoSuchDevice(err error) bool {

@@ -213,6 +213,22 @@ func (c *Client) BdevLvolCreate(lvstoreName, lvstoreUUID, lvolName string, sizeI
 	return uuid, json.Unmarshal(cmdOutput, &uuid)
 }
 
+// BdevLvolSetXattr sets extended attribute of a logical volume.
+func (c *Client) BdevLvolSetXattr(name, xattrName string, xattrValue string) (set bool, err error) {
+	req := spdktypes.BdevLvolSetXattrRequest{
+		Name:       name,
+		XattrName:  xattrName,
+		XattrValue: xattrValue,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_set_xattr", req)
+	if err != nil {
+		return false, err
+	}
+
+	return set, json.Unmarshal(cmdOutput, &set)
+}
+
 // BdevLvolGetXattr gets the value of an extended attribute of a logical volume.
 func (c *Client) BdevLvolGetXattr(name, xattrName string) (value string, err error) {
 	req := spdktypes.BdevLvolGetXattrRequest{
@@ -497,7 +513,39 @@ func (c *Client) BdevLvolStartShallowCopy(srcLvolName, dstBdevName string) (oper
 	return shallowCopy.OperationId, nil
 }
 
+// BdevLvolStartRangeShallowCopy start a range shallow copy of lvol over a given bdev.
+// For the indexes specified in the array, clusters allocated to the lvol will be written on the bdev,
+// for the others an unmap command is sent to the bdev.
+// Returns the operation ID needed to check the shallow copy status with BdevLvolCheckShallowCopy.
+//
+//	"srcLvolName": Required. UUID or alias of lvol to create a copy from.
+//
+//	"dstBdevName": Required. Name of the bdev that acts as destination for the copy.
+//
+//	"clusters": Required. Array of clusters indexes to be synchronized with copy or unmap.
+func (c *Client) BdevLvolStartRangeShallowCopy(srcLvolName, dstBdevName string, clusters []uint64) (operationId uint32, err error) {
+	req := spdktypes.BdevLvolRangeShallowCopyRequest{
+		SrcLvolName: srcLvolName,
+		DstBdevName: dstBdevName,
+		Clusters:    clusters,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_start_range_shallow_copy", req)
+	if err != nil {
+		return 0, err
+	}
+
+	shallowCopy := spdktypes.ShallowCopy{}
+	err = json.Unmarshal(cmdOutput, &shallowCopy)
+	if err != nil {
+		return 0, err
+	}
+
+	return shallowCopy.OperationId, nil
+}
+
 // BdevLvolCheckShallowCopy check the status of a shallow copy previously started.
+// It can be used to check both BdevLvolStartShallowCopy and BdevLvolStartRangeShallowCopy.
 //
 //	"operationId": Required. Operation ID of the shallow copy to check.
 func (c *Client) BdevLvolCheckShallowCopy(operationId uint32) (*spdktypes.ShallowCopyStatus, error) {
@@ -581,6 +629,72 @@ func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum string, err 
 	}
 
 	return strconv.FormatUint(snapshotChecksum.Checksum, 10), nil
+}
+
+// BdevLvolRegisterRangeChecksums compute and store a checksum for the whole snapshot and a checksum for every snapshot's cluster data. Overwrite old checksums if already registered.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolRegisterRangeChecksums(name string) (registered bool, err error) {
+	req := spdktypes.BdevLvolRegisterRangeChecksumsRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_register_snapshot_range_checksums", req)
+	if err != nil {
+		return false, err
+	}
+
+	return registered, json.Unmarshal(cmdOutput, &registered)
+}
+
+// BdevLvolGetRangeChecksums gets snapshot's stored checksums for the clusters in the range. The checksums must have been previously registered.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+//
+//	"clusterStartIndex": Required. The index of the first cluster in the range.
+//
+//	"clusterCount": Required. The number of clusters in the range.
+func (c *Client) BdevLvolGetRangeChecksums(name string, clusterStartIndex, clusterCount uint64) (dataChecksums map[uint64]uint64, err error) {
+	req := spdktypes.BdevLvolGetRangeChecksumsRequest{
+		Name:              name,
+		ClusterStartIndex: clusterStartIndex,
+		ClusterCount:      clusterCount,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_get_snapshot_range_checksums", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var rangeChecksums []spdktypes.BdevLvolRangeChecksum
+	err = json.Unmarshal(cmdOutput, &rangeChecksums)
+	if err != nil {
+		return nil, err
+	}
+
+	dataChecksums = make(map[uint64]uint64)
+	for _, clusterChecksum := range rangeChecksums {
+		dataChecksums[clusterChecksum.ClusterIndex] = clusterChecksum.Checksum
+	}
+
+	return dataChecksums, nil
+}
+
+// BdevLvolStopSnapshotChecksum stop an ongoing registration of a snapshot's checksum.
+// It can be used to stop both BdevLvolRegisterSnapshotChecksum and BdevLvolRegisterRangeChecksums.
+//
+//	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
+func (c *Client) BdevLvolStopSnapshotChecksum(name string) (registered bool, err error) {
+	req := spdktypes.BdevLvolStopSnapshotChecksumRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_stop_snapshot_checksum", req)
+	if err != nil {
+		return false, err
+	}
+
+	return registered, json.Unmarshal(cmdOutput, &registered)
 }
 
 // BdevLvolRename renames a logical volume.
@@ -1312,4 +1426,64 @@ func (c *Client) BdevVirtioDetachController(name string) (deleted bool, err erro
 	}
 
 	return deleted, json.Unmarshal(cmdOutput, &deleted)
+}
+
+// BdevGetIostat get I/O statistics of block devices (bdevs).
+//
+//	"name": Optional. If this is not specified, the function will list all block devices.
+//
+//	"per_channel": Optional. Display per channel data for specified block device.
+func (c *Client) BdevGetIostat(name string, perChannel bool) (resp *spdktypes.BdevIostatResponse, err error) {
+	req := spdktypes.BdevIostatRequest{
+		Name:       name,
+		PerChannel: perChannel,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_get_iostat", req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &spdktypes.BdevIostatResponse{}
+	if err := json.Unmarshal(cmdOutput, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to parse bdev_get_iostat response")
+	}
+
+	return resp, nil
+}
+
+// BdevSetQosLimit sets the quality of service rate limits on a bdev.
+//
+//	"name": Required. Block device name to apply QoS settings to.
+//
+//	"rw_ios_per_sec": Optional. Number of R/W I/Os per second to allow. 0 means unlimited.
+//
+//	"rw_mbytes_per_sec": Optional. Number of R/W megabytes per second to allow. 0 means unlimited.
+//
+//	"r_mbytes_per_sec": Optional. Number of Read megabytes per second to allow. 0 means unlimited.
+//
+//	"w_mbytes_per_sec": Optional. Number of Write megabytes per second to allow. 0 means unlimited.
+func (c *Client) BdevSetQosLimit(bdevName string, rwIOsPerSec, rwMBPerSec, rMBPerSec, wMBPerSec int64) error {
+	params := map[string]interface{}{
+		"name":              bdevName,
+		"rw_ios_per_sec":    rwIOsPerSec,
+		"rw_mbytes_per_sec": rwMBPerSec,
+		"r_mbytes_per_sec":  rMBPerSec,
+		"w_mbytes_per_sec":  wMBPerSec,
+	}
+
+	resp, err := c.jsonCli.SendCommand("bdev_set_qos_limit", params)
+	if err != nil {
+		return errors.Wrap(err, "failed to send bdev_set_qos_limit")
+	}
+
+	var result bool
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return errors.Wrapf(err, "invalid response format: %s", string(resp))
+	}
+	if !result {
+		return fmt.Errorf("SPDK returned false for bdev_set_qos_limit")
+	}
+
+	return nil
 }
