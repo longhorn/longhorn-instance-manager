@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/longhorn/backupstore"
+
 	btypes "github.com/longhorn/backupstore/types"
 	commonns "github.com/longhorn/go-common-libs/ns"
 	commontypes "github.com/longhorn/go-common-libs/types"
@@ -49,6 +51,8 @@ type Restore struct {
 
 	log logrus.FieldLogger
 }
+
+var _ backupstore.DeltaRestoreOperations = (*Restore)(nil)
 
 func NewRestore(spdkClient *spdkclient.Client, lvolName, snapshotName, backupUrl, backupName string, replica *Replica) (*Restore, error) {
 	log := logrus.WithFields(logrus.Fields{
