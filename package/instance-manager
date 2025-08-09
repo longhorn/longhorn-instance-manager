@@ -42,7 +42,7 @@ function generate_nvme_hostid_and_hostnqn() {
 function enable_spdk_tgt() {
     local options=("$@")
     echo "Enabling spdk_tgt with options: ${options[*]}"
-    spdk_tgt "${options[@]}" 2>&1 &
+    spdk_tgt "${options[@]}" 2>&1 | tee -a /log/spdk_tgt.log &
 
     timeout=120  # Timeout in seconds
     interval=1  # Interval in seconds
@@ -92,6 +92,12 @@ done
 
 #### Main ####
 
+if [ "$enable_spdk" -eq 1 ]; then
+    mkdir -p /log
+    touch /log/instance-manager.log
+    touch /log/spdk_tgt.log
+fi
+
 bind_dev
 bind_sys
 bind_lib_modules
@@ -99,4 +105,9 @@ bind_lib_modules
 [ "$enable_spdk" -eq 1 ] && generate_nvme_hostid_and_hostnqn
 [ "$enable_spdk" -eq 1 ] && enable_spdk_tgt "${spdk_options[@]}"
 
-exec longhorn-instance-manager "${instance_manager_options[@]}"
+if [ "$enable_spdk" -eq 1 ]; then
+    exec-logrotate
+    exec longhorn-instance-manager "${instance_manager_options[@]}" 2>&1 | tee -a /log/instance-manager.log
+else
+    exec longhorn-instance-manager "${instance_manager_options[@]}"
+fi
