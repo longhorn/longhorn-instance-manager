@@ -1678,19 +1678,6 @@ func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, repli
 		return fmt.Errorf("replica %s recorded address %s does not match the input address %s for engine %s replica delete", replicaName, replicaStatus.Address, replicaAddress, e.Name)
 	}
 
-	if e.Frontend == types.FrontendSPDKTCPBlockdev && e.Endpoint != "" {
-		if err = e.initiator.Suspend(false, false); err != nil {
-			err = errors.Wrapf(err, "failed to suspend NVMe initiator during engine %s replica %s delete", e.Name, replicaName)
-			return err
-		}
-		defer func() {
-			if frontendErr := e.initiator.Resume(); frontendErr != nil {
-				frontendErr = errors.Wrapf(frontendErr, "failed to resume NVMe initiator during engine %s replica %s delete", e.Name, replicaName)
-				err = frontendErr
-			}
-		}()
-	}
-
 	e.log.Infof("Removing base bdev %v from engine", replicaStatus.BdevName)
 	if _, err := spdkClient.BdevRaidRemoveBaseBdev(replicaStatus.BdevName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 		return errors.Wrapf(err, "failed to remove base bdev %s for deleting replica %s", replicaStatus.BdevName, replicaName)
@@ -2053,6 +2040,124 @@ func (e *Engine) SnapshotHashStatus(snapshotName string) (*spdkrpc.EngineSnapsho
 	}
 
 	return resp, nil
+}
+
+type replicaCandidate struct {
+	ip      string
+	lvsUUID string
+	address string
+}
+
+func (e *Engine) SnapshotClone(snapshotName, srcEngineName, srcEngineAddress string, cloneMode spdkrpc.CloneMode) (err error) {
+	e.Lock()
+	defer e.Unlock()
+
+	defer func() {
+		err = errors.Wrap(err, "failed to do SnapshotClone")
+	}()
+
+	e.log.Infof("Engine is starting cloning snapshot %s", snapshotName)
+
+	if len(e.ReplicaStatusMap) != 1 {
+		return fmt.Errorf("destination engine must only have 1 replica when doing snapshot clone. Current "+
+			"replica count is %v", len(e.ReplicaStatusMap))
+	}
+
+	dstReplicaName, dstReplicaAddr := "", ""
+	for rName, rStatus := range e.ReplicaStatusMap {
+		if rStatus.Mode != types.ModeRW {
+			continue
+		}
+		dstReplicaName = rName
+		dstReplicaAddr = rStatus.Address
+		break
+	}
+
+	if dstReplicaName == "" || dstReplicaAddr == "" {
+		return fmt.Errorf("cannot find a RW destination replica")
+	}
+
+	e.log.Infof("Selecting replica %v with address %v as dst replica for cloning", dstReplicaName, dstReplicaAddr)
+
+	dstReplicaServiceCli, err := GetServiceClient(dstReplicaAddr)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if errClose := dstReplicaServiceCli.Close(); errClose != nil {
+			e.log.WithError(errClose).Errorf("Engine %v failed to close dst replica %v client with address %v",
+				e.Name, dstReplicaName, dstReplicaAddr)
+		}
+	}()
+
+	dstReplica, err := dstReplicaServiceCli.ReplicaGet(dstReplicaName)
+	if err != nil {
+		return err
+	}
+
+	srcEngineServiceCli, err := GetServiceClient(srcEngineAddress)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if errClose := srcEngineServiceCli.Close(); errClose != nil {
+			e.log.WithError(errClose).Errorf("Engine %v failed to close src engine %v client with address %v"+
+				" during snapshot clone", e.Name, srcEngineName, srcEngineAddress)
+		}
+	}()
+
+	srcEngine, err := srcEngineServiceCli.EngineGet(srcEngineName)
+	if err != nil {
+		return err
+	}
+	srcReplicas, err := srcEngineServiceCli.EngineReplicaList(srcEngineName)
+	if err != nil {
+		return err
+	}
+
+	srcReplicaCandidates := map[string]replicaCandidate{}
+	for rName, mode := range srcEngine.ReplicaModeMap {
+		if mode != types.ModeRW {
+			continue
+		}
+		rAddr, ok := srcEngine.ReplicaAddressMap[rName]
+		if !ok {
+			continue
+		}
+		r, ok := srcReplicas[rName]
+		if !ok {
+			continue
+		}
+		srcReplicaCandidates[rName] = replicaCandidate{ip: r.IP, lvsUUID: r.LvsUUID, address: rAddr}
+	}
+
+	srcReplicaName := ""
+	srcReplicaAddress := ""
+	for rName, cand := range srcReplicaCandidates {
+		if cand.ip == dstReplica.IP && cand.lvsUUID == dstReplica.LvsUUID {
+			srcReplicaName = rName
+			srcReplicaAddress = cand.address
+			break
+		}
+	}
+
+	if srcReplicaName == "" || srcReplicaAddress == "" {
+		if cloneMode == spdkrpc.CloneMode_CLONE_MODE_LINKED_CLONE {
+			return fmt.Errorf("cannot find the src replica at the same address %v and on same LvsUUID %v as the "+
+				"dst replica", dstReplica.IP, dstReplica.LvsUUID)
+		}
+		for rName, cand := range srcReplicaCandidates {
+			srcReplicaName = rName
+			srcReplicaAddress = cand.address
+			break
+		}
+	}
+
+	if srcReplicaName == "" || srcReplicaAddress == "" {
+		return fmt.Errorf("cannot find the src replica for cloning")
+	}
+
+	return dstReplicaServiceCli.ReplicaSnapshotCloneDstStart(dstReplicaName, snapshotName, srcReplicaName, srcReplicaAddress, cloneMode)
 }
 
 func (e *Engine) getReplicaSnapshotHashStatus(replicaName, replicaAddress, snapshotName string) (*spdkrpc.ReplicaSnapshotHashStatusResponse, error) {
