@@ -238,6 +238,131 @@ func (c *SPDKClient) ReplicaSnapshotHashStatus(name, snapshotName string) (*spdk
 	})
 }
 
+func (c *SPDKClient) ReplicaSnapshotCloneDstStart(name, snapshotName, srcReplicaName, srcReplicaAddress string, cloneMode spdkrpc.CloneMode) (err error) {
+	defer func() {
+		err = errors.Wrapf(err, "failed to do ReplicaSnapshotCloneDstStart: replica: %v, snapshot: %v", name, snapshotName)
+	}()
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: name},
+		util.Param{Name: "snapshotName", Value: snapshotName},
+		util.Param{Name: "srcReplicaName", Value: srcReplicaName},
+		util.Param{Name: "srcReplicaAddress", Value: srcReplicaAddress},
+	); err != nil {
+		return err
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err = client.ReplicaSnapshotCloneDstStart(ctx, &spdkrpc.ReplicaSnapshotCloneDstStartRequest{
+		Name:              name,
+		SnapshotName:      snapshotName,
+		SrcReplicaName:    srcReplicaName,
+		SrcReplicaAddress: srcReplicaAddress,
+		CloneMode:         cloneMode,
+	})
+	return err
+}
+
+func (c *SPDKClient) ReplicaSnapshotCloneDstStatusCheck(name string) (resp *api.ReplicaSnapshotCloneDstStatus, err error) {
+	defer func() {
+		err = errors.Wrapf(err, "failed to do ReplicaSnapshotCloneDstStatusCheck: replica name %v", name)
+	}()
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: name},
+	); err != nil {
+		return nil, err
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	rpcResp, err := client.ReplicaSnapshotCloneDstStatusCheck(ctx, &spdkrpc.ReplicaSnapshotCloneDstStatusCheckRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.ProtoReplicaSnapshotCloneDstStatusCheckResponseToSnapshotCloneDstStatus(rpcResp), nil
+}
+
+func (c *SPDKClient) ReplicaSnapshotCloneSrcStart(name, snapshotName, dstReplicaName, dstCloningLvolAddress string, mode spdkrpc.CloneMode) (err error) {
+	defer func() {
+		err = errors.Wrapf(err, "failed to do ReplicaSnapshotCloneSrcStart. Replica name: %v, snapshot name: %v", name, snapshotName)
+	}()
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: name},
+		util.Param{Name: "snapshotName", Value: snapshotName},
+		util.Param{Name: "dstReplicaName", Value: dstReplicaName},
+	); err != nil {
+		return err
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err = client.ReplicaSnapshotCloneSrcStart(ctx, &spdkrpc.ReplicaSnapshotCloneSrcStartRequest{
+		Name:                  name,
+		SnapshotName:          snapshotName,
+		DstReplicaName:        dstReplicaName,
+		DstCloningLvolAddress: dstCloningLvolAddress,
+		CloneMode:             mode,
+	})
+	return err
+}
+
+func (c *SPDKClient) ReplicaSnapshotCloneSrcStatusCheck(name, snapshotName, dstReplicaName string) (resp *api.ReplicaSnapshotCloneSrcStatus, err error) {
+	defer func() {
+		err = errors.Wrapf(err, "failed to do ReplicaSnapshotCloneSrcStatusCheck. Replica name: %v, snapshot name: %v", name, snapshotName)
+	}()
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: name},
+		util.Param{Name: "snapshotName", Value: snapshotName},
+		util.Param{Name: "dstReplicaName", Value: dstReplicaName},
+	); err != nil {
+		return nil, err
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	rpcResp, err := client.ReplicaSnapshotCloneSrcStatusCheck(ctx, &spdkrpc.ReplicaSnapshotCloneSrcStatusCheckRequest{
+		Name:           name,
+		SnapshotName:   snapshotName,
+		DstReplicaName: dstReplicaName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.ProtoReplicaSnapshotCloneSrcStatusCheckResponseToSnapshotCloneSrcStatus(rpcResp), nil
+}
+
+func (c *SPDKClient) ReplicaSnapshotCloneSrcFinish(name, dstReplicaName string) (err error) {
+	defer func() {
+		err = errors.Wrapf(err, "failed to do ReplicaSnapshotCloneSrcFinish. replica: %v, src replica: %v", dstReplicaName, name)
+	}()
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: name},
+		util.Param{Name: "dstReplicaName", Value: dstReplicaName},
+	); err != nil {
+		return err
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err = client.ReplicaSnapshotCloneSrcFinish(ctx, &spdkrpc.ReplicaSnapshotCloneSrcFinishRequest{
+		Name:           name,
+		DstReplicaName: dstReplicaName,
+	})
+	return err
+}
+
 func (c *SPDKClient) ReplicaSnapshotRangeHashGet(name, snapshotName string, clusterStartIndex, clusterCount uint64) (*spdkrpc.ReplicaSnapshotRangeHashGetResponse, error) {
 	if name == "" || snapshotName == "" {
 		return nil, fmt.Errorf("failed to get range hash for SPDK replica snapshot: missing required parameter name or snapshot name")
@@ -777,6 +902,31 @@ func (c *SPDKClient) EngineSnapshotHashStatus(name, snapshotName string) (respon
 	})
 }
 
+func (c *SPDKClient) EngineSnapshotClone(name, snapshotName, srcEngineName, srcEngineAddress string, cloneMode spdkrpc.CloneMode) error {
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: name},
+		util.Param{Name: "snapshotName", Value: snapshotName},
+		util.Param{Name: "srcEngineName", Value: srcEngineName},
+		util.Param{Name: "srcEngineAddress", Value: srcEngineAddress},
+	); err != nil {
+		return errors.Wrap(err, "failed to clone snapshot for SPDK engine")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineSnapshotClone(ctx, &spdkrpc.EngineSnapshotCloneRequest{
+		Name:             name,
+		SnapshotName:     snapshotName,
+		SrcEngineName:    srcEngineName,
+		SrcEngineAddress: srcEngineAddress,
+		CloneMode:        cloneMode,
+	})
+	return errors.Wrapf(err, "failed to clone snapshot for SPDK engine: name %s, snapshotName %s, "+
+		"srcEngineName %s, srcEngineAddress %v", name, snapshotName, srcEngineName, srcEngineAddress)
+}
+
 func (c *SPDKClient) EngineReplicaAdd(engineName, replicaName, replicaAddress string) error {
 	if engineName == "" {
 		return fmt.Errorf("failed to add replica for SPDK engine: missing required parameter engine name")
@@ -797,7 +947,7 @@ func (c *SPDKClient) EngineReplicaAdd(engineName, replicaName, replicaAddress st
 	return errors.Wrapf(err, "failed to add replica %s with address %s to engine %s", replicaName, replicaAddress, engineName)
 }
 
-func (c *SPDKClient) EngineReplicaList(engineName string) (*spdkrpc.EngineReplicaListResponse, error) {
+func (c *SPDKClient) EngineReplicaList(engineName string) (map[string]*api.Replica, error) {
 	if engineName == "" {
 		return nil, fmt.Errorf("failed to list replica for SPDK engine: missing required parameter engine name")
 	}
@@ -806,9 +956,17 @@ func (c *SPDKClient) EngineReplicaList(engineName string) (*spdkrpc.EngineReplic
 	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceLongTimeout)
 	defer cancel()
 
-	return client.EngineReplicaList(ctx, &spdkrpc.EngineReplicaListRequest{
+	resp, err := client.EngineReplicaList(ctx, &spdkrpc.EngineReplicaListRequest{
 		EngineName: engineName,
 	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list replica for SPDK engine: %s", engineName)
+	}
+	res := map[string]*api.Replica{}
+	for replicaName, r := range resp.Replicas {
+		res[replicaName] = api.ProtoReplicaToReplica(r)
+	}
+	return res, nil
 }
 
 func (c *SPDKClient) EngineReplicaDelete(engineName, replicaName, replicaAddress string) error {

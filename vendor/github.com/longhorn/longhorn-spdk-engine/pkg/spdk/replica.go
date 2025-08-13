@@ -3,6 +3,7 @@ package spdk
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"slices"
 	"strconv"
@@ -95,6 +96,13 @@ type Replica struct {
 	// The rebuilding source replica should cache this info
 	rebuildingSrcCache RebuildingSrcCache
 
+	// The cloning destination replica should cache this info
+	isSnapshotCloning       bool
+	snapshotCloningDstCache SnapshotCloningDstCache
+
+	// The cloning source replica should cache this info
+	snapshotCloningSrcCache map[string]*SnapshotCloningSrcCache
+
 	isRestoring bool
 	restore     *Restore
 
@@ -162,6 +170,39 @@ type ShallowCopyStatus struct {
 	HandledRangeClusters uint64 `json:"handled_range_clusters"`
 	// CurrentRangeState is the state of the current range shallow copy.
 	CurrentRangeState string `json:"current_range_state"`
+}
+
+type SnapshotCloningDstCache struct {
+	snapshotName string
+
+	cloningLvol        *Lvol
+	cloningPort        int32
+	cloningLvolAddress string
+
+	srcReplicaName    string
+	srcReplicaAddress string
+
+	processedClusters uint64
+	totalClusters     uint64
+	cloningError      string
+	cloningState      string
+	monitorCancelFunc context.CancelFunc
+}
+
+type SnapshotCloningSrcCache struct {
+	dstReplicaName string
+	// dstCloningBdevName is the result of attaching the cloning lvol exposed by the dst replica
+	dstCloningBdevName string
+
+	snapshotName   string
+	deepCopyOpID   uint32
+	deepCopyStatus DeepCopyStatus
+}
+type DeepCopyStatus struct {
+	State             string `json:"state"`
+	ProcessedClusters uint64 `json:"processed_clusters"`
+	TotalClusters     uint64 `json:"total_clusters"`
+	Error             string `json:"error,omitempty"`
 }
 
 func ServiceReplicaToProtoReplica(r *Replica) *spdkrpc.Replica {
@@ -235,6 +276,8 @@ func NewReplica(ctx context.Context, replicaName, lvsName, lvsUUID string, specS
 			processedSnapshotList: []string{},
 		},
 		rebuildingSrcCache: RebuildingSrcCache{},
+
+		snapshotCloningSrcCache: map[string]*SnapshotCloningSrcCache{},
 
 		restore: &Restore{},
 
@@ -493,7 +536,13 @@ func (r *Replica) compareSvcLvols(prev, cur *Lvol, checkChildren, checkActualSiz
 	if cur == nil {
 		return fmt.Errorf("cannot find the corresponding cur lvol")
 	}
-	if prev.Name != cur.Name || prev.UUID != cur.UUID || prev.SnapshotTimestamp != cur.SnapshotTimestamp || prev.SpecSize != cur.SpecSize || prev.Parent != cur.Parent || len(prev.Children) != len(cur.Children) {
+	if prev.Name != cur.Name ||
+		prev.UUID != cur.UUID ||
+		prev.SnapshotTimestamp != cur.SnapshotTimestamp ||
+		prev.SpecSize != cur.SpecSize ||
+		// TODO: handle parent changing case
+		//prev.Parent != cur.Parent ||
+		len(prev.Children) != len(cur.Children) {
 		return fmt.Errorf("found mismatching lvol %+v with recorded prev lvol %+v", cur, prev)
 	}
 	if checkChildren {
@@ -729,12 +778,14 @@ func constructSnapshotLvolMap(replicaName string, bdevLvolMap map[string]*spdkty
 			continue
 		}
 		for _, childLvolName := range bdevLvolMap[curSvcLvol.Name].DriverSpecific.Lvol.Clones {
+			// Exclude the children lvols that does not belong to this replica. For example, the leftover rebuilding lvols of the previous rebuilding failed replicas
+			// or linked-clone lvol of another replica
+			if !IsReplicaLvol(replicaName, childLvolName) {
+				delete(curSvcLvol.Children, childLvolName)
+				continue
+			}
 			if bdevLvolMap[childLvolName] == nil {
 				return nil, fmt.Errorf("cannot find child lvol %v for lvol %v during the snapshot lvol map construction", childLvolName, curSvcLvol.Name)
-			}
-			// Exclude the children lvols that does not belong to this replica. For example, the leftover rebuilding lvols of the previous rebuilding failed replicas.
-			if !IsReplicaLvol(replicaName, childLvolName) {
-				continue
 			}
 			curSvcLvol.Children[childLvolName] = BdevLvolInfoToServiceLvol(bdevLvolMap[childLvolName])
 			queue = append(queue, curSvcLvol.Children[childLvolName])
@@ -774,10 +825,11 @@ func constructActiveChainFromSnapshotLvolMap(replicaName string, snapshotLvolMap
 		newChain = append(newChain, curSvcLvol)
 	}
 
-	// Check if the root snap/head lvol has a parent. If YES, it means that this replica contains a backing image
+	// Check if the root snap/head lvol has a parent. If YES, it means that this replica contains a backing image or
+	// this replica is linked-cloned from another replica
 	var biSvcLvol *Lvol
 	rootLvol := newChain[len(newChain)-1]
-	if rootLvol.Parent != "" {
+	if rootLvol.Parent != "" && types.IsBackingImageSnapLvolName(rootLvol.Parent) {
 		// Here we won't maintain the complete children map for the backing image Lvol since it may contain root lvols of other replicas
 		biBdevLvol := bdevLvolMap[rootLvol.Parent]
 		if biBdevLvol == nil {
@@ -946,7 +998,7 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 			r.ErrorMsg = ""
 		}
 
-		if prevState == types.ProgressStateError {
+		if prevState == types.InstanceStateError {
 			r.reconstructRequired = true
 		}
 
@@ -989,6 +1041,21 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 		r.rebuildingDstCache.rebuildingError = "replica is being deleted"
 		r.rebuildingDstCache.rebuildingState = types.ProgressStateError
 		r.isRebuilding = false
+	}
+
+	// Clean up the cloning cached info
+	if r.snapshotCloningDstCache.monitorCancelFunc != nil {
+		r.snapshotCloningDstCache.monitorCancelFunc()
+	}
+	if err := r.doCleanupForSnapshotCloneDst(spdkClient, false); err != nil {
+		r.log.WithError(err).Error("Failed to delete replica")
+	}
+	if r.isSnapshotCloning {
+		if r.snapshotCloningDstCache.cloningState != types.ProgressStateError {
+			r.snapshotCloningDstCache.cloningError = "replica is being deleted"
+			r.snapshotCloningDstCache.cloningState = types.ProgressStateError
+		}
+		r.isSnapshotCloning = false
 	}
 
 	// The port can be released once the rebuilding and expose are stopped.
@@ -1541,6 +1608,562 @@ func (r *Replica) SnapshotRangeHashGet(spdkClient *spdkclient.Client, snapshotNa
 	}
 
 	return spdkClient.BdevLvolGetRangeChecksums(spdktypes.GetLvolAlias(r.LvsName, snapLvolName), clusterStartIndex, clusterCount)
+}
+
+// SnapshotCloneDstStart asks the destination replica to start snapshot cloning
+func (r *Replica) SnapshotCloneDstStart(spdkClient *spdkclient.Client, snapshotName, srcReplicaName, srcReplicaAddress string, cloneMode spdkrpc.CloneMode) (err error) {
+	updateRequired := false
+
+	r.Lock()
+	defer func() {
+		r.Unlock()
+
+		if updateRequired {
+			r.UpdateCh <- nil
+		}
+	}()
+
+	if r.isSnapshotCloning {
+		return fmt.Errorf("replica %s cloning is in process", r.Name)
+	}
+	r.isSnapshotCloning = true
+
+	defer func() {
+		if err != nil {
+			r.log.WithError(err).Errorf("Failed to do SnapshotCloneDstStart for snapshot %v with "+
+				"srcReplicaName %v, srcReplicaAddress %v", snapshotName, srcReplicaName, srcReplicaAddress)
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+			}
+			r.ErrorMsg = err.Error()
+			if r.snapshotCloningDstCache.cloningError == "" {
+				r.snapshotCloningDstCache.cloningError = err.Error()
+				r.snapshotCloningDstCache.cloningState = types.ProgressStateError
+			}
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
+		}
+
+		updateRequired = true
+	}()
+
+	// Replica.Delete and Replica.Create do not guarantee that the previous cloning dst replica info is cleaned up
+	if err := r.doCleanupForSnapshotCloneDst(spdkClient, true); err != nil {
+		return errors.Wrapf(err, "failed to clean up the previous cloning dst info for dst replica snapshot "+
+			"clone start, src replica name %s, address %s, snapshot name %s", r.snapshotCloningDstCache.srcReplicaName,
+			r.snapshotCloningDstCache.srcReplicaAddress, r.snapshotCloningDstCache.snapshotName)
+	}
+	// init cloning
+	r.snapshotCloningDstCache.snapshotName = snapshotName
+	r.snapshotCloningDstCache.srcReplicaName = srcReplicaName
+	r.snapshotCloningDstCache.srcReplicaAddress = srcReplicaAddress
+
+	if cloneMode == spdkrpc.CloneMode_CLONE_MODE_LINKED_CLONE {
+		srcReplicaIP, _, err := splitHostPort(srcReplicaAddress)
+		if err != nil {
+			return errors.Wrapf(err, "failed to split src Replica address %v", srcReplicaAddress)
+		}
+
+		if r.IP != srcReplicaIP {
+			return fmt.Errorf("failed to do snapshot linked-clone: dst replica IP %v is not the same as "+
+				"src replica IP %v", r.IP, srcReplicaIP)
+		}
+
+		srcReplicaServiceCli, err := GetServiceClient(r.snapshotCloningDstCache.srcReplicaAddress)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if errClose := srcReplicaServiceCli.Close(); errClose != nil {
+				r.log.WithError(errClose).Errorf("Failed to close replica %s client with address %s during "+
+					"start cloning at dst", r.snapshotCloningDstCache.srcReplicaName, r.snapshotCloningDstCache.srcReplicaAddress)
+			}
+		}()
+
+		if err := srcReplicaServiceCli.ReplicaSnapshotCloneSrcStart(r.snapshotCloningDstCache.srcReplicaName,
+			snapshotName, r.Name, "", cloneMode); err != nil {
+			return err
+		}
+		r.snapshotCloningDstCache.cloningState = types.ProgressStateComplete
+		r.log.Infof("Clone state: %v", r.snapshotCloningDstCache.cloningState)
+		return r.SnapshotCloneDstFinish(spdkClient, cloneMode)
+	}
+
+	if r.snapshotCloningDstCache.cloningPort == 0 {
+		if r.snapshotCloningDstCache.cloningPort, _, err = r.portAllocator.AllocateRange(1); err != nil {
+			return errors.Wrapf(err, "failed to allocate a cloning port for dst replica %v snapshot clone start", r.Name)
+		}
+	}
+	// Create cloning lvol and expose it
+	cloningLvolName := GetReplicaCloningLvolName(r.Name)
+	if _, err = spdkClient.BdevLvolCreate("", r.LvsUUID, cloningLvolName, util.BytesToMiB(r.SpecSize),
+		"", true); err != nil {
+		return err
+	}
+	cloningLvolAlias := spdktypes.GetLvolAlias(r.LvsName, cloningLvolName)
+	cloningBdevLvol, err := spdkClient.BdevLvolGetByName(cloningLvolAlias, 0)
+	if err != nil {
+		return err
+	}
+	r.snapshotCloningDstCache.cloningLvol = BdevLvolInfoToServiceLvol(&cloningBdevLvol)
+
+	nguid := commonutils.RandomID(nvmeNguidLength)
+	if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.snapshotCloningDstCache.cloningLvol.Name),
+		r.snapshotCloningDstCache.cloningLvol.UUID, nguid, r.IP,
+		strconv.Itoa(int(r.snapshotCloningDstCache.cloningPort))); err != nil {
+		return err
+	}
+	dstCloningLvolAddress := net.JoinHostPort(r.IP, strconv.Itoa(int(r.snapshotCloningDstCache.cloningPort)))
+
+	// Ask src replica to start cloning
+	srcReplicaServiceCli, err := GetServiceClient(r.snapshotCloningDstCache.srcReplicaAddress)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if errClose := srcReplicaServiceCli.Close(); errClose != nil {
+			r.log.WithError(errClose).Errorf("Failed to close replica %s client with address %s during start "+
+				"cloning at dst", r.snapshotCloningDstCache.srcReplicaName, r.snapshotCloningDstCache.srcReplicaAddress)
+		}
+	}()
+
+	if err := srcReplicaServiceCli.ReplicaSnapshotCloneSrcStart(r.snapshotCloningDstCache.srcReplicaName, snapshotName,
+		r.Name, dstCloningLvolAddress, cloneMode); err != nil {
+		return err
+	}
+	r.snapshotCloningDstCache.cloningState = types.ProgressStateInProgress
+
+	monitorCtx, monitorCancelFunc := context.WithTimeout(context.Background(), MaxSnapshotCloneWaitTime)
+	r.snapshotCloningDstCache.monitorCancelFunc = monitorCancelFunc
+
+	r.log.Infof("Dst relica sending clone request to src replica %v at address %v", srcReplicaName, srcReplicaAddress)
+
+	go r.monitorSnapshotClone(spdkClient, monitorCtx, monitorCancelFunc, srcReplicaName, srcReplicaAddress, snapshotName, cloneMode)
+
+	return nil
+}
+
+func (r *Replica) monitorSnapshotClone(spdkCli *spdkclient.Client, ctx context.Context, cancel context.CancelFunc,
+	srcReplicaName, srcReplicaAddress, snapshotName string, cloneMode spdkrpc.CloneMode) {
+
+	ticker := time.NewTicker(SnapshotCloneStatusCheckInterval)
+	defer func() {
+		ticker.Stop()
+		// Best-effort: tell src to finish.
+		if srcReplicaCli, err := GetServiceClient(srcReplicaAddress); err != nil {
+			r.log.WithError(err).Errorf("Failed to create src client to finish cloning for replica %s", srcReplicaName)
+		} else {
+			if err := srcReplicaCli.ReplicaSnapshotCloneSrcFinish(srcReplicaName, r.Name); err != nil {
+				r.log.WithError(err).Errorf("Failed to finish cloning on src replica %s", srcReplicaName)
+			}
+			if err := srcReplicaCli.Close(); err != nil {
+				r.log.WithError(err).Errorf("Failed to close src client after finish for %s", srcReplicaName)
+			}
+		}
+
+		if err := r.SnapshotCloneDstFinish(spdkCli, cloneMode); err != nil {
+			r.log.WithError(err).Error("Failed to finish replica cloning for destination")
+		}
+
+		if cancel != nil {
+			cancel()
+		}
+	}()
+
+	setStatus := func(state string, msg string, progress ...uint64) {
+		r.Lock()
+		defer r.Unlock()
+		if !r.isSnapshotCloning {
+			return
+		}
+		r.snapshotCloningDstCache.cloningState = state
+		r.snapshotCloningDstCache.cloningError = msg
+		if len(progress) == 2 { // only touch if provided
+			r.snapshotCloningDstCache.processedClusters = progress[0]
+			r.snapshotCloningDstCache.totalClusters = progress[1]
+		}
+	}
+
+	retries := 0
+	for {
+		select {
+		case <-ctx.Done():
+			var reason string
+			if errors.Is(ctx.Err(), context.Canceled) {
+				reason = "operation is aborted"
+			} else if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				reason = "operation is timed out"
+			} else {
+				reason = ctx.Err().Error()
+			}
+			r.log.Warnf("failed to check ReplicaSnapshotCloneSrcStatusCheck: %s", reason)
+			setStatus(types.ProgressStateError, "failed to check ReplicaSnapshotCloneSrcStatusCheck: "+reason)
+			return
+		case <-ticker.C:
+			srcReplicaCli, err := GetServiceClient(srcReplicaAddress)
+			if err != nil {
+				retries++
+				if retries > maxNumRetries {
+					msg := fmt.Sprintf("Failed to create src client for %s over %d times. Setting cloning to error", srcReplicaName, retries)
+					r.log.WithError(err).Error(msg)
+					setStatus(types.ProgressStateError, msg)
+					return
+				}
+				r.log.WithError(err).Warnf("Failed to create src client for %s (retry %d)", srcReplicaName, retries)
+				continue
+			}
+			status, err := srcReplicaCli.ReplicaSnapshotCloneSrcStatusCheck(srcReplicaName, snapshotName, r.Name)
+			if errClose := srcReplicaCli.Close(); errClose != nil {
+				r.log.WithError(errClose).Errorf("Failed to close src client for %s after status check", srcReplicaName)
+			}
+			if err != nil {
+				retries++
+				if retries > maxNumRetries {
+					msg := fmt.Sprintf(
+						"Failed to check snapshot clone status from src replica %s for snapshot %s over %d times. Setting snapshot cloning to error", srcReplicaName, snapshotName, retries,
+					)
+					r.log.WithError(err).Error(msg)
+					setStatus(types.ProgressStateError, msg)
+					return
+				}
+				r.log.WithError(err).Warnf("Failed to check snapshot clone status from src replica %v for snapshot %v (retry %v)", srcReplicaName, snapshotName, retries)
+				continue
+			}
+			retries = 0
+
+			setStatus(status.State, status.ErrorMsg, status.ProcessedClusters, status.TotalClusters)
+
+			if status.State == types.ProgressStateError || status.State == types.ProgressStateComplete {
+				r.log.Infof("Clone state: %v", status.State)
+				return
+			}
+		}
+	}
+}
+
+func (r *Replica) SnapshotCloneDstStatusCheck() (status *spdkrpc.ReplicaSnapshotCloneDstStatusCheckResponse, err error) {
+	r.Lock()
+	defer r.Unlock()
+
+	defer func() {
+		err = errors.Wrapf(err, "failed to check snapshot clone status in dst replica %v", r.Name)
+	}()
+
+	c := r.snapshotCloningDstCache
+	var progress uint32
+	switch {
+	case c.totalClusters == 0:
+		progress = 0
+	case c.processedClusters >= c.totalClusters || c.cloningState == types.ProgressStateComplete:
+		progress = 100
+	default:
+		pct := math.Ceil((float64(c.processedClusters) / float64(c.totalClusters)) * 100)
+		if pct > 100 { // guard against float quirks and >100%
+			pct = 100
+		}
+		progress = uint32(pct)
+	}
+
+	return &spdkrpc.ReplicaSnapshotCloneDstStatusCheckResponse{
+		IsCloning:         r.isSnapshotCloning,
+		SrcReplicaName:    c.srcReplicaName,
+		SrcReplicaAddress: c.srcReplicaAddress,
+		SnapshotName:      c.snapshotName,
+		State:             c.cloningState,
+		Progress:          progress,
+		Error:             c.cloningError,
+	}, nil
+}
+
+func (r *Replica) SnapshotCloneDstFinish(spdkClient *spdkclient.Client, cloneMode spdkrpc.CloneMode) (err error) {
+	if cloneMode == spdkrpc.CloneMode_CLONE_MODE_LINKED_CLONE {
+		r.isSnapshotCloning = true
+		return nil
+	}
+
+	updateRequired := false
+
+	r.Lock()
+	defer func() {
+		r.Unlock()
+
+		if updateRequired {
+			r.UpdateCh <- nil
+		}
+	}()
+
+	if !r.isSnapshotCloning {
+		return fmt.Errorf("replica %s is not in cloning", r.Name)
+	}
+
+	defer func() {
+		if err != nil {
+			if r.State != types.InstanceStateError {
+				r.State = types.InstanceStateError
+			}
+			r.ErrorMsg = err.Error()
+			if r.snapshotCloningDstCache.cloningError == "" {
+				r.snapshotCloningDstCache.cloningError = err.Error()
+				r.snapshotCloningDstCache.cloningState = types.ProgressStateError
+			}
+		} else {
+			if r.State != types.InstanceStateError {
+				r.ErrorMsg = ""
+			}
+		}
+
+		updateRequired = true
+	}()
+
+	if r.snapshotCloningDstCache.cloningState == types.ProgressStateComplete {
+		if r.Head == nil {
+			return fmt.Errorf("cannot find the head for replica %s snapshot clone finish", r.Name)
+		}
+		if r.snapshotCloningDstCache.cloningLvol == nil {
+			return fmt.Errorf("cannot find the head for cloning lvol for snapshot clone finish in replica %v", r.Name)
+		}
+		tmpSnapName := GetTmpSnapNameForCloningLvol(r.Name)
+		snapUUID, err := spdkClient.BdevLvolSnapshot(r.snapshotCloningDstCache.cloningLvol.UUID, tmpSnapName, []spdkclient.Xattr{})
+		if err != nil {
+			return err
+		}
+		snapBdevLvol, err := spdkClient.BdevLvolGetByName(snapUUID, 0)
+		if err != nil {
+			return err
+		}
+		tmpSnap := BdevLvolInfoToServiceLvol(&snapBdevLvol)
+		if _, err := spdkClient.BdevLvolSetParent(r.Head.Alias, tmpSnap.Alias); err != nil {
+			return err
+		}
+	}
+
+	if err = r.doCleanupForSnapshotCloneDst(spdkClient, false); err != nil {
+		return err
+	}
+
+	r.isSnapshotCloning = false
+
+	return
+}
+
+// doCleanupForSnapshotCloneDst blindly cleans up the dst replica cloning cache and all redundant lvols if any
+func (r *Replica) doCleanupForSnapshotCloneDst(spdkClient *spdkclient.Client, clearStatus bool) error {
+	aggregatedErrors := []error{}
+
+	// Blindly clean up the cloning lvol and the exposed port
+	cloningLvolName := GetReplicaCloningLvolName(r.Name)
+	if r.snapshotCloningDstCache.cloningLvol != nil && r.snapshotCloningDstCache.cloningLvol.Name != cloningLvolName {
+		err := fmt.Errorf("BUG: replica %s cloning lvol actual name %s does not match the expected name %v, will use the actual name for the cleanup", r.Name, r.snapshotCloningDstCache.cloningLvol.Name, cloningLvolName)
+		r.log.Error(err)
+		aggregatedErrors = append(aggregatedErrors, err)
+		cloningLvolName = r.snapshotCloningDstCache.cloningLvol.Name
+	}
+	if err := spdkClient.StopExposeBdev(helpertypes.GetNQN(cloningLvolName)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		r.log.WithError(err).Errorf("Failed to stop exposing the cloning lvol %s for cloning dst cleanup", cloningLvolName)
+		aggregatedErrors = append(aggregatedErrors, err)
+	}
+	if r.snapshotCloningDstCache.cloningPort != 0 {
+		if err := r.portAllocator.ReleaseRange(r.snapshotCloningDstCache.cloningPort, r.snapshotCloningDstCache.cloningPort); err != nil {
+			r.log.WithError(err).Errorf("Failed to release the cloning port %d for cloning dst cleanup", r.snapshotCloningDstCache.cloningPort)
+			aggregatedErrors = append(aggregatedErrors, err)
+		} else {
+			r.snapshotCloningDstCache.cloningPort = 0
+			r.snapshotCloningDstCache.cloningLvolAddress = ""
+		}
+	}
+	if _, err := spdkClient.BdevLvolDelete(spdktypes.GetLvolAlias(r.LvsName, cloningLvolName)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		r.log.WithError(err).Errorf("Failed to delete the cloning lvol %s for cloning dst cleanup", cloningLvolName)
+		aggregatedErrors = append(aggregatedErrors, err)
+	} else {
+		r.snapshotCloningDstCache.cloningLvol = nil
+	}
+
+	tmpSnapName := GetTmpSnapNameForCloningLvol(r.Name)
+	if _, err := spdkClient.BdevLvolDelete(spdktypes.GetLvolAlias(r.LvsName, tmpSnapName)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		r.log.WithError(err).Errorf("Failed to delete the tmp snapshot %s for cloning dst cleanup", tmpSnapName)
+		aggregatedErrors = append(aggregatedErrors, err)
+	}
+
+	r.snapshotCloningDstCache.srcReplicaName = ""
+	r.snapshotCloningDstCache.srcReplicaAddress = ""
+	if r.snapshotCloningDstCache.monitorCancelFunc != nil {
+		r.snapshotCloningDstCache.monitorCancelFunc()
+		r.snapshotCloningDstCache.monitorCancelFunc = nil
+	}
+
+	if clearStatus {
+		r.snapshotCloningDstCache.processedClusters = 0
+		r.snapshotCloningDstCache.totalClusters = 0
+		r.snapshotCloningDstCache.cloningError = ""
+		r.snapshotCloningDstCache.cloningState = ""
+	}
+
+	return util.CombineErrors(aggregatedErrors...)
+}
+
+func (r *Replica) snapshotLinkedCloneSrcStart(spdkClient *spdkclient.Client, snapshotName, dstReplicaName string) (err error) {
+	defer func() {
+		err = errors.Wrap(err, "failed to do snapshotLinkedCloneSrcStart")
+	}()
+
+	bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, r.replicaLvolFilter)
+	if err != nil {
+		return err
+	}
+
+	existingParentOfDstReplica := ""
+	for lvolName, lvol := range bdevLvolMap {
+		if types.IsBackingImageSnapLvolName(lvolName) {
+			continue
+		}
+		for _, childLvolName := range lvol.DriverSpecific.Lvol.Clones {
+			if childLvolName == dstReplicaName {
+				existingParentOfDstReplica = lvolName
+				continue
+			}
+			if !IsReplicaLvol(r.Name, childLvolName) {
+				return fmt.Errorf("there are already another linked-clone lvol %v in src replica %v. "+
+					"Each src replica can only has 1 linked-clone lvol at a time", childLvolName, r.Name)
+			}
+		}
+	}
+
+	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
+	snapLvol := r.SnapshotLvolMap[snapLvolName]
+	if snapLvol == nil {
+		return fmt.Errorf("cannot find snapshot %s for src replica %s", snapshotName, r.Name)
+	}
+
+	if existingParentOfDstReplica != "" {
+		if existingParentOfDstReplica != snapLvolName {
+			return fmt.Errorf("dst replica already has a different parent %q than the snapshot %v", dstReplicaName, snapshotName)
+		}
+		// Operation is already satisfied
+		return nil
+	}
+
+	set, err := spdkClient.BdevLvolSetParent(spdktypes.GetLvolAlias(r.LvsName, dstReplicaName), snapLvol.Alias)
+	if err != nil {
+		return err
+	}
+	if !set {
+		return fmt.Errorf("failed set lvol %v as the parent of %v", snapLvol.Alias, dstReplicaName)
+	}
+
+	return nil
+}
+
+// SnapshotCloneSrcStart asks the src replica to start snapshot cloning
+func (r *Replica) SnapshotCloneSrcStart(spdkClient *spdkclient.Client, snapshotName, dstReplicaName, dstCloningLvolAddress string, cloneMode spdkrpc.CloneMode) (err error) {
+	r.Lock()
+	defer r.Unlock()
+
+	if c := r.snapshotCloningSrcCache[dstReplicaName]; c != nil {
+		if err := doCleanupForSnapshotCloneSrc(spdkClient, c); err != nil {
+			return err
+		}
+	}
+	c := &SnapshotCloningSrcCache{
+		dstReplicaName: dstReplicaName,
+		snapshotName:   snapshotName,
+	}
+	r.snapshotCloningSrcCache[dstReplicaName] = c
+
+	r.log.Infof("Src relica starts snapshot clone for snapshot %v, dst replica %v, dst cloning lvol address %v", snapshotName, dstReplicaName, dstCloningLvolAddress)
+
+	if cloneMode == spdkrpc.CloneMode_CLONE_MODE_LINKED_CLONE {
+		return r.snapshotLinkedCloneSrcStart(spdkClient, snapshotName, dstReplicaName)
+	}
+
+	snapLvolName := GetReplicaSnapshotLvolName(r.Name, snapshotName)
+	snapLvol := r.SnapshotLvolMap[snapLvolName]
+	if snapLvol == nil {
+		return fmt.Errorf("cannot find snapshot %s for src replica %s for SnapshotCloneSrcStart", snapshotName, r.Name)
+	}
+
+	dstCloningLvolName := GetReplicaCloningLvolName(dstReplicaName)
+	dstCloningBdevName, err := connectNVMfBdev(spdkClient, dstCloningLvolName, dstCloningLvolAddress,
+		replicaCtrlrLossTimeoutSec, replicaFastIOFailTimeoutSec)
+	if err != nil {
+		return err
+	}
+	c.dstCloningBdevName = dstCloningBdevName
+
+	opID, err := spdkClient.BdevLvolStartDeepCopy(snapLvol.UUID, c.dstCloningBdevName)
+	if err != nil {
+		return err
+	}
+	c.deepCopyOpID = opID
+	c.deepCopyStatus = DeepCopyStatus{}
+	return nil
+}
+
+func doCleanupForSnapshotCloneSrc(spdkClient *spdkclient.Client, c *SnapshotCloningSrcCache) (err error) {
+	if c == nil || c.dstCloningBdevName == "" {
+		return nil
+	}
+	if err := disconnectNVMfBdev(spdkClient, c.dstCloningBdevName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		return fmt.Errorf("failed to disconnect the cloning bdev %s for snapshot clone src cleanup", c.dstCloningBdevName)
+	}
+	return nil
+}
+
+func (r *Replica) SnapshotCloneSrcStatusCheck(spdkClient *spdkclient.Client, snapshotName, dstReplicaName string) (status *spdkrpc.ReplicaSnapshotCloneSrcStatusCheckResponse, err error) {
+	r.Lock()
+	defer r.Unlock()
+
+	defer func() {
+		err = errors.Wrapf(err, "failed to check snapshot clone status in src replica %v, dst replica %v, snapshot %v", r.Name, dstReplicaName, snapshotName)
+	}()
+	c := r.snapshotCloningSrcCache[dstReplicaName]
+	if c == nil {
+		return nil, fmt.Errorf("cannot find the operation in cache")
+	}
+	if c.snapshotName != snapshotName {
+		return nil, fmt.Errorf("snapshot name %v is not the same as in the cache: %v", snapshotName, c.snapshotName)
+	}
+	if c.deepCopyOpID == 0 {
+		return nil, fmt.Errorf("deepCopyOpID is empty in the cache")
+	}
+
+	// Only poll SPDK if not terminal.
+	if c.deepCopyStatus.State != types.ProgressStateError && c.deepCopyStatus.State != types.ProgressStateComplete {
+		s, err := spdkClient.BdevLvolCheckDeepCopy(c.deepCopyOpID)
+		if err != nil {
+			return nil, err
+		}
+		c.deepCopyStatus = DeepCopyStatus{
+			State:             s.State,
+			ProcessedClusters: s.ProcessedClusters,
+			TotalClusters:     s.TotalClusters,
+			Error:             s.Error,
+		}
+	}
+
+	return &spdkrpc.ReplicaSnapshotCloneSrcStatusCheckResponse{
+		State:             c.deepCopyStatus.State,
+		ProcessedClusters: c.deepCopyStatus.ProcessedClusters,
+		TotalClusters:     c.deepCopyStatus.TotalClusters,
+		ErrorMsg:          c.deepCopyStatus.Error,
+	}, nil
+}
+
+// SnapshotCloneSrcFinish asks the src replica to finish cloning (cleanup & drop cache)
+func (r *Replica) SnapshotCloneSrcFinish(spdkClient *spdkclient.Client, dstReplicaName string) error {
+	r.Lock()
+	defer r.Unlock()
+
+	c := r.snapshotCloningSrcCache[dstReplicaName]
+	if c == nil {
+		return nil
+	}
+	if err := doCleanupForSnapshotCloneSrc(spdkClient, c); err != nil {
+		return err
+	}
+	delete(r.snapshotCloningSrcCache, dstReplicaName)
+	return nil
 }
 
 // RebuildingSrcStart asks the source replica to check the parent snapshot of the head and expose it as a NVMf bdev if necessary.
