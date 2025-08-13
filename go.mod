@@ -4,6 +4,12 @@ go 1.24.0
 
 toolchain go1.24.6
 
+replace (
+	github.com/longhorn/go-spdk-helper => ../go-spdk-helper
+	github.com/longhorn/longhorn-spdk-engine => ../longhorn-spdk-engine
+	github.com/longhorn/types => ../types
+)
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20250804022317-794abf817297
@@ -11,7 +17,7 @@ require (
 	github.com/longhorn/go-spdk-helper v0.0.3-0.20250809103353-695fd752a98b
 	github.com/longhorn/longhorn-engine v1.9.1
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555
-	github.com/longhorn/types v0.0.0-20250810143617-8a478c078cb8
+	github.com/longhorn/types v0.0.0-20250812040111-bee68b0a4c07
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.17
@@ -91,7 +97,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.31.3 // indirect
-	k8s.io/apimachinery v0.33.2 // indirect
+	k8s.io/apimachinery v0.33.3 // indirect
 	k8s.io/client-go v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
