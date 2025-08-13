@@ -285,6 +285,52 @@ func ProtoShallowCopyStatusToReplicaRebuildingStatus(replicaName, replicaAddress
 	}
 }
 
+type ReplicaSnapshotCloneSrcStatus struct {
+	State             string `json:"state"`
+	ProcessedClusters uint64 `json:"processed_clusters"`
+	TotalClusters     uint64 `json:"total_clusters"`
+	ErrorMsg          string `json:"error_msg"`
+}
+
+func ProtoReplicaSnapshotCloneSrcStatusCheckResponseToSnapshotCloneSrcStatus(status *spdkrpc.ReplicaSnapshotCloneSrcStatusCheckResponse) *ReplicaSnapshotCloneSrcStatus {
+	state := status.State
+	if state == types.SPDKDeepCopyStateInProgress {
+		state = types.ProgressStateInProgress
+	}
+	return &ReplicaSnapshotCloneSrcStatus{
+		State:             state,
+		ProcessedClusters: status.ProcessedClusters,
+		TotalClusters:     status.TotalClusters,
+		ErrorMsg:          status.ErrorMsg,
+	}
+}
+
+type ReplicaSnapshotCloneDstStatus struct {
+	IsCloning         bool   `json:"is_cloning"`
+	SrcReplicaName    string `json:"src_replica_name"`
+	SrcReplicaAddress string `json:"src_replica_address"`
+	SnapshotName      string `json:"snapshot_name"`
+	State             string `json:"state"`
+	Progress          uint32 `json:"progress"`
+	Error             string `json:"error"`
+}
+
+func ProtoReplicaSnapshotCloneDstStatusCheckResponseToSnapshotCloneDstStatus(status *spdkrpc.ReplicaSnapshotCloneDstStatusCheckResponse) *ReplicaSnapshotCloneDstStatus {
+	state := status.State
+	if state == types.SPDKDeepCopyStateInProgress {
+		state = types.ProgressStateInProgress
+	}
+	return &ReplicaSnapshotCloneDstStatus{
+		IsCloning:         status.IsCloning,
+		SrcReplicaName:    status.SrcReplicaName,
+		SrcReplicaAddress: status.SrcReplicaAddress,
+		SnapshotName:      status.SnapshotName,
+		State:             state,
+		Progress:          status.Progress,
+		Error:             status.Error,
+	}
+}
+
 type ReplicaStream struct {
 	stream spdkrpc.SPDKService_ReplicaWatchClient
 }
