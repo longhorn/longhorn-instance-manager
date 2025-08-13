@@ -282,6 +282,11 @@ func (s *Server) verify() (err error) {
 				continue
 			}
 		}
+		if IsCloningLvol(lvolName) {
+			if replicaMap[GetReplicaNameFromCloningLvolName(lvolName)] != nil {
+				continue
+			}
+		}
 		if types.IsBackingImageSnapLvolName(lvolName) {
 			lvsUUID := bdevLvol.DriverSpecific.Lvol.LvolStoreUUID
 			backingImageName, _, err := ExtractBackingImageAndDiskUUID(lvolName)
@@ -317,7 +322,7 @@ func (s *Server) verify() (err error) {
 		}
 	}
 	for replicaName, r := range replicaMap {
-		// Try the best to avoid eliminating broken replicas or rebuilding replicas without head lvols
+		// Try the best to avoid eliminating broken replicas or rebuilding replicas
 		if bdevLvolMap[r.Name] == nil {
 			if r.IsRebuilding() {
 				continue
@@ -331,6 +336,7 @@ func (s *Server) verify() (err error) {
 			}
 			if noReplicaLvol {
 				delete(replicaMap, replicaName)
+				delete(replicaMapForSync, replicaName)
 				continue
 			}
 		}
@@ -720,6 +726,117 @@ func (s *Server) ReplicaSnapshotRangeHashGet(ctx context.Context, req *spdkrpc.R
 	return &spdkrpc.ReplicaSnapshotRangeHashGetResponse{
 		RangeHashMap: rangeHashMap,
 	}, err
+}
+
+func (s *Server) ReplicaSnapshotCloneDstStart(ctx context.Context, req *spdkrpc.ReplicaSnapshotCloneDstStartRequest) (ret *emptypb.Empty, err error) {
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: req.Name},
+		util.Param{Name: "snapshotName", Value: req.SnapshotName},
+		util.Param{Name: "srcReplicaName", Value: req.SrcReplicaName},
+		util.Param{Name: "srcReplicaAddress", Value: req.SrcReplicaAddress},
+	); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during ReplicaSnapshotCloneDstStart", req.Name)
+	}
+
+	if err := r.SnapshotCloneDstStart(spdkClient, req.SnapshotName, req.SrcReplicaName, req.SrcReplicaAddress, req.CloneMode); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to do SnapshotCloneDstStart during ReplicaSnapshotCloneDstStart")
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) ReplicaSnapshotCloneDstStatusCheck(ctx context.Context, req *spdkrpc.ReplicaSnapshotCloneDstStatusCheckRequest) (ret *spdkrpc.ReplicaSnapshotCloneDstStatusCheckResponse, err error) {
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: req.Name},
+	); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during ReplicaSnapshotCloneDstStatusCheck", req.Name)
+	}
+
+	return r.SnapshotCloneDstStatusCheck()
+}
+
+func (s *Server) ReplicaSnapshotCloneSrcStart(ctx context.Context, req *spdkrpc.ReplicaSnapshotCloneSrcStartRequest) (ret *emptypb.Empty, err error) {
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: req.Name},
+		util.Param{Name: "snapshotName", Value: req.SnapshotName},
+		util.Param{Name: "dstReplicaName", Value: req.DstReplicaName},
+	); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during ReplicaSnapshotCloneSrcStart", req.Name)
+	}
+
+	if err := r.SnapshotCloneSrcStart(spdkClient, req.SnapshotName, req.DstReplicaName, req.DstCloningLvolAddress, req.CloneMode); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Server) ReplicaSnapshotCloneSrcStatusCheck(ctx context.Context, req *spdkrpc.ReplicaSnapshotCloneSrcStatusCheckRequest) (ret *spdkrpc.ReplicaSnapshotCloneSrcStatusCheckResponse, err error) {
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: req.Name},
+		util.Param{Name: "snapshotName", Value: req.SnapshotName},
+		util.Param{Name: "dstReplicaName", Value: req.DstReplicaName},
+	); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during ReplicaSnapshotCloneSrcStatusCheck", req.Name)
+	}
+
+	return r.SnapshotCloneSrcStatusCheck(spdkClient, req.SnapshotName, req.DstReplicaName)
+}
+
+func (s *Server) ReplicaSnapshotCloneSrcFinish(ctx context.Context, req *spdkrpc.ReplicaSnapshotCloneSrcFinishRequest) (ret *emptypb.Empty, err error) {
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: req.Name},
+		util.Param{Name: "dstReplicaName", Value: req.DstReplicaName},
+	); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
+	}
+
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %s during ReplicaSnapshotCloneSrcFinish", req.Name)
+	}
+
+	if err := r.SnapshotCloneSrcFinish(spdkClient, req.DstReplicaName); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) ReplicaRebuildingSrcStart(ctx context.Context, req *spdkrpc.ReplicaRebuildingSrcStartRequest) (ret *spdkrpc.ReplicaRebuildingSrcStartResponse, err error) {
@@ -1393,6 +1510,30 @@ func (s *Server) EngineSnapshotHashStatus(ctx context.Context, req *spdkrpc.Snap
 	}
 
 	return e.SnapshotHashStatus(req.SnapshotName)
+}
+
+func (s *Server) EngineSnapshotClone(ctx context.Context, req *spdkrpc.EngineSnapshotCloneRequest) (ret *emptypb.Empty, err error) {
+	if err := util.VerifyParams(
+		util.Param{Name: "name", Value: req.Name},
+		util.Param{Name: "snapshotName", Value: req.SnapshotName},
+		util.Param{Name: "srcEngineName", Value: req.SrcEngineName},
+		util.Param{Name: "srcEngineAddress", Value: req.SrcEngineAddress},
+	); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for snapshot clone", req.Name)
+	}
+
+	if err := e.SnapshotClone(req.SnapshotName, req.SrcEngineName, req.SrcEngineAddress, req.CloneMode); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) EngineBackupCreate(ctx context.Context, req *spdkrpc.BackupCreateRequest) (ret *spdkrpc.BackupCreateResponse, err error) {
