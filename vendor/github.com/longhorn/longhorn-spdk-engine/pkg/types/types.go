@@ -100,6 +100,7 @@ const (
 
 	// SPDKShallowCopyStateNew is the state returned from spdk_tgt. There is no underscore in the string.
 	SPDKShallowCopyStateInProgress = "in progress"
+	SPDKDeepCopyStateInProgress    = "in progress"
 )
 
 // Longhorn defined snapshot attributes
