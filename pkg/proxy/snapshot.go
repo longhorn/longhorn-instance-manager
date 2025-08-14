@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -264,7 +265,60 @@ func (ops V1DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.Engi
 }
 
 func (ops V2DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"dataEngine":         req.ProxyEngineRequest.DataEngine,
+		"fromEngineAddress":  req.FromEngineAddress,
+		"fromEngineName":     req.FromEngineName,
+		"FromVolumeName":     req.FromVolumeName,
+		"snapshotName":       req.SnapshotName,
+		"GrpcTimeoutSeconds": req.GrpcTimeoutSeconds,
+	})
+
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	// TODO: Longhorn manager should provide these value because we support offline cloning
+	srcReplicaName, srcReplicaAddress := "", ""
+	fromEngineClient, err := getSPDKClientFromAddress(req.FromEngineAddress)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.FromEngineAddress, err)
+	}
+	recv, err := fromEngineClient.EngineGet(req.FromEngineName)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.FromEngineName).Error())
+	}
+	for replicaName, mode := range recv.ReplicaModeMap {
+		if mode != spdktypes.ModeRW {
+			continue
+		}
+		address, ok := recv.ReplicaAddressMap[replicaName]
+		if !ok {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get replica address for %v", replicaName)
+		}
+		srcReplicaName = replicaName
+		srcReplicaAddress = address
+	}
+
+	if srcReplicaName == "" || srcReplicaAddress == "" {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to find a RW replica from engine for %v", req.FromEngineName)
+	}
+
+	err = c.EngineSnapshotClone(req.ProxyEngineRequest.EngineName, req.SnapshotName, srcReplicaName, srcReplicaAddress)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to do clone snapshot %v: %v", req.SnapshotName, err)
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func (p *Proxy) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
@@ -322,10 +376,64 @@ func (ops V1DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 }
 
 func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotCloneStatusProxyResponse, err error) {
-	/* TODO: implement this */
-	return &rpc.EngineSnapshotCloneStatusProxyResponse{
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.Address,
+		"engineName": req.EngineName,
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
+	})
+	c, err := getSPDKClientFromAddress(req.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	recv, err := c.EngineGet(req.EngineName)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
+	}
+
+	replicaName, replicaAddress := "", ""
+	for rName, mode := range recv.ReplicaModeMap {
+		if mode != spdktypes.ModeRW {
+			continue
+		}
+		address, ok := recv.ReplicaAddressMap[rName]
+		if !ok {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get replica address for %v", replicaName)
+		}
+		replicaName = rName
+		replicaAddress = address
+		break
+	}
+	if replicaName == "" || replicaAddress == "" {
+		return nil, grpcstatus.Error(grpccodes.Internal, "cannot find a RW replica")
+	}
+
+	replicaClient, err := getSPDKClientFromAddress(replicaAddress)
+
+	status, err := replicaClient.ReplicaSnapshotCloneDstStatusCheck(replicaName)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get clone status for %v: %v", replicaName, err)
+	}
+	resp = &rpc.EngineSnapshotCloneStatusProxyResponse{
 		Status: map[string]*enginerpc.SnapshotCloneStatusResponse{},
-	}, nil
+	}
+	resp.Status[replicaName] = &enginerpc.SnapshotCloneStatusResponse{
+		// TODO: return this from SPDK server
+		IsCloning:          status.State != spdktypes.ProgressStateError && status.State != spdktypes.ProgressStateComplete,
+		Error:              status.Error,
+		Progress:           int32(status.Progress),
+		State:              status.State,
+		FromReplicaAddress: status.SrcReplicaAddress,
+		SnapshotName:       status.SnapshotName,
+	}
+
+	return resp, nil
 }
 
 func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {

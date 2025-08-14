@@ -26,6 +26,7 @@ const (
 	ReplicaRebuildingLvolSuffix  = "rebuilding"
 	ReplicaExpiredLvolSuffix     = "expired"
 	RebuildingSnapshotNamePrefix = "rebuild"
+	ReplicaCloningLvolSuffix     = "cloning"
 
 	SyncTimeout = 60 * time.Minute
 
@@ -36,6 +37,9 @@ const (
 
 	MaxShallowCopyWaitTime   = 72 * time.Hour
 	ShallowCopyCheckInterval = 3 * time.Second
+
+	MaxSnapshotCloneWaitTime         = 72 * time.Hour
+	SnapshotCloneStatusCheckInterval = 3 * time.Second
 )
 
 const (
@@ -216,6 +220,14 @@ func IsReplicaExpiredLvol(replicaName, lvolName string) bool {
 
 func GetReplicaNameFromRebuildingLvolName(lvolName string) string {
 	return strings.TrimSuffix(lvolName, fmt.Sprintf("-%s", ReplicaRebuildingLvolSuffix))
+}
+
+func GetReplicaCloningLvolName(replicaName string) string {
+	return fmt.Sprintf("%s-%s", replicaName, ReplicaCloningLvolSuffix)
+}
+
+func GetTmpSnapNameForCloningLvol(replicaName string) string {
+	return fmt.Sprintf("%s-%s-tmp", replicaName, ReplicaCloningLvolSuffix)
 }
 
 func GetNvmfEndpoint(nqn, ip string, port int32) string {

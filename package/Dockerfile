@@ -28,8 +28,8 @@ RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr
     fi
 
 # Build go-spdk-helper
-RUN export REPO_OVERRIDE="" && \
-    export COMMIT_ID_OVERRIDE="" && \
+RUN export REPO_OVERRIDE="https://github.com/PhanLe1010/go-spdk-helper.git" && \
+    export COMMIT_ID_OVERRIDE="50aac12211d03fcf8b08e9ca503e18fcec076355" && \
     bash /usr/src/dep-versions/scripts/build-go-spdk-helper.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Install grpc_health_probe
@@ -79,7 +79,7 @@ RUN export REPO_OVERRIDE="" && \
 
 # Build spdk
 RUN export REPO_OVERRIDE="" && \
-    export COMMIT_ID_OVERRIDE="" && \
+    export COMMIT_ID_OVERRIDE="ea6cb0b3da741007d23e6f4c051e8d6bc5e0f7ef" && \
     bash /usr/src/dep-versions/scripts/build-spdk.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}" "${ARCH}"
 
 # Build libjson-c-devel
