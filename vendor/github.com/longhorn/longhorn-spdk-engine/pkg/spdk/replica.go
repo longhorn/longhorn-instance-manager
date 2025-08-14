@@ -1043,6 +1043,91 @@ func (r *Replica) Get() (pReplica *spdkrpc.Replica) {
 	return ServiceReplicaToProtoReplica(r)
 }
 
+func (r *Replica) Expand(spdkClient *spdkclient.Client, size uint64) error {
+	r.Lock()
+	defer r.Unlock()
+
+	r.log.Info("Expanding replica")
+
+	clusterSize, err := r.fetchClusterSize(spdkClient)
+	if err != nil {
+		return err
+	}
+
+	roundedSize := util.RoundUp(size, clusterSize)
+	if roundedSize != size {
+		return fmt.Errorf("replica %s rounded up spec size from %v to %v since the spec size should be multiple of MiB", r.Name, size, roundedSize)
+	}
+
+	if r.SpecSize > roundedSize {
+		return fmt.Errorf("cannot expand replica %s to a smaller size %v, current spec size %v", r.Name, size, r.SpecSize)
+	} else if r.SpecSize == roundedSize {
+		r.log.Infof("Replica %s had been expanded to size %v", r.Name, size)
+		return nil
+	}
+
+	// double check if size is already be expanded
+	headBdevLvol, err := spdkClient.BdevLvolGetByName(r.Alias, 0)
+	if err != nil {
+		r.log.Errorf("Get replica %s failed, %v", r.Name, err)
+		return err
+	}
+	bdevLvol := BdevLvolInfoToServiceLvol(&headBdevLvol)
+
+	// resize it if not equal
+	if bdevLvol.SpecSize != size {
+		resized, err := spdkClient.BdevLvolResize(r.Alias, util.BytesToMiB(size))
+		if err != nil {
+			r.log.Errorf("Resize replica %s failed, %v", r.Name, err)
+			return errors.Wrapf(err, "bdev lvol resize error")
+		} else if !resized {
+			return fmt.Errorf("no error, but replica %s not resized", r.Name)
+		}
+	}
+
+	// Blindly clean up then update the caches for the head
+	r.Head = nil
+	if r.ActiveChain[len(r.ActiveChain)-1] != nil &&
+		r.ActiveChain[len(r.ActiveChain)-1].Name == r.Name {
+		r.ActiveChain = r.ActiveChain[:len(r.ActiveChain)-1]
+	}
+
+	if err := r.updateHeadCache(spdkClient); err != nil {
+		r.log.Errorf("update head failed, %v", err)
+		return err
+	}
+
+	r.log.Info("Expanding replica complete")
+	r.SpecSize = size
+	return nil
+}
+
+func (r *Replica) fetchClusterSize(spdkClient *spdkclient.Client) (uint64, error) {
+	var (
+		lvsList []spdktypes.LvstoreInfo
+		err     error
+	)
+
+	switch {
+	case r.LvsUUID != "":
+		lvsList, err = spdkClient.BdevLvolGetLvstore("", r.LvsUUID)
+	case r.LvsName != "":
+		lvsList, err = spdkClient.BdevLvolGetLvstore(r.LvsName, "")
+	default:
+		return 0, fmt.Errorf("either LvsUUID or LvsName must be set for replica %s", r.Name)
+	}
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to query lvstore for replica %s (name=%s uuid=%s): %w", r.Name, r.LvsName, r.LvsUUID, err)
+	}
+
+	if len(lvsList) != 1 {
+		return 0, fmt.Errorf("unexpected number of lvstores (%d) found for replica %s (name=%s uuid=%s)", len(lvsList), r.Name, r.LvsName, r.LvsUUID)
+	}
+
+	return lvsList[0].ClusterSize, nil
+}
+
 func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName string, opts *api.SnapshotOptions) (pReplica *spdkrpc.Replica, err error) {
 	updateRequired := false
 
