@@ -212,7 +212,7 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-common-libs v0.0.0-20250810153634-32dffea4c15d
+# github.com/longhorn/go-common-libs v0.0.0-20250812101836-470cb7301942
 ## explicit; go 1.23.0
 github.com/longhorn/go-common-libs/backup
 github.com/longhorn/go-common-libs/bitmap
@@ -275,7 +275,7 @@ github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20250810143617-8a478c078cb8
+# github.com/longhorn/types v0.0.0-20250812040111-bee68b0a4c07
 ## explicit; go 1.22.7
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc
@@ -781,7 +781,7 @@ k8s.io/kube-openapi/pkg/schemaconv
 k8s.io/kube-openapi/pkg/spec3
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/validation/spec
-# k8s.io/mount-utils v0.33.3
+# k8s.io/mount-utils v0.33.4
 ## explicit; go 1.24.0
 k8s.io/mount-utils
 # k8s.io/utils v0.0.0-20241210054802-24370beab758
