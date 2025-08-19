@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function create_logrotate_config() {
-cat <<EOF > /etc/logrotate.conf
+    cat <<EOF > /etc/logrotate.conf
 /log/spdk_tgt.log {
     rotate 2
     size 20M
@@ -10,7 +10,7 @@ cat <<EOF > /etc/logrotate.conf
     copytruncate
 }
 
-/log/instance-manager.log {
+/log/instance-manager-${DATA_ENGINE}.log {
     rotate 2
     size 20M
     missingok

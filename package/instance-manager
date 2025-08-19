@@ -94,7 +94,7 @@ done
 
 if [ "$enable_spdk" -eq 1 ]; then
     mkdir -p /log
-    touch /log/instance-manager.log
+    touch /log/instance-manager-${DATA_ENGINE}.log
     touch /log/spdk_tgt.log
 fi
 
@@ -107,7 +107,7 @@ bind_lib_modules
 
 if [ "$enable_spdk" -eq 1 ]; then
     exec-logrotate
-    exec longhorn-instance-manager "${instance_manager_options[@]}" 2>&1 | tee -a /log/instance-manager.log
+    exec longhorn-instance-manager "${instance_manager_options[@]}" 2>&1 | tee -a /log/instance-manager-${DATA_ENGINE}.log
 else
     exec longhorn-instance-manager "${instance_manager_options[@]}"
 fi
