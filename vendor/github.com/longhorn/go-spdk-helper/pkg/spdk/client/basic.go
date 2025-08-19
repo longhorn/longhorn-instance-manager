@@ -566,6 +566,54 @@ func (c *Client) BdevLvolCheckShallowCopy(operationId uint32) (*spdktypes.Shallo
 	return &shallowCopyStatus, nil
 }
 
+// BdevLvolStartDeepCopy start a deep copy of lvol over a given bdev.
+// Only clusters allocated to the lvol or the lvol's ancestors will be written on the bdev.
+// Returns the operation ID needed to check the deep copy status with BdevLvolCheckDeepCopy.
+//
+//	"srcLvolName": Required. UUID or alias of lvol to create a copy from.
+//
+//	"dstBdevName": Required. Name of the bdev that acts as destination for the copy.
+func (c *Client) BdevLvolStartDeepCopy(srcLvolName, dstBdevName string) (operationId uint32, err error) {
+	req := spdktypes.BdevLvolDeepCopyRequest{
+		SrcLvolName: srcLvolName,
+		DstBdevName: dstBdevName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_start_deep_copy", req)
+	if err != nil {
+		return 0, err
+	}
+
+	deepCopy := spdktypes.DeepCopy{}
+	err = json.Unmarshal(cmdOutput, &deepCopy)
+	if err != nil {
+		return 0, err
+	}
+
+	return deepCopy.OperationId, nil
+}
+
+// BdevLvolCheckDeepCopy check the status of a deep copy previously started.
+//
+//	"operationId": Required. Operation ID of the deep copy to check.
+func (c *Client) BdevLvolCheckDeepCopy(operationId uint32) (*spdktypes.DeepCopyStatus, error) {
+	deepCopy := spdktypes.DeepCopy{
+		OperationId: operationId,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_check_deep_copy", deepCopy)
+	if err != nil {
+		return nil, err
+	}
+
+	var deepCopyStatus spdktypes.DeepCopyStatus
+	err = json.Unmarshal(cmdOutput, &deepCopyStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deepCopyStatus, nil
+}
+
 // BdevLvolGetFragmap gets fragmap of the specific segment of the logical volume.
 //
 //	"name": Required. UUID or alias of the logical volume.
