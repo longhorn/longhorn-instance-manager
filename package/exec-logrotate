@@ -1,0 +1,30 @@
+#!/bin/bash
+
+function create_logrotate_config() {
+cat <<EOF > /etc/logrotate.conf
+/log/spdk_tgt.log {
+    rotate 2
+    size 20M
+    missingok
+    notifempty
+    copytruncate
+}
+
+/log/instance-manager.log {
+    rotate 2
+    size 20M
+    missingok
+    notifempty
+    copytruncate
+}
+EOF
+}
+
+# Create logrotate configuration
+create_logrotate_config
+
+# Like cron job, run logrotate every 10 minute
+while true; do
+    logrotate /etc/logrotate.conf
+    sleep 600
+done &

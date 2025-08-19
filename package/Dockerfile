@@ -155,6 +155,7 @@ RUN ldconfig
 COPY bin/longhorn-instance-manager /usr/local/bin/
 COPY package/instance-manager /usr/local/bin/
 COPY package/instance-manager-v2-prestop /usr/local/bin/
+COPY package/exec-logrotate /usr/local/bin/
 
 # Verify the dependencies for the binaries
 RUN ldd /usr/local/bin/* /usr/local/sbin/* /usr/sbin/* | grep "not found" && exit 1 || true
