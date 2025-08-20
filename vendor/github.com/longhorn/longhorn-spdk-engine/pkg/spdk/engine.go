@@ -1678,6 +1678,19 @@ func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, repli
 		return fmt.Errorf("replica %s recorded address %s does not match the input address %s for engine %s replica delete", replicaName, replicaStatus.Address, replicaAddress, e.Name)
 	}
 
+	if e.Frontend == types.FrontendSPDKTCPBlockdev && e.Endpoint != "" {
+		if err = e.initiator.Suspend(false, false); err != nil {
+			err = errors.Wrapf(err, "failed to suspend NVMe initiator during engine %s replica %s delete", e.Name, replicaName)
+			return err
+		}
+		defer func() {
+			if frontendErr := e.initiator.Resume(); frontendErr != nil {
+				frontendErr = errors.Wrapf(frontendErr, "failed to resume NVMe initiator during engine %s replica %s delete", e.Name, replicaName)
+				err = frontendErr
+			}
+		}()
+	}
+
 	e.log.Infof("Removing base bdev %v from engine", replicaStatus.BdevName)
 	if _, err := spdkClient.BdevRaidRemoveBaseBdev(replicaStatus.BdevName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
 		return errors.Wrapf(err, "failed to remove base bdev %s for deleting replica %s", replicaStatus.BdevName, replicaName)
