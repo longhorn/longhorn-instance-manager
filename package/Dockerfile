@@ -9,7 +9,7 @@ RUN zypper -n ref && \
     zypper update -y
 
 RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:utilities/SLE_15/network:utilities.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:utilities/SLE_15_SP7/network:utilities.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
@@ -48,10 +48,10 @@ RUN zypper -n ref && \
     zypper update -y
 
 RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15_SP7/system:snappy.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP7/network:utilities.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.7/devel:libraries:c_c++.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.7/devel:languages:python:Factory.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.7/devel:tools:building.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.7/filesystems.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
@@ -101,10 +101,10 @@ RUN zypper -n ref && \
     zypper update -y
 
 RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15/network:utilities.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15_SP7/system:snappy.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP7/network:utilities.repo && \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.7/devel:libraries:c_c++.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.6/devel:languages:python:Factory.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.7/devel:languages:python:Factory.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
