@@ -5,9 +5,10 @@ function show_help() {
 Usage: $0 [OPTIONS]
 
 Options:
-    -s, --enable-spdk  Enable SPDK
-    -l, --spdk-log     SPDK log level
-    -h, --help         Show this help message and exit
+    -s, --enable-spdk          Enable SPDK
+        --spdk-interrupt-mode  Enable SPDK interrupt mode
+    -l, --spdk-log             SPDK log level
+    -h, --help                 Show this help message and exit
 EOF
     exit 0
 }
@@ -79,6 +80,9 @@ while [[ $# -gt 0 ]]; do
         -l|--spdk-log)
             spdk_options+=("-L" "$2")
             shift
+            ;;
+        --spdk-interrupt-mode)
+            spdk_options+=("--interrupt-mode")
             ;;
         -h|--help)
             show_help
