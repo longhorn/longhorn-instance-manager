@@ -22,6 +22,27 @@ import (
 	"github.com/longhorn/go-common-libs/proc"
 )
 
+// Param represents a named string parameter.
+type Param struct {
+	Name  string
+	Value string
+}
+
+// VerifyParams checks that none of the provided Params are empty.
+// It returns an error listing all missing parameter names, or nil if all are present.
+func VerifyParams(params ...Param) error {
+	var missing []string
+	for _, p := range params {
+		if strings.TrimSpace(p.Value) == "" {
+			missing = append(missing, p.Name)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required parameter(s): %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
 func RoundUp(num, base uint64) uint64 {
 	if num <= 0 {
 		return base
