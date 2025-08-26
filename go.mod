@@ -4,6 +4,12 @@ go 1.24.0
 
 toolchain go1.25.0
 
+replace (
+	github.com/longhorn/go-spdk-helper => ../go-spdk-helper
+	github.com/longhorn/longhorn-spdk-engine => ../longhorn-spdk-engine
+	github.com/longhorn/types => ../types
+)
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20250804022317-794abf817297
