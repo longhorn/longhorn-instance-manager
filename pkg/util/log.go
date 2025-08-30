@@ -11,6 +11,8 @@ import (
 	"runtime"
 
 	"github.com/sirupsen/logrus"
+
+	lhtypes "github.com/longhorn/go-common-libs/types"
 )
 
 const (
@@ -69,6 +71,8 @@ func SetUpLogger(logsDir string) error {
 				funcName := path.Base(f.Function)
 				return funcName, fileName
 			},
+			TimestampFormat: lhtypes.RFC3339NanoUTC,
+			FullTimestamp:   true,
 		},
 		LogsDir: logsDir,
 	})
