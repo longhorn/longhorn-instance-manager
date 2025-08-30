@@ -9,6 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
+	lhtypes "github.com/longhorn/go-common-libs/types"
+
 	"github.com/longhorn/longhorn-instance-manager/app/cmd"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 )
@@ -35,7 +37,8 @@ func main() {
 			funcName := path.Base(f.Function)
 			return funcName, fileName
 		},
-		FullTimestamp: true,
+		TimestampFormat: lhtypes.RFC3339NanoUTC,
+		FullTimestamp:   true,
 	})
 
 	a.Before = func(c *cli.Context) error {
