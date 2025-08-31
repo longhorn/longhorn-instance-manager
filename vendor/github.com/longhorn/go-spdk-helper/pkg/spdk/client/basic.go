@@ -767,14 +767,16 @@ func (c *Client) BdevLvolRename(oldName, newName string) (renamed bool, err erro
 
 // BdevRaidCreate constructs a new RAID bdev.
 //
-//	"name": Required. a RAID bdev name rather than an alias or a UUID.
+//		"name": Required. a RAID bdev name rather than an alias or a UUID.
 //
-//	"raidLevel": Required. RAID level. It can be "0"/"raid0", "1"/"raid1", "5f"/"raid5f", or "concat".
+//		"raidLevel": Required. RAID level. It can be "0"/"raid0", "1"/"raid1", "5f"/"raid5f", or "concat".
 //
-//	"stripSizeKb": Required. Strip size in KB. It's valid for raid0 and raid5f only. For other raid levels, this would be modified to 0.
+//		"stripSizeKb": Required. Strip size in KB. It's valid for raid0 and raid5f only. For other raid levels, this would be modified to 0.
 //
-//	"baseBdevs": Required. The bdev list used as the underlying disk of the RAID.
-func (c *Client) BdevRaidCreate(name string, raidLevel spdktypes.BdevRaidLevel, stripSizeKb uint32, baseBdevs []string) (created bool, err error) {
+//		"baseBdevs": Required. The bdev list used as the underlying disk of the RAID.
+//
+//	 	"uuid": Optional. Create the raid bdev with specific uuid
+func (c *Client) BdevRaidCreate(name string, raidLevel spdktypes.BdevRaidLevel, stripSizeKb uint32, baseBdevs []string, uuid string) (created bool, err error) {
 	if raidLevel != spdktypes.BdevRaidLevel0 && raidLevel != spdktypes.BdevRaidLevelRaid0 && raidLevel != spdktypes.BdevRaidLevel5f && raidLevel != spdktypes.BdevRaidLevelRaid5f {
 		stripSizeKb = 0
 	}
@@ -783,6 +785,10 @@ func (c *Client) BdevRaidCreate(name string, raidLevel spdktypes.BdevRaidLevel, 
 		RaidLevel:   raidLevel,
 		StripSizeKb: stripSizeKb,
 		BaseBdevs:   baseBdevs,
+	}
+
+	if uuid != "" {
+		req.UUID = uuid
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_raid_create", req)
