@@ -2059,34 +2059,34 @@ func (e *Engine) SnapshotClone(snapshotName, srcEngineName, srcEngineAddress str
 	e.log.Infof("Engine is starting cloning snapshot %s", snapshotName)
 
 	if len(e.ReplicaStatusMap) != 1 {
-		return fmt.Errorf("destiantion engine must only have 1 replica when doing snapshot clone. Current "+
+		return fmt.Errorf("destination engine must only have 1 replica when doing snapshot clone. Current "+
 			"replica count is %v", len(e.ReplicaStatusMap))
 	}
 
-	dstReplicaName, dstRreplicaAddr := "", ""
+	dstReplicaName, dstReplicaAddr := "", ""
 	for rName, rStatus := range e.ReplicaStatusMap {
 		if rStatus.Mode != types.ModeRW {
 			continue
 		}
 		dstReplicaName = rName
-		dstRreplicaAddr = rStatus.Address
+		dstReplicaAddr = rStatus.Address
 		break
 	}
 
-	if dstReplicaName == "" || dstRreplicaAddr == "" {
+	if dstReplicaName == "" || dstReplicaAddr == "" {
 		return fmt.Errorf("cannot find a RW destination replica")
 	}
 
-	e.log.Infof("Selecting replica %v with address %v as dst replica for cloning", dstReplicaName, dstRreplicaAddr)
+	e.log.Infof("Selecting replica %v with address %v as dst replica for cloning", dstReplicaName, dstReplicaAddr)
 
-	dstReplicaServiceCli, err := GetServiceClient(dstRreplicaAddr)
+	dstReplicaServiceCli, err := GetServiceClient(dstReplicaAddr)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if errClose := dstReplicaServiceCli.Close(); errClose != nil {
 			e.log.WithError(errClose).Errorf("Engine %v failed to close dst replica %v client with address %v",
-				e.Name, dstReplicaName, dstRreplicaAddr)
+				e.Name, dstReplicaName, dstReplicaAddr)
 		}
 	}()
 

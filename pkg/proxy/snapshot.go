@@ -268,15 +268,14 @@ func (ops V1DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.Engi
 
 func (ops V2DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.EngineSnapshotCloneRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL":         req.ProxyEngineRequest.Address,
-		"engineName":         req.ProxyEngineRequest.EngineName,
-		"volumeName":         req.ProxyEngineRequest.VolumeName,
-		"dataEngine":         req.ProxyEngineRequest.DataEngine,
-		"fromEngineAddress":  req.FromEngineAddress,
-		"fromEngineName":     req.FromEngineName,
-		"FromVolumeName":     req.FromVolumeName,
-		"snapshotName":       req.SnapshotName,
-		"GrpcTimeoutSeconds": req.GrpcTimeoutSeconds,
+		"serviceURL":        req.ProxyEngineRequest.Address,
+		"engineName":        req.ProxyEngineRequest.EngineName,
+		"volumeName":        req.ProxyEngineRequest.VolumeName,
+		"dataEngine":        req.ProxyEngineRequest.DataEngine,
+		"fromEngineAddress": req.FromEngineAddress,
+		"fromEngineName":    req.FromEngineName,
+		"fromVolumeName":    req.FromVolumeName,
+		"snapshotName":      req.SnapshotName,
 	})
 
 	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)

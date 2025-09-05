@@ -748,7 +748,7 @@ func (s *Server) ReplicaSnapshotCloneDstStart(ctx context.Context, req *spdkrpc.
 	}
 
 	if err := r.SnapshotCloneDstStart(spdkClient, req.SnapshotName, req.SrcReplicaName, req.SrcReplicaAddress, req.CloneMode); err != nil {
-		return nil, err
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to do SnapshotCloneDstStart during ReplicaSnapshotCloneDstStart")
 	}
 	return &emptypb.Empty{}, nil
 }

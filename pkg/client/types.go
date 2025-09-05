@@ -11,7 +11,6 @@ const (
 	dataEngineV1 = "v1"
 	dataEngineV2 = "v2"
 
-	cloneModeEmpty       = ""
 	cloneModeFullCopy    = "full-copy"
 	cloneModeLinkedClone = "linked-clone"
 )

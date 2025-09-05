@@ -3,6 +3,7 @@ package spdk
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"slices"
 	"strconv"
@@ -1629,6 +1630,8 @@ func (r *Replica) SnapshotCloneDstStart(spdkClient *spdkclient.Client, snapshotN
 
 	defer func() {
 		if err != nil {
+			r.log.WithError(err).Errorf("Failed to do SnapshotCloneDstStart for snapshot %v with "+
+				"srcReplicaName %v, srcReplicaAddress %v", snapshotName, srcReplicaName, srcReplicaAddress)
 			if r.State != types.InstanceStateError {
 				r.State = types.InstanceStateError
 			}
@@ -1684,7 +1687,7 @@ func (r *Replica) SnapshotCloneDstStart(spdkClient *spdkclient.Client, snapshotN
 			return err
 		}
 		r.snapshotCloningDstCache.cloningState = types.ProgressStateComplete
-		r.log.Infof("clone state: %v", r.snapshotCloningDstCache.cloningState)
+		r.log.Infof("Clone state: %v", r.snapshotCloningDstCache.cloningState)
 		return r.SnapshotCloneDstFinish(spdkClient, cloneMode)
 	}
 
@@ -1735,6 +1738,8 @@ func (r *Replica) SnapshotCloneDstStart(spdkClient *spdkclient.Client, snapshotN
 	monitorCtx, monitorCancelFunc := context.WithTimeout(context.Background(), MaxSnapshotCloneWaitTime)
 	r.snapshotCloningDstCache.monitorCancelFunc = monitorCancelFunc
 
+	r.log.Infof("Dst relica sending clone request to src replica %v at address %v", srcReplicaName, srcReplicaAddress)
+
 	go r.monitorSnapshotClone(spdkClient, monitorCtx, monitorCancelFunc, srcReplicaName, srcReplicaAddress, snapshotName, cloneMode)
 
 	return nil
@@ -1759,7 +1764,7 @@ func (r *Replica) monitorSnapshotClone(spdkCli *spdkclient.Client, ctx context.C
 		}
 
 		if err := r.SnapshotCloneDstFinish(spdkCli, cloneMode); err != nil {
-			r.log.WithError(err).Errorf("Failed to finish replica cloning for destination")
+			r.log.WithError(err).Error("Failed to finish replica cloning for destination")
 		}
 
 		if cancel != nil {
@@ -1831,7 +1836,7 @@ func (r *Replica) monitorSnapshotClone(spdkCli *spdkclient.Client, ctx context.C
 			setStatus(status.State, status.ErrorMsg, status.ProcessedClusters, status.TotalClusters)
 
 			if status.State == types.ProgressStateError || status.State == types.ProgressStateComplete {
-				r.log.Infof("clone state: %v", status.State)
+				r.log.Infof("Clone state: %v", status.State)
 				return
 			}
 		}
@@ -1848,12 +1853,17 @@ func (r *Replica) SnapshotCloneDstStatusCheck() (status *spdkrpc.ReplicaSnapshot
 
 	c := r.snapshotCloningDstCache
 	var progress uint32
-	if c.totalClusters > 0 {
-		progress = uint32(c.processedClusters / c.totalClusters * 100)
-	}
-
-	if c.cloningState == types.ProgressStateComplete {
+	switch {
+	case c.totalClusters == 0:
+		progress = 0
+	case c.processedClusters >= c.totalClusters || c.cloningState == types.ProgressStateComplete:
 		progress = 100
+	default:
+		pct := math.Ceil((float64(c.processedClusters) / float64(c.totalClusters)) * 100)
+		if pct > 100 { // guard against float quirks and >100%
+			pct = 100
+		}
+		progress = uint32(pct)
 	}
 
 	return &spdkrpc.ReplicaSnapshotCloneDstStatusCheckResponse{
@@ -1970,16 +1980,9 @@ func (r *Replica) doCleanupForSnapshotCloneDst(spdkClient *spdkclient.Client, cl
 		r.snapshotCloningDstCache.cloningLvol = nil
 	}
 
-	if _, err := spdkClient.BdevLvolDelete(spdktypes.GetLvolAlias(r.LvsName, cloningLvolName)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-		r.log.WithError(err).Errorf("Failed to delete the cloning lvol %s for cloning dst cleanup", cloningLvolName)
-		aggregatedErrors = append(aggregatedErrors, err)
-	} else {
-		r.snapshotCloningDstCache.cloningLvol = nil
-	}
-
 	tmpSnapName := GetTmpSnapNameForCloningLvol(r.Name)
 	if _, err := spdkClient.BdevLvolDelete(spdktypes.GetLvolAlias(r.LvsName, tmpSnapName)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-		r.log.WithError(err).Errorf("Failed to delete the tmp snapshot %s for cloning dst cleanup", cloningLvolName)
+		r.log.WithError(err).Errorf("Failed to delete the tmp snapshot %s for cloning dst cleanup", tmpSnapName)
 		aggregatedErrors = append(aggregatedErrors, err)
 	}
 
@@ -2002,7 +2005,7 @@ func (r *Replica) doCleanupForSnapshotCloneDst(spdkClient *spdkclient.Client, cl
 
 func (r *Replica) snapshotLinkedCloneSrcStart(spdkClient *spdkclient.Client, snapshotName, dstReplicaName string) (err error) {
 	defer func() {
-		err = errors.Wrapf(err, "failed to do snapshotLinkedCloneSrcStart")
+		err = errors.Wrap(err, "failed to do snapshotLinkedCloneSrcStart")
 	}()
 
 	bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, r.replicaLvolFilter)
@@ -2067,6 +2070,8 @@ func (r *Replica) SnapshotCloneSrcStart(spdkClient *spdkclient.Client, snapshotN
 		snapshotName:   snapshotName,
 	}
 	r.snapshotCloningSrcCache[dstReplicaName] = c
+
+	r.log.Infof("Src relica starts snapshot clone for snapshot %v, dst replica %v, dst cloning lvol address %v", snapshotName, dstReplicaName, dstCloningLvolAddress)
 
 	if cloneMode == spdkrpc.CloneMode_CLONE_MODE_LINKED_CLONE {
 		return r.snapshotLinkedCloneSrcStart(spdkClient, snapshotName, dstReplicaName)

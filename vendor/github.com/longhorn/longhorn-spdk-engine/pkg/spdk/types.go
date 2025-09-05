@@ -25,8 +25,8 @@ const (
 
 	ReplicaRebuildingLvolSuffix  = "rebuilding"
 	ReplicaExpiredLvolSuffix     = "expired"
-	RebuildingSnapshotNamePrefix = "rebuild"
 	ReplicaCloningLvolSuffix     = "cloning"
+	RebuildingSnapshotNamePrefix = "rebuild"
 
 	SyncTimeout = 60 * time.Minute
 
