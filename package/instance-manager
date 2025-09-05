@@ -7,6 +7,9 @@ Usage: $0 [OPTIONS]
 Options:
     -s, --enable-spdk          Enable SPDK
         --spdk-interrupt-mode  Enable SPDK interrupt mode
+        --spdk-memory-size     SPDK memory size in MB
+        --spdk-cpumask         SPDK CPU mask
+        --spdk-no-hugepage     Disable SPDK hugepage usage
     -l, --spdk-log             SPDK log level
     -h, --help                 Show this help message and exit
 EOF
@@ -76,6 +79,13 @@ while [[ $# -gt 0 ]]; do
         -m|--spdk-cpumask)
             spdk_options+=("-m" "$2")
             shift
+            ;;
+        -s|--spdk-memory-size)
+            spdk_options+=("--mem-size" "$2")
+            shift
+            ;;
+        -g|--spdk-no-hugepage)
+            spdk_options+=("--no-huge")
             ;;
         -l|--spdk-log)
             spdk_options+=("-L" "$2")
