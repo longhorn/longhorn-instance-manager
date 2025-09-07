@@ -2,13 +2,13 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.24.0
 
-toolchain go1.25.0
+toolchain go1.25.1
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20250804022317-794abf817297
-	github.com/longhorn/go-common-libs v0.0.0-20250831092333-eaa5dddf05b8
-	github.com/longhorn/go-spdk-helper v0.0.3-0.20250826052257-da698775fdc6
+	github.com/longhorn/go-common-libs v0.0.0-20250905093241-e9576a7c89fa
+	github.com/longhorn/go-spdk-helper v0.0.3
 	github.com/longhorn/longhorn-engine v1.9.1
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250831130959-ba2813f16713
 	github.com/longhorn/types v0.0.0-20250831081209-ea63b0b5f6e1
