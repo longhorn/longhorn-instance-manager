@@ -365,7 +365,9 @@ func (b *Backup) findSnapshotRange(lvolName, compareLvolName string) (from, to i
 	}
 
 	if from <= to {
-		return 0, 0, fmt.Errorf("invalid snapshot lvol range %v (%v) and %v (%v)", lvolName, from, compareLvolName, to)
+		b.log.Warnf("Last backup snapshot %s is not an ancestor of current snapshot %s; performing full backup instead",
+			compareLvolName, lvolName)
+		to = 0
 	}
 
 	if from > len(b.replica.ActiveChain)-1 {
