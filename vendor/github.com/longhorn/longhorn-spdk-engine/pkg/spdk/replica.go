@@ -1046,6 +1046,7 @@ func (r *Replica) Delete(spdkClient *spdkclient.Client, cleanupRequired bool, su
 	// Clean up the cloning cached info
 	if r.snapshotCloningDstCache.monitorCancelFunc != nil {
 		r.snapshotCloningDstCache.monitorCancelFunc()
+		r.snapshotCloningDstCache.monitorCancelFunc = nil
 	}
 	if err := r.doCleanupForSnapshotCloneDst(spdkClient, false); err != nil {
 		r.log.WithError(err).Error("Failed to delete replica")
@@ -1992,7 +1993,7 @@ func (r *Replica) SnapshotCloneDstStatusCheck() (status *spdkrpc.ReplicaSnapshot
 
 func (r *Replica) SnapshotCloneDstFinish(spdkClient *spdkclient.Client, cloneMode spdkrpc.CloneMode) (err error) {
 	if cloneMode == spdkrpc.CloneMode_CLONE_MODE_LINKED_CLONE {
-		r.isSnapshotCloning = true
+		r.isSnapshotCloning = false
 		return nil
 	}
 
