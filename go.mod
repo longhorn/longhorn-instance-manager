@@ -17,10 +17,10 @@ require (
 	github.com/urfave/cli v1.22.17
 	golang.org/x/net v0.43.0
 	golang.org/x/sync v0.16.0
-	google.golang.org/grpc v1.75.0
-	google.golang.org/protobuf v1.36.8
+	google.golang.org/grpc v1.75.1
+	google.golang.org/protobuf v1.36.9
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.34.0
+	k8s.io/mount-utils v0.34.1
 )
 
 require (
