@@ -220,8 +220,7 @@ func (ops V1DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rp
 }
 
 func (ops V2DataEngineProxyOps) VolumeFrontendStart(ctx context.Context, req *rpc.EngineVolumeFrontendStartRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: Implement this */
-	return &emptypb.Empty{}, nil
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeFrontendStart is not yet implemented for V2 engine")
 }
 
 func (p *Proxy) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
@@ -265,8 +264,7 @@ func (ops V1DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req 
 }
 
 func (ops V2DataEngineProxyOps) VolumeFrontendShutdown(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: Implement this */
-	return &emptypb.Empty{}, nil
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeFrontendShutdown is not yet implemented for V2 engine")
 }
 
 func (p *Proxy) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
@@ -311,8 +309,7 @@ func (ops V1DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.C
 }
 
 func (ops V2DataEngineProxyOps) VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, req *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: Implement this */
-	return &emptypb.Empty{}, nil
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeUnmapMarkSnapChainRemovedSet is not yet implemented for V2 engine")
 }
 
 func (p *Proxy) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
@@ -357,8 +354,7 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, r
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: Implement this */
-	return &emptypb.Empty{}, nil
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeSnapshotMaxCountSet is not yet implemented for V2 engine")
 }
 
 func (p *Proxy) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
@@ -403,8 +399,7 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, re
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
-	/* TODO: Implement this */
-	return &emptypb.Empty{}, nil
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeSnapshotMaxSizeSet is not yet implemented for V2 engine")
 }
 
 func (p *Proxy) RemountReadOnlyVolume(ctx context.Context, req *rpc.RemountVolumeRequest) (resp *emptypb.Empty, err error) {
