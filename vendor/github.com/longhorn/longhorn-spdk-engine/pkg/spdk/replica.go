@@ -1110,6 +1110,119 @@ func (r *Replica) Get() (pReplica *spdkrpc.Replica) {
 	return ServiceReplicaToProtoReplica(r)
 }
 
+func (r *Replica) Expand(spdkClient *spdkclient.Client, size uint64) error {
+	r.Lock()
+	defer r.Unlock()
+
+	r.log.Infof("Expanding replica %s to size %v", r.Name, size)
+
+	clusterSize, err := r.fetchClusterSize(spdkClient)
+	if err != nil {
+		return errors.Wrapf(err, "failed to fetch cluster size for replica %v", r.Name)
+	}
+
+	roundedSize := util.RoundUp(size, clusterSize)
+	if roundedSize != size {
+		return fmt.Errorf("replica %s rounded up spec size from %v to %v since the spec size should be multiple of MiB", r.Name, size, roundedSize)
+	}
+
+	if r.SpecSize > size {
+		return fmt.Errorf("cannot expand replica %s to a smaller size %v, current spec size %v", r.Name, size, r.SpecSize)
+	}
+	if r.SpecSize == size {
+		r.log.Infof("Replica %s had been expanded to size %v", r.Name, size)
+		return nil
+	}
+
+	// If the bdev is exposed, we must stop exposing it before the resize.
+	reExposeBdev := false
+	if r.IsExposed {
+		if err := spdkClient.StopExposeBdev(helpertypes.GetNQN(r.Name)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+			return errors.Wrapf(err, "failed to stop expose replica %v before expansion", r.Name)
+		}
+		r.IsExposed = false
+		reExposeBdev = true
+	}
+
+	resized, err := spdkClient.BdevLvolResize(r.Alias, util.BytesToMiB(size))
+	if !resized || err != nil {
+		r.log.Warn("Failed to expand replica or returned false; verifying lvol size")
+
+		// Some replicas may have returned an error during expansion due to unexpected issues
+		// (e.g. temporary network glitch, internal error, timeout).
+		// To avoid mistakenly marking those as failed, we perform a single follow-up check
+		// to verify if the replica was actually expanded.
+
+		headBdevLvol, getLvolErr := spdkClient.BdevLvolGetByName(r.Alias, 0)
+		if getLvolErr != nil {
+			return errors.Wrapf(err, "failed to get bdev lvol: %v", getLvolErr)
+		}
+		lvol := BdevLvolInfoToServiceLvol(&headBdevLvol)
+		if lvol.SpecSize != size {
+			if err != nil {
+				return errors.Wrapf(err, "bdev lvol resize error")
+			}
+
+			if !resized {
+				return fmt.Errorf("no error, but replica %s not resized", r.Name)
+			}
+		}
+
+		r.log.Info("Replica expansion succeeded despite earlier error")
+	}
+
+	// If we had previously exposed the bdev, we must re-expose it after the resize.
+	if reExposeBdev {
+		nguid := commonutils.RandomID(nvmeNguidLength)
+		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), r.Head.UUID, nguid, r.IP, strconv.Itoa(int(r.PortStart))); err != nil {
+			return errors.Wrapf(err, "failed to start expose replica %v after expansion", r.Name)
+		}
+		r.IsExposed = true
+	}
+
+	// Blindly clean up then update the caches for the head
+	r.Head = nil
+	if len(r.ActiveChain) > 0 &&
+		r.ActiveChain[len(r.ActiveChain)-1] != nil &&
+		r.ActiveChain[len(r.ActiveChain)-1].Name == r.Name {
+		r.ActiveChain = r.ActiveChain[:len(r.ActiveChain)-1]
+	}
+
+	if err := r.updateHeadCache(spdkClient); err != nil {
+		return errors.Wrapf(err, "failed to update head cache for replica %v", r.Name)
+	}
+
+	r.log.Info("Expanding replica complete")
+	r.SpecSize = size
+	return nil
+}
+
+func (r *Replica) fetchClusterSize(spdkClient *spdkclient.Client) (uint64, error) {
+	var (
+		lvsList []spdktypes.LvstoreInfo
+		err     error
+	)
+
+	switch {
+	case r.LvsUUID != "":
+		lvsList, err = spdkClient.BdevLvolGetLvstore("", r.LvsUUID)
+	case r.LvsName != "":
+		lvsList, err = spdkClient.BdevLvolGetLvstore(r.LvsName, "")
+	default:
+		return 0, fmt.Errorf("either LvsUUID or LvsName must be set for replica %s", r.Name)
+	}
+
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to query lvstore for replica %s (name=%s uuid=%s)", r.Name, r.LvsName, r.LvsUUID)
+	}
+
+	if len(lvsList) != 1 {
+		return 0, fmt.Errorf("unexpected number of lvstores (%d) found for replica %s (name=%s uuid=%s)", len(lvsList), r.Name, r.LvsName, r.LvsUUID)
+	}
+
+	return lvsList[0].ClusterSize, nil
+}
+
 func (r *Replica) SnapshotCreate(spdkClient *spdkclient.Client, snapshotName string, opts *api.SnapshotOptions) (pReplica *spdkrpc.Replica, err error) {
 	updateRequired := false
 

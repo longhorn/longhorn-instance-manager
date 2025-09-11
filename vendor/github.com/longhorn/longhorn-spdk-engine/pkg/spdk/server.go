@@ -541,6 +541,22 @@ func (s *Server) ReplicaGet(ctx context.Context, req *spdkrpc.ReplicaGetRequest)
 	return r.Get(), nil
 }
 
+func (s *Server) ReplicaExpand(ctx context.Context, req *spdkrpc.ReplicaExpandRequest) (ret *emptypb.Empty, err error) {
+	s.RLock()
+	r := s.replicaMap[req.Name]
+	s.RUnlock()
+
+	if r == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find replica %v", req.Name)
+	}
+
+	if err := r.Expand(s.spdkClient, req.Size); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Server) ReplicaList(ctx context.Context, req *emptypb.Empty) (*spdkrpc.ReplicaListResponse, error) {
 	replicaMap := map[string]*Replica{}
 	res := map[string]*spdkrpc.Replica{}
@@ -1208,6 +1224,30 @@ func (s *Server) EngineResume(ctx context.Context, req *spdkrpc.EngineResumeRequ
 	err = e.Resume(s.spdkClient)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to resume engine %v", req.Name).Error())
+	}
+
+	return &emptypb.Empty{}, nil
+}
+func (s *Server) EngineExpand(ctx context.Context, req *spdkrpc.EngineExpandRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name is required")
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for expansion", req.Name)
+	}
+
+	if types.IsUblkFrontend(e.Frontend) {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "cannot expand ublk frontend engine %v", req.Name)
+	}
+
+	err = e.Expand(s.spdkClient, req.Size, s.portAllocator)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to expand engine %v", req.Name).Error())
 	}
 
 	return &emptypb.Empty{}, nil
