@@ -17,6 +17,14 @@ function create_logrotate_config() {
     notifempty
     copytruncate
 }
+
+/log/prestop-${DATA_ENGINE}.log {
+    rotate 2
+    size 20M
+    missingok
+    notifempty
+    copytruncate
+}
 EOF
 }
 
