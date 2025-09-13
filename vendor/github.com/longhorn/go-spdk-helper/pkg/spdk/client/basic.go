@@ -1541,3 +1541,17 @@ func (c *Client) BdevSetQosLimit(bdevName string, rwIOsPerSec, rwMBPerSec, rMBPe
 
 	return nil
 }
+
+// SpdkKillInstance sends a signal to the application.
+func (c *Client) SpdkKillInstance(sig string) (result bool, err error) {
+	req := spdktypes.SpdkKillInstanceRequest{
+		SigName: sig,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("spdk_kill_instance", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
