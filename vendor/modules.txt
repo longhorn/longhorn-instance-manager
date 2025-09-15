@@ -246,7 +246,11 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
+<<<<<<< HEAD
 # github.com/longhorn/longhorn-spdk-engine v0.0.0-20250916034519-7fdbb7b284f7
+=======
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20250916004638-ef840adca58b
+>>>>>>> e3a0b95 (chore(vendor): update dependencies)
 ## explicit; go 1.24.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
