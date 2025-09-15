@@ -326,6 +326,7 @@ func spdkDiskToDisk(disk *spdkrpc.Disk) *rpc.Disk {
 		FreeBlocks:  disk.FreeBlocks,
 		BlockSize:   disk.BlockSize,
 		ClusterSize: disk.ClusterSize,
+		State:       disk.State,
 	}
 }
 
