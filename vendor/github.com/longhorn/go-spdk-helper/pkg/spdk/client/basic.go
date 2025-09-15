@@ -49,7 +49,8 @@ func (c *Client) BdevAioCreate(filePath, name string, blockSize uint64) (bdevNam
 		BlockSize: blockSize,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_aio_create", req)
+	// Long blob recovery time might be needed if the spdk_tgt is not shutdown gracefully.
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_aio_create", req)
 	if err != nil {
 		return "", err
 	}
@@ -973,7 +974,8 @@ func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, 
 		Multipath:            multipath,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_attach_controller", req)
+	// Long blob recovery time might be needed if the spdk_tgt is not shutdown gracefully.
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_nvme_attach_controller", req)
 	if err != nil {
 		return nil, err
 	}
@@ -1452,7 +1454,8 @@ func (c *Client) BdevVirtioAttachController(name, trtype, traddr, devType string
 		DevType: devType,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_virtio_attach_controller", req)
+	// Long blob recovery time might be needed if the spdk_tgt is not shutdown gracefully.
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_virtio_attach_controller", req)
 	if err != nil {
 		return nil, err
 	}
@@ -1540,4 +1543,18 @@ func (c *Client) BdevSetQosLimit(bdevName string, rwIOsPerSec, rwMBPerSec, rMBPe
 	}
 
 	return nil
+}
+
+// SpdkKillInstance sends a signal to the application.
+func (c *Client) SpdkKillInstance(sig string) (result bool, err error) {
+	req := spdktypes.SpdkKillInstanceRequest{
+		SigName: sig,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("spdk_kill_instance", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
 }

@@ -44,6 +44,7 @@ type Server struct {
 	spdkClient    *spdkclient.Client
 	portAllocator *commonbitmap.Bitmap
 
+	diskMap    map[string]*Disk
 	replicaMap map[string]*Replica
 	engineMap  map[string]*Engine
 
@@ -94,6 +95,8 @@ func NewServer(ctx context.Context, portStart, portEnd int32) (*Server, error) {
 
 		spdkClient:    cli,
 		portAllocator: bitmap,
+
+		diskMap: map[string]*Disk{},
 
 		replicaMap: map[string]*Replica{},
 		engineMap:  map[string]*Engine{},
@@ -1793,54 +1796,97 @@ func (s *Server) ReplicaRestoreStatus(ctx context.Context, req *spdkrpc.ReplicaR
 	}, nil
 }
 
-func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest) (ret *spdkrpc.Disk, err error) {
-	s.RLock()
+func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest) (*spdkrpc.Disk, error) {
+	s.Lock()
 	spdkClient := s.spdkClient
-	s.RUnlock()
 
-	ret, err = svcDiskCreate(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize)
-	if err != nil {
-		return nil, err
+	disk, exists := s.diskMap[req.DiskName]
+	if exists {
+		if disk.State == DiskStateReady {
+			s.Unlock()
+			return disk.DiskGet(spdkClient, req.DiskName, req.DiskPath, req.DiskDriver)
+		}
+		s.Unlock()
+
+		return &spdkrpc.Disk{
+			State: string(disk.State),
+		}, nil
 	}
 
-	waitForScan := true
-	timer := time.NewTimer(3 * time.Minute)
-	defer timer.Stop()
-	ticker := time.NewTicker(MonitorInterval)
-	defer ticker.Stop()
-	for waitForScan {
-		select {
-		case <-s.ctx.Done():
-			logrus.Infof("SPDK gRPC server: cannot scan the newly added disk %s(%s) with path %s due to the context done", req.DiskName, req.DiskUuid, req.DiskPath)
-		case <-timer.C:
-			logrus.Infof("SPDK gRPC server: 3 minutes time out scanning the newly added disk %s(%s) with path %s, will continue", req.DiskName, req.DiskUuid, req.DiskPath)
-			waitForScan = false
-		case <-ticker.C:
-			err := s.verify()
-			if err == nil {
-				logrus.Infof("SPDK gRPC server: Scanned the newly added disk %s(%s) with path %s", req.DiskName, req.DiskUuid, req.DiskPath)
-				waitForScan = false
+	disk = NewDisk(req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize)
+	s.diskMap[req.DiskName] = disk
+	s.Unlock()
+
+	go func(d *Disk, req *spdkrpc.DiskCreateRequest) {
+		if err := d.DiskCreate(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize); err != nil {
+			logrus.WithError(err).Errorf("Failed to create disk %s(%s) path %s", req.DiskName, req.DiskUuid, req.DiskPath)
+			return
+		}
+
+		logrus.Infof("Disk %v is created, start scanning", req.DiskName)
+
+		timer := time.NewTimer(3 * time.Minute)
+		defer timer.Stop()
+		ticker := time.NewTicker(MonitorInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-s.ctx.Done():
+				logrus.Infof("SPDK gRPC server: context done before scanning disk %s(%s) path %s",
+					req.DiskName, req.DiskUuid, req.DiskPath)
+				return
+			case <-timer.C:
+				logrus.Infof("SPDK gRPC server: timeout (3m) scanning disk %s(%s) path %s",
+					req.DiskName, req.DiskUuid, req.DiskPath)
+				return
+			case <-ticker.C:
+				if err := s.verify(); err == nil {
+					logrus.Infof("SPDK gRPC server: scanned disk %s(%s) path %s",
+						req.DiskName, req.DiskUuid, req.DiskPath)
+					return
+				}
 			}
 		}
-	}
+	}(disk, req)
 
-	return ret, nil
+	return &spdkrpc.Disk{
+		State: string(disk.State),
+	}, nil
 }
 
 func (s *Server) DiskDelete(ctx context.Context, req *spdkrpc.DiskDeleteRequest) (ret *emptypb.Empty, err error) {
 	s.RLock()
+	disk := s.diskMap[req.DiskName]
 	spdkClient := s.spdkClient
 	s.RUnlock()
 
-	return svcDiskDelete(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver)
+	defer func() {
+		if err == nil {
+			s.Lock()
+			delete(s.diskMap, req.DiskName)
+			s.Unlock()
+		}
+	}()
+
+	if disk != nil {
+		return disk.DiskDelete(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver)
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) DiskGet(ctx context.Context, req *spdkrpc.DiskGetRequest) (ret *spdkrpc.Disk, err error) {
 	s.RLock()
+	disk := s.diskMap[req.DiskName]
 	spdkClient := s.spdkClient
 	s.RUnlock()
 
-	return svcDiskGet(spdkClient, req.DiskName, req.DiskPath, req.DiskDriver)
+	if disk == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find disk %v", req.DiskName)
+	}
+
+	return disk.DiskGet(spdkClient, req.DiskName, req.DiskPath, req.DiskDriver)
 }
 
 func (s *Server) LogSetLevel(ctx context.Context, req *spdkrpc.LogSetLevelRequest) (ret *emptypb.Empty, err error) {
