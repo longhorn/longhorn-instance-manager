@@ -10,8 +10,13 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20250908085655-4593e23015c0
 	github.com/longhorn/go-spdk-helper v0.0.3
 	github.com/longhorn/longhorn-engine v1.9.1
+<<<<<<< HEAD
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250911045617-c3cbcd315d1e
 	github.com/longhorn/types v0.0.0-20250907125557-ef38b61560af
+=======
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250916034519-7fdbb7b284f7
+	github.com/longhorn/types v0.0.0-20250915085125-0638a2eac534
+>>>>>>> 698d8ed (chore(deps): update go.mod and vendor)
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.17

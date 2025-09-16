@@ -246,7 +246,11 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
+<<<<<<< HEAD
 # github.com/longhorn/longhorn-spdk-engine v0.0.0-20250911045617-c3cbcd315d1e
+=======
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20250916034519-7fdbb7b284f7
+>>>>>>> 698d8ed (chore(deps): update go.mod and vendor)
 ## explicit; go 1.24.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
