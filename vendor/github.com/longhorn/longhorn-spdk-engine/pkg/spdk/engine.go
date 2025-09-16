@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/longhorn/backupstore"
 	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
@@ -1540,13 +1541,15 @@ func (e *Engine) prepareRaidForExpansion(spdkClient *spdkclient.Client) (suspend
 		return suspendFrontend, "", fmt.Errorf("not support ublk frontend for expansion for engine %s", e.Name)
 	}
 
-	currentTargetAddress := net.JoinHostPort(e.initiator.NVMeTCPInfo.TransportAddress, e.initiator.NVMeTCPInfo.TransportServiceID)
-	if err := e.disconnectTarget(currentTargetAddress); err != nil {
-		return suspendFrontend, "", errors.Wrapf(err, "failed to disconnect target %s for engine %s", currentTargetAddress, e.Name)
-	}
+	if e.Frontend != types.FrontendEmpty {
+		currentTargetAddress := net.JoinHostPort(e.initiator.NVMeTCPInfo.TransportAddress, e.initiator.NVMeTCPInfo.TransportServiceID)
+		if err := e.disconnectTarget(currentTargetAddress); err != nil {
+			return suspendFrontend, "", errors.Wrapf(err, "failed to disconnect target %s for engine %s", currentTargetAddress, e.Name)
+		}
 
-	if err := spdkClient.StopExposeBdev(e.NvmeTcpFrontend.Nqn); err != nil {
-		return suspendFrontend, bdevUUID, errors.Wrapf(err, "failed to stop exposing bdev for engine %s", e.Name)
+		if err := spdkClient.StopExposeBdev(e.NvmeTcpFrontend.Nqn); err != nil {
+			return suspendFrontend, bdevUUID, errors.Wrapf(err, "failed to stop exposing bdev for engine %s", e.Name)
+		}
 	}
 
 	// delete raid bdev if still exist
@@ -1705,8 +1708,18 @@ func (e *Engine) reconnectFrontend(spdkClient *spdkclient.Client, bdevRaidUUID s
 		return err
 	}
 
+	if e.Frontend == types.FrontendEmpty {
+		e.log.Info("No need to reconnect frontend for empty frontend")
+		return nil
+	}
+
+	if types.IsUblkFrontend(e.Frontend) {
+		// TODO: support ublk frontend for expansion
+		return errors.New("ublk frontend is not supported for expansion")
+	}
+
 	// reconnect
-	if e.Frontend == types.FrontendSPDKTCPBlockdev && e.Endpoint != "" {
+	if (e.Frontend == types.FrontendSPDKTCPBlockdev || e.Frontend == types.FrontendSPDKTCPNvmf) && e.Endpoint != "" {
 		targetAddress := fmt.Sprintf("%s:%d", e.NvmeTcpFrontend.TargetIP, e.NvmeTcpFrontend.TargetPort)
 		podIP, err := commonnet.GetIPForPod()
 		if err != nil {
@@ -1723,9 +1736,6 @@ func (e *Engine) reconnectFrontend(spdkClient *spdkclient.Client, bdevRaidUUID s
 			e.log.WithError(err).Errorf("failed to reconnect nvme tcp frontend during engine %s expansion", e.Name)
 			return err
 		}
-	} else {
-		// TODO: support ublk frontend for expansion
-		return errors.New("ublk frontend is not supported for expansion")
 	}
 
 	return nil
@@ -2815,6 +2825,15 @@ func (e *Engine) BackupRestore(spdkClient *spdkclient.Client, backupUrl, engineN
 
 	e.Lock()
 	defer e.Unlock()
+
+	backupInfo, err := backupstore.InspectBackup(backupUrl)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to inspect backup %s", backupUrl)
+	}
+
+	if backupInfo.VolumeSize != int64(e.SpecSize) {
+		return nil, fmt.Errorf("the backup volume %v size %v must be the same as the Longhorn volume size %v", backupInfo.VolumeName, backupInfo.VolumeSize, e.SpecSize)
+	}
 
 	e.log.Infof("Deleting raid bdev %s before restoration", e.Name)
 	if _, err := spdkClient.BdevRaidDelete(e.Name); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
