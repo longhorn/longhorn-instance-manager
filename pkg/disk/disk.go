@@ -6,16 +6,19 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
+
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	enginerpc "github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	grpccodes "google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
