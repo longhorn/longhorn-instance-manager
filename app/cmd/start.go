@@ -14,14 +14,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
+
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+
 	"k8s.io/mount-utils"
 
 	engineutil "github.com/longhorn/longhorn-engine/pkg/util"
