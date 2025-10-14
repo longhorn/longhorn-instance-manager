@@ -393,6 +393,11 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "cannot ger client for replica %v", replicaName)
 	}
+	defer func() {
+		if closeErr := replicaClient.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
 
 	status, err := replicaClient.ReplicaSnapshotCloneDstStatusCheck(replicaName)
 	if err != nil {
