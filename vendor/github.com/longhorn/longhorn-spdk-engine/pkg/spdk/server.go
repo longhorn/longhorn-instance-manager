@@ -1869,11 +1869,13 @@ func (s *Server) DiskDelete(ctx context.Context, req *spdkrpc.DiskDeleteRequest)
 		}
 	}()
 
-	if disk != nil {
-		return disk.DiskDelete(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver)
+	if disk == nil {
+		// If the specified disk does not exist, tlog a warning for visibility.
+		logrus.Warnf("Disk %s not found; skipping deletion", req.DiskName)
+		return &emptypb.Empty{}, nil
 	}
 
-	return &emptypb.Empty{}, nil
+	return disk.DiskDelete(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver)
 }
 
 func (s *Server) DiskGet(ctx context.Context, req *spdkrpc.DiskGetRequest) (ret *spdkrpc.Disk, err error) {
