@@ -39,6 +39,8 @@ type Server struct {
 	spdkrpc.UnimplementedSPDKServiceServer
 	sync.RWMutex
 
+	diskCreateLock sync.Mutex
+
 	ctx context.Context
 
 	spdkClient    *spdkclient.Client
@@ -1818,6 +1820,16 @@ func (s *Server) DiskCreate(ctx context.Context, req *spdkrpc.DiskCreateRequest)
 	s.Unlock()
 
 	go func(d *Disk, req *spdkrpc.DiskCreateRequest) {
+		// Serialize SPDK disk creation to avoid race conditions in global SPDK subsystems
+		// The upper-level DiskCreate() flow remains asynchronous — the gRPC call immediately returns and the creation
+		// runs in a background goroutine — but within that goroutine, we serialize the
+		// lower-level SPDK operations to ensure controller attach and lvstore operations
+		// are performed safely and deterministically without concurrent access issues.
+
+		// It may have issues if multiple disks are being created simultaneously without this lock
+		s.diskCreateLock.Lock()
+		defer s.diskCreateLock.Unlock()
+
 		if err := d.DiskCreate(spdkClient, req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize); err != nil {
 			logrus.WithError(err).Errorf("Failed to create disk %s(%s) path %s", req.DiskName, req.DiskUuid, req.DiskPath)
 			return
