@@ -125,8 +125,6 @@ github.com/longhorn/go-spdk-helper v0.0.4 h1:Or7+7LSHpT8wBEtvv22Q9E/Tl9ks46DFC3N
 github.com/longhorn/go-spdk-helper v0.0.4/go.mod h1:jXiQGipYcnbRZZ7mu5gCM4bbAtNeL9g+4UkDsjaTEzY=
 github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20250911042227-b892286beabd h1:2GDnGZ+CzRJR9iAdXvtEYBS60f8mZvmPOkCSr1Fk/DA=
 github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20250911042227-b892286beabd/go.mod h1:MPuXGH5nz8kOTO9w1Oydh7yJZvPJRQ1G13jRPf4T0o0=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20251023092409-3c3113c50437 h1:C8kq+8pfoCCFaSorUg1l8XphTmvaqmp/JpVYJhV4h10=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20251023092409-3c3113c50437/go.mod h1:4EzBtM9uzriBBx7ReyU1ckmMMFYaeZffXauszt08nq8=
 github.com/longhorn/sparse-tools v0.0.0-20250826041019-4aae87cb253a h1:uiECueW4EyOjfaw0GgKlbJjAjDBgQlsDiQjXDU262VY=
 github.com/longhorn/sparse-tools v0.0.0-20250826041019-4aae87cb253a/go.mod h1:dfbJqfI8+T9ZCp5zhTYcBi/64hPBNt5/vFF3gTlfMmc=
 github.com/longhorn/types v0.0.0-20251019113838-3455d9c2f5ca h1:PloBEw1MQHpbDzlg1IWMbGJOz0L2F7WzRXrAXwFEV6g=
@@ -216,6 +214,8 @@ github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
+github.com/yulken/longhorn-spdk-engine v0.0.0-e05509dbff19ffa9b4b48ceb3831654c1e44f899 h1:WeTZ9YWA9aHG8avVR9LK5PCEbC0rK0vG+bkhmTQM4BY=
+github.com/yulken/longhorn-spdk-engine v0.0.0-e05509dbff19ffa9b4b48ceb3831654c1e44f899/go.mod h1:GbQfjSCjLI1iAzTWlEEdVYKJkxo4Ya7p8tfBRiEUVxM=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=

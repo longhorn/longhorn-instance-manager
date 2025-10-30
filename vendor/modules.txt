@@ -293,7 +293,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20251023092409-3c3113c50437
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20251023092409-3c3113c50437 => github.com/yulken/longhorn-spdk-engine v0.0.0-e05509dbff19ffa9b4b48ceb3831654c1e44f899
 ## explicit; go 1.24.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -877,3 +877,4 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/longhorn/longhorn-spdk-engine => github.com/yulken/longhorn-spdk-engine v0.0.0-e05509dbff19ffa9b4b48ceb3831654c1e44f899
