@@ -153,12 +153,12 @@ github.com/longhorn/backupstore v0.0.0-20251207100523-1140ccc38333 h1:sI8HKL9E1y
 github.com/longhorn/backupstore v0.0.0-20251207100523-1140ccc38333/go.mod h1:0cpNVKyqONKLVoZlK1NJC1fTWiYMydiEHARBMm3TrtI=
 github.com/longhorn/go-common-libs v0.0.0-20251130104056-3332521977c9 h1:+3ISvbAUNEFgHhHsmhEl0FVWTtxUK3XzIiVE+yCpq80=
 github.com/longhorn/go-common-libs v0.0.0-20251130104056-3332521977c9/go.mod h1:P1127MQ9oyqVEuDtUjgAnS9wJtFnrCp889Ngry8t0yI=
-github.com/longhorn/go-iscsi-helper v0.0.0-20251102142448-23eedefc2b60 h1:lwACMOh9nKBzWkLpmyJkpigmB9HHYV5FfiiZ3jFohDM=
-github.com/longhorn/go-iscsi-helper v0.0.0-20251102142448-23eedefc2b60/go.mod h1:h8So5DelxtL605STgtfFsA3SYT3+4vnIO2OUrpRFwXo=
+github.com/longhorn/go-iscsi-helper v0.0.0-20251130062153-44edbb497d99 h1:21omkhAhNEkvPF3xK6qIPYf7qS94+vvIusszQXq26V0=
+github.com/longhorn/go-iscsi-helper v0.0.0-20251130062153-44edbb497d99/go.mod h1:yHVXu4XsoqyaNe8vhyB8z8UxDr/eAAPwtuIuVi6SuxU=
 github.com/longhorn/go-spdk-helper v0.2.1-0.20251130143546-00546a63ae27 h1:9p9dr/sznfzV2xs5zgeK4h9xsTX3CnunxkKhFNoe3E0=
 github.com/longhorn/go-spdk-helper v0.2.1-0.20251130143546-00546a63ae27/go.mod h1:3Tb5aIupK+2IKWHY3UPl6/QVEwOZV4bxOWCj0LnWwxU=
-github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced h1:y9bPkuEJTi4b8gAfW8aMEjPg39bsIkO6bj/Tbu3otYs=
-github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced/go.mod h1:x6C4H+XbXF28mtQsqjUhM4MioQKzQEq8VMcds9xzrWI=
+github.com/longhorn/longhorn-engine v1.11.0-dev-20251130.0.20251207134944-819147eb34d2 h1:/79yxl+pP89IRzCS7HU+PPQLUPOFdLClD9jOur3oPCw=
+github.com/longhorn/longhorn-engine v1.11.0-dev-20251130.0.20251207134944-819147eb34d2/go.mod h1:4eCMBdikYwLFiYbgcX6ywoDAUp6G/mv88F0DTquN/4Q=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20251205013340-d3ff87d2e418 h1:0Xhs8RfBhNVnghU+4h8ghrLAx4KPGuGPdBGWBcw6dtI=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20251205013340-d3ff87d2e418/go.mod h1:eMoUG4QRG/JxK/BUJ/O8Ug6APy12F8UzLpXgMESkqWg=
 github.com/longhorn/sparse-tools v0.0.0-20251020055717-ae3aca526fd7 h1:t+ufkrgYbdzSjfGmsorKS7wjHR8nkOtzlOQOVKTrYDk=

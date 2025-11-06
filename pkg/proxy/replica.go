@@ -475,7 +475,45 @@ func (ops V1DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.Engi
 		}
 	}()
 
+	err = ops.cancelSnapshotHashesForReplica(ctx, c, req.ReplicaAddress, req.ProxyEngineRequest)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"serviceURL":     req.ProxyEngineRequest.Address,
+			"engineName":     req.ProxyEngineRequest.EngineName,
+			"volumeName":     req.ProxyEngineRequest.VolumeName,
+			"replicaName":    req.ReplicaName,
+			"replicaAddress": req.ReplicaAddress,
+		}).WithError(err).Warn("Failed to stop snapshot hash")
+	}
+
 	return nil, c.ReplicaDelete(req.ReplicaAddress)
+}
+
+func (ops V1DataEngineProxyOps) cancelSnapshotHashesForReplica(ctx context.Context, c *eclient.ControllerClient, replicaAddress string, proxyEngineRequest *rpc.ProxyEngineRequest) error {
+	recv, err := c.ReplicaList()
+	if err != nil {
+		return err
+	}
+
+	snapshotsDiskInfo, err := esync.GetSnapshotsInfo(recv, proxyEngineRequest.VolumeName)
+	if err != nil {
+		return err
+	}
+	snapshots := []string{}
+	for _, snapshotInfo := range snapshotsDiskInfo {
+		snapshots = append(snapshots, snapshotInfo.Name)
+	}
+
+	task, err := esync.NewTask(ctx, proxyEngineRequest.Address, proxyEngineRequest.VolumeName, proxyEngineRequest.EngineName)
+	if err != nil {
+		return err
+	}
+
+	if err := task.CancelSnapshotHashJob(replicaAddress, snapshots); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ops V2DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error) {
