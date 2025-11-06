@@ -33,6 +33,7 @@ type DiskOps interface {
 	DiskCreate(context.Context, *rpc.DiskCreateRequest) (*rpc.Disk, error)
 	DiskDelete(*rpc.DiskDeleteRequest) (*emptypb.Empty, error)
 	DiskGet(req *rpc.DiskGetRequest) (*rpc.Disk, error)
+	DiskHealthGet(req *rpc.DiskHealthGetRequest) (*rpc.DiskHealthGetResponse, error)
 	DiskReplicaInstanceList(*rpc.DiskReplicaInstanceListRequest) (*rpc.DiskReplicaInstanceListResponse, error)
 	DiskReplicaInstanceDelete(*rpc.DiskReplicaInstanceDeleteRequest) (*emptypb.Empty, error)
 	MetricsGet(*rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error)
@@ -200,6 +201,53 @@ func (ops BlockDiskOps) DiskGet(req *rpc.DiskGetRequest) (*rpc.Disk, error) {
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 	return spdkDiskToDisk(ret), nil
+}
+
+func (s *Server) DiskHealthGet(ctx context.Context, req *rpc.DiskHealthGetRequest) (*rpc.DiskHealthGetResponse, error) {
+	if req.DiskName == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name is required")
+	}
+
+	ops, ok := s.ops[req.DiskType]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported disk type %v", req.DiskType)
+	}
+	return ops.DiskHealthGet(req)
+}
+
+func (op FilesystemDiskOps) DiskHealthGet(req *rpc.DiskHealthGetRequest) (*rpc.DiskHealthGetResponse, error) {
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported disk type %v", req.DiskType)
+}
+
+func (op BlockDiskOps) DiskHealthGet(req *rpc.DiskHealthGetRequest) (*rpc.DiskHealthGetResponse, error) {
+	health, err := op.spdkClient.DiskHealthGet(req.DiskName, req.DiskPath, req.DiskDriver)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
+	}
+
+	return &rpc.DiskHealthGetResponse{
+		ModelNumber:                             health.ModelNumber,
+		SerialNumber:                            health.SerialNumber,
+		FirmwareRevision:                        health.FirmwareRevision,
+		Traddr:                                  health.Traddr,
+		CriticalWarning:                         health.CriticalWarning,
+		TemperatureCelsius:                      health.TemperatureCelsius,
+		AvailableSparePercentage:                health.AvailableSparePercentage,
+		AvailableSpareThresholdPercentage:       health.AvailableSpareThresholdPercentage,
+		PercentageUsed:                          health.PercentageUsed,
+		DataUnitsRead:                           health.DataUnitsRead,
+		DataUnitsWritten:                        health.DataUnitsWritten,
+		HostReadCommands:                        health.HostReadCommands,
+		HostWriteCommands:                       health.HostWriteCommands,
+		ControllerBusyTime:                      health.ControllerBusyTime,
+		PowerCycles:                             health.PowerCycles,
+		PowerOnHours:                            health.PowerOnHours,
+		UnsafeShutdowns:                         health.UnsafeShutdowns,
+		MediaErrors:                             health.MediaErrors,
+		NumErrLogEntries:                        health.NumErrLogEntries,
+		WarningTemperatureTimeMinutes:           health.WarningTemperatureTimeMinutes,
+		CriticalCompositeTemperatureTimeMinutes: health.CriticalCompositeTemperatureTimeMinutes,
+	}, nil
 }
 
 func (s *Server) DiskReplicaInstanceList(ctx context.Context, req *rpc.DiskReplicaInstanceListRequest) (*rpc.DiskReplicaInstanceListResponse, error) {
