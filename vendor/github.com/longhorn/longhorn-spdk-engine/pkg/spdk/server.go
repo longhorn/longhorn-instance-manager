@@ -1,6 +1,7 @@
 package spdk
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -1155,7 +1155,7 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	}
 
 	if e == nil {
-		s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine])
+		s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine], req.UblkQueueDepth, req.UblkNumberOfQueue)
 		e = s.engineMap[req.Name]
 	}
 
