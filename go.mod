@@ -9,10 +9,10 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20251123054148-021939243385
 	github.com/longhorn/go-common-libs v0.0.0-20251116145113-3788c6f8aba8
-	github.com/longhorn/go-spdk-helper v0.2.1-0.20251122081607-ba5a970c7558
+	github.com/longhorn/go-spdk-helper v0.2.1-0.20251127040022-2ab7a5b5c5a9
 	github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20251118131515-34b2841b20b1
-	github.com/longhorn/types v0.0.0-20251114033314-2b0f01ee4a71
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20251127071749-f580afb2158b
+	github.com/longhorn/types v0.0.0-20251125140643-490b3f39dabd
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.18.0
