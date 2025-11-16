@@ -264,8 +264,8 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
-# github.com/longhorn/go-iscsi-helper v0.0.0-20250810143507-5c5f9a0060b4
-## explicit; go 1.23.0
+# github.com/longhorn/go-iscsi-helper v0.0.0-20251102142448-23eedefc2b60
+## explicit; go 1.24.0
 github.com/longhorn/go-iscsi-helper/iscsi
 github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
@@ -280,7 +280,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.10.0
+# github.com/longhorn/longhorn-engine v1.10.1
 ## explicit; go 1.24.0
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -307,8 +307,8 @@ github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/virtio-scsi
 github.com/longhorn/longhorn-spdk-engine/pkg/types
 github.com/longhorn/longhorn-spdk-engine/pkg/util
 github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
-# github.com/longhorn/sparse-tools v0.0.0-20250826041019-4aae87cb253a
-## explicit; go 1.22.0
+# github.com/longhorn/sparse-tools v0.0.0-20251020055717-ae3aca526fd7
+## explicit; go 1.24.0
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
