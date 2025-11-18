@@ -1,11 +1,11 @@
 package proxy
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	grpccodes "google.golang.org/grpc/codes"
