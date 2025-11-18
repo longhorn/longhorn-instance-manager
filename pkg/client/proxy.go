@@ -107,9 +107,9 @@ const (
 	GRPCServiceLongTimeout = eclient.GRPCServiceLongTimeout + GRPCServiceTimeout
 )
 
-func getContextWithGRPCTimeout(parent context.Context) context.Context {
-	ctx, _ := context.WithTimeout(parent, GRPCServiceTimeout)
-	return ctx
+func getContextWithGRPCTimeout(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(parent, GRPCServiceTimeout)
+	return ctx, cancel
 }
 
 // getContextWithGRPCLongTimeout returns a context with given grpcTimeoutSeconds + GRPCServiceTimeout timeout.
@@ -143,7 +143,9 @@ func (c *ProxyClient) ServerVersionGet(serviceAddress string) (version *emeta.Ve
 	req := &rpc.ProxyEngineRequest{
 		Address: serviceAddress,
 	}
-	resp, err := c.service.ServerVersionGet(getContextWithGRPCTimeout(c.ctx), req)
+	ctx, cancel := getContextWithGRPCTimeout(c.ctx)
+	defer cancel()
+	resp, err := c.service.ServerVersionGet(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +172,8 @@ func (c *ProxyClient) ClientVersionGet() (version emeta.VersionOutput) {
 
 func (c *ProxyClient) CheckConnection() error {
 	req := &healthpb.HealthCheckRequest{}
-	_, err := c.health.Check(getContextWithGRPCTimeout(c.ctx), req)
+	ctx, cancel := getContextWithGRPCTimeout(c.ctx)
+	defer cancel()
+	_, err := c.health.Check(ctx, req)
 	return err
 }
