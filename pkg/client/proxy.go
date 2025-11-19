@@ -114,14 +114,13 @@ func getContextWithGRPCTimeout(parent context.Context) (context.Context, context
 
 // getContextWithGRPCLongTimeout returns a context with given grpcTimeoutSeconds + GRPCServiceTimeout timeout.
 // If grpcTimeoutSeconds is 0, use the default GRPCServiceLongTimeout instead.
-func getContextWithGRPCLongTimeout(parent context.Context, grpcTimeoutSeconds int64) context.Context {
+func getContextWithGRPCLongTimeout(parent context.Context, grpcTimeoutSeconds int64) (context.Context, context.CancelFunc) {
 	grpcTimeout := GRPCServiceLongTimeout
 	if grpcTimeoutSeconds > 0 {
 		// We want to have a slightly bigger timeout on the proxy client-side compared to the actual timeout in the engine/replica because the proxy server adds some delay to the flow
 		grpcTimeout = (time.Second * time.Duration(grpcTimeoutSeconds)) + GRPCServiceTimeout
 	}
-	ctx, _ := context.WithTimeout(parent, grpcTimeout)
-	return ctx
+	return context.WithTimeout(parent, grpcTimeout)
 }
 
 func (c *ProxyClient) getProxyErrorPrefix(destination string) string {
