@@ -170,7 +170,9 @@ func (c *ProxyClient) SnapshotClone(dataEngine, engineName, volumeName, serviceA
 		GrpcTimeoutSeconds:        grpcTimeoutSeconds,
 		CloneMode:                 getCloneMode(cloneMode),
 	}
-	_, err = c.service.SnapshotClone(getContextWithGRPCLongTimeout(c.ctx, grpcTimeoutSeconds), req)
+	ctx, cancel := getContextWithGRPCLongTimeout(c.ctx, grpcTimeoutSeconds)
+	defer cancel()
+	_, err = c.service.SnapshotClone(ctx, req)
 	if err != nil {
 		return err
 	}
