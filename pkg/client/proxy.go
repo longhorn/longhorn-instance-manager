@@ -1,13 +1,13 @@
 package client
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 

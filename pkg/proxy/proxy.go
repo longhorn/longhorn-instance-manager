@@ -1,12 +1,12 @@
 package proxy
 
 import (
+	"context"
 	"net"
 	"strconv"
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	grpccodes "google.golang.org/grpc/codes"
