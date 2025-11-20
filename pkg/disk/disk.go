@@ -111,14 +111,14 @@ func (s *Server) DiskCreate(ctx context.Context, req *rpc.DiskCreateRequest) (*r
 	log := logrus.WithFields(logrus.Fields{
 		"diskType":   req.DiskType,
 		"diskName":   req.DiskName,
-		"diskPath":   req.DiskPath,
+		"diskPaths":  req.DiskPath,
 		"blockSize":  req.BlockSize,
 		"diskDriver": req.DiskDriver,
 	})
 
 	log.Info("Disk Server: Creating disk")
 
-	if req.DiskName == "" || req.DiskPath == "" {
+	if req.DiskName == "" || len(req.DiskPath) == 0 {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk name and disk path are required")
 	}
 
@@ -134,7 +134,7 @@ func (ops FilesystemDiskOps) DiskCreate(ctx context.Context, req *rpc.DiskCreate
 }
 
 func (ops BlockDiskOps) DiskCreate(ctx context.Context, req *rpc.DiskCreateRequest) (*rpc.Disk, error) {
-	ret, err := ops.spdkClient.DiskCreate(req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize)
+	ret, err := ops.spdkClient.DiskCreate(req.DiskName, req.DiskUuid, req.DiskDriver, req.DiskPath, req.BlockSize)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
@@ -146,7 +146,7 @@ func (s *Server) DiskDelete(ctx context.Context, req *rpc.DiskDeleteRequest) (*e
 		"diskType":   req.DiskType,
 		"diskName":   req.DiskName,
 		"diskUUID":   req.DiskUuid,
-		"diskPath":   req.DiskPath,
+		"diskPaths":  req.DiskPath,
 		"diskDriver": req.DiskDriver,
 	})
 
@@ -168,14 +168,14 @@ func (ops FilesystemDiskOps) DiskDelete(req *rpc.DiskDeleteRequest) (*emptypb.Em
 }
 
 func (ops BlockDiskOps) DiskDelete(req *rpc.DiskDeleteRequest) (*emptypb.Empty, error) {
-	return &emptypb.Empty{}, ops.spdkClient.DiskDelete(req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver)
+	return &emptypb.Empty{}, ops.spdkClient.DiskDelete(req.DiskName, req.DiskUuid, req.DiskDriver, req.DiskPath)
 }
 
 func (s *Server) DiskGet(ctx context.Context, req *rpc.DiskGetRequest) (*rpc.Disk, error) {
 	log := logrus.WithFields(logrus.Fields{
-		"diskType": req.DiskType,
-		"diskName": req.DiskName,
-		"diskPath": req.DiskPath,
+		"diskType":  req.DiskType,
+		"diskName":  req.DiskName,
+		"diskPaths": req.DiskPath,
 	})
 
 	log.Trace("Disk Server: Getting disk info")
@@ -196,7 +196,7 @@ func (ops FilesystemDiskOps) DiskGet(req *rpc.DiskGetRequest) (*rpc.Disk, error)
 }
 
 func (ops BlockDiskOps) DiskGet(req *rpc.DiskGetRequest) (*rpc.Disk, error) {
-	ret, err := ops.spdkClient.DiskGet(req.DiskName, req.DiskPath, req.DiskDriver)
+	ret, err := ops.spdkClient.DiskGet(req.DiskName, req.DiskDriver, req.DiskPath)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
@@ -322,9 +322,9 @@ func (ops BlockDiskOps) DiskReplicaInstanceDelete(req *rpc.DiskReplicaInstanceDe
 
 func (s *Server) MetricsGet(ctx context.Context, req *rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error) {
 	log := logrus.WithFields(logrus.Fields{
-		"diskType": req.DiskType,
-		"diskName": req.DiskName,
-		"diskPath": req.DiskPath,
+		"diskType":  req.DiskType,
+		"diskName":  req.DiskName,
+		"diskPaths": req.DiskPath,
 	})
 
 	log.Trace("Disk Server: Getting disk metrics")
