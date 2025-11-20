@@ -1913,7 +1913,7 @@ func (s *Server) DiskHealthGet(ctx context.Context, req *spdkrpc.DiskHealthGetRe
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "disk %q not found", req.DiskName)
 	}
 
-	diskHealth, err := disk.diskHealthGet(spdkClient, req.DiskName, req.DiskDriver)
+	diskHealth, err := disk.diskHealthGet(spdkClient, req.DiskName, req.DiskPath, req.DiskDriver)
 	if err != nil {
 		return nil, err
 	}

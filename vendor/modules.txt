@@ -349,8 +349,8 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.2.1-0.20251213143112-c40a36fce272
-## explicit; go 1.25.3
+# github.com/longhorn/go-spdk-helper v0.2.1-0.20251213143112-c40a36fce272 => github.com/davidcheng0922/go-spdk-helper v0.0.0-20251128084218-8f95d637e37c
+## explicit; go 1.24.0
 github.com/longhorn/go-spdk-helper/pkg/initiator
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
 github.com/longhorn/go-spdk-helper/pkg/spdk/client
@@ -371,7 +371,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20251217153732-58e01286ab16
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20251217153732-58e01286ab16 => github.com/davidcheng0922/longhorn-spdk-engine v0.0.0-20251218095157-757699ae5fdd
 ## explicit; go 1.25.3
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -954,3 +954,5 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/longhorn/go-spdk-helper => github.com/davidcheng0922/go-spdk-helper v0.0.0-20251128084218-8f95d637e37c
+# github.com/longhorn/longhorn-spdk-engine => github.com/davidcheng0922/longhorn-spdk-engine v0.0.0-20251218095157-757699ae5fdd

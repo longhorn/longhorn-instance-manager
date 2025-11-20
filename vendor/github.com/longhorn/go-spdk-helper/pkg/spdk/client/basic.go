@@ -778,9 +778,23 @@ func (c *Client) BdevLvolRename(oldName, newName string) (renamed bool, err erro
 //
 //	 	"uuid": Optional. Create the raid bdev with specific uuid
 func (c *Client) BdevRaidCreate(name string, raidLevel spdktypes.BdevRaidLevel, stripSizeKb uint32, baseBdevs []string, uuid string) (created bool, err error) {
-	if raidLevel != spdktypes.BdevRaidLevel0 && raidLevel != spdktypes.BdevRaidLevelRaid0 && raidLevel != spdktypes.BdevRaidLevel5f && raidLevel != spdktypes.BdevRaidLevelRaid5f {
+	switch raidLevel {
+	case spdktypes.BdevRaidLevel0, spdktypes.BdevRaidLevelRaid0,
+		spdktypes.BdevRaidLevel5f, spdktypes.BdevRaidLevelRaid5f:
+		// RAID0 / RAID5f keep user-given strip size (non-zero requirement stays external)
+		// do nothing
+	case spdktypes.BdevRaidLevelConcat:
+		// For RAID CONCAT (Concatenation), the strip size is logically useless for its primary function,
+		// but it is technically required for initialization and framework compliance.
+		//
+		// it cannot be 0, will return error
+		stripSizeKb = 4
+
+	default:
+		// All other RAID levels do not use strip size → forced to 0
 		stripSizeKb = 0
 	}
+
 	req := spdktypes.BdevRaidCreateRequest{
 		Name:        name,
 		RaidLevel:   raidLevel,
