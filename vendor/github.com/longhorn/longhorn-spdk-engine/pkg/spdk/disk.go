@@ -76,13 +76,14 @@ func NewDisk(diskName, diskUUID, diskPath, diskDriver string, blockSize int64) *
 	}
 }
 
-func (d *Disk) DiskCreate(spdkClient *spdkclient.Client, diskName, diskUUID, diskPath, diskDriver string, blockSize int64) error {
+func (d *Disk) DiskCreate(spdkClient *spdkclient.Client, diskName, diskUUID, diskPath, diskDriver string, blockSize int64, denyInUseDisk bool) error {
 	log := logrus.WithFields(logrus.Fields{
-		"diskName":   diskName,
-		"diskUUID":   diskUUID,
-		"diskPath":   diskPath,
-		"blockSize":  blockSize,
-		"diskDriver": diskDriver,
+		"diskName":      diskName,
+		"diskUUID":      diskUUID,
+		"diskPath":      diskPath,
+		"blockSize":     blockSize,
+		"diskDriver":    diskDriver,
+		"denyInUseDisk": denyInUseDisk,
 	})
 
 	log.Info("Creating disk")
@@ -97,7 +98,7 @@ func (d *Disk) DiskCreate(spdkClient *spdkclient.Client, diskName, diskUUID, dis
 		return grpcstatus.Errorf(grpccodes.InvalidArgument, "failed to get disk driver for disk %q: %v", diskName, err)
 	}
 
-	lvstoreUUID, err := addBlockDevice(spdkClient, diskName, diskUUID, diskPath, exactDiskDriver, blockSize)
+	lvstoreUUID, err := addBlockDevice(spdkClient, diskName, diskUUID, diskPath, exactDiskDriver, blockSize, denyInUseDisk)
 	if err != nil {
 		log.WithError(err).Error("Failed to add block device")
 		return grpcstatus.Errorf(grpccodes.Internal, "failed to add disk block device: %v", err)
@@ -352,13 +353,14 @@ func validateAioDiskCreation(spdkClient *spdkclient.Client, diskPath string, dis
 	return nil
 }
 
-func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, originalDiskPath string, diskDriver commontypes.DiskDriver, blockSize int64) (string, error) {
+func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, originalDiskPath string, diskDriver commontypes.DiskDriver, blockSize int64, denyInUseDisk bool) (string, error) {
 	log := logrus.WithFields(logrus.Fields{
-		"diskName":   diskName,
-		"diskUUID":   diskUUID,
-		"diskPath":   originalDiskPath,
-		"diskDriver": diskDriver,
-		"blockSize":  blockSize,
+		"diskName":      diskName,
+		"diskUUID":      diskUUID,
+		"diskPath":      originalDiskPath,
+		"diskDriver":    diskDriver,
+		"blockSize":     blockSize,
+		"denyInUseDisk": denyInUseDisk,
 	})
 
 	diskPath := originalDiskPath
@@ -371,7 +373,7 @@ func addBlockDevice(spdkClient *spdkclient.Client, diskName, diskUUID, originalD
 
 	log.Info("Creating disk bdev")
 
-	bdevName, err := spdkdisk.DiskCreate(spdkClient, diskName, diskPath, string(diskDriver), uint64(blockSize))
+	bdevName, err := spdkdisk.DiskCreate(spdkClient, diskName, diskPath, string(diskDriver), uint64(blockSize), denyInUseDisk)
 	if err != nil {
 		if !jsonrpc.IsJSONRPCRespErrorFileExists(err) {
 			return "", errors.Wrapf(err, "failed to create disk bdev")

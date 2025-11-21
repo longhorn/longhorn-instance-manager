@@ -1280,7 +1280,7 @@ func (c *SPDKClient) BackingImageUnexpose(name, lvsUUID string) error {
 
 // DiskCreate creates a disk with the given name and path.
 // diskUUID is optional, if not provided, it indicates the disk is newly added.
-func (c *SPDKClient) DiskCreate(diskName, diskUUID, diskPath, diskDriver string, blockSize int64) (*spdkrpc.Disk, error) {
+func (c *SPDKClient) DiskCreate(diskName, diskUUID, diskPath, diskDriver string, blockSize int64, denyInUseDisk bool) (*spdkrpc.Disk, error) {
 	if diskName == "" || diskPath == "" {
 		return nil, fmt.Errorf("failed to create disk: missing required parameters")
 	}
@@ -1290,11 +1290,12 @@ func (c *SPDKClient) DiskCreate(diskName, diskUUID, diskPath, diskDriver string,
 	defer cancel()
 
 	return client.DiskCreate(ctx, &spdkrpc.DiskCreateRequest{
-		DiskName:   diskName,
-		DiskUuid:   diskUUID,
-		DiskPath:   diskPath,
-		BlockSize:  blockSize,
-		DiskDriver: diskDriver,
+		DiskName:      diskName,
+		DiskUuid:      diskUUID,
+		DiskPath:      diskPath,
+		BlockSize:     blockSize,
+		DiskDriver:    diskDriver,
+		DenyInUseDisk: denyInUseDisk,
 	})
 }
 

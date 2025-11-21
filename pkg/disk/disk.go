@@ -108,11 +108,12 @@ func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.DiskV
 
 func (s *Server) DiskCreate(ctx context.Context, req *rpc.DiskCreateRequest) (*rpc.Disk, error) {
 	log := logrus.WithFields(logrus.Fields{
-		"diskType":   req.DiskType,
-		"diskName":   req.DiskName,
-		"diskPath":   req.DiskPath,
-		"blockSize":  req.BlockSize,
-		"diskDriver": req.DiskDriver,
+		"diskType":      req.DiskType,
+		"diskName":      req.DiskName,
+		"diskPath":      req.DiskPath,
+		"blockSize":     req.BlockSize,
+		"diskDriver":    req.DiskDriver,
+		"denyInUseDisk": req.DenyInUseDisk,
 	})
 
 	log.Info("Disk Server: Creating disk")
@@ -133,7 +134,7 @@ func (ops FilesystemDiskOps) DiskCreate(ctx context.Context, req *rpc.DiskCreate
 }
 
 func (ops BlockDiskOps) DiskCreate(ctx context.Context, req *rpc.DiskCreateRequest) (*rpc.Disk, error) {
-	ret, err := ops.spdkClient.DiskCreate(req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize)
+	ret, err := ops.spdkClient.DiskCreate(req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver, req.BlockSize, req.DenyInUseDisk)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
