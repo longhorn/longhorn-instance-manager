@@ -150,6 +150,9 @@ COPY --from=cbuilder \
    /usr/lib64 \
    /usr/lib64
 
+# longhorn/longhorn#11254: Clean up unnecessary *.exe that leads to a false alarm in vulnerability scanning
+RUN find /usr/lib64 -depth -type f -name 'wininst-*.exe' -exec rm -f {} \;
+
 RUN ldconfig
 
 COPY bin/longhorn-instance-manager /usr/local/bin/
