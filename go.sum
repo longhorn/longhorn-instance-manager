@@ -59,6 +59,8 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bits-and-blooms/bitset v1.12.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/bits-and-blooms/bitset v1.16.0 h1:G3lirLlhFTcW/7ym/SLtYYLHQS0hBOcC8fPNJxbTYm4=
 github.com/bits-and-blooms/bitset v1.16.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
+github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20251128083601-220e1b29ec04 h1:UQYCVUWUuDUhA4+a/d261zX5C7IR7esrekAZluhCkWs=
+github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20251128083601-220e1b29ec04/go.mod h1:E6rO0VCDMNU9cMkxeSEmayyTQFl02D8iliRGN8HamPg=
 github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 h1:SjZ2GvvOononHOpK84APFuMvxqsk3tEIaKH/z4Rpu3g=
 github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8/go.mod h1:uEyr4WpAH4hio6LFriaPkL938XnrvLpNPmQHBdrmbIE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
@@ -157,8 +159,6 @@ github.com/longhorn/go-spdk-helper v0.2.1-0.20251130143546-00546a63ae27 h1:9p9dr
 github.com/longhorn/go-spdk-helper v0.2.1-0.20251130143546-00546a63ae27/go.mod h1:3Tb5aIupK+2IKWHY3UPl6/QVEwOZV4bxOWCj0LnWwxU=
 github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced h1:y9bPkuEJTi4b8gAfW8aMEjPg39bsIkO6bj/Tbu3otYs=
 github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced/go.mod h1:x6C4H+XbXF28mtQsqjUhM4MioQKzQEq8VMcds9xzrWI=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20251127071749-f580afb2158b h1:E2PXJRLeZ6ccUC/1sTwgZGU7GM7bTnLKI0XWJVeyYok=
-github.com/longhorn/longhorn-spdk-engine v0.0.0-20251127071749-f580afb2158b/go.mod h1:E6rO0VCDMNU9cMkxeSEmayyTQFl02D8iliRGN8HamPg=
 github.com/longhorn/sparse-tools v0.0.0-20251020055717-ae3aca526fd7 h1:t+ufkrgYbdzSjfGmsorKS7wjHR8nkOtzlOQOVKTrYDk=
 github.com/longhorn/sparse-tools v0.0.0-20251020055717-ae3aca526fd7/go.mod h1:WfRkt5pFnDaULAjFtoGlWhwQwyIx/vgMnH+jXQNlnQ8=
 github.com/longhorn/types v0.0.0-20251130061042-fc15b4776c60 h1:AbekW+n1Gm6WOUDJHqFd8AKCjP34Dh5k8f7LNJbxR0o=
