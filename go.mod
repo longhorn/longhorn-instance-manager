@@ -6,18 +6,18 @@ toolchain go1.24.6
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20251123054148-021939243385
-	github.com/longhorn/go-common-libs v0.0.0-20251127015107-b85a43e5d5af
+	github.com/longhorn/backupstore v0.0.0-20251130062045-a1de4c42df07
+	github.com/longhorn/go-common-libs v0.0.0-20251130061014-a2c18552fb30
 	github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838
 	github.com/longhorn/longhorn-engine v1.9.2
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555
-	github.com/longhorn/types v0.0.0-20251125140643-490b3f39dabd
+	github.com/longhorn/types v0.0.0-20251130061042-fc15b4776c60
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.17
-	golang.org/x/net v0.42.0
+	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82
 	golang.org/x/sync v0.18.0
-	google.golang.org/grpc v1.76.0
+	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.32.3
@@ -103,13 +103,13 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/term v0.33.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
+	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39 // indirect
+	golang.org/x/oauth2 v0.32.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/term v0.36.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.31.3 // indirect
