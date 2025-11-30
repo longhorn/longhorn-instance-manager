@@ -322,7 +322,7 @@ github.com/longhorn/backupstore/s3
 github.com/longhorn/backupstore/types
 github.com/longhorn/backupstore/util
 github.com/longhorn/backupstore/vfs
-# github.com/longhorn/go-common-libs v0.0.0-20251130061014-a2c18552fb30
+# github.com/longhorn/go-common-libs v0.0.0-20251130104056-3332521977c9
 ## explicit; go 1.24.0
 github.com/longhorn/go-common-libs/backingimage
 github.com/longhorn/go-common-libs/backup
@@ -345,7 +345,7 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.2.1-0.20251130062018-ed9dee0a2cd3
+# github.com/longhorn/go-spdk-helper v0.2.1-0.20251130104134-de56750bfe6d
 ## explicit; go 1.24.0
 github.com/longhorn/go-spdk-helper/pkg/initiator
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
