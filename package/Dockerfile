@@ -8,12 +8,7 @@ ARG SRC_TAG
 RUN zypper -n ref && \
     zypper update -y
 
-RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:utilities/SLE_15_SP7/network:utilities.repo && \
-        zypper --gpg-auto-import-keys ref && break || sleep 1; \
-    done
-
-RUN zypper -n install wget jq
+RUN zypper -n install jq wget
 
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
@@ -38,7 +33,7 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
     chmod +x /usr/local/bin/grpc_health_probe
 
 # Stage 2: build binary from c source code
-FROM registry.suse.com/bci/bci-base:15.7 AS cbuilder
+FROM registry.suse.com/bci/bci-base:16.0 AS cbuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
@@ -48,19 +43,21 @@ RUN zypper -n ref && \
     zypper update -y
 
 RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15_SP7/system:snappy.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP7/network:utilities.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.7/devel:libraries:c_c++.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.7/devel:languages:python:Factory.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/15.7/devel:tools:building.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/15.7/filesystems.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/openSUSE_Factory/system:snappy.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/openSUSE_Factory/network:utilities.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/16.0/devel:libraries:c_c++.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:/languages:/python:/Factory/16.0/devel:languages:python:Factory.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:building/16.0/devel:tools:building.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/filesystems/16.0/filesystems.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/CrossToolchain:avr/16.0/CrossToolchain:avr.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:tools:compiler/16.0/devel:tools:compiler.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
 
-RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python311 python311-pip patchelf fuse3-devel jq wget
+RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python3 python3-pip patchelf fuse3-devel jq
 
-RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
+RUN git clone https://github.com/derekbit/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
     cd /usr/src/dep-versions && \
     if [ -n "${SRC_TAG}" ] && git show-ref --tags ${SRC_TAG} > /dev/null 2>&1; then \
         echo "Checking out tag ${SRC_TAG}"; \
@@ -93,7 +90,7 @@ RUN export REPO_OVERRIDE="" && \
     bash /usr/src/dep-versions/scripts/build-nvme-cli.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Stage 3: copy binaries to release image
-FROM registry.suse.com/bci/bci-base:15.7 AS release
+FROM registry.suse.com/bci/bci-base:16.0 AS release
 
 ARG ARCH=amd64
 
@@ -101,16 +98,26 @@ RUN zypper -n ref && \
     zypper update -y
 
 RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15_SP7/system:snappy.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP7/network:utilities.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.7/devel:libraries:c_c++.repo && \
-        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.7/devel:languages:python:Factory.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/openSUSE_Factory/system:snappy.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/16.0/network:utilities.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/16.0/devel:libraries:c_c++.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:/languages:/python:/Factory/16.0/devel:languages:python:Factory.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/16.0/devel:languages:python:backports.repo && \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/CrossToolchain:avr/16.0/CrossToolchain:avr.repo && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
-RUN zypper -n install nfs-client nfs4-acl-tools cifs-utils sg3_utils \
-    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python311-base \
+RUN zypper -n install cifs-utils sg3_utils \
+    iproute2 qemu-tools e2fsprogs xfsprogs util-linux-systemd python3-base \
     libcmocka-devel device-mapper netcat kmod jq util-linux procps fuse3-devel awk logrotate && \
+    rm -rf /var/cache/zypp/*
+
+RUN for i in {1..10}; do \
+        zypper -n addrepo --refresh https://download.opensuse.org/repositories/Base:System/openSUSE_Factory/Base:System.repo && \
+        zypper --gpg-auto-import-keys ref && break || sleep 1; \
+    done
+
+RUN zypper -n install nfs-client nfs4-acl-tools && \
     rm -rf /var/cache/zypp/*
 
 # Install SPDK dependencies
