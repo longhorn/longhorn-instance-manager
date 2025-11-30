@@ -149,12 +149,12 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/longhorn/backupstore v0.0.0-20251130062045-a1de4c42df07 h1:EPKXjd4gncImFIcvUHuVaEUd0jripoJZIu+bc/q2nGY=
 github.com/longhorn/backupstore v0.0.0-20251130062045-a1de4c42df07/go.mod h1:U6Zg87XJCI6affgK3YCQVEXWhq6odH1xq+xDLajs+bM=
-github.com/longhorn/go-common-libs v0.0.0-20251130061014-a2c18552fb30 h1:X+yNg5BbYaNM76/vUu76VZvzmkYzL6LA9I0S1vCztCE=
-github.com/longhorn/go-common-libs v0.0.0-20251130061014-a2c18552fb30/go.mod h1:2hVBAkhqRB+6ChRb//pQHWRvCYxRkaKIK3lmrTZS29A=
+github.com/longhorn/go-common-libs v0.0.0-20251130104056-3332521977c9 h1:+3ISvbAUNEFgHhHsmhEl0FVWTtxUK3XzIiVE+yCpq80=
+github.com/longhorn/go-common-libs v0.0.0-20251130104056-3332521977c9/go.mod h1:P1127MQ9oyqVEuDtUjgAnS9wJtFnrCp889Ngry8t0yI=
 github.com/longhorn/go-iscsi-helper v0.0.0-20251102142448-23eedefc2b60 h1:lwACMOh9nKBzWkLpmyJkpigmB9HHYV5FfiiZ3jFohDM=
 github.com/longhorn/go-iscsi-helper v0.0.0-20251102142448-23eedefc2b60/go.mod h1:h8So5DelxtL605STgtfFsA3SYT3+4vnIO2OUrpRFwXo=
-github.com/longhorn/go-spdk-helper v0.2.1-0.20251130062018-ed9dee0a2cd3 h1:QKWiQgH7d9tlo5lTm70faWW0K0kcp3DkvYf+xzrMjZE=
-github.com/longhorn/go-spdk-helper v0.2.1-0.20251130062018-ed9dee0a2cd3/go.mod h1:XsZIBIxV/+LXAtp53Cph4OcNvkLxSyXvwOIrq+SA434=
+github.com/longhorn/go-spdk-helper v0.2.1-0.20251130104134-de56750bfe6d h1:vgqQV6dpcLYfWTOFPqE/pCVKaosynRYKRV8q0CingJg=
+github.com/longhorn/go-spdk-helper v0.2.1-0.20251130104134-de56750bfe6d/go.mod h1:p3WxY3LMx8c+VIsjeyMFlCpGP6/NOwOGcAMZco9fzLc=
 github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced h1:y9bPkuEJTi4b8gAfW8aMEjPg39bsIkO6bj/Tbu3otYs=
 github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced/go.mod h1:x6C4H+XbXF28mtQsqjUhM4MioQKzQEq8VMcds9xzrWI=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20251127071749-f580afb2158b h1:E2PXJRLeZ6ccUC/1sTwgZGU7GM7bTnLKI0XWJVeyYok=
