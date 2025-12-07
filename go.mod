@@ -12,7 +12,7 @@ require (
 	github.com/longhorn/go-spdk-helper v0.2.1-0.20251130143546-00546a63ae27
 	github.com/longhorn/longhorn-engine v1.10.0-dev-20250824.0.20251103012748-950f695edced
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20251127071749-f580afb2158b
-	github.com/longhorn/types v0.0.0-20251130061042-fc15b4776c60
+	github.com/longhorn/types v0.0.0-20251207085945-9c40bd62daff
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.18.0
