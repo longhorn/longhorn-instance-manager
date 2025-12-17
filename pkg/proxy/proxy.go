@@ -35,6 +35,8 @@ type ProxyOps interface {
 	ReplicaRemove(context.Context, *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error)
 	ReplicaVerifyRebuild(context.Context, *rpc.EngineReplicaVerifyRebuildRequest) (*emptypb.Empty, error)
 	ReplicaModeUpdate(context.Context, *rpc.EngineReplicaModeUpdateRequest) (*emptypb.Empty, error)
+	ReplicaRebuildConcurrentSyncLimitSet(context.Context, *rpc.EngineReplicaRebuildConcurrentSyncLimitSetRequest) (*emptypb.Empty, error)
+	ReplicaRebuildConcurrentSyncLimitGet(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineReplicaRebuildConcurrentSyncLimitGetResponse, error)
 
 	VolumeSnapshot(context.Context, *rpc.EngineVolumeSnapshotRequest) (*rpc.EngineVolumeSnapshotProxyResponse, error)
 	SnapshotList(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineSnapshotListProxyResponse, error)

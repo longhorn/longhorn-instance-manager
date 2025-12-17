@@ -578,3 +578,67 @@ func (ops V2DataEngineProxyOps) ReplicaModeUpdate(ctx context.Context, req *rpc.
 	/* TODO: implement this */
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
 }
+
+func (p *Proxy) ReplicaRebuildConcurrentSyncLimitSet(ctx context.Context, req *rpc.EngineReplicaRebuildConcurrentSyncLimitSetRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.ProxyEngineRequest.Address,
+	})
+	log.Infof("Updating replica rebuild concurrent sync limit to %d", req.Limit)
+
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+
+	return ops.ReplicaRebuildConcurrentSyncLimitSet(ctx, req)
+}
+
+func (ops V1DataEngineProxyOps) ReplicaRebuildConcurrentSyncLimitSet(ctx context.Context, req *rpc.EngineReplicaRebuildConcurrentSyncLimitSetRequest) (resp *emptypb.Empty, err error) {
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = c.ReplicaRebuildConcurrentSyncLimitSet(int(req.Limit)); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (ops V2DataEngineProxyOps) ReplicaRebuildConcurrentSyncLimitSet(ctx context.Context, req *rpc.EngineReplicaRebuildConcurrentSyncLimitSetRequest) (resp *emptypb.Empty, err error) {
+	/* TODO: implement this */
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+}
+
+func (p *Proxy) ReplicaRebuildConcurrentSyncLimitGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildConcurrentSyncLimitGetResponse, err error) {
+	ops, ok := p.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+
+	return ops.ReplicaRebuildConcurrentSyncLimitGet(ctx, req)
+}
+
+func (ops V1DataEngineProxyOps) ReplicaRebuildConcurrentSyncLimitGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildConcurrentSyncLimitGetResponse, err error) {
+	c, err := eclient.NewControllerClient(req.Address, req.VolumeName,
+		req.EngineName)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := c.ReplicaRebuildConcurrentSyncLimitGet()
+	if err != nil {
+		return nil, err
+	}
+
+	return &rpc.EngineReplicaRebuildConcurrentSyncLimitGetResponse{
+		Limit: int32(limit),
+	}, nil
+}
+
+func (ops V2DataEngineProxyOps) ReplicaRebuildConcurrentSyncLimitGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaRebuildConcurrentSyncLimitGetResponse, err error) {
+	/* TODO: implement this */
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "not implemented")
+}
