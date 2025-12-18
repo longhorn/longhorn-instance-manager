@@ -33,7 +33,7 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
     chmod +x /usr/local/bin/grpc_health_probe
 
 # Stage 2: build binary from c source code
-FROM registry.suse.com/bci/bci-base:16.0 AS cbuilder
+FROM registry.suse.com/bci/bci-base:15.7 AS cbuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
@@ -45,11 +45,16 @@ RUN zypper -n ref && \
 
 RUN for i in {1..10}; do \
         # Set the slow mirrors in regions like Russia and Belarus to avoid timeouts
-        zypper -n addrepo --refresh "https://download.opensuse.org/repositories/devel:/tools:/compiler/16.0/?AVOID_COUNTRY=ru,by" devel-tools-compiler  && \
+        zypper -n addrepo --refresh "https://download.opensuse.org/repositories/devel:/tools:/compiler/15.6/?AVOID_COUNTRY=ru,by" devel-tools-compiler  && \
         zypper --gpg-auto-import-keys ref && break || sleep 1; \
     done
 
-RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python3 python3-pip fuse3-devel jq nasm
+RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python311 python311-pip fuse3-devel jq nasm
+
+RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
+    ln -sf /usr/bin/python3.11 /usr/local/bin/python3 && \
+    ln -sf /usr/bin/pip3.11 /usr/local/bin/pip3 && \
+    ln -sf /usr/bin/pip3.11 /usr/local/bin/pip
 
 # Install dependencies defined in dep-versions
 RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
@@ -85,7 +90,7 @@ RUN export REPO_OVERRIDE="" && \
     bash /usr/src/dep-versions/scripts/build-nvme-cli.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Stage 3: copy binaries to release image
-FROM registry.suse.com/bci/bci-base:16.0 AS release
+FROM registry.suse.com/bci/bci-base:15.7 AS release
 
 ARG ARCH=amd64
 
@@ -93,29 +98,14 @@ ARG ARCH=amd64
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python3-base device-mapper netcat fuse3-devel logrotate libcmocka-devel
+RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper netcat fuse3-devel logrotate libcmocka-devel
 
-RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh "https://download.opensuse.org/repositories/network:samba:STABLE/16.0/?AVOID_COUNTRY=ru,by" network:samba:STABLE.repo && \
-        zypper --gpg-auto-import-keys ref && break || sleep 1; \
-    done
+RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
+    ln -sf /usr/bin/python3.11 /usr/local/bin/python3
 
 RUN zypper -n install cifs-utils
-
-RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh "https://download.opensuse.org/repositories/Base:/System/openSUSE_Factory/?AVOID_COUNTRY=ru,by" Base:System.repo && \
-        zypper --gpg-auto-import-keys ref && break || sleep 1; \
-    done
-
 RUN zypper -n install sg3_utils iproute2
-
-RUN for i in {1..10}; do \
-        zypper -n addrepo --refresh "https://download.opensuse.org/repositories/system:/snappy/openSUSE_Factory/?AVOID_COUNTRY=ru,by" system:snappy.repo && \
-        zypper --gpg-auto-import-keys ref && break || sleep 1; \
-    done
-
 RUN zypper -n install util-linux-systemd nfs-client nfs4-acl-tools
-
 RUN zypper clean -a
 
 # Install SPDK dependencies
