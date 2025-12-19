@@ -245,11 +245,11 @@ func (ops V1DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 	}
 	for k, v := range recv {
 		resp.Status[k] = &enginerpc.ReplicaRebuildStatusResponse{
-			Error:              v.Error,
-			IsRebuilding:       v.IsRebuilding,
-			Progress:           int32(v.Progress),
-			State:              v.State,
-			FromReplicaAddress: v.FromReplicaAddress,
+			Error:                  v.Error,
+			IsRebuilding:           v.IsRebuilding,
+			Progress:               int32(v.Progress),
+			State:                  v.State,
+			FromReplicaAddressList: v.FromReplicaAddressList,
 		}
 	}
 
@@ -309,11 +309,11 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 			return nil, err
 		}
 		resp.Status[tcpReplicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
-			Error:              shallowCopyResp.Error,
-			IsRebuilding:       shallowCopyResp.TotalState == spdktypes.ProgressStateInProgress,
-			Progress:           int32(shallowCopyResp.TotalProgress),
-			State:              shallowCopyResp.TotalState,
-			FromReplicaAddress: types.AddTcpPrefixForAddress(shallowCopyResp.SrcReplicaAddress),
+			Error:                  shallowCopyResp.Error,
+			IsRebuilding:           shallowCopyResp.TotalState == spdktypes.ProgressStateInProgress,
+			Progress:               int32(shallowCopyResp.TotalProgress),
+			State:                  shallowCopyResp.TotalState,
+			FromReplicaAddressList: []string{types.AddTcpPrefixForAddress(shallowCopyResp.SrcReplicaAddress)},
 		}
 	}
 

@@ -155,11 +155,11 @@ func (c *ProxyClient) ReplicaRebuildingStatus(dataEngine, engineName, volumeName
 	status = make(map[string]*ReplicaRebuildStatus)
 	for k, v := range recv.Status {
 		status[k] = &ReplicaRebuildStatus{
-			Error:              v.Error,
-			IsRebuilding:       v.IsRebuilding,
-			Progress:           int(v.Progress),
-			State:              v.State,
-			FromReplicaAddress: v.FromReplicaAddress,
+			Error:                  v.Error,
+			IsRebuilding:           v.IsRebuilding,
+			Progress:               int(v.Progress),
+			State:                  v.State,
+			FromReplicaAddressList: v.FromReplicaAddressList,
 		}
 	}
 	return status, nil
