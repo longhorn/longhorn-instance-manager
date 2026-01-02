@@ -159,7 +159,7 @@ func (c *ProxyClient) ReplicaRebuildingStatus(dataEngine, engineName, volumeName
 			IsRebuilding:       v.IsRebuilding,
 			Progress:           int(v.Progress),
 			State:              v.State,
-			FromReplicaAddress: v.FromReplicaAddress,
+			FromReplicaAddress: v.FromReplicaAddress, // nolint: staticcheck
 		}
 	}
 	return status, nil
