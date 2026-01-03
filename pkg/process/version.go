@@ -1,8 +1,10 @@
 package process
 
 import (
+	"context"
+
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
-	"golang.org/x/net/context"
+
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
