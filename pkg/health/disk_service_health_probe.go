@@ -1,11 +1,12 @@
 package health
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
+
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/disk"

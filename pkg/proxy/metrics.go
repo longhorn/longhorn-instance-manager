@@ -1,8 +1,9 @@
 package proxy
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
