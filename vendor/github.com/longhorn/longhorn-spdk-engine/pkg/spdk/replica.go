@@ -441,6 +441,15 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 	if err != nil {
 		return err
 	}
+
+	// If SnapshotLvolMap is empty but we have snapshots in SPDK, the replica needs reconstruction
+	// This can happen after a reboot if construct() wasn't called or failed
+	if len(r.SnapshotLvolMap) == 0 && len(newSnapshotLvolMap) > 0 {
+		r.log.Warnf("Replica snapshot lvol map is empty but SPDK has %d snapshots, marking for reconstruction", len(newSnapshotLvolMap))
+		r.State = types.InstanceStatePending
+		return nil
+	}
+
 	if len(r.SnapshotLvolMap) != len(newSnapshotLvolMap) {
 		return fmt.Errorf("replica current active snapshot lvol map length %d is not the same as the latest snapshot lvol map length %d", len(r.SnapshotLvolMap), len(newSnapshotLvolMap))
 	}
@@ -920,7 +929,8 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 	}
 
 	// In case of failed replica reuse/restart being errored by r.validateAndUpdate(), we should make sure the caches are correct.
-	if r.State == types.InstanceStatePending && r.reconstructRequired {
+	// Also handle the case where an existing replica was discovered after reboot but construct() wasn't called yet.
+	if r.State == types.InstanceStatePending && (r.reconstructRequired || len(r.SnapshotLvolMap) == 0) {
 		bdevLvolMap, err := GetBdevLvolMapWithFilter(spdkClient, r.replicaLvolFilter)
 		if err != nil {
 			return nil, err
