@@ -43,12 +43,6 @@ ARG SRC_TAG
 RUN zypper -n ref && \
     zypper update -y
 
-RUN for i in {1..10}; do \
-        # Set the slow mirrors in regions like Russia and Belarus to avoid timeouts
-        zypper -n addrepo --refresh "https://download.opensuse.org/repositories/devel:/tools:/compiler/15.6/?AVOID_COUNTRY=ru,by" devel-tools-compiler  && \
-        zypper --gpg-auto-import-keys ref && break || sleep 1; \
-    done
-
 RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python311 python311-pip fuse3-devel jq nasm
 
 RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
