@@ -368,11 +368,11 @@ func (s *Server) verify() (err error) {
 	if len(s.replicaMap) != len(replicaMap) {
 		logrus.Infof("spdk gRPC server: replica map updated, map count is changed from %d to %d", len(s.replicaMap), len(replicaMap))
 	}
-	s.replicaMap = replicaMap
-	s.backingImageMap = backingImageMap
-	s.UpdateEngineMetrics()
 	s.Unlock()
 
+	// Sync replicas BEFORE updating the replica map to avoid exposing PENDING state replicas to clients.
+	// This prevents a race condition where the controller reads replica state before Sync() completes,
+	// causing it to treat PENDING replicas as running and fail RPC calls when SPDK is not yet ready.
 	for _, r := range replicaMapForSync {
 		err = r.Sync(spdkClient)
 		if err != nil && jsonrpc.IsJSONRPCRespErrorBrokenPipe(err) {
@@ -396,6 +396,14 @@ func (s *Server) verify() (err error) {
 			continue
 		}
 	}
+
+	// Update the maps now that all syncs have completed.
+	// This ensures clients only see replicas/engines/backing images in their final states.
+	s.Lock()
+	s.replicaMap = replicaMap
+	s.backingImageMap = backingImageMap
+	s.UpdateEngineMetrics()
+	s.Unlock()
 
 	// TODO: send update signals if there is a Replica/Replica change
 

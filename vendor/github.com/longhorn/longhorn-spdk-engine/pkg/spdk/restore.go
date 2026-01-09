@@ -226,6 +226,13 @@ func (r *Restore) FinishRestore() {
 
 func (r *Restore) Stop() {
 	r.stopOnce.Do(func() {
+		if r.stopChan == nil {
+			logrus.Infof("Restore stopChan is nil, directly finishing restore for replica %v", r.replica.Name)
+			if err := r.replica.completeBackupRestore(r.spdkClient, false); err != nil {
+				r.log.WithError(err).Error("Failed to complete backup restore during stop")
+			}
+			return
+		}
 		close(r.stopChan)
 	})
 }
