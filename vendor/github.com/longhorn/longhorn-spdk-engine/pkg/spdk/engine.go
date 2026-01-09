@@ -3019,12 +3019,13 @@ func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
 		if err != nil {
 			return err
 		}
-		e.log.Infof("Attaching replica %s with address %s before finishing restoration", replicaName, replicaAddress)
+		e.log.Infof("Attaching replica %s at address %s before finishing restoration", replicaName, replicaAddress)
 		nvmeBdevNameList, err := spdkClient.BdevNvmeAttachController(replicaName, helpertypes.GetNQN(replicaName), replicaIP, replicaPort,
 			spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4,
 			int32(e.ctrlrLossTimeout), replicaReconnectDelaySec, int32(e.fastIOFailTimeoutSec), replicaMultipath)
 		if err != nil {
-			return err
+			e.log.WithError(err).Infof("Failed to attach replica %s at address %s, skipping before finishing restoration", replicaName, replicaAddress)
+			continue
 		}
 
 		if len(nvmeBdevNameList) != 1 {

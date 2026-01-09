@@ -313,7 +313,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20260120061542-61f6a1bcd863
+# github.com/longhorn/backupstore v0.0.0-20260120061542-61f6a1bcd863 => github.com/c3y1huang/backupstore v0.0.0-20260122063307-c2e91b54166b
 ## explicit; go 1.24.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -371,7 +371,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20260121154139-6a289a0eee79
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20260121154139-6a289a0eee79 => github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20260123060153-78f62282a415
 ## explicit; go 1.25.3
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -956,3 +956,5 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/longhorn/longhorn-spdk-engine => github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20260123060153-78f62282a415
+# github.com/longhorn/backupstore => github.com/c3y1huang/backupstore v0.0.0-20260122063307-c2e91b54166b
