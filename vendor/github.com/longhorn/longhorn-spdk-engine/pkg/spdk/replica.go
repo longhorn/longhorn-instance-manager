@@ -3941,7 +3941,9 @@ func (r *Replica) postIncrementalRestoreOperations(spdkClient *spdkclient.Client
 	r.log.Infof("Replacing snapshot %v of the restored volume", restore.SnapshotName)
 
 	if r.restore.State == btypes.ProgressStateCanceled {
-		r.log.Info("Doing nothing for canceled backup restoration")
+		r.log.Info("Backup restoration cancelled, cleaning up any temporary exposures")
+		// Clean up any temporary snapshot exposures that may have been created during restore.
+		r.doCleanupForRebuildingSrc(spdkClient)
 		return nil
 	}
 
@@ -3970,7 +3972,9 @@ func (r *Replica) postIncrementalRestoreOperations(spdkClient *spdkclient.Client
 
 func (r *Replica) postFullRestoreOperations(spdkClient *spdkclient.Client, restore *Restore) error {
 	if r.restore.State == btypes.ProgressStateCanceled {
-		r.log.Info("Doing nothing for canceled backup restoration")
+		r.log.Info("Backup restoration cancelled, cleaning up any temporary exposures")
+		// Clean up any temporary snapshot exposures that may have been created during restore.
+		r.doCleanupForRebuildingSrc(spdkClient)
 		return nil
 	}
 
