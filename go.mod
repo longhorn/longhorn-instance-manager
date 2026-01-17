@@ -2,7 +2,7 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.25.3
 
-toolchain go1.25.5
+toolchain go1.25.6
 
 require (
 	github.com/cockroachdb/errors v1.12.0
@@ -13,7 +13,7 @@ require (
 	github.com/longhorn/longhorn-engine v1.11.0-dev-20251228.0.20260103043829-305878c763cc
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260113094106-e6d061d3b530
 	github.com/longhorn/types v0.0.0-20251228142423-336840fb2fd6
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.19.0
 	google.golang.org/grpc v1.78.0
