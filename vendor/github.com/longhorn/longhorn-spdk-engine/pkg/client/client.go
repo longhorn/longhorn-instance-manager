@@ -660,7 +660,7 @@ func (c *SPDKClient) ReplicaRebuildingDstSetQosLimit(replicaName string, qosLimi
 }
 
 func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string, portCount int32,
-	initiatorAddress, targetAddress string, salvageRequested bool) (*api.Engine, error) {
+	initiatorAddress, targetAddress string, salvageRequested bool, ublkQueueDepth, ublkNumberOfQueue int32) (*api.Engine, error) {
 	if name == "" || volumeName == "" || len(replicaAddressMap) == 0 {
 		return nil, fmt.Errorf("failed to start SPDK engine: missing required parameters")
 	}
@@ -679,6 +679,8 @@ func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize ui
 		TargetAddress:     targetAddress,
 		InitiatorAddress:  initiatorAddress,
 		SalvageRequested:  salvageRequested,
+		UblkQueueDepth:    ublkQueueDepth,
+		UblkNumberOfQueue: ublkNumberOfQueue,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start SPDK engine")
@@ -1328,6 +1330,24 @@ func (c *SPDKClient) DiskDelete(diskName, diskUUID, diskPath, diskDriver string)
 		DiskDriver: diskDriver,
 	})
 	return err
+}
+
+// DiskHealthGet retrieves the health info for a specified disk.
+func (c *SPDKClient) DiskHealthGet(diskName, diskPath, diskDriver string) (*spdkrpc.DiskHealthGetResponse, error) {
+	if diskName == "" {
+		return nil, fmt.Errorf("failed to get disk health: missing required parameter 'disk name'")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	req := &spdkrpc.DiskHealthGetRequest{
+		DiskName:   diskName,
+		DiskDriver: diskDriver,
+		DiskPath:   diskPath,
+	}
+	return client.DiskHealthGet(ctx, req)
 }
 
 func (c *SPDKClient) LogSetLevel(level string) error {
