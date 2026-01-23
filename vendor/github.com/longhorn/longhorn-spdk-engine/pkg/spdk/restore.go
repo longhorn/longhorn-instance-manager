@@ -173,16 +173,6 @@ func (r *Restore) CloseVolumeDev(volDev *os.File) error {
 		return errors.Wrapf(err, "failed to stop NVMe initiator")
 	}
 
-	if !r.replica.IsExposed {
-		r.log.Info("Unexposing lvol bdev")
-		lvolName := r.replica.Name
-		err := r.spdkClient.StopExposeBdev(helpertypes.GetNQN(lvolName))
-		if err != nil {
-			return errors.Wrapf(err, "failed to unexpose lvol bdev %v", lvolName)
-		}
-		r.replica.IsExposed = false
-	}
-
 	return nil
 }
 

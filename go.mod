@@ -4,6 +4,10 @@ go 1.25.3
 
 toolchain go1.25.6
 
+replace github.com/longhorn/longhorn-spdk-engine => github.com/c3y1huang/longhorn-spdk-engine v0.0.0-20260123060153-78f62282a415
+
+replace github.com/longhorn/backupstore => github.com/c3y1huang/backupstore v0.0.0-20260122063307-c2e91b54166b
+
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
