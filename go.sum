@@ -159,8 +159,8 @@ github.com/longhorn/go-iscsi-helper v0.0.0-20260117042347-da1af2aab3fc h1:phRuAF
 github.com/longhorn/go-iscsi-helper v0.0.0-20260117042347-da1af2aab3fc/go.mod h1:mI2S+giOl3KEXUfifgq3l9muPhgBJ8/Oc+XvrCFGMRw=
 github.com/longhorn/go-spdk-helper v0.4.0 h1:xqNJU+Z/L2haAbS7ZhB/5myQGJRiRXwI+Dh+TR3Rc9c=
 github.com/longhorn/go-spdk-helper v0.4.0/go.mod h1:a0HmvTeelKVa2WSd6HkUGJvLPt7iW2yK+8o+Kh2rLow=
-github.com/longhorn/longhorn-engine v1.10.2-dev-20260111.0.20260121134251-d778c09d2026 h1:FQ5S3pdGH9WSxRJUFjaZuXGjiSL9zEPHlJ0CtXJhZFU=
-github.com/longhorn/longhorn-engine v1.10.2-dev-20260111.0.20260121134251-d778c09d2026/go.mod h1:07RFUj5PlHGjdjsAb/dSgbYmDSlWL6Vr1DhHtBrI+AQ=
+github.com/longhorn/longhorn-engine v1.10.2-rc1 h1:r1zDRxO5CEha0si6+z2JNkTDNx7aL5+f+vfvXlgH7rs=
+github.com/longhorn/longhorn-engine v1.10.2-rc1/go.mod h1:07RFUj5PlHGjdjsAb/dSgbYmDSlWL6Vr1DhHtBrI+AQ=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20260121154139-6a289a0eee79 h1:lB2j53nv5eArs5SljvCCFApO05kriM0d4no+NozLYLk=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20260121154139-6a289a0eee79/go.mod h1:l1M42Rr1NDuD6XiJiSV66cNAVIJninWPL8iQ65doBW4=
 github.com/longhorn/sparse-tools v0.0.0-20260117144214-070853c24eda h1:4vXzJtHMIQhr1nz2nPtV8zAgdfstPxFbJkws/oi+JsI=
