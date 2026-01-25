@@ -10,8 +10,8 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20260125095146-1a9767525bb7
 	github.com/longhorn/go-common-libs v0.0.0-20260120075236-9a9dafa0a7ea
 	github.com/longhorn/go-spdk-helper v0.4.0
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260121135150-2cecf5da324c
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260121154139-6a289a0eee79
+	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260125133752-271631d5f0ef
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260123081911-460b2e7c5437
 	github.com/longhorn/types v0.0.0-20260118234234-63598269a247
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
@@ -76,7 +76,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20260117042347-da1af2aab3fc // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20260125095104-688e170e56e5 // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20260117144214-070853c24eda // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
