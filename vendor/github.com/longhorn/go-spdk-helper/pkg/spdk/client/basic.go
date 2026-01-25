@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
@@ -49,7 +49,8 @@ func (c *Client) BdevAioCreate(filePath, name string, blockSize uint64) (bdevNam
 		BlockSize: blockSize,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_aio_create", req)
+	// Long blob recovery time might be needed if the spdk_tgt is not shutdown gracefully.
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_aio_create", req)
 	if err != nil {
 		return "", err
 	}
@@ -566,6 +567,54 @@ func (c *Client) BdevLvolCheckShallowCopy(operationId uint32) (*spdktypes.Shallo
 	return &shallowCopyStatus, nil
 }
 
+// BdevLvolStartDeepCopy start a deep copy of lvol over a given bdev.
+// Only clusters allocated to the lvol or the lvol's ancestors will be written on the bdev.
+// Returns the operation ID needed to check the deep copy status with BdevLvolCheckDeepCopy.
+//
+//	"srcLvolName": Required. UUID or alias of lvol to create a copy from.
+//
+//	"dstBdevName": Required. Name of the bdev that acts as destination for the copy.
+func (c *Client) BdevLvolStartDeepCopy(srcLvolName, dstBdevName string) (operationId uint32, err error) {
+	req := spdktypes.BdevLvolDeepCopyRequest{
+		SrcLvolName: srcLvolName,
+		DstBdevName: dstBdevName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_start_deep_copy", req)
+	if err != nil {
+		return 0, err
+	}
+
+	deepCopy := spdktypes.DeepCopy{}
+	err = json.Unmarshal(cmdOutput, &deepCopy)
+	if err != nil {
+		return 0, err
+	}
+
+	return deepCopy.OperationId, nil
+}
+
+// BdevLvolCheckDeepCopy check the status of a deep copy previously started.
+//
+//	"operationId": Required. Operation ID of the deep copy to check.
+func (c *Client) BdevLvolCheckDeepCopy(operationId uint32) (*spdktypes.DeepCopyStatus, error) {
+	deepCopy := spdktypes.DeepCopy{
+		OperationId: operationId,
+	}
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_check_deep_copy", deepCopy)
+	if err != nil {
+		return nil, err
+	}
+
+	var deepCopyStatus spdktypes.DeepCopyStatus
+	err = json.Unmarshal(cmdOutput, &deepCopyStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deepCopyStatus, nil
+}
+
 // BdevLvolGetFragmap gets fragmap of the specific segment of the logical volume.
 //
 //	"name": Required. UUID or alias of the logical volume.
@@ -719,14 +768,16 @@ func (c *Client) BdevLvolRename(oldName, newName string) (renamed bool, err erro
 
 // BdevRaidCreate constructs a new RAID bdev.
 //
-//	"name": Required. a RAID bdev name rather than an alias or a UUID.
+//		"name": Required. a RAID bdev name rather than an alias or a UUID.
 //
-//	"raidLevel": Required. RAID level. It can be "0"/"raid0", "1"/"raid1", "5f"/"raid5f", or "concat".
+//		"raidLevel": Required. RAID level. It can be "0"/"raid0", "1"/"raid1", "5f"/"raid5f", or "concat".
 //
-//	"stripSizeKb": Required. Strip size in KB. It's valid for raid0 and raid5f only. For other raid levels, this would be modified to 0.
+//		"stripSizeKb": Required. Strip size in KB. It's valid for raid0 and raid5f only. For other raid levels, this would be modified to 0.
 //
-//	"baseBdevs": Required. The bdev list used as the underlying disk of the RAID.
-func (c *Client) BdevRaidCreate(name string, raidLevel spdktypes.BdevRaidLevel, stripSizeKb uint32, baseBdevs []string) (created bool, err error) {
+//		"baseBdevs": Required. The bdev list used as the underlying disk of the RAID.
+//
+//	 	"uuid": Optional. Create the raid bdev with specific uuid
+func (c *Client) BdevRaidCreate(name string, raidLevel spdktypes.BdevRaidLevel, stripSizeKb uint32, baseBdevs []string, uuid string) (created bool, err error) {
 	if raidLevel != spdktypes.BdevRaidLevel0 && raidLevel != spdktypes.BdevRaidLevelRaid0 && raidLevel != spdktypes.BdevRaidLevel5f && raidLevel != spdktypes.BdevRaidLevelRaid5f {
 		stripSizeKb = 0
 	}
@@ -735,6 +786,10 @@ func (c *Client) BdevRaidCreate(name string, raidLevel spdktypes.BdevRaidLevel, 
 		RaidLevel:   raidLevel,
 		StripSizeKb: stripSizeKb,
 		BaseBdevs:   baseBdevs,
+	}
+
+	if uuid != "" {
+		req.UUID = uuid
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_raid_create", req)
@@ -919,7 +974,8 @@ func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, 
 		Multipath:            multipath,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_attach_controller", req)
+	// Long blob recovery time might be needed if the spdk_tgt is not shutdown gracefully.
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_nvme_attach_controller", req)
 	if err != nil {
 		return nil, err
 	}
@@ -957,6 +1013,35 @@ func (c *Client) BdevNvmeGetControllers(name string) (controllerInfoList []spdkt
 	}
 
 	return controllerInfoList, json.Unmarshal(cmdOutput, &controllerInfoList)
+}
+
+// BdevNvmeGetControllerHealthInfo retrieves health information for a specified
+// NVMe bdev controller.
+//
+//	"name": Name of the NVMe controller
+func (c *Client) BdevNvmeGetControllerHealthInfo(name string) (healthInfo spdktypes.BdevNvmeControllerHealthInfo, err error) {
+	req := spdktypes.BdevNvmeGetControllerHealthInfoRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_get_controller_health_info", req)
+	if err != nil {
+		return healthInfo, err
+	}
+
+	if err := json.Unmarshal(cmdOutput, &healthInfo); err != nil {
+		return healthInfo, err
+	}
+
+	// Normalize temperature: SPDK writes temperature as unsigned (Kelvin-273).
+	// When controller reports invalid/0 temperature in Kelvin, subtracting 273
+	// on uint64 underflows and produces a huge number (~2^64 - 273), which is
+	// meaningless in Celsius. Clamp such outliers to -1 to indicate unknown.
+	if healthInfo.TemperatureCelsius > 255 { // Values >255°C are invalid for a uint8 S.M.A.R.T. temperature.
+		healthInfo.TemperatureCelsius = spdktypes.UnknownTemperature
+	}
+
+	return healthInfo, nil
 }
 
 // BdevNvmeSetOptions sets global parameters for all bdev NVMe.
@@ -1398,7 +1483,8 @@ func (c *Client) BdevVirtioAttachController(name, trtype, traddr, devType string
 		DevType: devType,
 	}
 
-	cmdOutput, err := c.jsonCli.SendCommand("bdev_virtio_attach_controller", req)
+	// Long blob recovery time might be needed if the spdk_tgt is not shutdown gracefully.
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_virtio_attach_controller", req)
 	if err != nil {
 		return nil, err
 	}
@@ -1486,4 +1572,42 @@ func (c *Client) BdevSetQosLimit(bdevName string, rwIOsPerSec, rwMBPerSec, rMBPe
 	}
 
 	return nil
+}
+
+// SpdkKillInstance sends a signal to the application.
+func (c *Client) SpdkKillInstance(sig string) (result bool, err error) {
+	req := spdktypes.SpdkKillInstanceRequest{
+		SigName: sig,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("spdk_kill_instance", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// BdevNvmeSetHotplug enables or disables the NVMe hotplug poller.
+//
+// "enable": true to enable hotplug, false to disable.
+//
+// "periodUs": Polling period in microseconds.
+func (c *Client) BdevNvmeSetHotplug(enable bool, periodUs uint64) (bool, error) {
+	params := map[string]interface{}{
+		"enable":    enable,
+		"period_us": periodUs,
+	}
+
+	var result bool
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_set_hotplug", params)
+	if err != nil {
+		return false, err
+	}
+
+	if err := json.Unmarshal(cmdOutput, &result); err != nil {
+		return false, err
+	}
+
+	return result, nil
 }
