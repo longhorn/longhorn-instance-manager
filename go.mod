@@ -6,7 +6,7 @@ toolchain go1.25.6
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260120061542-61f6a1bcd863
+	github.com/longhorn/backupstore v0.0.0-20260125095146-1a9767525bb7
 	github.com/longhorn/go-common-libs v0.0.0-20260120075236-9a9dafa0a7ea
 	github.com/longhorn/go-spdk-helper v0.4.0
 	github.com/longhorn/longhorn-engine v1.10.2-rc1
