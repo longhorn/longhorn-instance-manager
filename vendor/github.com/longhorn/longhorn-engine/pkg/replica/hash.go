@@ -15,14 +15,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/sparse-tools/sparse"
+
 	xattrType "github.com/longhorn/sparse-tools/types"
 
 	"github.com/longhorn/longhorn-engine/pkg/types"
+
 	diskutil "github.com/longhorn/longhorn-engine/pkg/util/disk"
 )
 
@@ -31,6 +33,8 @@ const (
 
 	FileLockDirectory = "/host/var/lib/longhorn/.lock"
 	HashLockFileName  = "hash"
+
+	checkInterval = 10 * 1024 * 1024
 )
 
 type SnapshotHashStatus struct {
@@ -410,7 +414,7 @@ func hashSnapshot(ctx context.Context, snapshotName string) (string, error) {
 		return "", err
 	}
 
-	if err := dataCopy(ctx, h, f); err != nil {
+	if err := dataCopyWithExistenceCheck(ctx, h, f, path); err != nil {
 		return "", err
 	}
 
@@ -423,15 +427,31 @@ func (rf readerFunc) Read(p []byte) (n int, err error) {
 	return rf(p)
 }
 
-func dataCopy(ctx context.Context, dst io.Writer, src io.Reader) error {
+func dataCopyWithExistenceCheck(ctx context.Context, dst io.Writer, src io.Reader, path string) error {
+	var readBytes int64
+
 	_, err := io.Copy(dst, readerFunc(func(p []byte) (int, error) {
 		select {
 		case <-ctx.Done():
 			return 0, ctx.Err()
 		default:
-			return src.Read(p)
+			n, err := src.Read(p)
+			readBytes += int64(n)
+
+			// Check file existence every checkInterval bytes read
+			if readBytes >= checkInterval {
+				readBytes = 0
+				if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
+					return 0, errors.Errorf("file %v no longer exists", path)
+				} else if statErr != nil {
+					return 0, errors.Wrapf(statErr, "failed to stat file %v", path)
+				}
+			}
+
+			return n, err
 		}
 	}))
+
 	return err
 }
 

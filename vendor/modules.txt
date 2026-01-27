@@ -275,8 +275,8 @@ github.com/go-openapi/jsonreference/internal
 # github.com/go-openapi/swag v0.23.0
 ## explicit; go 1.20
 github.com/go-openapi/swag
-# github.com/gofrs/flock v0.12.1
-## explicit; go 1.21.0
+# github.com/gofrs/flock v0.13.0
+## explicit; go 1.24.0
 github.com/gofrs/flock
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
@@ -313,7 +313,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20260125095146-1a9767525bb7
+# github.com/longhorn/backupstore v0.0.0-20260127053626-a9fd84935804
 ## explicit; go 1.24.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -342,7 +342,7 @@ github.com/longhorn/go-common-libs/sync
 github.com/longhorn/go-common-libs/sys
 github.com/longhorn/go-common-libs/types
 github.com/longhorn/go-common-libs/utils
-# github.com/longhorn/go-iscsi-helper v0.0.0-20260117042347-da1af2aab3fc
+# github.com/longhorn/go-iscsi-helper v0.0.0-20260125095104-688e170e56e5
 ## explicit; go 1.24.0
 github.com/longhorn/go-iscsi-helper/iscsi
 github.com/longhorn/go-iscsi-helper/iscsidev
@@ -358,8 +358,8 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.10.2-rc1.0.20260125094716-4cafd1670329
-## explicit; go 1.24.0
+# github.com/longhorn/longhorn-engine v1.12.0-dev-20260125.0.20260127112408-71ee0e8d8c7e
+## explicit; go 1.25.0
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/interceptor
@@ -926,8 +926,8 @@ k8s.io/kube-openapi/pkg/spec3
 k8s.io/kube-openapi/pkg/util
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/validation/spec
-# k8s.io/mount-utils v0.34.3
-## explicit; go 1.24.0
+# k8s.io/mount-utils v0.35.0
+## explicit; go 1.25.0
 k8s.io/mount-utils
 # k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 ## explicit; go 1.18
