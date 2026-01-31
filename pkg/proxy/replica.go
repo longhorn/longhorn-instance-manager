@@ -600,6 +600,17 @@ func (ops V1DataEngineProxyOps) ReplicaRebuildConcurrentSyncLimitSet(ctx context
 		return nil, err
 	}
 
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
+
 	if err = c.ReplicaRebuildConcurrentSyncLimitSet(int(req.Limit)); err != nil {
 		return nil, err
 	}
@@ -627,6 +638,17 @@ func (ops V1DataEngineProxyOps) ReplicaRebuildConcurrentSyncLimitGet(ctx context
 	if err != nil {
 		return nil, err
 	}
+
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.Address,
+				"engineName": req.EngineName,
+				"volumeName": req.VolumeName,
+				"dataEngine": req.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
 
 	limit, err := c.ReplicaRebuildConcurrentSyncLimitGet()
 	if err != nil {
