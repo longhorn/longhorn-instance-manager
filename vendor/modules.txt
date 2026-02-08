@@ -358,7 +358,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.12.0-dev-20260125.0.20260127112408-71ee0e8d8c7e
+# github.com/longhorn/longhorn-engine v1.12.0-dev-20260208
 ## explicit; go 1.25.0
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
