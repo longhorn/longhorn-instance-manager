@@ -2,7 +2,7 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.25.3
 
-toolchain go1.25.7
+toolchain go1.26.0
 
 require (
 	github.com/cockroachdb/errors v1.12.0
@@ -16,7 +16,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.19.0
-	google.golang.org/grpc v1.78.0
+	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.35.1
@@ -104,12 +104,12 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
 	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/oauth2 v0.32.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
