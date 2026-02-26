@@ -7,8 +7,8 @@ toolchain go1.26.0
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260127053626-a9fd84935804
-	github.com/longhorn/go-common-libs v0.0.0-20260120075236-9a9dafa0a7ea
+	github.com/longhorn/backupstore v0.0.0-20260225123158-39d1f7ecbb74
+	github.com/longhorn/go-common-libs v0.0.0-20260223034035-98eef598b5bd
 	github.com/longhorn/go-spdk-helper v0.4.1-0.20260206121825-8c1c33c29f35
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20260208
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260209040142-cfe6a002cffe
@@ -28,26 +28,27 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.39.6 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.1 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.31.20 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.24 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.13 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.41.2 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.5 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.32.10 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.10 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.18 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.19.8 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.1.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.13 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.13 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.1.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.18 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.18 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.8.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.13 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.88.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.30.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.40.2 // indirect
-	github.com/aws/smithy-go v1.23.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.18 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.18 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.18 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.0.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.30.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.41.7 // indirect
+	github.com/aws/smithy-go v1.24.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.16.0 // indirect
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 // indirect
@@ -102,7 +103,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
+	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
