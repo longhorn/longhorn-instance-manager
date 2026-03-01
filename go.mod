@@ -10,7 +10,7 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20260228145020-4b02fe818ebd
 	github.com/longhorn/go-common-libs v0.0.0-20260223034035-98eef598b5bd
 	github.com/longhorn/go-spdk-helper v0.4.1-0.20260228044657-faccf3d22332
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20260208
+	github.com/longhorn/longhorn-engine v1.12.0-dev-20260222
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260209040142-cfe6a002cffe
 	github.com/longhorn/types v0.0.0-20260118234234-63598269a247
 	github.com/sirupsen/logrus v1.9.4
@@ -106,7 +106,7 @@ require (
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
@@ -114,9 +114,9 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.35.0 // indirect
-	k8s.io/apimachinery v0.35.0 // indirect
-	k8s.io/client-go v0.35.0 // indirect
+	k8s.io/api v0.35.1 // indirect
+	k8s.io/apimachinery v0.35.1 // indirect
+	k8s.io/client-go v0.35.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
