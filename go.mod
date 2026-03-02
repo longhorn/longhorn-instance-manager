@@ -9,14 +9,14 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260304025831-03d9bbc06a99
 	github.com/longhorn/go-common-libs v0.0.0-20260223034035-98eef598b5bd
-	github.com/longhorn/go-spdk-helper v0.4.1-0.20260206121825-8c1c33c29f35
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260127130923-10b074f5bf78
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260209040142-cfe6a002cffe
-	github.com/longhorn/types v0.0.0-20260118234234-63598269a247
+	github.com/longhorn/go-spdk-helper v0.4.1-0.20260228044657-faccf3d22332
+	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
+	github.com/longhorn/types v0.0.0-20260304051809-1002ef5005c7
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.19.0
-	google.golang.org/grpc v1.78.0
+	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.35.2
@@ -105,18 +105,18 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/oauth2 v0.32.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.35.0 // indirect
-	k8s.io/apimachinery v0.35.0 // indirect
-	k8s.io/client-go v0.35.0 // indirect
+	k8s.io/api v0.35.2 // indirect
+	k8s.io/apimachinery v0.35.2 // indirect
+	k8s.io/client-go v0.35.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
