@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"sort"
 	"strconv"
 
 	"github.com/cockroachdb/errors"
@@ -16,6 +17,7 @@ import (
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
+	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
@@ -372,48 +374,79 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
 	}
 
-	replicaName, replicaAddress := "", ""
+	type replicaCloneStatusEntry struct {
+		name    string
+		address string
+		status  *spdkapi.ReplicaSnapshotCloneDstStatus
+	}
+
+	replicaCloneStatusEntries := make([]replicaCloneStatusEntry, 0, len(recv.ReplicaModeMap))
+
+	// Query clone status from all RW replicas so we can prefer the one that
+	// actually reports a valid clone state, and keep the selection deterministic.
 	for rName, mode := range recv.ReplicaModeMap {
 		if mode != spdktypes.ModeRW {
 			continue
 		}
-		address, ok := recv.ReplicaAddressMap[rName]
-		if !ok {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get replica address for %v", replicaName)
-		}
-		replicaName = rName
-		replicaAddress = address
-		break
-	}
-	if replicaName == "" || replicaAddress == "" {
-		return nil, grpcstatus.Error(grpccodes.Internal, "cannot find a RW replica")
-	}
 
-	replicaClient, err := getSPDKClientFromAddress(replicaAddress)
-	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, "cannot ger client for replica %v", replicaName)
-	}
-	defer func() {
+		replicaAddress, ok := recv.ReplicaAddressMap[rName]
+		if !ok {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get replica address for %v", rName)
+		}
+
+		replicaClient, err := getSPDKClientFromAddress(replicaAddress)
+		if err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "cannot get client for replica %v", rName)
+		}
+
+		status, err := replicaClient.ReplicaSnapshotCloneDstStatusCheck(rName)
 		if closeErr := replicaClient.Close(); closeErr != nil {
 			log.WithError(closeErr).Warn("Failed to close SPDK client")
 		}
-	}()
+		if err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get clone status for %v: %v", rName, err)
+		}
 
-	status, err := replicaClient.ReplicaSnapshotCloneDstStatusCheck(replicaName)
-	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get clone status for %v: %v", replicaName, err)
+		replicaCloneStatusEntries = append(replicaCloneStatusEntries, replicaCloneStatusEntry{
+			name:    rName,
+			status:  status,
+			address: replicaAddress,
+		})
 	}
+
+	if len(replicaCloneStatusEntries) == 0 {
+		return nil, grpcstatus.Error(grpccodes.Internal, "cannot get clone status from any replica")
+	}
+
+	// Prefer replicas that have clone state. If both have (or both don't have)
+	// state, fall back to replica name to keep the selection deterministic.
+	sort.Slice(replicaCloneStatusEntries, func(i, j int) bool {
+		iHasState := replicaCloneStatusEntries[i].status != nil && replicaCloneStatusEntries[i].status.State != ""
+		jHasState := replicaCloneStatusEntries[j].status != nil && replicaCloneStatusEntries[j].status.State != ""
+
+		switch {
+		case iHasState && !jHasState:
+			return true
+		case !iHasState && jHasState:
+			return false
+		default:
+			return replicaCloneStatusEntries[i].name < replicaCloneStatusEntries[j].name
+		}
+	})
+
+	replicaStatus := replicaCloneStatusEntries[0]
+
 	resp = &rpc.EngineSnapshotCloneStatusProxyResponse{
 		Status: map[string]*enginerpc.SnapshotCloneStatusResponse{},
 	}
-	tcpReplicaAddress := types.AddTcpPrefixForAddress(replicaAddress)
+	tcpReplicaAddress := types.AddTcpPrefixForAddress(replicaStatus.address)
 	resp.Status[tcpReplicaAddress] = &enginerpc.SnapshotCloneStatusResponse{
-		IsCloning:          status.IsCloning,
-		Error:              status.Error,
-		Progress:           int32(status.Progress),
-		State:              status.State,
-		FromReplicaAddress: status.SrcReplicaAddress,
-		SnapshotName:       status.SnapshotName,
+		IsCloning:          replicaStatus.status.IsCloning,
+		Error:              replicaStatus.status.Error,
+		Progress:           int32(replicaStatus.status.Progress),
+		State:              replicaStatus.status.State,
+		FromReplicaAddress: replicaStatus.status.SrcReplicaAddress,
+		SnapshotName:       replicaStatus.status.SnapshotName,
 	}
 
 	return resp, nil
