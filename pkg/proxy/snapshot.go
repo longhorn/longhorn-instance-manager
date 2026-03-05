@@ -391,20 +391,32 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 
 		replicaAddress, ok := recv.ReplicaAddressMap[rName]
 		if !ok {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get replica address for %v", rName)
+			log.WithField("replicaName", rName).Debug("Failed to get replica address")
+			continue
 		}
 
 		replicaClient, err := getSPDKClientFromAddress(replicaAddress)
 		if err != nil {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, "cannot get client for replica %v", rName)
+			log.WithError(err).
+				WithField("replicaName", rName).
+				WithField("replicaAddress", replicaAddress).
+				Debug("Cannot get client for replica")
+			continue
 		}
 
 		status, err := replicaClient.ReplicaSnapshotCloneDstStatusCheck(rName)
 		if closeErr := replicaClient.Close(); closeErr != nil {
-			log.WithError(closeErr).Warn("Failed to close SPDK client")
+			log.WithError(closeErr).
+				WithField("replicaName", rName).
+				WithField("replicaAddress", replicaAddress).
+				Warn("Failed to close SPDK client")
 		}
 		if err != nil {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get clone status for %v: %v", rName, err)
+			log.WithError(err).
+				WithField("replicaName", rName).
+				WithField("replicaAddress", replicaAddress).
+				Debug("Failed to get clone status for replica")
+			continue
 		}
 
 		replicaCloneStatusEntries = append(replicaCloneStatusEntries, replicaCloneStatusEntry{
