@@ -1,14 +1,12 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.24.0
-
-toolchain go1.24.6
+go 1.25.3
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260127053626-a9fd84935804
-	github.com/longhorn/go-common-libs v0.0.0-20260120075236-9a9dafa0a7ea
-	github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838
+	github.com/longhorn/go-common-libs v0.0.0-20260223034035-98eef598b5bd
+	github.com/longhorn/go-spdk-helper v0.5.0
 	github.com/longhorn/longhorn-engine v1.9.2
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555
 	github.com/longhorn/types v0.0.0-20260118234234-63598269a247
@@ -103,7 +101,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
+	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
