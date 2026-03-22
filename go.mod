@@ -10,7 +10,7 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20260306105805-ea08687ca2cd
 	github.com/longhorn/go-common-libs v0.0.0-20260318015712-f76eda5ec3f6
 	github.com/longhorn/go-spdk-helper v0.5.0
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20260308
+	github.com/longhorn/longhorn-engine v1.12.0-dev-20260322
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
 	github.com/longhorn/types v0.0.0-20260304051809-1002ef5005c7
 	github.com/sirupsen/logrus v1.9.4
@@ -77,7 +77,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20260125095104-688e170e56e5 // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20260306105756-948eb7e165af // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20260117144214-070853c24eda // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
@@ -106,7 +106,7 @@ require (
 	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
