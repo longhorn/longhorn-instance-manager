@@ -7,6 +7,8 @@ ARG SRC_BRANCH=master
 ARG SRC_TAG
 ARG CACHEBUST
 
+ENV GOLANGCI_LINT_VERSION=v2.11.4
+
 ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO DRONE_REPO DRONE_PULL_REQUEST DRONE_COMMIT_REF SKIP_TASKS
@@ -35,7 +37,9 @@ RUN zypper -n install cmake wget curl git less file \
     rm -rf /var/cache/zypp/*
 
 # Install golanci-lint
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
+RUN curl -fsSL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh -o /tmp/install.sh \
+    && chmod +x /tmp/install.sh \
+    && /tmp/install.sh -b /usr/local/bin ${GOLANGCI_LINT_VERSION}
 
 # If TAG is explicitly set and exists in the repo, switch to the tag
 RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
