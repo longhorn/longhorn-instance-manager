@@ -1,5 +1,4 @@
 PROJECT := longhorn-instance-manager
-TARGETS := $(shell ls scripts)
 MACHINE := longhorn
 # Define the target platforms that can be used across the ecosystem.
 # Note that what would actually be used for a given project will be
@@ -11,15 +10,28 @@ export SRC_TAG := $(shell git tag --points-at HEAD | head -n 1)
 
 export CACHEBUST := $(shell date +%s)
 
-.dapper:
-	@echo Downloading dapper
-	@curl -sL https://releases.rancher.com/dapper/latest/dapper-`uname -s`-`uname -m` > .dapper.tmp
-	@@chmod +x .dapper.tmp
-	@./.dapper.tmp -v
-	@mv .dapper.tmp .dapper
+.PHONY: build validate test ci package deps buildx-machine workflow-image-build-push workflow-image-build-push-secure workflow-manifest-image
 
-$(TARGETS): .dapper
-	./.dapper $@
+build:
+	docker buildx build --target build-artifacts --output type=local,dest=. -f Dockerfile .
+
+validate:
+	docker buildx build --target validate -f Dockerfile .
+
+test:
+	docker buildx build --target test-artifacts --output type=local,dest=. -f Dockerfile .
+
+ci:
+	docker buildx build --target ci-artifacts --output type=local,dest=. -f Dockerfile .
+ifeq ($(filter package,$(SKIP_TASKS)),)
+	bash scripts/package
+endif
+
+package:
+	bash scripts/package
+
+deps:
+	docker buildx build --target base -f Dockerfile .
 
 .PHONY: buildx-machine
 buildx-machine:
@@ -43,14 +55,4 @@ workflow-manifest-image:
 	  ${REPO}/longhorn-instance-manager:${TAG}-amd64 \
 	  ${REPO}/longhorn-instance-manager:${TAG}-arm64
 
-trash: .dapper
-	./.dapper -m bind trash
-
-trash-keep: .dapper
-	./.dapper -m bind trash -k
-
-deps: trash
-
 .DEFAULT_GOAL := ci
-
-.PHONY: $(TARGETS)

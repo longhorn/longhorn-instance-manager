@@ -3,8 +3,6 @@
 *.dll
 *.so
 *.dylib
-.dapper
-Dockerfile.dapper[0-9]*
 
 # Editors
 .idea
@@ -21,3 +19,4 @@ Dockerfile.dapper[0-9]*
 
 # Misc
 bin/
+cscope*
