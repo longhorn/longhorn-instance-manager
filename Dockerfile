@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.22.0
 FROM registry.suse.com/bci/golang:1.26@sha256:aae322c91560531607de23eff4c52fb7584fa42697f08097c03ff219495adf02 AS base
 
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 ARG http_proxy
 ARG https_proxy
 ARG SRC_BRANCH=master
@@ -15,10 +15,10 @@ ENV GOFLAGS=-mod=vendor
 ENV SRC_BRANCH=${SRC_BRANCH}
 ENV SRC_TAG=${SRC_TAG}
 
+# Install packages
 RUN zypper -n ref && \
-    zypper update -y
-
-RUN zypper -n install cmake wget curl git less file \
+    zypper update -y && \
+    zypper -n install cmake wget curl git less file \
     libglib-2_0-0 libkmod-devel libnl3-devel linux-glibc-devel pkg-config \
     psmisc tox qemu-tools fuse python3-devel zlib-devel zlib-devel-static \
     bash-completion rdma-core-devel libibverbs xsltproc docbook-xsl-stylesheets \
@@ -26,6 +26,7 @@ RUN zypper -n install cmake wget curl git less file \
     libdevmapper1_03 iproute2 jq gcc gcc-c++ automake gettext gettext-tools libtool && \
     rm -rf /var/cache/zypp/*
 
+# Install golangci-lint
 RUN curl -fsSL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh -o /tmp/install.sh \
     && chmod +x /tmp/install.sh \
     && /tmp/install.sh -b /usr/local/bin ${GOLANGCI_LINT_VERSION}
@@ -63,4 +64,3 @@ COPY --from=test /go/src/github.com/longhorn/longhorn-instance-manager/coverage.
 FROM scratch AS ci-artifacts
 COPY --from=build /go/src/github.com/longhorn/longhorn-instance-manager/bin/ /bin/
 COPY --from=validate /validate.done /validate.done
-COPY --from=test /go/src/github.com/longhorn/longhorn-instance-manager/coverage.out /coverage.out
