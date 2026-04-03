@@ -4,6 +4,12 @@
 *.so
 *.dylib
 
+# build files
+/.dapper
+bin/
+cscope*
+validate.done
+
 # Editors
 .idea
 .vscode
@@ -16,7 +22,3 @@
 
 # vim temp file
 .*.swp
-
-# Misc
-bin/
-cscope*

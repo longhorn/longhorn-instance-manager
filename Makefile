@@ -10,8 +10,7 @@ export SRC_TAG := $(shell git tag --points-at HEAD | head -n 1)
 
 export CACHEBUST := $(shell date +%s)
 
-.PHONY: build validate test ci package deps buildx-machine workflow-image-build-push workflow-image-build-push-secure workflow-manifest-image
-
+.PHONY: build validate test ci package
 build:
 	docker buildx build --target build-artifacts --output type=local,dest=. -f Dockerfile .
 
@@ -23,15 +22,9 @@ test:
 
 ci:
 	docker buildx build --target ci-artifacts --output type=local,dest=. -f Dockerfile .
-ifeq ($(filter package,$(SKIP_TASKS)),)
-	bash scripts/package
-endif
 
 package:
 	bash scripts/package
-
-deps:
-	docker buildx build --target base -f Dockerfile .
 
 .PHONY: buildx-machine
 buildx-machine:

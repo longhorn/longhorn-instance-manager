@@ -59,8 +59,11 @@ jobs:
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     # Build binaries
-    - name: Run make ci
-      run: SKIP_TASKS=package make ci
+    - name: Run ci
+      run: make ci
+
+    - name: Run test
+      run: make test
 
     - uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
       with:
@@ -87,8 +90,11 @@ jobs:
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     # Build binaries
-    - name: Run make ci
-      run: sudo SKIP_TASKS=package make ci
+    - name: Run ci
+      run: sudo make ci
+
+    - name: Run test
+      run: sudo make test
 
     - name: Upload binaries
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
