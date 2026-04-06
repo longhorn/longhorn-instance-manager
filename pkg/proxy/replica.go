@@ -80,23 +80,23 @@ func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
-				"serviceURL":     req.ProxyEngineRequest.Address,
-				"engineName":     req.ProxyEngineRequest.EngineName,
-				"volumeName":     req.ProxyEngineRequest.VolumeName,
-				"replicaName":    req.ReplicaName,
-				"replicaAddress": req.ReplicaAddress,
-				"restore":        req.Restore,
-				"size":           req.Size,
-				"currentSize":    req.CurrentSize,
-				"fastSync":       req.FastSync,
-				"localSync":      req.LocalSync,
+				"serviceURL":         req.ProxyEngineRequest.Address,
+				"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+				"volumeName":         req.ProxyEngineRequest.VolumeName,
+				"replicaName":        req.ReplicaName,
+				"replicaAddress":     req.ReplicaAddress,
+				"restore":            req.Restore,
+				"size":               req.Size,
+				"currentSize":        req.CurrentSize,
+				"fastSync":           req.FastSync,
+				"localSync":          req.LocalSync,
 			}).WithError(closeErr).Warn("Failed to close SPDK client")
 		}
 	}()
 
 	replicaAddress := strings.TrimPrefix(req.ReplicaAddress, "tcp://")
 
-	err = c.EngineReplicaAdd(req.ProxyEngineRequest.EngineName, req.ReplicaName, replicaAddress, req.FastSync)
+	err = c.EngineFrontendReplicaAdd(req.ProxyEngineRequest.EngineFrontendName, req.ReplicaName, replicaAddress, req.FastSync)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to add replica %v: %v", replicaAddress, err)
 	}

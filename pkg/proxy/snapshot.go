@@ -27,10 +27,11 @@ import (
 
 func (p *Proxy) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL": req.ProxyEngineRequest.Address,
-		"engineName": req.ProxyEngineRequest.EngineName,
-		"volumeName": req.ProxyEngineRequest.VolumeName,
-		"dataEngine": req.ProxyEngineRequest.DataEngine,
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"dataEngine":         req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Snapshotting volume: snapshot %v", req.SnapshotVolume.Name)
 
@@ -78,10 +79,10 @@ func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
-				"serviceURL": req.ProxyEngineRequest.Address,
-				"engineName": req.ProxyEngineRequest.EngineName,
-				"volumeName": req.ProxyEngineRequest.VolumeName,
-				"dataEngine": req.ProxyEngineRequest.DataEngine,
+				"serviceURL":         req.ProxyEngineRequest.Address,
+				"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+				"volumeName":         req.ProxyEngineRequest.VolumeName,
+				"dataEngine":         req.ProxyEngineRequest.DataEngine,
 			}).WithError(closeErr).Warn("Failed to close SPDK client")
 		}
 	}()
@@ -91,7 +92,7 @@ func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 		snapshotName = util.UUID()
 	}
 
-	_, err = c.EngineSnapshotCreate(req.ProxyEngineRequest.EngineName, snapshotName)
+	_, err = c.EngineFrontendSnapshotCreate(req.ProxyEngineRequest.EngineFrontendName, snapshotName)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create snapshot %v: %v", snapshotName, err)
 	}
@@ -466,10 +467,11 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 
 func (p *Proxy) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL": req.ProxyEngineRequest.Address,
-		"engineName": req.ProxyEngineRequest.EngineName,
-		"volumeName": req.ProxyEngineRequest.VolumeName,
-		"dataEngine": req.ProxyEngineRequest.DataEngine,
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"dataEngine":         req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Reverting snapshot %v", req.Name)
 
@@ -512,15 +514,15 @@ func (ops V2DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.Eng
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
-				"serviceURL": req.ProxyEngineRequest.Address,
-				"engineName": req.ProxyEngineRequest.EngineName,
-				"volumeName": req.ProxyEngineRequest.VolumeName,
-				"dataEngine": req.ProxyEngineRequest.DataEngine,
+				"serviceURL":         req.ProxyEngineRequest.Address,
+				"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+				"volumeName":         req.ProxyEngineRequest.VolumeName,
+				"dataEngine":         req.ProxyEngineRequest.DataEngine,
 			}).WithError(closeErr).Warn("Failed to close SPDK client")
 		}
 	}()
 
-	err = c.EngineSnapshotRevert(req.ProxyEngineRequest.EngineName, req.Name)
+	err = c.EngineFrontendSnapshotRevert(req.ProxyEngineRequest.EngineFrontendName, req.Name)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create snapshot %v: %v", req.Name, err)
 	}
@@ -530,10 +532,11 @@ func (ops V2DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.Eng
 
 func (p *Proxy) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL": req.ProxyEngineRequest.Address,
-		"engineName": req.ProxyEngineRequest.EngineName,
-		"volumeName": req.ProxyEngineRequest.VolumeName,
-		"dataEngine": req.ProxyEngineRequest.DataEngine,
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"dataEngine":         req.ProxyEngineRequest.DataEngine,
 	})
 	log.Info("Purging snapshots")
 
@@ -566,16 +569,16 @@ func (ops V2DataEngineProxyOps) SnapshotPurge(ctx context.Context, req *rpc.Engi
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
-				"serviceURL": req.ProxyEngineRequest.Address,
-				"engineName": req.ProxyEngineRequest.EngineName,
-				"volumeName": req.ProxyEngineRequest.VolumeName,
-				"dataEngine": req.ProxyEngineRequest.DataEngine,
+				"serviceURL":         req.ProxyEngineRequest.Address,
+				"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+				"volumeName":         req.ProxyEngineRequest.VolumeName,
+				"dataEngine":         req.ProxyEngineRequest.DataEngine,
 			}).WithError(closeErr).Warn("Failed to close SPDK client")
 		}
 	}()
 
 	// For v2 Data Engine, snapshot purge is no longer a time-consuming operation
-	err = c.EngineSnapshotPurge(req.ProxyEngineRequest.EngineName)
+	err = c.EngineFrontendSnapshotPurge(req.ProxyEngineRequest.EngineFrontendName)
 	return &emptypb.Empty{}, nil
 }
 
@@ -630,10 +633,11 @@ func (ops V2DataEngineProxyOps) SnapshotPurgeStatus(ctx context.Context, req *rp
 
 func (p *Proxy) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
 	log := logrus.WithFields(logrus.Fields{
-		"serviceURL": req.ProxyEngineRequest.Address,
-		"engineName": req.ProxyEngineRequest.EngineName,
-		"volumeName": req.ProxyEngineRequest.VolumeName,
-		"dataEngine": req.ProxyEngineRequest.DataEngine,
+		"serviceURL":         req.ProxyEngineRequest.Address,
+		"engineName":         req.ProxyEngineRequest.EngineName,
+		"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+		"volumeName":         req.ProxyEngineRequest.VolumeName,
+		"dataEngine":         req.ProxyEngineRequest.DataEngine,
 	})
 	log.Infof("Removing snapshots %v", req.Names)
 
@@ -672,17 +676,17 @@ func (ops V2DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.Eng
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
-				"serviceURL": req.ProxyEngineRequest.Address,
-				"engineName": req.ProxyEngineRequest.EngineName,
-				"volumeName": req.ProxyEngineRequest.VolumeName,
-				"dataEngine": req.ProxyEngineRequest.DataEngine,
+				"serviceURL":         req.ProxyEngineRequest.Address,
+				"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+				"volumeName":         req.ProxyEngineRequest.VolumeName,
+				"dataEngine":         req.ProxyEngineRequest.DataEngine,
 			}).WithError(closeErr).Warn("Failed to close SPDK client")
 		}
 	}()
 
 	var lastErr error
 	for _, name := range req.Names {
-		err = c.EngineSnapshotDelete(req.ProxyEngineRequest.EngineName, name)
+		err = c.EngineFrontendSnapshotDelete(req.ProxyEngineRequest.EngineFrontendName, name)
 		if err != nil {
 			lastErr = err
 			logrus.WithError(err).Warnf("Failed to delete snapshot %s", name)
