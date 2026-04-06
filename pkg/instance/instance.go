@@ -171,12 +171,18 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap,
-			req.Spec.PortCount, req.Spec.InitiatorAddress, req.Spec.TargetAddress, req.Spec.SpdkInstanceSpec.SalvageRequested, req.Spec.SpdkInstanceSpec.UblkQueueDepth,
-			req.Spec.SpdkInstanceSpec.UblkNumberOfQueue)
+			req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested)
 		if err != nil {
 			return nil, err
 		}
 		return engineResponseToInstanceResponse(engine), nil
+	case types.InstanceTypeEngineFrontend:
+		engineFrontend, err := c.EngineFrontendCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.EngineName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
+			req.Spec.TargetAddress, int32(req.Spec.SpdkInstanceSpec.UblkQueueDepth), int32(req.Spec.SpdkInstanceSpec.UblkNumberOfQueue))
+		if err != nil {
+			return nil, err
+		}
+		return engineFrontendResponseToInstanceResponse(engineFrontend), nil
 	case types.InstanceTypeReplica:
 		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName)
 		if err != nil {
@@ -259,6 +265,8 @@ func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		if req.CleanupRequired {
 			err = c.EngineDelete(req.Name)
 		}
+	case types.InstanceTypeEngineFrontend:
+		err = c.EngineFrontendDelete(req.Name)
 	case types.InstanceTypeReplica:
 		err = c.ReplicaDelete(req.Name, req.CleanupRequired)
 	default:
@@ -339,6 +347,12 @@ func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 			return nil, err
 		}
 		return engineResponseToInstanceResponse(engine), nil
+	case types.InstanceTypeEngineFrontend:
+		engineFrontend, err := c.EngineFrontendGet(req.Name)
+		if err != nil {
+			return nil, err
+		}
+		return engineFrontendResponseToInstanceResponse(engineFrontend), nil
 	case types.InstanceTypeReplica:
 		replica, err := c.ReplicaGet(req.Name)
 		if err != nil {
@@ -424,6 +438,14 @@ func (ops V2DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 	}
 	for _, engine := range engines {
 		instances[engine.Name] = engineResponseToInstanceResponse(engine)
+	}
+
+	engineFrontends, err := c.EngineFrontendList()
+	if err != nil {
+		return err
+	}
+	for _, engineFrontend := range engineFrontends {
+		instances[engineFrontend.Name] = engineFrontendResponseToInstanceResponse(engineFrontend)
 	}
 	return nil
 }
@@ -623,6 +645,10 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 		})
 
 		g.Go(func() error {
+			return s.watchSPDKEngineFrontend(ctx, req, spdkClient, notifyChan)
+		})
+
+		g.Go(func() error {
 			return s.watchSPDKReplica(ctx, req, spdkClient, notifyChan)
 		})
 	}
@@ -700,6 +726,43 @@ func (s *Server) watchSPDKEngine(ctx context.Context, req *emptypb.Empty, client
 					return err
 				}
 				logrus.WithError(err).Error("Failed to receive next item in SPDK engine watch")
+				time.Sleep(monitorRetryPollInterval)
+				failureCount++
+			} else {
+				notifyChan <- struct{}{}
+			}
+		}
+	}
+}
+
+func (s *Server) watchSPDKEngineFrontend(ctx context.Context, req *emptypb.Empty, client *spdkclient.SPDKClient, notifyChan chan struct{}) error {
+	logrus.Info("Start watching SPDK engine frontends")
+
+	notifier, err := client.EngineFrontendWatch(context.Background())
+	if err != nil {
+		return errors.Wrap(err, "failed to create SPDK engine frontend watch notifier")
+	}
+
+	failureCount := 0
+	for {
+		if failureCount >= maxMonitorRetryCount {
+			logrus.Errorf("Continuously receiving errors for %v times, stopping watching SPDK engine frontends", maxMonitorRetryCount)
+			return fmt.Errorf("continuously receiving errors for %v times, stopping watching SPDK engine frontends", maxMonitorRetryCount)
+		}
+
+		select {
+		case <-ctx.Done():
+			logrus.Info("Stopped watching SPDK engine frontends")
+			return ctx.Err()
+		default:
+			_, err := notifier.Recv()
+			if err != nil {
+				status, ok := grpcstatus.FromError(err)
+				if ok && status.Code() == grpccodes.Canceled {
+					logrus.WithError(err).Warn("SPDK engine frontend watch is canceled")
+					return err
+				}
+				logrus.WithError(err).Error("Failed to receive next item in SPDK engine frontend watch")
 				time.Sleep(monitorRetryPollInterval)
 				failureCount++
 			} else {
@@ -817,13 +880,36 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			ErrorMsg:               e.ErrorMsg,
 			PortStart:              e.Port,
 			PortEnd:                e.Port,
-			TargetPortStart:        e.TargetPort,
-			TargetPortEnd:          e.TargetPort,
-			StandbyTargetPortStart: e.StandbyTargetPort,
-			StandbyTargetPortEnd:   e.StandbyTargetPort,
+			TargetPortStart:        0,
+			TargetPortEnd:          0,
+			StandbyTargetPortStart: 0,
+			StandbyTargetPortEnd:   0,
 			Conditions:             make(map[string]bool),
-			UblkId:                 e.UblkID,
+			UblkId:                 0,
 			Uuid:                   e.UUID,
+		},
+	}
+}
+
+func engineFrontendResponseToInstanceResponse(e *spdkapi.EngineFrontend) *rpc.InstanceResponse {
+	return &rpc.InstanceResponse{
+		Spec: &rpc.InstanceSpec{
+			Name: e.Name,
+			Type: types.InstanceTypeEngineFrontend,
+			// Deprecated
+			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
+		},
+		Status: &rpc.InstanceStatus{
+			State:           e.State,
+			ErrorMsg:        e.ErrorMsg,
+			TargetPortStart: int32(e.TargetPort),
+			TargetPortEnd:   int32(e.TargetPort),
+			Conditions:      make(map[string]bool),
+			UblkId:          int32(e.UblkID),
+			Uuid:            e.UUID,
+			Endpoint:        e.Endpoint,
+			Frontend:        e.Frontend,
 		},
 	}
 }
@@ -849,7 +935,7 @@ func (ops V1DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendReque
 func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
 	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
-		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to create SPDK client")
 	}
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
@@ -863,9 +949,12 @@ func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendReque
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
-		err := c.EngineSuspend(req.Name)
+		// Not supported for Engine anymore
+		return nil, grpcstatus.Error(grpccodes.Unimplemented, "suspend is not supported for instance type engine")
+	case types.InstanceTypeEngineFrontend:
+		err := c.EngineFrontendSuspend(req.Name)
 		if err != nil {
-			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to suspend engine %v", req.Name).Error())
+			return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to suspend engine frontend %v", req.Name)
 		}
 		return &emptypb.Empty{}, nil
 	case types.InstanceTypeReplica:
@@ -896,7 +985,7 @@ func (ops V1DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest
 func (ops V2DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest) (*emptypb.Empty, error) {
 	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
-		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to create SPDK client")
 	}
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
@@ -910,9 +999,12 @@ func (ops V2DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
-		err := c.EngineResume(req.Name)
+		// Not supported for Engine anymore
+		return nil, grpcstatus.Error(grpccodes.Unimplemented, "resume is not supported for instance type engine")
+	case types.InstanceTypeEngineFrontend:
+		err := c.EngineFrontendResume(req.Name)
 		if err != nil {
-			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to resume engine %v", req.Name).Error())
+			return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to resume engine frontend %v", req.Name)
 		}
 		return &emptypb.Empty{}, nil
 	case types.InstanceTypeReplica:
@@ -944,7 +1036,7 @@ func (ops V1DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error) {
 	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 	if err != nil {
-		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
+		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to create SPDK client")
 	}
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
@@ -959,9 +1051,14 @@ func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 
 	switch req.Type {
 	case types.InstanceTypeEngine:
-		err := c.EngineSwitchOverTarget(req.Name, req.TargetAddress)
+		// Note: EngineSwitchOverTarget is no longer available in SPDKClient in newer versions,
+		// but since we are modifying EngineFrontend to handle this, we will use EngineFrontend.
+		// Kept for backward compatibility if engine is passed instead of EngineFrontend, but EngineFrontendSwitchOver has EngineName argument
+		return nil, grpcstatus.Error(grpccodes.Unimplemented, "switch over target for engine has been replaced by engine frontend switch over")
+	case types.InstanceTypeEngineFrontend:
+		err := c.EngineFrontendSwitchOver(req.Name, req.EngineName, req.TargetAddress)
 		if err != nil {
-			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to switch over target for engine %v", req.Name).Error())
+			return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to switch over target for engine frontend %v", req.Name)
 		}
 		return &emptypb.Empty{}, nil
 	case types.InstanceTypeReplica:
@@ -969,6 +1066,14 @@ func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
+}
+
+func toSPDKGRPCError(err error, defaultCode grpccodes.Code, format string, args ...interface{}) error {
+	code := defaultCode
+	if statusErr, ok := grpcstatus.FromError(errors.UnwrapAll(err)); ok {
+		code = statusErr.Code()
+	}
+	return grpcstatus.Error(code, errors.Wrapf(err, format, args...).Error())
 }
 
 func (s *Server) InstanceDeleteTarget(ctx context.Context, req *rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error) {

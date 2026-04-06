@@ -84,30 +84,50 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
-				"serviceURL": req.Address,
-				"engineName": req.EngineName,
-				"volumeName": req.VolumeName,
-				"dataEngine": req.DataEngine,
+				"serviceURL":         req.Address,
+				"engineFrontendName": req.EngineFrontendName,
+				"volumeName":         req.VolumeName,
+				"dataEngine":         req.DataEngine,
 			}).WithError(closeErr).Warn("Failed to close SPDK client")
 		}
 	}()
 
-	recv, err := c.EngineGet(req.EngineName)
+	engine, err := c.EngineGet(req.EngineName)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v: %v", req.EngineName, err)
 	}
 
+	size := int64(engine.SpecSize)
+	endpoint := engine.Endpoint
+	frontend := engine.Frontend
+	isExpanding := engine.IsExpanding
+	lastExpansionError := engine.LastExpansionError
+	lastExpansionFailedAt := engine.LastExpansionFailedAt
+	if req.EngineFrontendName != "" {
+		engineFrontend, err := c.EngineFrontendGet(req.EngineFrontendName)
+		if err == nil && engineFrontend != nil {
+			size = int64(engineFrontend.SpecSize)
+			endpoint = engineFrontend.Endpoint
+			frontend = engineFrontend.Frontend
+			isExpanding = engine.IsExpanding || engineFrontend.IsExpanding
+			if engineFrontend.LastExpansionError != "" {
+				lastExpansionError = engineFrontend.LastExpansionError
+				lastExpansionFailedAt = engineFrontend.LastExpansionFailedAt
+			}
+		}
+	}
+
 	return &rpc.EngineVolumeGetProxyResponse{
 		Volume: &enginerpc.Volume{
-			Name:                      recv.Name,
-			Size:                      int64(recv.SpecSize),
-			ReplicaCount:              int32(len(recv.ReplicaAddressMap)),
-			Endpoint:                  recv.Endpoint,
-			Frontend:                  recv.Frontend,
+			Name:                      engine.Name,
+			Size:                      size,
+			ReplicaCount:              int32(len(engine.ReplicaAddressMap)),
+			Endpoint:                  endpoint,
+			Frontend:                  frontend,
 			FrontendState:             "",
-			IsExpanding:               false,
-			LastExpansionError:        "",
-			LastExpansionFailedAt:     "",
+			IsExpanding:               isExpanding,
+			LastExpansionError:        lastExpansionError,
+			LastExpansionFailedAt:     lastExpansionFailedAt,
 			UnmapMarkSnapChainRemoved: false,
 		},
 	}, nil
@@ -170,7 +190,7 @@ func (ops V2DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.Engin
 		}
 	}()
 
-	err = c.EngineExpand(ctx, req.ProxyEngineRequest.EngineName, uint64(req.Expand.Size))
+	err = c.EngineFrontendExpand(ctx, req.ProxyEngineRequest.EngineFrontendName, uint64(req.Expand.Size))
 	if err != nil {
 		return nil, err
 	}
