@@ -9,10 +9,10 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260329081928-dd6c86c9ba6d
 	github.com/longhorn/go-common-libs v0.0.0-20260328134226-cafa38fc4ce8
-	github.com/longhorn/go-spdk-helper v0.5.0
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20260322
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
-	github.com/longhorn/types v0.0.0-20260327130848-66f6de8a2fb3
+	github.com/longhorn/go-spdk-helper v0.5.1-0.20260406151850-b0d882d433be
+	github.com/longhorn/longhorn-engine v1.12.0-dev-20260405
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260408014657-37482fc60ca9
+	github.com/longhorn/types v0.0.0-20260408014255-0ae353a2d888
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.20.0
@@ -28,6 +28,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
+	github.com/avast/retry-go/v4 v4.7.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.5 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.8 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.13 // indirect
@@ -77,8 +78,8 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20260306105756-948eb7e165af // indirect
-	github.com/longhorn/sparse-tools v0.0.0-20260117144214-070853c24eda // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20260327125832-d1a62805e28f // indirect
+	github.com/longhorn/sparse-tools v0.0.0-20260327124327-3fac691f3c28 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/moby/sys/mountinfo v0.7.2 // indirect
@@ -114,9 +115,9 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.35.2 // indirect
-	k8s.io/apimachinery v0.35.2 // indirect
-	k8s.io/client-go v0.35.2 // indirect
+	k8s.io/api v0.35.3 // indirect
+	k8s.io/apimachinery v0.35.3 // indirect
+	k8s.io/client-go v0.35.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
