@@ -381,3 +381,26 @@ func generateNGUID(name string) string {
 	return hex.EncodeToString(nguid[:]) // 32-char hex
 
 }
+
+// generateNsUUID creates a deterministic UUID for an NVMe namespace.
+// Uses a different UUID namespace (URL) than generateNGUID (OID) to ensure
+// the UUID and NGUID values differ while remaining stable for the same input.
+func generateNsUUID(name string) string {
+	nsUUID := uuid.NewSHA1(uuid.NameSpaceURL, []byte(name))
+	return nsUUID.String() // standard UUID format: 8-4-4-4-12
+}
+
+// getEngineCntlid derives a unique NVMe controller ID from the engine name.
+// Engine names have the format "{volumeName}-e-{ordinal}", where ordinal is
+// 0, 1, 2, etc. The CNTLID must be unique per subsystem NQN to avoid
+// "Duplicate cntlid" errors when the host connects to multiple SPDK targets
+// sharing the same NQN for NVMe multipath.
+func getEngineCntlid(engineName string) uint16 {
+	parts := strings.Split(engineName, "-")
+	if len(parts) > 0 {
+		if ordinal, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+			return uint16(ordinal + 1) // CNTLID must be >= 1
+		}
+	}
+	return 1 // fallback
+}

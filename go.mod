@@ -7,12 +7,12 @@ toolchain go1.26.1
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260329081928-dd6c86c9ba6d
+	github.com/longhorn/backupstore v0.0.0-20260414054550-8570535ce7ad
 	github.com/longhorn/go-common-libs v0.0.0-20260328134226-cafa38fc4ce8
-	github.com/longhorn/go-spdk-helper v0.5.1-0.20260406151850-b0d882d433be
+	github.com/longhorn/go-spdk-helper v0.5.1-0.20260416023608-49b12f8b468b
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20260405
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260408014657-37482fc60ca9
-	github.com/longhorn/types v0.0.0-20260408014255-0ae353a2d888
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260420061538-8ea1811c69c3
+	github.com/longhorn/types v0.0.0-20260417071722-2f1958bc30e5
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.20.0

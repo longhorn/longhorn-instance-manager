@@ -170,8 +170,8 @@ func (s *Server) EngineFrontendReplicaAdd(ctx context.Context, req *spdkrpc.Engi
 		ef.RUnlock()
 		return nil, grpcstatus.Errorf(grpccodes.FailedPrecondition, "invalid state %v for engine frontend %s replica %s add", ef.State, ef.Name, req.ReplicaName)
 	}
-	engineIP := ef.EngineIP
 	engineName := ef.EngineName
+	engineServiceAddress := ef.getEngineServiceAddress()
 	ef.RUnlock()
 
 	// Resolve the local node IP so Engine can call back to this EF
@@ -183,10 +183,9 @@ func (s *Server) EngineFrontendReplicaAdd(ctx context.Context, req *spdkrpc.Engi
 	efAddress := net.JoinHostPort(localIP, strconv.Itoa(types.SPDKServicePort))
 
 	// Create a gRPC client to the (potentially remote) Engine node.
-	engineAddress := net.JoinHostPort(engineIP, strconv.Itoa(types.SPDKServicePort))
-	engineClient, err := GetServiceClient(engineAddress)
+	engineClient, err := GetServiceClient(engineServiceAddress)
 	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client for engine %s at %s: %v", engineName, engineAddress, err)
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client for engine %s at %s: %v", engineName, engineServiceAddress, err)
 	}
 	defer func() {
 		if errClose := engineClient.Close(); errClose != nil {
@@ -239,7 +238,20 @@ func (s *Server) EngineFrontendCreate(ctx context.Context, req *spdkrpc.EngineFr
 	spdkClient := s.spdkClient
 	s.Unlock()
 
-	ret, createErr := ef.Create(spdkClient, req.TargetAddress)
+	targetAddress := req.TargetAddress
+	// When disableFrontend=True, the manager passes an empty target address
+	// because the engine's NVMe-oF target port is 0 (no listener exposed).
+	// The engine frontend still needs the engine's IP for gRPC service calls
+	// (snapshot, expand). Since the engine and engine frontend are always
+	// co-located on the same instance-manager pod, derive the address from
+	// the pod IP.
+	if targetAddress == "" {
+		if podIP, ipErr := commonnet.GetIPForPod(); ipErr == nil && podIP != "" {
+			targetAddress = net.JoinHostPort(podIP, strconv.Itoa(types.SPDKServicePort))
+		}
+	}
+
+	ret, createErr := ef.Create(spdkClient, targetAddress)
 
 	// Distinguish hard errors (validation / precondition) from runtime
 	// failures (e.g. NVMe initiator can't connect).  Hard errors are

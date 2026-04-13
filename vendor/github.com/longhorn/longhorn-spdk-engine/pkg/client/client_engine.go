@@ -99,6 +99,30 @@ func (c *SPDKClient) EngineDeleteTarget(name string) error {
 	return nil
 }
 
+// EngineSetTargetListenerANAState updates the exported NVMe/TCP listener ANA state for an engine target.
+func (c *SPDKClient) EngineSetTargetListenerANAState(name, anaState string) error {
+	if name == "" {
+		return fmt.Errorf("failed to set target listener ANA state for engine: missing required parameter name")
+	}
+	if anaState == "" {
+		return fmt.Errorf("failed to set target listener ANA state for engine %s: missing required parameter anaState", name)
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineSetTargetListenerANAState(ctx, &spdkrpc.EngineSetTargetListenerANAStateRequest{
+		Name:     name,
+		AnaState: anaState,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to set target listener ANA state %s for engine %v", anaState, name)
+	}
+
+	return nil
+}
+
 // EngineList returns all engines known to the SPDK service.
 func (c *SPDKClient) EngineList() (map[string]*api.Engine, error) {
 	client := c.getSPDKServiceClient()

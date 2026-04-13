@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,18 +31,27 @@ import (
 type EngineFrontend struct {
 	sync.RWMutex
 
-	Name       string
-	EngineName string
-	VolumeName string
-	SpecSize   uint64
-	ActualSize uint64
+	Name        string
+	EngineName  string
+	VolumeName  string
+	VolumeNQN   string
+	VolumeNGUID string
+	SpecSize    uint64
+	ActualSize  uint64
 
 	Frontend string
 	Endpoint string
 
+	// EngineIP is the IP address of the node running the engine's SPDK service.
+	// It is set during Create for all frontend types (including FrontendEmpty)
+	// and used to derive the gRPC service address for engine operations like
+	// Expand and snapshot.
 	EngineIP string
 
 	NvmeTcpFrontend *NvmeTcpFrontend
+	NvmeTCPPathMap  map[string]*NvmeTCPPath
+	ActivePath      string
+	PreferredPath   string
 	UblkFrontend    *UblkFrontend
 
 	State    types.InstanceState
@@ -68,10 +78,22 @@ type EngineFrontend struct {
 
 	// Test hook for switchover target engine name resolution.
 	resolveEngineNameByTargetAddressFn func(targetAddress string) (string, error)
-	// Test hook for switchover target connect/rollback.
-	startNvmeTCPInitiatorFn func(transportAddress, transportServiceID string, dmDeviceAndEndpointCleanupRequired bool, stop bool) (dmDeviceIsBusy bool, err error)
+	// Test hook for native multipath path connect during blockdev switchover.
+	connectNvmeTCPPathFn func(transportAddress, transportServiceID string) error
+	// Test hook for native multipath path reconnect during recovery.
+	reconnectNvmeTCPPathFn func(transportAddress, transportServiceID string) error
+	// Test hook for initiator NVMe device info loading.
+	loadInitiatorNVMeDeviceInfoFn func(transportAddress, transportServiceID, subsystemNQN string) error
+	// Test hook for initiator endpoint loading.
+	loadInitiatorEndpointFn func(dmDeviceIsBusy bool) error
 	// Test hook for endpoint retrieval after switchover.
 	getInitiatorEndpointFn func() string
+	// Test hook for remote target ANA state synchronization during switchover.
+	syncRemoteEngineTargetANAStatesFn func(oldTargetIP, oldEngineName, newTargetIP, newEngineName string) error
+	// Test hook for setting a single remote engine target's ANA state.
+	setRemoteEngineTargetANAStateFn func(targetIP, engineName string, anaState NvmeTCPANAState) error
+	// Test hook for waiting for an NVMe-TCP controller to reach live state.
+	waitForNvmeTCPControllerLiveFn func(transportAddress string, transportPort int32) error
 
 	// metadataDir is the base path for persisting engine frontend records.
 	// If empty, persistence is disabled.
@@ -86,6 +108,32 @@ type NvmeTcpFrontend struct {
 
 	Nqn   string
 	Nguid string
+}
+
+type NvmeTCPANAState string
+
+type SwitchoverPhase string
+
+const (
+	NvmeTCPANAStateOptimized    NvmeTCPANAState = "optimized"
+	NvmeTCPANAStateNonOptimized NvmeTCPANAState = "non-optimized"
+	NvmeTCPANAStateInaccessible NvmeTCPANAState = "inaccessible"
+
+	SwitchoverPhasePreparing SwitchoverPhase = "preparing"
+	SwitchoverPhaseSwitching SwitchoverPhase = "switching"
+	SwitchoverPhasePromoting SwitchoverPhase = "promoting"
+
+	anaSyncMaxAttempts   = 5
+	anaSyncRetryInterval = 200 * time.Millisecond
+)
+
+type NvmeTCPPath struct {
+	TargetIP   string
+	TargetPort int32
+	EngineName string
+	Nqn        string
+	Nguid      string
+	ANAState   NvmeTCPANAState
 }
 
 type UblkFrontend struct {
@@ -141,14 +189,17 @@ func NewEngineFrontend(engineFrontendName, engineName, volumeName, frontend stri
 	}
 
 	return &EngineFrontend{
-		Name:       engineFrontendName,
-		EngineName: engineName,
-		VolumeName: volumeName,
-		SpecSize:   specSize,
+		Name:        engineFrontendName,
+		EngineName:  engineName,
+		VolumeName:  volumeName,
+		VolumeNQN:   getStableVolumeNQN(volumeName),
+		VolumeNGUID: getStableVolumeNGUID(volumeName),
+		SpecSize:    specSize,
 
 		Frontend: frontend,
 
 		NvmeTcpFrontend: nvmeTcpFrontend,
+		NvmeTCPPathMap:  map[string]*NvmeTCPPath{},
 		UblkFrontend:    ublkFrontend,
 
 		State:    types.InstanceStatePending,
@@ -158,6 +209,352 @@ func NewEngineFrontend(engineFrontendName, engineName, volumeName, frontend stri
 		stopCh:   make(chan struct{}),
 		log:      safelog.NewSafeLogger(log),
 	}
+}
+
+func getStableVolumeNQN(volumeName string) string {
+	return helpertypes.GetNQN("volume-" + volumeName)
+}
+
+func getStableVolumeNGUID(volumeName string) string {
+	return generateNGUID("volume-" + volumeName)
+}
+
+func getStableVolumeNsUUID(volumeName string) string {
+	return generateNsUUID("volume-" + volumeName)
+}
+
+func getEffectiveVolumeTargetIdentity(volumeName, volumeNQN, volumeNGUID string) (string, string) {
+	if volumeNQN == "" {
+		volumeNQN = getStableVolumeNQN(volumeName)
+	}
+	if volumeNGUID == "" {
+		volumeNGUID = getStableVolumeNGUID(volumeName)
+	}
+	return volumeNQN, volumeNGUID
+}
+
+func getNvmeTCPPathAddress(targetIP string, targetPort int32) string {
+	if targetIP == "" || targetPort == 0 {
+		return ""
+	}
+	return net.JoinHostPort(targetIP, strconv.Itoa(int(targetPort)))
+}
+
+func (ef *EngineFrontend) ensureVolumeTargetIdentityLocked() {
+	ef.VolumeNQN, ef.VolumeNGUID = getEffectiveVolumeTargetIdentity(ef.VolumeName, ef.VolumeNQN, ef.VolumeNGUID)
+	if ef.NvmeTCPPathMap == nil {
+		ef.NvmeTCPPathMap = map[string]*NvmeTCPPath{}
+	}
+}
+
+func (ef *EngineFrontend) getVolumeTargetIdentity() (string, string) {
+	return getEffectiveVolumeTargetIdentity(ef.VolumeName, ef.VolumeNQN, ef.VolumeNGUID)
+}
+
+func (ef *EngineFrontend) clearNVMeTCPPathsLocked() {
+	ef.NvmeTCPPathMap = map[string]*NvmeTCPPath{}
+	ef.ActivePath = ""
+	ef.PreferredPath = ""
+}
+
+func (ef *EngineFrontend) upsertNVMeTCPPathLocked(targetIP string, targetPort int32, engineName, nqn, nguid string, anaState NvmeTCPANAState) string {
+	ef.ensureVolumeTargetIdentityLocked()
+
+	address := getNvmeTCPPathAddress(targetIP, targetPort)
+	if address == "" {
+		return ""
+	}
+
+	path := ef.NvmeTCPPathMap[address]
+	if path == nil {
+		path = &NvmeTCPPath{}
+		ef.NvmeTCPPathMap[address] = path
+	}
+	path.TargetIP = targetIP
+	path.TargetPort = targetPort
+	path.EngineName = engineName
+	path.Nqn = nqn
+	path.Nguid = nguid
+	path.ANAState = anaState
+
+	return address
+}
+
+func (ef *EngineFrontend) promoteNVMeTCPPathLocked(address string) bool {
+	if address == "" {
+		return false
+	}
+	if _, exists := ef.NvmeTCPPathMap[address]; !exists {
+		return false
+	}
+
+	for existingAddress, existingPath := range ef.NvmeTCPPathMap {
+		if existingPath == nil {
+			continue
+		}
+		if existingAddress == address {
+			existingPath.ANAState = NvmeTCPANAStateOptimized
+			continue
+		}
+		if existingPath.ANAState == NvmeTCPANAStateOptimized {
+			existingPath.ANAState = NvmeTCPANAStateInaccessible
+		}
+	}
+
+	ef.ActivePath = address
+	if ef.PreferredPath == "" {
+		ef.PreferredPath = address
+	}
+	return true
+}
+
+func (ef *EngineFrontend) removeNVMeTCPPathLocked(address string) {
+	if address == "" || ef.NvmeTCPPathMap == nil {
+		return
+	}
+	delete(ef.NvmeTCPPathMap, address)
+	if ef.ActivePath == address {
+		ef.ActivePath = ""
+	}
+	if ef.PreferredPath == address {
+		ef.PreferredPath = ""
+	}
+	if ef.ActivePath == "" {
+		for existingAddress, path := range ef.NvmeTCPPathMap {
+			if path == nil {
+				continue
+			}
+			if path.ANAState == NvmeTCPANAStateOptimized {
+				ef.ActivePath = existingAddress
+				break
+			}
+		}
+	}
+	if ef.PreferredPath == "" {
+		if ef.ActivePath != "" {
+			ef.PreferredPath = ef.ActivePath
+		} else {
+			for existingAddress := range ef.NvmeTCPPathMap {
+				ef.PreferredPath = existingAddress
+				break
+			}
+		}
+	}
+}
+
+func (ef *EngineFrontend) syncCurrentNVMeTCPPathLocked() {
+	if ef.NvmeTcpFrontend == nil {
+		return
+	}
+
+	ef.ensureVolumeTargetIdentityLocked()
+
+	address := getNvmeTCPPathAddress(ef.NvmeTcpFrontend.TargetIP, ef.NvmeTcpFrontend.TargetPort)
+	if address == "" {
+		return
+	}
+
+	ef.upsertNVMeTCPPathLocked(ef.NvmeTcpFrontend.TargetIP, ef.NvmeTcpFrontend.TargetPort,
+		ef.EngineName, ef.NvmeTcpFrontend.Nqn, ef.NvmeTcpFrontend.Nguid, NvmeTCPANAStateOptimized)
+	ef.promoteNVMeTCPPathLocked(address)
+}
+
+func (ef *EngineFrontend) setRemoteEngineTargetANAState(targetIP, engineName string, anaState NvmeTCPANAState) error {
+	if targetIP == "" || engineName == "" {
+		return nil
+	}
+
+	if ef.setRemoteEngineTargetANAStateFn != nil {
+		return ef.setRemoteEngineTargetANAStateFn(targetIP, engineName, anaState)
+	}
+
+	engineAddress := net.JoinHostPort(targetIP, strconv.Itoa(types.SPDKServicePort))
+	engineClient, err := GetServiceClient(engineAddress)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get SPDK client for engine %s at %s", engineName, engineAddress)
+	}
+	defer func() {
+		if errClose := engineClient.Close(); errClose != nil {
+			ef.log.WithError(errClose).Warnf("Failed to close engine SPDK client for ANA sync on engine %s", engineName)
+		}
+	}()
+
+	if err := engineClient.EngineSetTargetListenerANAState(engineName, string(anaState)); err != nil {
+		return errors.Wrapf(err, "failed to set ANA state %s for engine %s", anaState, engineName)
+	}
+
+	return nil
+}
+
+func (ef *EngineFrontend) rollbackRemoteEngineTargetANAStates(oldTargetIP, oldEngineName, newTargetIP, newEngineName string) error {
+	var rollbackErr error
+
+	if rbErr := ef.setRemoteEngineTargetANAState(newTargetIP, newEngineName, NvmeTCPANAStateInaccessible); rbErr != nil {
+		rollbackErr = multierr.Append(rollbackErr,
+			errors.Wrapf(rbErr, "failed to revert new target %s ANA state to inaccessible", newEngineName))
+	}
+	if rbErr := ef.setRemoteEngineTargetANAState(oldTargetIP, oldEngineName, NvmeTCPANAStateOptimized); rbErr != nil {
+		rollbackErr = multierr.Append(rollbackErr,
+			errors.Wrapf(rbErr, "failed to restore old target %s ANA state to optimized", oldEngineName))
+	}
+
+	return rollbackErr
+}
+
+func (ef *EngineFrontend) resolveRemoteEngineName(targetIP string, targetPort int32, engineName string) (string, error) {
+	address := getNvmeTCPPathAddress(targetIP, targetPort)
+
+	ef.RLock()
+	if address != "" {
+		if path := ef.NvmeTCPPathMap[address]; path != nil {
+			if engineName == "" {
+				engineName = path.EngineName
+			}
+		}
+	}
+	ef.RUnlock()
+
+	if engineName == "" && address != "" {
+		resolvedEngineName, err := ef.resolveEngineNameByTargetAddress(address)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to resolve engine name for target %s", address)
+		}
+		engineName = resolvedEngineName
+	}
+	if engineName == "" {
+		return "", fmt.Errorf("failed to resolve engine name for target %s", address)
+	}
+
+	return engineName, nil
+}
+
+func (ef *EngineFrontend) syncRemoteEngineTargetANAStates(oldTargetIP, oldEngineName, newTargetIP, newEngineName string) error {
+	var syncErr error
+
+	// Three-phase ANA transition to eliminate the "both optimized" window
+	// that could cause concurrent writes to the same LBA to be routed to
+	// different engines, risking replica-level inconsistency.
+	//
+	// Phase 1: new → non-optimized (old stays optimized)
+	//   Kernel prefers the optimized old path; new path is usable as
+	//   fallback but receives no I/O while old is optimized.
+	//
+	// Phase 2: old → inaccessible (new is non-optimized)
+	//   Kernel falls back to the non-optimized new path — the only
+	//   remaining usable path. No I/O blackout.
+	//
+	// Phase 3: new → optimized
+	//   Kernel now routes all I/O through the fully-promoted new path.
+	//
+	// At every phase there is exactly ONE engine receiving I/O, and there
+	// is always at least one usable path (no I/O errors).
+
+	// Phase 1: Promote new path to non-optimized (usable fallback).
+	if err := ef.setRemoteEngineTargetANAState(newTargetIP, newEngineName, NvmeTCPANAStateNonOptimized); err != nil {
+		// Phase 1 failed. Do NOT proceed — demoting the old path without
+		// a usable new path would leave no routable path at all.
+		return multierr.Append(syncErr, err)
+	}
+
+	// Phase 2: Demote old path to inaccessible. Kernel falls back to new.
+	if oldEngineName != newEngineName || oldTargetIP != newTargetIP {
+		if err := ef.setRemoteEngineTargetANAState(oldTargetIP, oldEngineName, NvmeTCPANAStateInaccessible); err != nil {
+			// If the old engine's SPDK subsystem no longer exists (e.g.
+			// it was already cleaned up after a previous switchover), the
+			// old target is effectively gone — treat this as success.
+			if isSubsystemNotFoundError(err) {
+				ef.log.WithError(err).WithFields(logrus.Fields{
+					"oldEngineName": oldEngineName,
+					"oldTargetIP":   oldTargetIP,
+				}).Info("Old engine subsystem already removed, skipping ANA demotion")
+			} else {
+				// Phase 2 failed for a real reason. Do NOT proceed to
+				// Phase 3 — promoting the new path to optimized while
+				// the old path is still optimized would create a
+				// dual-write window.
+				//
+				// Roll back Phase 1: restore the new target to
+				// inaccessible so it doesn't linger in non-optimized
+				// state after the failed sync attempt.
+				if rbErr := ef.setRemoteEngineTargetANAState(newTargetIP, newEngineName, NvmeTCPANAStateInaccessible); rbErr != nil {
+					ef.log.WithError(rbErr).Warn("Failed to roll back new target ANA state to inaccessible after Phase 2 failure")
+					syncErr = multierr.Append(syncErr, rbErr)
+				}
+				syncErr = multierr.Append(syncErr, err)
+				return syncErr
+			}
+		}
+	}
+
+	// Phase 3: Promote new path to optimized.
+	if err := ef.setRemoteEngineTargetANAState(newTargetIP, newEngineName, NvmeTCPANAStateOptimized); err != nil {
+		syncErr = multierr.Append(syncErr, err)
+		if rbErr := ef.rollbackRemoteEngineTargetANAStates(oldTargetIP, oldEngineName, newTargetIP, newEngineName); rbErr != nil {
+			syncErr = multierr.Append(syncErr, rbErr)
+		}
+		return syncErr
+	}
+
+	return syncErr
+}
+
+func isSubsystemNotFoundError(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "unable to find subsystem")
+}
+
+func (ef *EngineFrontend) syncRemoteEngineTargetANAStatesWithRetry(oldEngineName, newEngineName string, oldTargetIP string, oldTargetPort int32, targetIP string, targetPort int32) error {
+	resolvedNewEngineName, err := ef.resolveRemoteEngineName(targetIP, targetPort, newEngineName)
+	if err != nil {
+		return err
+	}
+
+	resolvedOldEngineName := oldEngineName
+	if oldTargetIP != "" && oldTargetPort != 0 {
+		resolvedOldEngineName, err = ef.resolveRemoteEngineName(oldTargetIP, oldTargetPort, oldEngineName)
+		if err != nil {
+			return err
+		}
+	}
+
+	syncFn := ef.syncRemoteEngineTargetANAStates
+	if ef.syncRemoteEngineTargetANAStatesFn != nil {
+		syncFn = ef.syncRemoteEngineTargetANAStatesFn
+	}
+
+	var syncErr error
+	for attempt := uint(1); attempt <= anaSyncMaxAttempts; attempt++ {
+		syncErr = syncFn(oldTargetIP, resolvedOldEngineName, targetIP, resolvedNewEngineName)
+		if syncErr == nil {
+			return nil
+		}
+
+		if attempt == anaSyncMaxAttempts {
+			break
+		}
+
+		ef.log.WithError(syncErr).WithFields(logrus.Fields{
+			"attempt":       attempt,
+			"maxAttempts":   anaSyncMaxAttempts,
+			"oldEngineName": resolvedOldEngineName,
+			"engineName":    resolvedNewEngineName,
+			"oldTargetIP":   oldTargetIP,
+			"oldTargetPort": oldTargetPort,
+			"targetIP":      targetIP,
+			"targetPort":    targetPort,
+		}).Warn("Failed to sync remote target ANA state during switchover, retrying")
+
+		select {
+		case <-time.After(anaSyncRetryInterval):
+		case <-ef.stopCh:
+			return syncErr
+		}
+	}
+
+	return syncErr
+}
+
+func isNVMeTCPPathAlreadyConnectedError(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "already connected")
 }
 
 // Create creates the engine frontend. On failure, it sets the frontend state
@@ -331,6 +728,7 @@ func (ef *EngineFrontend) Delete(spdkClient *spdkclient.Client) (err error) {
 		ef.NvmeTcpFrontend.TargetPort = 0
 		ef.NvmeTcpFrontend.Nqn = ""
 		ef.NvmeTcpFrontend.Nguid = ""
+		ef.clearNVMeTCPPathsLocked()
 	}
 
 	ef.log.Info("Deleted engine frontend")
@@ -413,6 +811,7 @@ func (ef *EngineFrontend) createNvmeTcpFrontend(spdkClient *spdkclient.Client, t
 				ef.NvmeTcpFrontend.TargetPort = targetPort
 				ef.Endpoint = GetNvmfEndpoint(ef.NvmeTcpFrontend.Nqn, targetIP, targetPort)
 			}
+			ef.syncCurrentNVMeTCPPathLocked()
 			endpoint := ef.Endpoint
 			targetPortForLog := ef.NvmeTcpFrontend.TargetPort
 			ef.Unlock()
@@ -454,8 +853,7 @@ func (ef *EngineFrontend) createNvmeTcpFrontend(spdkClient *spdkclient.Client, t
 }
 
 func (ef *EngineFrontend) newNvmeTcpInitiator() (i *initiator.Initiator, nqn, nguid string, err error) {
-	nqn = helpertypes.GetNQN(ef.EngineName)
-	nguid = generateNGUID(ef.EngineName)
+	nqn, nguid = ef.getVolumeTargetIdentity()
 
 	nvmeTCPInfo := &initiator.NVMeTCPInfo{
 		SubsystemNQN: nqn,
@@ -466,6 +864,15 @@ func (ef *EngineFrontend) newNvmeTcpInitiator() (i *initiator.Initiator, nqn, ng
 	}
 
 	return i, nqn, nguid, nil
+}
+
+// getEngineServiceAddress returns the gRPC service address of the engine node.
+// It uses EngineIP which is set during Create for all frontend types.
+func (ef *EngineFrontend) getEngineServiceAddress() string {
+	if ef.EngineIP == "" {
+		return ""
+	}
+	return net.JoinHostPort(ef.EngineIP, strconv.Itoa(types.SPDKServicePort))
 }
 
 func (ef *EngineFrontend) getWithoutLock() (res *spdkrpc.EngineFrontend) {
@@ -483,6 +890,9 @@ func (ef *EngineFrontend) getWithoutLock() (res *spdkrpc.EngineFrontend) {
 		IsExpanding:           ef.isExpanding,
 		LastExpansionError:    ef.lastExpansionError,
 		LastExpansionFailedAt: ef.lastExpansionFailedAt,
+		ActivePath:            ef.ActivePath,
+		PreferredPath:         ef.PreferredPath,
+		Paths:                 ef.getProtoNvmeTCPPathsWithoutLock(),
 	}
 
 	if ef.NvmeTcpFrontend != nil {
@@ -495,6 +905,36 @@ func (ef *EngineFrontend) getWithoutLock() (res *spdkrpc.EngineFrontend) {
 	}
 
 	return res
+}
+
+func (ef *EngineFrontend) getProtoNvmeTCPPathsWithoutLock() []*spdkrpc.EngineFrontendNvmeTcpPath {
+	if len(ef.NvmeTCPPathMap) == 0 {
+		return nil
+	}
+
+	addresses := make([]string, 0, len(ef.NvmeTCPPathMap))
+	for address := range ef.NvmeTCPPathMap {
+		addresses = append(addresses, address)
+	}
+	sort.Strings(addresses)
+
+	paths := make([]*spdkrpc.EngineFrontendNvmeTcpPath, 0, len(addresses))
+	for _, address := range addresses {
+		path := ef.NvmeTCPPathMap[address]
+		if path == nil {
+			continue
+		}
+		paths = append(paths, &spdkrpc.EngineFrontendNvmeTcpPath{
+			TargetIp:   path.TargetIP,
+			TargetPort: path.TargetPort,
+			EngineName: path.EngineName,
+			Nqn:        path.Nqn,
+			Nguid:      path.Nguid,
+			AnaState:   string(path.ANAState),
+		})
+	}
+
+	return paths
 }
 
 // SetErrorState sets the engine frontend to error state.
@@ -619,7 +1059,6 @@ func (ef *EngineFrontend) Expand(ctx context.Context, spdkClient *spdkclient.Cli
 	}
 
 	originalSize := ef.SpecSize
-	engineIP := ef.EngineIP
 	engineName := ef.EngineName
 	frontend := ef.Frontend
 
@@ -628,7 +1067,7 @@ func (ef *EngineFrontend) Expand(ctx context.Context, spdkClient *spdkclient.Cli
 		targetAddress = net.JoinHostPort(ef.NvmeTcpFrontend.TargetIP, strconv.Itoa(int(ef.NvmeTcpFrontend.TargetPort)))
 	}
 
-	engineSpdkClient, err := GetServiceClient(net.JoinHostPort(engineIP, strconv.Itoa(types.SPDKServicePort)))
+	engineSpdkClient, err := GetServiceClient(ef.getEngineServiceAddress())
 	if err != nil {
 		ef.Unlock()
 		return errors.Wrapf(err, "failed to get SPDK client to expand engine frontend %v", ef.Name)
@@ -955,9 +1394,11 @@ func (ef *EngineFrontend) Resume(_ *spdkclient.Client) (err error) {
 }
 
 // SwitchOverTarget switches the backend target for an existing engine frontend.
-// For blockdev frontend, the caller must suspend the frontend before switch-over.
+// For blockdev frontend, switchover connects the new native multipath path without
+// relying on dm-linear suspend/resume. Snapshot operations still use dm-linear
+// suspend/resume separately.
 // If newEngineName is empty, the function will try to resolve it via targetAddress.
-func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEngineName, targetAddress string) (err error) {
+func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEngineName, targetAddress, switchoverPhase string) (err error) {
 	if targetAddress == "" {
 		return errors.Wrapf(ErrSwitchOverTargetInvalidInput, "target address is required for engine frontend %s switchover", ef.Name)
 	}
@@ -994,7 +1435,6 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 		return errors.Wrapf(ErrSwitchOverTargetPrecondition, "invalid NvmeTcpFrontend for engine frontend %s switchover", ef.Name)
 	}
 
-	oldEngineIP := ef.EngineIP
 	oldEngineName := ef.EngineName
 	oldTargetIP := ef.NvmeTcpFrontend.TargetIP
 	oldTargetPort := ef.NvmeTcpFrontend.TargetPort
@@ -1009,7 +1449,7 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 		// Treat duplicate request to current target as no-op without remote lookup.
 		resolvedEngineName = oldEngineName
 	}
-	if oldTargetIP == targetIP && oldTargetPort == targetPort && oldEngineIP == targetIP && oldEngineName == resolvedEngineName {
+	if oldTargetIP == targetIP && oldTargetPort == targetPort && oldEngineName == resolvedEngineName {
 		if ef.State != types.InstanceStateError {
 			ef.ErrorMsg = ""
 		}
@@ -1017,11 +1457,6 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 		return nil
 	}
 
-	if frontend == types.FrontendSPDKTCPBlockdev && ef.State != types.InstanceStateSuspended {
-		state := ef.State
-		ef.Unlock()
-		return errors.Wrapf(ErrSwitchOverTargetPrecondition, "invalid state %v for engine frontend %s target switchover, must be suspended", state, ef.Name)
-	}
 	initiatorCreationRequired := frontend == types.FrontendSPDKTCPBlockdev && ef.initiator == nil
 	ef.isSwitchingOver = true
 	ef.Unlock()
@@ -1042,19 +1477,34 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 			return errors.Wrapf(err, "failed to resolve engine name for target address %s", targetAddress)
 		}
 	}
-	newNQN := helpertypes.GetNQN(resolvedEngineName)
-	newNGUID := generateNGUID(resolvedEngineName)
+	newNQN, newNGUID := ef.getVolumeTargetIdentity()
+	phase := SwitchoverPhase(switchoverPhase)
 
 	switch frontend {
 	case types.FrontendSPDKTCPNvmf:
+		if switchoverPhase != "" {
+			return ef.switchOverTargetNvmfPhased(phase, resolvedEngineName, targetIP, targetPort, oldEngineName, oldTargetIP, oldTargetPort, newNQN, newNGUID, &updateRequired)
+		}
+		if err := ef.syncRemoteEngineTargetANAStatesWithRetry(oldEngineName, resolvedEngineName, oldTargetIP, oldTargetPort, targetIP, targetPort); err != nil {
+			switchErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to sync remote target ANA state for engine frontend %s switchover to %s: %v",
+				ef.Name, targetAddress, err)
+			ef.Lock()
+			ef.ErrorMsg = switchErr.Error()
+			ef.Unlock()
+			updateRequired = true
+			return switchErr
+		}
+
 		ef.Lock()
-		ef.EngineIP = targetIP
 		ef.EngineName = resolvedEngineName
+		ef.EngineIP = targetIP
 		ef.NvmeTcpFrontend.TargetIP = targetIP
 		ef.NvmeTcpFrontend.TargetPort = targetPort
 		ef.NvmeTcpFrontend.Nqn = newNQN
 		ef.NvmeTcpFrontend.Nguid = newNGUID
 		ef.Endpoint = GetNvmfEndpoint(newNQN, targetIP, targetPort)
+		ef.syncCurrentNVMeTCPPathLocked()
 		if ef.State != types.InstanceStateError {
 			ef.ErrorMsg = ""
 		}
@@ -1092,37 +1542,97 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 			ef.NvmeTcpFrontend.Nguid = nguid
 			ef.Unlock()
 		}
-		// Do NOT overwrite SubsystemNQN before startNvmeTCPInitiator.
-		// The stop path inside startNvmeTCPInitiator uses SubsystemNQN to
-		// disconnect the old NVMe controller. If we set newNQN here, the old
-		// controller (with oldNQN) would never be disconnected, causing ~30s
-		// of kernel NVMe reconnect retries until timeout.
-		// startNvmeTCPInitiator will set the correct NQN after connecting
-		// the new target via discoverAndConnectNVMeTCPTarget.
 
-		dmDeviceIsBusy, switchErr := ef.startNvmeTCPInitiator(targetIP, targetPort, true, true)
-		if switchErr != nil {
-			switchErr = errors.Wrapf(ErrSwitchOverTargetInternal, "failed to switch engine frontend %s target to %s: %v", ef.Name, targetAddress, switchErr)
+		if switchoverPhase != "" {
+			return ef.switchOverTargetBlockdevPhased(phase, resolvedEngineName, targetAddress, targetIP, targetPort, oldEngineName, oldTargetIP, oldTargetPort, newNQN, newNGUID, oldNQN, oldNGUID, oldEndpoint, oldDMDeviceIsBusy, &updateRequired)
+		}
 
-			var rollbackErr error
-			if oldTargetIP != "" && oldTargetPort != 0 {
-				ef.log.WithError(switchErr).Warnf("Failed to switch target, initiating rollback to previous target %s:%d", oldTargetIP, oldTargetPort)
-				if ef.initiator.NVMeTCPInfo != nil {
-					ef.initiator.NVMeTCPInfo.SubsystemNQN = oldNQN
-				}
-				var rollbackDMDeviceIsBusy bool
-				if rollbackDMDeviceIsBusy, rollbackErr = ef.startNvmeTCPInitiator(oldTargetIP, oldTargetPort, true, true); rollbackErr != nil {
-					rollbackErr = errors.Wrapf(ErrSwitchOverTargetInternal, "failed to rollback engine frontend %s target to %s:%d: %v", ef.Name, oldTargetIP, oldTargetPort, rollbackErr)
-					ef.log.WithError(rollbackErr).Errorf("Failed to rollback engine frontend %s target to previous target", ef.Name)
+		// Step 1: Before connecting the new multipath path, ensure the new
+		// engine target's ANA state is "inaccessible". This prevents the
+		// kernel NVMe multipath layer from routing I/O to the new path
+		// immediately upon discovery. The target was likely created with
+		// "optimized" during Engine.Create(); we must demote it first.
+		ef.log.WithFields(logrus.Fields{
+			"newEngineName": resolvedEngineName,
+			"targetIP":      targetIP,
+			"targetPort":    targetPort,
+		}).Info("Setting new engine target ANA state to inaccessible before multipath connect")
+		if err := ef.setRemoteEngineTargetANAState(targetIP, resolvedEngineName, NvmeTCPANAStateInaccessible); err != nil {
+			switchErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to set new engine target %s ANA state to inaccessible before multipath connect: %v",
+				resolvedEngineName, err)
+			ef.Lock()
+			ef.ErrorMsg = switchErr.Error()
+			ef.Unlock()
+			updateRequired = true
+			return switchErr
+		}
+
+		// Step 2: Connect the new multipath path. The kernel will discover
+		// the new path in "inaccessible" state and will NOT route I/O to it.
+		alreadyConnectedAndSynced := false
+		switchErr := ef.connectNvmeTCPPath(targetIP, targetPort)
+		if switchErr != nil && !isNVMeTCPPathAlreadyConnectedError(switchErr) {
+			// Plain connect failure. Step 1 demoted the new target to
+			// inaccessible; restore it to optimized since the switchover
+			// is being abandoned and the new engine may still be used.
+			if rErr := ef.setRemoteEngineTargetANAState(targetIP, resolvedEngineName, NvmeTCPANAStateOptimized); rErr != nil {
+				ef.log.WithError(rErr).Warn("Failed to restore new target ANA state to optimized after connect failure")
+			}
+		} else if switchErr != nil {
+			// The new path was already connected from a previous
+			// SwitchOverTarget attempt. In this case the new target's ANA
+			// state is "inaccessible" (set above at step 1), and the old
+			// path may already be disconnected. With no optimized path the
+			// kernel hides the namespace block device, so
+			// loadInitiatorNVMeDeviceInfo would fail. We must run the ANA
+			// sync FIRST (which sets new→optimized) to restore the block
+			// device, then reload initiator state.
+			ef.log.WithError(switchErr).WithFields(logrus.Fields{
+				"engineName": resolvedEngineName,
+				"targetIP":   targetIP,
+				"targetPort": targetPort,
+			}).Warn("NVMe/TCP multipath path already connected during switchover, syncing ANA states before reloading initiator state")
+
+			if anaErr := ef.syncRemoteEngineTargetANAStatesWithRetry(oldEngineName, resolvedEngineName, oldTargetIP, oldTargetPort, targetIP, targetPort); anaErr != nil {
+				switchErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+					"failed to sync ANA states for already connected multipath target %s during engine frontend %s switchover: %v",
+					targetAddress, ef.Name, anaErr)
+			} else {
+				transportServiceID := strconv.Itoa(int(targetPort))
+				if reloadErr := ef.loadInitiatorNVMeDeviceInfo(targetIP, transportServiceID, newNQN); reloadErr != nil {
+					switchErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+						"failed to reload engine frontend %s NVMe device info for already connected multipath target %s: %v",
+						ef.Name, targetAddress, reloadErr)
+					// ANA sync succeeded (new→optimized, old→inaccessible).
+					// Revert ANA so the old path becomes functional again.
+					if rErr := ef.setRemoteEngineTargetANAState(targetIP, resolvedEngineName, NvmeTCPANAStateInaccessible); rErr != nil {
+						ef.log.WithError(rErr).Warn("Failed to revert new target ANA state during already-connected rollback")
+					}
+					if rErr := ef.setRemoteEngineTargetANAState(oldTargetIP, oldEngineName, NvmeTCPANAStateOptimized); rErr != nil {
+						ef.log.WithError(rErr).Warn("Failed to restore old target ANA state during already-connected rollback")
+					}
+				} else if endpointErr := ef.loadInitiatorEndpoint(true); endpointErr != nil {
+					switchErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+						"failed to reload engine frontend %s endpoint for already connected multipath target %s: %v",
+						ef.Name, targetAddress, endpointErr)
+					// Same ANA revert as above.
+					if rErr := ef.setRemoteEngineTargetANAState(targetIP, resolvedEngineName, NvmeTCPANAStateInaccessible); rErr != nil {
+						ef.log.WithError(rErr).Warn("Failed to revert new target ANA state during already-connected rollback")
+					}
+					if rErr := ef.setRemoteEngineTargetANAState(oldTargetIP, oldEngineName, NvmeTCPANAStateOptimized); rErr != nil {
+						ef.log.WithError(rErr).Warn("Failed to restore old target ANA state during already-connected rollback")
+					}
 				} else {
-					ef.log.Info("Successfully rolled back engine frontend target")
-					oldDMDeviceIsBusy = rollbackDMDeviceIsBusy
+					switchErr = nil
+					alreadyConnectedAndSynced = true
 				}
 			}
+		}
 
-			// Restore all metadata to original state regardless of rollback success to avoid go struct inconsistency
+		if switchErr != nil {
+			switchErr = errors.Wrapf(ErrSwitchOverTargetInternal, "failed to connect engine frontend %s multipath target %s: %v", ef.Name, targetAddress, switchErr)
 			ef.Lock()
-			ef.EngineIP = oldEngineIP
 			ef.EngineName = oldEngineName
 			ef.NvmeTcpFrontend.TargetIP = oldTargetIP
 			ef.NvmeTcpFrontend.TargetPort = oldTargetPort
@@ -1130,30 +1640,122 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 			ef.NvmeTcpFrontend.Nguid = oldNGUID
 			ef.Endpoint = oldEndpoint
 			ef.dmDeviceIsBusy = oldDMDeviceIsBusy
-
-			if rollbackErr != nil {
-				combinedErr := multierr.Append(switchErr, rollbackErr)
-				ef.State = types.InstanceStateError
-				ef.ErrorMsg = combinedErr.Error()
-				ef.Unlock()
-				updateRequired = true
-				return combinedErr
-			}
 			ef.ErrorMsg = switchErr.Error()
 			ef.Unlock()
 			updateRequired = true
 			return switchErr
 		}
 
+		// Step 2b: Wait for the new NVMe controller to reach "live" state.
+		// The nvme connect above returns immediately while the TCP handshake
+		// completes asynchronously. Without this wait, the ANA sync below
+		// could mark the old path inaccessible while the new controller is
+		// still "connecting", leaving no routable path.
+		if !alreadyConnectedAndSynced {
+			if waitErr := ef.waitForNvmeTCPControllerLive(targetIP, targetPort); waitErr != nil {
+				switchErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+					"failed to wait for new NVMe controller live state during engine frontend %s switchover to %s: %v",
+					ef.Name, targetAddress, waitErr)
+				ef.Lock()
+				ef.EngineName = oldEngineName
+				ef.NvmeTcpFrontend.TargetIP = oldTargetIP
+				ef.NvmeTcpFrontend.TargetPort = oldTargetPort
+				ef.NvmeTcpFrontend.Nqn = oldNQN
+				ef.NvmeTcpFrontend.Nguid = oldNGUID
+				ef.Endpoint = oldEndpoint
+				ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+				ef.ErrorMsg = switchErr.Error()
+				ef.Unlock()
+				updateRequired = true
+				return switchErr
+			}
+		}
+
+		if !alreadyConnectedAndSynced {
+			if err := ef.syncRemoteEngineTargetANAStatesWithRetry(oldEngineName, resolvedEngineName, oldTargetIP, oldTargetPort, targetIP, targetPort); err != nil {
+				switchErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+					"failed to sync remote target ANA state for engine frontend %s switchover to %s: %v",
+					ef.Name, targetAddress, err)
+				ef.Lock()
+				ef.EngineName = oldEngineName
+				ef.NvmeTcpFrontend.TargetIP = oldTargetIP
+				ef.NvmeTcpFrontend.TargetPort = oldTargetPort
+				ef.NvmeTcpFrontend.Nqn = oldNQN
+				ef.NvmeTcpFrontend.Nguid = oldNGUID
+				ef.Endpoint = oldEndpoint
+				ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+				ef.ErrorMsg = switchErr.Error()
+				ef.Unlock()
+				updateRequired = true
+				return switchErr
+			}
+
+			transportServiceID := strconv.Itoa(int(targetPort))
+			if reloadErr := ef.loadInitiatorNVMeDeviceInfo(targetIP, transportServiceID, newNQN); reloadErr != nil {
+				switchErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+					"failed to reload engine frontend %s NVMe device info after ANA sync for multipath target %s: %v",
+					ef.Name, targetAddress, reloadErr)
+				// Revert ANA states so the old path becomes functional again.
+				// syncRemoteEngineTargetANAStatesWithRetry already set
+				// new→optimized, old→inaccessible. Reverse both.
+				if anaErr := ef.setRemoteEngineTargetANAState(targetIP, resolvedEngineName, NvmeTCPANAStateInaccessible); anaErr != nil {
+					ef.log.WithError(anaErr).Warn("Failed to revert new target ANA state to inaccessible during monolithic switchover rollback")
+				}
+				if anaErr := ef.setRemoteEngineTargetANAState(oldTargetIP, oldEngineName, NvmeTCPANAStateOptimized); anaErr != nil {
+					ef.log.WithError(anaErr).Warn("Failed to restore old target ANA state to optimized during monolithic switchover rollback")
+				}
+				ef.Lock()
+				ef.EngineName = oldEngineName
+				ef.NvmeTcpFrontend.TargetIP = oldTargetIP
+				ef.NvmeTcpFrontend.TargetPort = oldTargetPort
+				ef.NvmeTcpFrontend.Nqn = oldNQN
+				ef.NvmeTcpFrontend.Nguid = oldNGUID
+				ef.Endpoint = oldEndpoint
+				ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+				ef.ErrorMsg = switchErr.Error()
+				ef.Unlock()
+				updateRequired = true
+				return switchErr
+			}
+			// During a live switchover the dm device is actively used by the
+			// workload. Pass true to skip the strict namespace name check
+			// which can transiently fail during multipath ANA transitions.
+			if endpointErr := ef.loadInitiatorEndpoint(true); endpointErr != nil {
+				switchErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+					"failed to reload engine frontend %s endpoint after ANA sync for multipath target %s: %v",
+					ef.Name, targetAddress, endpointErr)
+				// Revert ANA states for the same reason as above.
+				if anaErr := ef.setRemoteEngineTargetANAState(targetIP, resolvedEngineName, NvmeTCPANAStateInaccessible); anaErr != nil {
+					ef.log.WithError(anaErr).Warn("Failed to revert new target ANA state to inaccessible during monolithic switchover rollback")
+				}
+				if anaErr := ef.setRemoteEngineTargetANAState(oldTargetIP, oldEngineName, NvmeTCPANAStateOptimized); anaErr != nil {
+					ef.log.WithError(anaErr).Warn("Failed to restore old target ANA state to optimized during monolithic switchover rollback")
+				}
+				ef.Lock()
+				ef.EngineName = oldEngineName
+				ef.NvmeTcpFrontend.TargetIP = oldTargetIP
+				ef.NvmeTcpFrontend.TargetPort = oldTargetPort
+				ef.NvmeTcpFrontend.Nqn = oldNQN
+				ef.NvmeTcpFrontend.Nguid = oldNGUID
+				ef.Endpoint = oldEndpoint
+				ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+				ef.ErrorMsg = switchErr.Error()
+				ef.Unlock()
+				updateRequired = true
+				return switchErr
+			}
+		}
+
 		ef.Lock()
-		ef.EngineIP = targetIP
 		ef.EngineName = resolvedEngineName
+		ef.EngineIP = targetIP
 		ef.NvmeTcpFrontend.TargetIP = targetIP
 		ef.NvmeTcpFrontend.TargetPort = targetPort
 		ef.NvmeTcpFrontend.Nqn = newNQN
 		ef.NvmeTcpFrontend.Nguid = newNGUID
 		ef.Endpoint = ef.getInitiatorEndpoint()
-		ef.dmDeviceIsBusy = dmDeviceIsBusy
+		ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+		ef.syncCurrentNVMeTCPPathLocked()
 		if ef.State != types.InstanceStateError {
 			ef.ErrorMsg = ""
 		}
@@ -1169,6 +1771,15 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 			"targetPort":    targetPort,
 		}).Info("Switched over engine frontend target")
 
+		// Do NOT explicitly disconnect the old controller path. Removing it
+		// immediately can race with the kernel processing the ANA state
+		// change on the new path — if the kernel hasn't fully switched to
+		// the new optimized path when the old controller is yanked, a brief
+		// "no available path" window causes I/O errors that make ext4 go
+		// read-only. Instead, let the kernel handle the stale controller
+		// through ctrl-loss-tmo. The old path's ANA is already set to
+		// "inaccessible" so no I/O will route through it.
+
 		// Persist updated record AFTER successful switchover.
 		ef.RLock()
 		if err := saveEngineFrontendRecord(ef.metadataDir, ef); err != nil {
@@ -1183,15 +1794,393 @@ func (ef *EngineFrontend) SwitchOverTarget(spdkClient *spdkclient.Client, newEng
 	}
 }
 
-func (ef *EngineFrontend) startNvmeTCPInitiator(transportAddress string, transportPort int32, dmDeviceAndEndpointCleanupRequired bool, stop bool) (bool, error) {
+// switchOverTargetNvmfPhased executes a single phase of the nvmf frontend switchover.
+// The control plane drives progression through preparing → switching → promoting.
+func (ef *EngineFrontend) switchOverTargetNvmfPhased(phase SwitchoverPhase, newEngineName string, newTargetIP string, newTargetPort int32, oldEngineName, oldTargetIP string, oldTargetPort int32, newNQN, newNGUID string, updateRequired *bool) error {
+	resolvedNewEngineName, err := ef.resolveRemoteEngineName(newTargetIP, newTargetPort, newEngineName)
+	if err != nil {
+		return errors.Wrapf(ErrSwitchOverTargetInternal, "failed to resolve new engine name for %s:%d: %v", newTargetIP, newTargetPort, err)
+	}
+
+	switch phase {
+	case SwitchoverPhasePreparing:
+		// Phase 1: Set new target → non-optimized. Old stays optimized.
+		// Kernel prefers old; new is usable fallback but receives no I/O.
+		ef.log.WithFields(logrus.Fields{
+			"phase":         phase,
+			"newEngineName": resolvedNewEngineName,
+			"newTargetIP":   newTargetIP,
+		}).Info("Switchover nvmf preparing: setting new target ANA to non-optimized")
+		if err := ef.setRemoteEngineTargetANAState(newTargetIP, resolvedNewEngineName, NvmeTCPANAStateNonOptimized); err != nil {
+			return errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to set new engine target %s ANA to non-optimized during preparing phase: %v",
+				resolvedNewEngineName, err)
+		}
+		return nil
+
+	case SwitchoverPhaseSwitching:
+		// Phase 2: Set old target → inaccessible. Kernel falls back to new non-optimized path.
+		ef.log.WithFields(logrus.Fields{
+			"phase":         phase,
+			"oldEngineName": oldEngineName,
+			"oldTargetIP":   oldTargetIP,
+		}).Info("Switchover nvmf switching: setting old target ANA to inaccessible")
+		if oldEngineName != resolvedNewEngineName || oldTargetIP != newTargetIP {
+			resolvedOldEngineName, resolveErr := ef.resolveRemoteEngineName(oldTargetIP, oldTargetPort, oldEngineName)
+			if resolveErr != nil {
+				return errors.Wrapf(ErrSwitchOverTargetInternal, "failed to resolve old engine name for %s:%d: %v", oldTargetIP, oldTargetPort, resolveErr)
+			}
+			if err := ef.setRemoteEngineTargetANAState(oldTargetIP, resolvedOldEngineName, NvmeTCPANAStateInaccessible); err != nil {
+				if isSubsystemNotFoundError(err) {
+					ef.log.WithError(err).Info("Old engine subsystem already removed, skipping ANA demotion in switching phase")
+				} else {
+					return errors.Wrapf(ErrSwitchOverTargetInternal,
+						"failed to set old engine target %s ANA to inaccessible during switching phase: %v",
+						resolvedOldEngineName, err)
+				}
+			}
+		}
+		return nil
+
+	case SwitchoverPhasePromoting:
+		// Phase 3: Set new target → optimized, update internal state, persist.
+
+		// Resolve the old engine name for rollback. The switching phase
+		// resolved it independently, but each phased call is stateless.
+		resolvedOldEngineName := oldEngineName
+		if oldTargetIP != "" && oldTargetPort != 0 {
+			if resolved, resolveErr := ef.resolveRemoteEngineName(oldTargetIP, oldTargetPort, oldEngineName); resolveErr == nil {
+				resolvedOldEngineName = resolved
+			} else {
+				ef.log.WithError(resolveErr).Warn("Failed to resolve old engine name in promoting phase, using unresolved name for rollback")
+			}
+		}
+
+		ef.log.WithFields(logrus.Fields{
+			"phase":         phase,
+			"newEngineName": resolvedNewEngineName,
+			"newTargetIP":   newTargetIP,
+		}).Info("Switchover nvmf promoting: setting new target ANA to optimized")
+		if err := ef.setRemoteEngineTargetANAState(newTargetIP, resolvedNewEngineName, NvmeTCPANAStateOptimized); err != nil {
+			promoteErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to set new engine target %s ANA to optimized during promoting phase: %v",
+				resolvedNewEngineName, err)
+			if rbErr := ef.rollbackRemoteEngineTargetANAStates(oldTargetIP, resolvedOldEngineName, newTargetIP, resolvedNewEngineName); rbErr != nil {
+				ef.log.WithError(rbErr).Warn("Failed to roll back ANA states during nvmf promoting phase")
+				promoteErr = multierr.Append(promoteErr, rbErr)
+			}
+			return promoteErr
+		}
+
+		ef.Lock()
+		ef.EngineName = resolvedNewEngineName
+		ef.EngineIP = newTargetIP
+		ef.NvmeTcpFrontend.TargetIP = newTargetIP
+		ef.NvmeTcpFrontend.TargetPort = newTargetPort
+		ef.NvmeTcpFrontend.Nqn = newNQN
+		ef.NvmeTcpFrontend.Nguid = newNGUID
+		ef.Endpoint = GetNvmfEndpoint(newNQN, newTargetIP, newTargetPort)
+		ef.syncCurrentNVMeTCPPathLocked()
+		if ef.State != types.InstanceStateError {
+			ef.ErrorMsg = ""
+		}
+		ef.Unlock()
+		*updateRequired = true
+
+		ef.RLock()
+		if err := saveEngineFrontendRecord(ef.metadataDir, ef); err != nil {
+			ef.log.WithError(err).Warn("Failed to persist engine frontend record after promoting phase")
+		}
+		ef.RUnlock()
+
+		ef.log.WithFields(logrus.Fields{
+			"oldEngineName": oldEngineName,
+			"engineName":    resolvedNewEngineName,
+			"oldTargetIP":   oldTargetIP,
+			"newTargetIP":   newTargetIP,
+		}).Info("Switchover nvmf promoting complete")
+		return nil
+
+	default:
+		return errors.Wrapf(ErrSwitchOverTargetInvalidInput, "unknown switchover phase %q for engine frontend %s", phase, ef.Name)
+	}
+}
+
+// switchOverTargetBlockdevPhased executes a single phase of the blockdev frontend switchover.
+// The control plane drives progression through preparing → switching → promoting.
+func (ef *EngineFrontend) switchOverTargetBlockdevPhased(phase SwitchoverPhase, newEngineName, targetAddress string, newTargetIP string, newTargetPort int32, oldEngineName, oldTargetIP string, oldTargetPort int32, newNQN, newNGUID, oldNQN, oldNGUID, oldEndpoint string, oldDMDeviceIsBusy bool, updateRequired *bool) error {
+	switch phase {
+	case SwitchoverPhasePreparing:
+		// Step 1: Set new target → inaccessible to prevent routing on connect.
+		ef.log.WithFields(logrus.Fields{
+			"phase":         phase,
+			"newEngineName": newEngineName,
+			"newTargetIP":   newTargetIP,
+		}).Info("Switchover blockdev preparing: setting new target ANA to inaccessible before connect")
+		if err := ef.setRemoteEngineTargetANAState(newTargetIP, newEngineName, NvmeTCPANAStateInaccessible); err != nil {
+			setErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to set new engine target %s ANA to inaccessible before connect: %v",
+				newEngineName, err)
+			ef.Lock()
+			ef.ErrorMsg = setErr.Error()
+			ef.Unlock()
+			*updateRequired = true
+			return setErr
+		}
+
+		// Step 2: Connect new multipath path.
+		connectErr := ef.connectNvmeTCPPath(newTargetIP, newTargetPort)
+		if connectErr != nil && isNVMeTCPPathAlreadyConnectedError(connectErr) {
+			ef.log.WithError(connectErr).Info("NVMe/TCP path already connected during preparing phase, continuing")
+			connectErr = nil
+		}
+		if connectErr != nil {
+			connectErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to connect engine frontend %s multipath target %s during preparing phase: %v",
+				ef.Name, targetAddress, connectErr)
+			ef.Lock()
+			ef.ErrorMsg = connectErr.Error()
+			ef.Unlock()
+			*updateRequired = true
+			return connectErr
+		}
+
+		// Step 3: Wait for controller live.
+		if waitErr := ef.waitForNvmeTCPControllerLive(newTargetIP, newTargetPort); waitErr != nil {
+			waitErr = errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to wait for new NVMe controller live during preparing phase for %s: %v",
+				ef.Name, waitErr)
+			ef.Lock()
+			ef.ErrorMsg = waitErr.Error()
+			ef.Unlock()
+			*updateRequired = true
+			return waitErr
+		}
+
+		// Step 4: Set new target → non-optimized (ANA phase 1).
+		ef.log.Info("Switchover blockdev preparing: setting new target ANA to non-optimized")
+		if err := ef.setRemoteEngineTargetANAState(newTargetIP, newEngineName, NvmeTCPANAStateNonOptimized); err != nil {
+			setErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to set new engine target %s ANA to non-optimized during preparing phase: %v",
+				newEngineName, err)
+			ef.Lock()
+			ef.ErrorMsg = setErr.Error()
+			ef.Unlock()
+			*updateRequired = true
+			return setErr
+		}
+
+		ef.log.Info("Switchover blockdev preparing phase complete")
+		return nil
+
+	case SwitchoverPhaseSwitching:
+		// Set old target → inaccessible (ANA phase 2).
+		ef.log.WithFields(logrus.Fields{
+			"phase":         phase,
+			"oldEngineName": oldEngineName,
+			"oldTargetIP":   oldTargetIP,
+		}).Info("Switchover blockdev switching: setting old target ANA to inaccessible")
+		if oldEngineName != newEngineName || oldTargetIP != newTargetIP {
+			if err := ef.setRemoteEngineTargetANAState(oldTargetIP, oldEngineName, NvmeTCPANAStateInaccessible); err != nil {
+				if isSubsystemNotFoundError(err) {
+					ef.log.WithError(err).Info("Old engine subsystem already removed, skipping ANA demotion in switching phase")
+				} else {
+					switchErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+						"failed to set old engine target %s ANA to inaccessible during switching phase: %v",
+						oldEngineName, err)
+					ef.Lock()
+					ef.ErrorMsg = switchErr.Error()
+					ef.Unlock()
+					*updateRequired = true
+					return switchErr
+				}
+			}
+		}
+
+		ef.log.Info("Switchover blockdev switching phase complete")
+		return nil
+
+	case SwitchoverPhasePromoting:
+		// Resolve the old engine name for rollback. Each phased call is
+		// stateless, so we resolve independently of the switching phase.
+		resolvedOldEngineName := oldEngineName
+		if oldTargetIP != "" && oldTargetPort != 0 {
+			if resolved, resolveErr := ef.resolveRemoteEngineName(oldTargetIP, oldTargetPort, oldEngineName); resolveErr == nil {
+				resolvedOldEngineName = resolved
+			} else {
+				ef.log.WithError(resolveErr).Warn("Failed to resolve old engine name in promoting phase, using unresolved name for rollback")
+			}
+		}
+
+		// Step 1: Set new target → optimized (ANA phase 3).
+		ef.log.WithFields(logrus.Fields{
+			"phase":         phase,
+			"newEngineName": newEngineName,
+			"newTargetIP":   newTargetIP,
+		}).Info("Switchover blockdev promoting: setting new target ANA to optimized")
+		if err := ef.setRemoteEngineTargetANAState(newTargetIP, newEngineName, NvmeTCPANAStateOptimized); err != nil {
+			promoteErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to set new engine target %s ANA to optimized during promoting phase: %v",
+				newEngineName, err)
+			if rbErr := ef.rollbackRemoteEngineTargetANAStates(oldTargetIP, resolvedOldEngineName, newTargetIP, newEngineName); rbErr != nil {
+				ef.log.WithError(rbErr).Warn("Failed to roll back ANA states during blockdev promoting phase")
+				promoteErr = multierr.Append(promoteErr, rbErr)
+			}
+			ef.Lock()
+			ef.ErrorMsg = promoteErr.Error()
+			ef.Unlock()
+			*updateRequired = true
+			return promoteErr
+		}
+
+		// Step 2: Reload NVMe device info.
+		transportServiceID := strconv.Itoa(int(newTargetPort))
+		if reloadErr := ef.loadInitiatorNVMeDeviceInfo(newTargetIP, transportServiceID, newNQN); reloadErr != nil {
+			promoteErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to reload NVMe device info during promoting phase for %s: %v",
+				ef.Name, reloadErr)
+			// Revert ANA states so the old path becomes functional again.
+			// New target was set to OPTIMIZED in step 1; old target was set
+			// to INACCESSIBLE in the switching phase. Reverse both so the
+			// kernel routes I/O back through the old (still-running) engine.
+			if rbErr := ef.rollbackRemoteEngineTargetANAStates(oldTargetIP, resolvedOldEngineName, newTargetIP, newEngineName); rbErr != nil {
+				ef.log.WithError(rbErr).Warn("Failed to roll back ANA states during blockdev promoting step 2 rollback")
+				promoteErr = multierr.Append(promoteErr, rbErr)
+			}
+			ef.Lock()
+			ef.EngineName = oldEngineName
+			ef.NvmeTcpFrontend.TargetIP = oldTargetIP
+			ef.NvmeTcpFrontend.TargetPort = oldTargetPort
+			ef.NvmeTcpFrontend.Nqn = oldNQN
+			ef.NvmeTcpFrontend.Nguid = oldNGUID
+			ef.Endpoint = oldEndpoint
+			ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+			ef.ErrorMsg = promoteErr.Error()
+			ef.Unlock()
+			*updateRequired = true
+			return promoteErr
+		}
+
+		// Step 3: Load endpoint.
+		if endpointErr := ef.loadInitiatorEndpoint(true); endpointErr != nil {
+			promoteErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+				"failed to reload endpoint during promoting phase for %s: %v",
+				ef.Name, endpointErr)
+			if rbErr := ef.rollbackRemoteEngineTargetANAStates(oldTargetIP, resolvedOldEngineName, newTargetIP, newEngineName); rbErr != nil {
+				ef.log.WithError(rbErr).Warn("Failed to roll back ANA states during blockdev promoting step 3 rollback")
+				promoteErr = multierr.Append(promoteErr, rbErr)
+			}
+			ef.Lock()
+			ef.EngineName = oldEngineName
+			ef.NvmeTcpFrontend.TargetIP = oldTargetIP
+			ef.NvmeTcpFrontend.TargetPort = oldTargetPort
+			ef.NvmeTcpFrontend.Nqn = oldNQN
+			ef.NvmeTcpFrontend.Nguid = oldNGUID
+			ef.Endpoint = oldEndpoint
+			ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+			ef.ErrorMsg = promoteErr.Error()
+			ef.Unlock()
+			*updateRequired = true
+			return promoteErr
+		}
+
+		// Step 4: Commit new state.
+		ef.Lock()
+		ef.EngineName = newEngineName
+		ef.EngineIP = newTargetIP
+		ef.NvmeTcpFrontend.TargetIP = newTargetIP
+		ef.NvmeTcpFrontend.TargetPort = newTargetPort
+		ef.NvmeTcpFrontend.Nqn = newNQN
+		ef.NvmeTcpFrontend.Nguid = newNGUID
+		ef.Endpoint = ef.getInitiatorEndpoint()
+		ef.dmDeviceIsBusy = oldDMDeviceIsBusy
+		ef.syncCurrentNVMeTCPPathLocked()
+		if ef.State != types.InstanceStateError {
+			ef.ErrorMsg = ""
+		}
+		ef.Unlock()
+		*updateRequired = true
+
+		ef.RLock()
+		if err := saveEngineFrontendRecord(ef.metadataDir, ef); err != nil {
+			ef.log.WithError(err).Warn("Failed to persist engine frontend record after promoting phase")
+		}
+		ef.RUnlock()
+
+		ef.log.WithFields(logrus.Fields{
+			"oldEngineName": oldEngineName,
+			"engineName":    newEngineName,
+			"oldTargetIP":   oldTargetIP,
+			"newTargetIP":   newTargetIP,
+		}).Info("Switchover blockdev promoting complete")
+		return nil
+
+	default:
+		return errors.Wrapf(ErrSwitchOverTargetInvalidInput, "unknown switchover phase %q for engine frontend %s", phase, ef.Name)
+	}
+}
+
+func (ef *EngineFrontend) connectNvmeTCPPath(transportAddress string, transportPort int32) error {
 	transportServiceID := strconv.Itoa(int(transportPort))
-	if ef.startNvmeTCPInitiatorFn != nil {
-		return ef.startNvmeTCPInitiatorFn(transportAddress, transportServiceID, dmDeviceAndEndpointCleanupRequired, stop)
+	if ef.connectNvmeTCPPathFn != nil {
+		return ef.connectNvmeTCPPathFn(transportAddress, transportServiceID)
 	}
 	if ef.initiator == nil {
-		return false, errors.Wrapf(ErrSwitchOverTargetInternal, "initiator is nil for engine frontend %s", ef.Name)
+		return errors.Wrapf(ErrSwitchOverTargetInternal, "initiator is nil for engine frontend %s", ef.Name)
 	}
-	return ef.initiator.StartNvmeTCPInitiator(transportAddress, transportServiceID, dmDeviceAndEndpointCleanupRequired, stop)
+	return ef.initiator.ConnectNVMeTCPPath(transportAddress, transportServiceID)
+}
+
+func (ef *EngineFrontend) reconnectNvmeTCPPath(transportAddress string, transportPort int32) error {
+	transportServiceID := strconv.Itoa(int(transportPort))
+	if ef.reconnectNvmeTCPPathFn != nil {
+		return ef.reconnectNvmeTCPPathFn(transportAddress, transportServiceID)
+	}
+	if ef.initiator == nil {
+		return errors.Wrapf(ErrSwitchOverTargetInternal, "initiator is nil for engine frontend %s", ef.Name)
+	}
+	return ef.initiator.ReconnectNVMeTCPPath(transportAddress, transportServiceID)
+}
+
+// waitForNvmeTCPControllerLive waits for the NVMe-TCP controller at the given
+// address to reach "live" state. The nvme connect command returns immediately
+// while the TCP handshake completes asynchronously. Without this wait, the ANA
+// sync could mark the old path inaccessible while the new controller is still
+// "connecting", leaving no routable path and causing I/O errors.
+func (ef *EngineFrontend) waitForNvmeTCPControllerLive(transportAddress string, transportPort int32) error {
+	if ef.waitForNvmeTCPControllerLiveFn != nil {
+		return ef.waitForNvmeTCPControllerLiveFn(transportAddress, transportPort)
+	}
+	if ef.initiator == nil {
+		return nil
+	}
+
+	transportServiceID := strconv.Itoa(int(transportPort))
+
+	const maxAttempts = 30
+	const retryInterval = 500 * time.Millisecond
+
+	return ef.initiator.WaitForControllerLive(transportAddress, transportServiceID, maxAttempts, retryInterval)
+}
+
+func (ef *EngineFrontend) loadInitiatorNVMeDeviceInfo(transportAddress, transportServiceID, subsystemNQN string) error {
+	if ef.loadInitiatorNVMeDeviceInfoFn != nil {
+		return ef.loadInitiatorNVMeDeviceInfoFn(transportAddress, transportServiceID, subsystemNQN)
+	}
+	if ef.initiator == nil {
+		return errors.Wrapf(ErrSwitchOverTargetInternal, "initiator is nil for engine frontend %s", ef.Name)
+	}
+	return ef.initiator.LoadNVMeDeviceInfo(transportAddress, transportServiceID, subsystemNQN)
+}
+
+func (ef *EngineFrontend) loadInitiatorEndpoint(dmDeviceIsBusy bool) error {
+	if ef.loadInitiatorEndpointFn != nil {
+		return ef.loadInitiatorEndpointFn(dmDeviceIsBusy)
+	}
+	if ef.initiator == nil {
+		return errors.Wrapf(ErrSwitchOverTargetInternal, "initiator is nil for engine frontend %s", ef.Name)
+	}
+	return ef.initiator.LoadEndpointForNvmeTcpFrontend(dmDeviceIsBusy)
 }
 
 func (ef *EngineFrontend) getInitiatorEndpoint() string {
@@ -1335,7 +2324,7 @@ func (ef *EngineFrontend) snapshotOperation(inputSnapshotName string, snapshotOp
 		}
 	}
 
-	engineSpdkClient, err := GetServiceClient(net.JoinHostPort(ef.EngineIP, strconv.Itoa(types.SPDKServicePort)))
+	engineSpdkClient, err := GetServiceClient(ef.getEngineServiceAddress())
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get SPDK client to perform snapshot operation %s for snapshot %q", snapshotOp, inputSnapshotName)
 	}
@@ -1492,18 +2481,19 @@ func (ef *EngineFrontend) validateAndUpdateNvmeTcpFrontend() (err error) {
 		if ef.initiator.NVMeTCPInfo == nil {
 			return fmt.Errorf("invalid initiator with nil NvmeTcpInfo")
 		}
-		if err := ef.initiator.LoadNVMeDeviceInfo(ef.initiator.NVMeTCPInfo.TransportAddress, ef.initiator.NVMeTCPInfo.TransportServiceID, ef.initiator.NVMeTCPInfo.SubsystemNQN); err != nil {
+		if err := ef.loadInitiatorNVMeDeviceInfo(ef.initiator.NVMeTCPInfo.TransportAddress, ef.initiator.NVMeTCPInfo.TransportServiceID, ef.initiator.NVMeTCPInfo.SubsystemNQN); err != nil {
 			if strings.Contains(err.Error(), "connecting state") ||
-				strings.Contains(err.Error(), "resetting state") {
+				strings.Contains(err.Error(), "resetting state") ||
+				strings.Contains(err.Error(), "live state") {
 				ef.log.WithError(err).Warn("Ignored to validate and update engine frontend, because the device is still in a transient state")
 				return nil
 			}
 			return err
 		}
-		if err := ef.initiator.LoadEndpointForNvmeTcpFrontend(ef.dmDeviceIsBusy); err != nil {
+		if err := ef.loadInitiatorEndpoint(ef.dmDeviceIsBusy); err != nil {
 			return err
 		}
-		blockDevEndpoint := ef.initiator.GetEndpoint()
+		blockDevEndpoint := ef.getInitiatorEndpoint()
 		if ef.Endpoint == "" {
 			ef.Endpoint = blockDevEndpoint
 		}
@@ -1570,19 +2560,16 @@ func (ef *EngineFrontend) RecoverFromHost(spdkClient *spdkclient.Client) error {
 
 	case types.FrontendSPDKTCPNvmf:
 		// For NVMe-oF (non-blockdev) frontend, there is no local initiator.
-		// Just reconstruct the endpoint from persisted TargetPort and EngineIP.
-		nqn := helpertypes.GetNQN(ef.EngineName)
-		nguid := generateNGUID(ef.EngineName)
+		// Just reconstruct the endpoint from persisted TargetPort.
+		nqn, nguid := ef.getVolumeTargetIdentity()
 
 		ef.Lock()
 		ef.NvmeTcpFrontend.Nqn = nqn
 		ef.NvmeTcpFrontend.Nguid = nguid
-		if ef.NvmeTcpFrontend.TargetIP == "" {
-			ef.NvmeTcpFrontend.TargetIP = ef.EngineIP
-		}
 		if ef.NvmeTcpFrontend.TargetPort != 0 {
 			ef.Endpoint = GetNvmfEndpoint(nqn, ef.NvmeTcpFrontend.TargetIP, ef.NvmeTcpFrontend.TargetPort)
 		}
+		ef.syncCurrentNVMeTCPPathLocked()
 		ef.Unlock()
 
 		return nil
@@ -1596,35 +2583,64 @@ func (ef *EngineFrontend) RecoverFromHost(spdkClient *spdkclient.Client) error {
 		}
 
 		ef.Lock()
+		ef.initiator = i
 		ef.NvmeTcpFrontend.Nqn = nqn
 		ef.NvmeTcpFrontend.Nguid = nguid
-		ef.NvmeTcpFrontend.TargetIP = ef.EngineIP
 		ef.Unlock()
 
 		// Try to load the existing NVMe device info from sysfs.
-		// Use empty transport address/port since we want to discover by NQN.
-		if err := i.LoadNVMeDeviceInfo("", "", nqn); err != nil {
-			if strings.Contains(err.Error(), helpertypes.ErrorMessageCannotFindValidNvmeDevice) {
-				ef.log.WithError(err).Warnf("NVMe device not found on host during recovery of engine frontend %s, removing persisted record", ef.Name)
-				if removeErr := removeEngineFrontendRecord(ef.metadataDir, ef.VolumeName); removeErr != nil {
-					ef.log.WithError(removeErr).Warn("Failed to remove engine frontend record")
-				}
-				deviceNotFound = true
-				return ErrRecoverDeviceNotFound
+		// Prefer persisted target address/port for controller selection to
+		// avoid binding to an arbitrary controller on a multipath device.
+		transportAddress, transportServiceID := "", ""
+		if ef.NvmeTcpFrontend.TargetIP != "" && ef.NvmeTcpFrontend.TargetPort != 0 {
+			transportAddress = ef.NvmeTcpFrontend.TargetIP
+			transportServiceID = strconv.Itoa(int(ef.NvmeTcpFrontend.TargetPort))
+		}
+		loadErr := ef.loadInitiatorNVMeDeviceInfo(transportAddress, transportServiceID, nqn)
+		// If loading with the persisted target address failed, fall back
+		// to any available controller. This handles the case where the
+		// persisted target is stale but the multipath device still has a
+		// live controller at a different address.
+		if loadErr != nil && transportAddress != "" {
+			ef.log.WithError(loadErr).Warnf("Failed to load NVMe device info with persisted target %s:%s for engine frontend %s, falling back to any available controller",
+				transportAddress, transportServiceID, ef.Name)
+			if fallbackErr := ef.loadInitiatorNVMeDeviceInfo("", "", nqn); fallbackErr == nil {
+				loadErr = nil
 			}
-			recoverErr = errors.Wrapf(err, "failed to load NVMe device info during recovery of engine frontend %s", ef.Name)
-			return recoverErr
+		}
+		if loadErr != nil {
+			reconnected := false
+			if strings.Contains(loadErr.Error(), helpertypes.ErrorMessageCannotFindValidNvmeDevice) {
+				if ef.NvmeTcpFrontend.TargetIP != "" && ef.NvmeTcpFrontend.TargetPort != 0 {
+					ef.log.WithError(loadErr).Warnf("NVMe device not found on host during recovery of engine frontend %s, reconnecting persisted multipath target", ef.Name)
+					if reconnectErr := ef.reconnectNvmeTCPPath(ef.NvmeTcpFrontend.TargetIP, ef.NvmeTcpFrontend.TargetPort); reconnectErr != nil {
+						recoverErr = errors.Wrapf(reconnectErr, "failed to reconnect NVMe/TCP path during recovery of engine frontend %s", ef.Name)
+						return recoverErr
+					}
+					reconnected = true
+				} else {
+					ef.log.WithError(loadErr).Warnf("NVMe device not found on host during recovery of engine frontend %s, removing persisted record", ef.Name)
+					if removeErr := removeEngineFrontendRecord(ef.metadataDir, ef.VolumeName); removeErr != nil {
+						ef.log.WithError(removeErr).Warn("Failed to remove engine frontend record")
+					}
+					deviceNotFound = true
+					return ErrRecoverDeviceNotFound
+				}
+			}
+			if !reconnected {
+				recoverErr = errors.Wrapf(loadErr, "failed to load NVMe device info during recovery of engine frontend %s", ef.Name)
+				return recoverErr
+			}
 		}
 
 		// Try to load the existing dm-device endpoint.
-		if err := i.LoadEndpointForNvmeTcpFrontend(false); err != nil {
+		if err := ef.loadInitiatorEndpoint(false); err != nil {
 			recoverErr = errors.Wrapf(err, "failed to load endpoint during recovery of engine frontend %s", ef.Name)
 			return recoverErr
 		}
 
 		ef.Lock()
-		ef.initiator = i
-		ef.Endpoint = i.GetEndpoint()
+		ef.Endpoint = ef.getInitiatorEndpoint()
 		// Recover target port from the detected transport service ID.
 		if transportServiceID := i.GetTransportServiceID(); transportServiceID != "" {
 			if port, parseErr := strconv.Atoi(transportServiceID); parseErr == nil {
@@ -1636,6 +2652,7 @@ func (ef *EngineFrontend) RecoverFromHost(spdkClient *spdkclient.Client) error {
 			ef.NvmeTcpFrontend.TargetIP = transportAddress
 			ef.EngineIP = transportAddress
 		}
+		ef.syncCurrentNVMeTCPPathLocked()
 		ef.Unlock()
 
 		return nil
