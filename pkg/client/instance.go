@@ -426,7 +426,7 @@ func (c *InstanceServiceClient) InstanceResume(dataEngine, name, instanceType st
 }
 
 // InstanceSwitchOverTarget switches over the target for an instance.
-func (c *InstanceServiceClient) InstanceSwitchOverTarget(dataEngine, name, instanceType, targetAddress, engineName string) error {
+func (c *InstanceServiceClient) InstanceSwitchOverTarget(dataEngine, name, instanceType, targetAddress, engineName, switchoverPhase string) error {
 	if name == "" {
 		return fmt.Errorf("failed to switch over target for instance: missing required parameter name")
 	}
@@ -445,11 +445,12 @@ func (c *InstanceServiceClient) InstanceSwitchOverTarget(dataEngine, name, insta
 	defer cancel()
 
 	_, err := client.InstanceSwitchOverTarget(ctx, &rpc.InstanceSwitchOverTargetRequest{
-		Name:          name,
-		Type:          instanceType,
-		DataEngine:    rpc.DataEngine(driver),
-		TargetAddress: targetAddress,
-		EngineName:    engineName,
+		Name:            name,
+		Type:            instanceType,
+		DataEngine:      rpc.DataEngine(driver),
+		TargetAddress:   targetAddress,
+		EngineName:      engineName,
+		SwitchoverPhase: switchoverPhase,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to switch over target for instance %v", name)

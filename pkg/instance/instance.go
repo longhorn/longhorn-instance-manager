@@ -1075,7 +1075,7 @@ func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 		// Kept for backward compatibility if engine is passed instead of EngineFrontend, but EngineFrontendSwitchOver has EngineName argument
 		return nil, grpcstatus.Error(grpccodes.Unimplemented, "switch over target for engine has been replaced by engine frontend switch over")
 	case types.InstanceTypeEngineFrontend:
-		err := c.EngineFrontendSwitchOver(req.Name, req.EngineName, req.TargetAddress)
+		err := c.EngineFrontendSwitchOver(req.Name, req.EngineName, req.TargetAddress, req.SwitchoverPhase)
 		if err != nil {
 			return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to switch over target for engine frontend %v", req.Name)
 		}
