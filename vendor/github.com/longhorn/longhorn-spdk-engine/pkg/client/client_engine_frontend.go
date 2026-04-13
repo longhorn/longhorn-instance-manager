@@ -117,7 +117,9 @@ func (c *SPDKClient) EngineFrontendGet(name string) (*api.EngineFrontend, error)
 }
 
 // EngineFrontendSwitchOver repoints an engine frontend to a new engine target.
-func (c *SPDKClient) EngineFrontendSwitchOver(name, newEngineName, newTargetAddress string) error {
+// The engine IP for ANA state coordination is derived from the targetAddress
+// on the server side.
+func (c *SPDKClient) EngineFrontendSwitchOver(name, newEngineName, newTargetAddress, switchoverPhase string) error {
 	if name == "" {
 		return fmt.Errorf("failed to switch over target for engine frontend: missing required parameter name")
 	}
@@ -130,9 +132,10 @@ func (c *SPDKClient) EngineFrontendSwitchOver(name, newEngineName, newTargetAddr
 	defer cancel()
 
 	_, err := client.EngineFrontendSwitchOver(ctx, &spdkrpc.EngineFrontendSwitchOverRequest{
-		Name:          name,
-		EngineName:    newEngineName,
-		TargetAddress: newTargetAddress,
+		Name:            name,
+		EngineName:      newEngineName,
+		TargetAddress:   newTargetAddress,
+		SwitchoverPhase: switchoverPhase,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to switch over target to %s with new engine %s for %s", newTargetAddress, newEngineName, name)

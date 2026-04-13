@@ -41,8 +41,22 @@ type NvmeTcpTarget struct {
 	IP   string
 	Port int32
 
-	Nqn   string
-	Nguid string
+	Nqn      string
+	Nguid    string
+	ANAState NvmeTCPANAState
+}
+
+func toSPDKListenerANAState(anaState NvmeTCPANAState) (spdktypes.NvmfSubsystemListenerAnaState, error) {
+	switch anaState {
+	case NvmeTCPANAStateOptimized:
+		return spdktypes.NvmfSubsystemListenerAnaStateOptimized, nil
+	case NvmeTCPANAStateNonOptimized:
+		return spdktypes.NvmfSubsystemListenerAnaStateNonOptimized, nil
+	case NvmeTCPANAStateInaccessible:
+		return spdktypes.NvmfSubsystemListenerAnaStateInaccessible, nil
+	default:
+		return "", fmt.Errorf("unsupported NVMe/TCP ANA state %q", anaState)
+	}
 }
 
 // ReplicaAdder abstracts the two pluggable steps of the replica-add flow:
@@ -222,17 +236,16 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 	defer func() {
 		if err != nil {
 			e.log.WithError(err).Errorf("Failed to create engine %s", e.Name)
-			if e.State != types.InstanceStateError {
-				e.State = types.InstanceStateError
-			}
+			e.State = types.InstanceStateError
 			e.ErrorMsg = err.Error()
 
+			// Return the error-state engine object instead of a Go error
+			// so the gRPC layer can persist and report the engine status
+			// without triggering a gRPC error code.
 			ret = e.getWithoutLock()
 			err = nil
-		} else {
-			if e.State != types.InstanceStateError {
-				e.ErrorMsg = ""
-			}
+		} else if e.State != types.InstanceStateError {
+			e.ErrorMsg = ""
 		}
 	}()
 
@@ -249,6 +262,93 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		}
 	}
 
+	replicaBdevList := e.connectReplicas(spdkClient, replicaAddressMap)
+
+	e.log.UpdateLoggerWithWarnOnFailure(logrus.Fields{
+		"replicaStatusMap": e.ReplicaStatusMap,
+	}, "Failed to update logger with replica status map during engine creation")
+
+	e.checkAndUpdateInfoFromReplicasNoLock()
+
+	e.log.Infof("Connected all available replicas %+v, then launching raid during engine creation", e.ReplicaStatusMap)
+	if _, err := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList, ""); err != nil {
+		return nil, err
+	}
+
+	switch e.Frontend {
+	case types.FrontendSPDKTCPBlockdev, types.FrontendSPDKTCPNvmf:
+		e.log.Infof("Creating NVMe TCP target for engine %v", e.Name)
+		if err := e.createNVMeTCPTarget(spdkClient, superiorPortAllocator, portCount, NvmeTCPANAStateOptimized); err != nil {
+			return nil, errors.Wrapf(err, "failed to create NVMe TCP target for engine %v", e.Name)
+		}
+	case types.FrontendUBLK:
+		e.log.Infof("Creating UBLK target for engine %v", e.Name)
+		if err := spdkClient.UblkCreateTarget("", true); err != nil {
+			return nil, err
+		}
+	}
+
+	e.State = types.InstanceStateRunning
+
+	e.log.Info("Created engine target")
+
+	return e.getWithoutLock(), nil
+}
+
+// createNVMeTCPTarget creates the NVMe/TCP target for this engine.
+// initialANAState controls the ANA state the listener is created with.
+// Normal (first-time) engine creation should use NvmeTCPANAStateOptimized.
+// Migration/switchover targets should use NvmeTCPANAStateInaccessible so the
+// kernel multipath layer does not route I/O to the new path until explicitly
+// promoted.
+func (e *Engine) createNVMeTCPTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap, portCount int32, initialANAState NvmeTCPANAState) error {
+	podIP, err := commonnet.GetIPForPod()
+	if err != nil {
+		return err
+	}
+
+	port, _, err := superiorPortAllocator.AllocateRange(portCount)
+	if err != nil {
+		return errors.Wrapf(err, "failed to allocate port for engine target %v", e.Name)
+	}
+	e.log.Infof("Allocated port %v for engine target %v", port, e.Name)
+
+	e.NvmeTcpTarget.IP = podIP
+	e.NvmeTcpTarget.Port = port
+	e.NvmeTcpTarget.Nqn = getStableVolumeNQN(e.VolumeName)
+	e.NvmeTcpTarget.Nguid = getStableVolumeNGUID(e.VolumeName)
+
+	spdkANAState, err := toSPDKListenerANAState(initialANAState)
+	if err != nil {
+		return errors.Wrapf(err, "invalid initial ANA state %q for engine target %v", initialANAState, e.Name)
+	}
+
+	e.log.Info("Blindly stopping expose RAID bdev for engine")
+	if err := spdkClient.StopExposeBdev(e.NvmeTcpTarget.Nqn); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+		return errors.Wrapf(err, "failed to blindly stop exposing RAID bdev for engine target %v", e.Name)
+	}
+
+	cntlid := getEngineCntlid(e.Name)
+	nsUUID := getStableVolumeNsUUID(e.VolumeName)
+
+	e.log.Infof("Starting to expose RAID bdev for engine target %v on %v:%v with initial ANA state %v, cntlid %v, nsUUID %v",
+		e.Name, e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port, initialANAState, cntlid, nsUUID)
+	if err := spdkClient.StartExposeBdevWithANAState(e.NvmeTcpTarget.Nqn, e.Name, e.NvmeTcpTarget.Nguid, nsUUID,
+		e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port)), spdkANAState, cntlid, cntlid); err != nil {
+		// No need to release ports here. The engine will be marked as ERR by
+		// Create's deferred error handler, and Delete will release the ports
+		// when the user cleans up this engine.
+		return errors.Wrapf(err, "failed to start exposing RAID bdev for engine target %v", e.Name)
+	}
+
+	e.NvmeTcpTarget.ANAState = initialANAState
+
+	return nil
+}
+
+// connectReplicas connects to each replica's NVMf bdev and populates
+// ReplicaStatusMap. It returns the list of successfully connected bdev names.
+func (e *Engine) connectReplicas(spdkClient *spdkclient.Client, replicaAddressMap map[string]string) []string {
 	replicaBdevList := []string{}
 	for replicaName, replicaAddr := range replicaAddressMap {
 		e.ReplicaStatusMap[replicaName] = &EngineReplicaStatus{
@@ -266,67 +366,80 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 			replicaBdevList = append(replicaBdevList, bdevName)
 		}
 	}
-
-	e.log.UpdateLoggerWithWarnOnFailure(logrus.Fields{
-		"replicaStatusMap": e.ReplicaStatusMap,
-	}, "Failed to update logger with replica status map during engine creation")
-
-	e.checkAndUpdateInfoFromReplicaNoLock()
-
-	e.log.Infof("Connecting all available replicas %+v, then launching raid during engine creation", e.ReplicaStatusMap)
-	if _, err := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList, ""); err != nil {
-		return nil, err
-	}
-
-	switch e.Frontend {
-	case types.FrontendSPDKTCPBlockdev, types.FrontendSPDKTCPNvmf:
-		e.log.Infof("Creating NVMe TCP target for engine %v", e.Name)
-		if err := e.createNVMeTCPTarget(spdkClient, superiorPortAllocator, portCount); err != nil {
-			return nil, errors.Wrapf(err, "failed to create NVMe TCP target for engine %v", e.Name)
-		}
-	case types.FrontendUBLK:
-		e.log.Infof("Creating UBLK target for engine %v", e.Name)
-		if err := spdkClient.UblkCreateTarget("", true); err != nil {
-			return nil, err
-		}
-	}
-
-	e.State = types.InstanceStateRunning
-
-	e.log.Info("Created engine target")
-
-	return e.getWithoutLock(), nil
+	return replicaBdevList
 }
 
-func (e *Engine) createNVMeTCPTarget(spdkClient *spdkclient.Client, superiorPortAllocator *commonbitmap.Bitmap, portCount int32) error {
-	podIP, err := commonnet.GetIPForPod()
+func (e *Engine) SetTargetListenerANAState(spdkClient *spdkclient.Client, anaState NvmeTCPANAState) error {
+	if e == nil {
+		return fmt.Errorf("engine is nil")
+	}
+	if spdkClient == nil {
+		return fmt.Errorf("SPDK client is nil for engine %s", e.Name)
+	}
+
+	spdkANAState, err := toSPDKListenerANAState(anaState)
 	if err != nil {
 		return err
 	}
 
-	port, _, err := superiorPortAllocator.AllocateRange(portCount)
+	// Hold the write lock for the entire RPC + state update.
+	//
+	// Expand also holds the write lock while it tears down and re-creates the
+	// NVMe-TCP subsystem. Because the subsystem keeps the same stable NQN,
+	// IP, and port across an Expand, a check-after-RPC pattern cannot detect
+	// whether the subsystem was recycled. Without the write lock the SPDK RPC
+	// could land on the newly recreated subsystem and silently overwrite the
+	// ANA state that Expand carefully preserved.
+	//
+	// This is safe because:
+	//  - NvmfSubsystemListenerSetANAState is a fast SPDK RPC (flips an
+	//    internal flag, no I/O involved).
+	//  - SetTargetListenerANAState is only called during switchover, so
+	//    contention with Expand is rare.
+	//  - The SPDK RPC does not call back into Engine, so there is no
+	//    deadlock risk.
+	e.Lock()
+	defer e.Unlock()
+
+	if e.NvmeTcpTarget == nil {
+		return fmt.Errorf("engine %s does not have an NVMe/TCP target", e.Name)
+	}
+
+	nqn := e.NvmeTcpTarget.Nqn
+	ip := e.NvmeTcpTarget.IP
+	port := e.NvmeTcpTarget.Port
+
+	if nqn == "" || ip == "" || port == 0 {
+		return fmt.Errorf("engine %s has incomplete NVMe/TCP target information", e.Name)
+	}
+
+	_, err = spdkClient.NvmfSubsystemListenerSetANAState(
+		nqn,
+		ip,
+		strconv.Itoa(int(port)),
+		spdktypes.NvmeTransportTypeTCP,
+		spdktypes.NvmeAddressFamilyIPv4,
+		spdkANAState,
+		spdktypes.DefaultNvmfANAGroupID,
+	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to allocate port for engine target %v", e.Name)
+		return errors.Wrapf(err, "failed to set target listener ANA state %s for engine %s", anaState, e.Name)
 	}
 
-	e.NvmeTcpTarget.IP = podIP
-	e.NvmeTcpTarget.Port = port
-	e.NvmeTcpTarget.Nguid = generateNGUID(e.Name)
-	e.NvmeTcpTarget.Nqn = helpertypes.GetNQN(e.Name)
+	// NOTE: We intentionally do NOT read back and verify the ANA state via
+	// NvmfSubsystemGetListeners. The SPDK nvmf_subsystem_get_listeners RPC
+	// does not always include the ana_state field in its response (it depends
+	// on the SPDK version and whether ANA reporting is enabled at the
+	// subsystem level). The nvmf_subsystem_listener_set_ana_state RPC returns
+	// true on success, which is sufficient confirmation.
 
-	e.log.Info("Blindly stopping expose RAID bdev for engine")
-	if err := spdkClient.StopExposeBdev(e.NvmeTcpTarget.Nqn); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-		return errors.Wrapf(err, "failed to blindly stop exposing RAID bdev for engine target %v", e.Name)
-	}
+	e.NvmeTcpTarget.ANAState = anaState
 
-	e.log.Infof("Starting to expose RAID bdev for engine target %v on %v:%v", e.Name, e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port)
-	if err := spdkClient.StartExposeBdev(e.NvmeTcpTarget.Nqn, e.Name, e.NvmeTcpTarget.Nguid,
-		e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port))); err != nil {
-		// No need to release ports here. The engine will be marked as ERR by
-		// Create's deferred error handler, and Delete will release the ports
-		// when the user cleans up this engine.
-		return errors.Wrapf(err, "failed to start exposing RAID bdev for engine target %v", e.Name)
-	}
+	e.log.WithFields(logrus.Fields{
+		"targetIP":   ip,
+		"targetPort": port,
+		"anaState":   anaState,
+	}).Info("Updated engine target listener ANA state")
 
 	return nil
 }
@@ -816,7 +929,7 @@ func (e *Engine) replicaAddStart(spdkClient *spdkclient.Client, replicaClients m
 	if engineErr != nil {
 		return nil, startUpdateRequired, engineErr, nil
 	}
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicasNoLock()
 
 	rebuildingSnapshotList, err = getRebuildingSnapshotList(srcReplicaServiceCli, srcReplicaName)
 	if err != nil {
@@ -835,10 +948,27 @@ func (e *Engine) replicaAddStart(spdkClient *spdkclient.Client, replicaClients m
 		return nil, startUpdateRequired, nil, err
 	}
 
+	// Ensure the dst head lvol size matches the engine spec size before connecting and growing the RAID.
+	if err := e.ensureRebuildingReplicaSize(dstReplicaServiceCli, dstReplicaName); err != nil {
+		return nil, startUpdateRequired, nil, err
+	}
+
 	// Add rebuilding replica head bdev to the base bdev list of the RAID bdev
 	dstHeadLvolBdevName, err := connectNVMfBdev(spdkClient, dstReplicaName, dstHeadLvolAddress, e.ctrlrLossTimeout, e.fastIOFailTimeoutSec, maxRetries, retryInterval)
 	if err != nil {
 		return nil, startUpdateRequired, nil, err
+	}
+
+	// Double-confirm the actual bdev size reported by SPDK after connecting.
+	bdevList, err := spdkClient.BdevGetBdevs(dstHeadLvolBdevName, 0)
+	if err != nil {
+		return nil, startUpdateRequired, nil, errors.Wrapf(err, "failed to get bdev info for rebuilding replica %s head bdev %s", dstReplicaName, dstHeadLvolBdevName)
+	}
+	if len(bdevList) != 1 {
+		return nil, startUpdateRequired, nil, fmt.Errorf("expected 1 bdev for rebuilding replica %s head bdev %s, got %d", dstReplicaName, dstHeadLvolBdevName, len(bdevList))
+	}
+	if err := validateReplicaBdevSize(e, dstReplicaName, &bdevList[0]); err != nil {
+		return nil, startUpdateRequired, nil, errors.Wrapf(err, "rebuilding replica %s head bdev %s has wrong size, cannot add to engine %s", dstReplicaName, dstHeadLvolBdevName, e.Name)
 	}
 
 	e.log.Infof("Adding rebuilding replica %s head bdev %s to the base bdev list for engine %s", dstReplicaName, dstHeadLvolBdevName, e.Name)
@@ -1201,7 +1331,7 @@ func (e *Engine) replicaAddFinish(srcReplicaServiceCli, dstReplicaServiceCli *cl
 		}
 	}
 
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicasNoLock()
 
 	if dstReplicaErr != nil {
 		e.log.Errorf("Engine failed to finish rebuilding replica %s from healthy replica %s (dstErr=%v)", dstReplicaName, srcReplicaName, dstReplicaErr)
@@ -1423,7 +1553,7 @@ func (e *Engine) snapshotOperation(spdkClient *spdkclient.Client, inputSnapshotN
 		return "", engineErr
 	}
 
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicasNoLock()
 
 	e.log.Infof("Engine finished snapshot operation %s name %s", snapshotOp, snapshotName)
 
@@ -1469,7 +1599,7 @@ func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]
 			return "", fmt.Errorf("empty snapshot name for engine %s snapshot deletion", e.Name)
 		}
 		// Refresh snapshot topology before validation to avoid stale SnapshotMap checks.
-		e.checkAndUpdateInfoFromReplicaNoLock()
+		e.checkAndUpdateInfoFromReplicasNoLock()
 		if e.SnapshotMap[snapshotName] == nil {
 			return "", fmt.Errorf("engine %s does not contain snapshot %s during snapshot deletion", e.Name, snapshotName)
 		}
@@ -2121,7 +2251,7 @@ func (e *Engine) BackupRestoreFinish(spdkClient *spdkclient.Client) error {
 	}
 
 	e.IsRestoring = false
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicasNoLock()
 	updateRequired = true
 
 	return nil
@@ -2258,10 +2388,24 @@ func (e *Engine) Expand(spdkClient *spdkclient.Client, size uint64) (err error) 
 
 	switch e.Frontend {
 	case types.FrontendSPDKTCPBlockdev, types.FrontendSPDKTCPNvmf:
-		e.log.Infof("Starting to expose RAID bdev for engine target %v on %v:%v",
-			e.Name, e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port)
-		if err := spdkClient.StartExposeBdev(e.NvmeTcpTarget.Nqn, e.Name, e.NvmeTcpTarget.Nguid,
-			e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port))); err != nil {
+		cntlid := getEngineCntlid(e.Name)
+		nsUUID := getStableVolumeNsUUID(e.VolumeName)
+		// Preserve the current ANA state across the expand. If this engine
+		// was demoted to inaccessible during a switchover, re-exposing with
+		// optimized would create a dual-write window.
+		currentANAState := e.NvmeTcpTarget.ANAState
+		if currentANAState == "" {
+			currentANAState = NvmeTCPANAStateOptimized
+		}
+		spdkANAState, err := toSPDKListenerANAState(currentANAState)
+		if err != nil {
+			return errors.Wrapf(err, "invalid ANA state %q for engine target %v during expand", currentANAState, e.Name)
+		}
+		e.log.Infof("Starting to expose RAID bdev for engine target %v on %v:%v with ANA state %v, cntlid %v, nsUUID %v",
+			e.Name, e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port, currentANAState, cntlid, nsUUID)
+		if err := spdkClient.StartExposeBdevWithANAState(e.NvmeTcpTarget.Nqn, e.Name, e.NvmeTcpTarget.Nguid, nsUUID,
+			e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port)),
+			spdkANAState, cntlid, cntlid); err != nil {
 			return errors.Wrapf(err, "failed to start exposing RAID bdev for engine target %v", e.Name)
 		}
 	case types.FrontendEmpty:
@@ -2577,7 +2721,9 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		return err
 	}
 
-	defer e.applyValidateAndUpdateErrorNoLock(err, &updateRequired)
+	defer func() {
+		e.applyValidateAndUpdateErrorNoLock(err, &updateRequired)
+	}()
 
 	bdevRaid, err := e.getRaidBdevNoLock(bdevMap)
 	if err != nil {
@@ -2601,7 +2747,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		// TODO: should we delete the engine automatically here?
 	}
 
-	e.checkAndUpdateInfoFromReplicaNoLock()
+	e.checkAndUpdateInfoFromReplicasNoLock()
 
 	return nil
 }
@@ -2723,11 +2869,11 @@ type replicaInspection struct {
 	foundSnapshot     bool
 }
 
-// checkAndUpdateInfoFromReplicaNoLock refreshes engine-level info (SnapshotMap, Head,
+// checkAndUpdateInfoFromReplicasNoLock refreshes engine-level info (SnapshotMap, Head,
 // ActualSize) from the replicas. It iterates ReplicaStatusMap, inspects each RW/WO
 // replica, resolves its ancestor lineage, and selects the replica with the earliest
 // ancestor CreationTime as the info source. Must be called with the Engine lock held.
-func (e *Engine) checkAndUpdateInfoFromReplicaNoLock() {
+func (e *Engine) checkAndUpdateInfoFromReplicasNoLock() {
 	replicaMap := map[string]*api.Replica{}
 	replicaAncestorMap := map[string]*api.Lvol{}
 	hasBackingImage := false
@@ -2995,6 +3141,32 @@ func (e *Engine) validateAndUpdateReplicaNvme(replicaName string, bdev *spdktype
 	}
 
 	return replicaStatus.Mode, nil
+}
+
+// ensureRebuildingReplicaSize checks the dst replica's spec size against the engine spec size
+// before the NVMe bdev is connected. If the replica is smaller (e.g. created before a volume
+// expansion), it is expanded in place so that only a single connectNVMfBdev call is needed.
+// Returns an error if the replica is larger than the engine spec size.
+func (e *Engine) ensureRebuildingReplicaSize(dstReplicaServiceCli *client.SPDKClient, replicaName string) error {
+	replica, err := dstReplicaServiceCli.ReplicaGet(replicaName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get rebuilding replica %s info before size check", replicaName)
+	}
+
+	if replica.SpecSize == e.SpecSize {
+		return nil
+	}
+	if replica.SpecSize > e.SpecSize {
+		return fmt.Errorf("rebuilding replica %s size %d exceeds engine %s spec size %d",
+			replicaName, replica.SpecSize, e.Name, e.SpecSize)
+	}
+
+	e.log.Infof("Rebuilding replica %s size %d is smaller than engine %s spec size %d, expanding before connecting",
+		replicaName, replica.SpecSize, e.Name, e.SpecSize)
+	if err := dstReplicaServiceCli.ReplicaExpand(replicaName, e.SpecSize); err != nil {
+		return errors.Wrapf(err, "failed to expand rebuilding replica %s to engine %s spec size %d", replicaName, e.Name, e.SpecSize)
+	}
+	return nil
 }
 
 func validateReplicaBdevSize(e *Engine, replicaName string, bdev *spdktypes.BdevInfo) error {

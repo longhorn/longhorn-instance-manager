@@ -578,7 +578,7 @@ func (r *Replica) validateAndUpdate(bdevLvolMap map[string]*spdktypes.BdevInfo, 
 	exposedPort, exposedPortErr := getExposedPort(subsystemMap[nqn])
 	if r.IsExposed {
 		if exposedPortErr != nil {
-			return errors.Wrapf(err, "failed to find the actual port in subsystem NQN %s for replica %s, which should be exposed at %d", nqn, r.Name, r.PortStart)
+			return errors.Wrapf(exposedPortErr, "failed to find the actual port in subsystem NQN %s for replica %s, which should be exposed at %d", nqn, r.Name, r.PortStart)
 		}
 		if exposedPort != r.PortStart {
 			return fmt.Errorf("found mismatching between the actual exposed port %d and the recorded port %d for exposed replica %s", exposedPort, r.PortStart, r.Name)
