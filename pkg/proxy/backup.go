@@ -440,14 +440,25 @@ func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rp
 	return resp, nil
 }
 
+// setEnv exports caller-supplied KEY=VALUE entries into the process
+// environment so that github.com/longhorn/backupstore helpers (which consume
+// credentials through os.Getenv) can observe them.
+//
+// Keys are first validated against backupEnvAllowlist. Any unknown key —
+// including LD_PRELOAD, LD_LIBRARY_PATH, LD_AUDIT, PATH, and similar loader
+// variables — causes the whole request to be rejected before any os.Setenv
+// call is made, so partially-applied state cannot leak. See
+// GHSA-wgh7-5vxp-4qr4.
 func setEnv(envs []string) error {
+	if err := validateBackupEnv(envs); err != nil {
+		return err
+	}
 	for _, env := range envs {
-		part := strings.SplitN(env, "=", 2)
-		if len(part) < 2 {
-			continue
+		key, value, ok := strings.Cut(env, "=")
+		if !ok {
+			return fmt.Errorf("invalid environment entry %q: expected KEY=VALUE", env)
 		}
-
-		if err := os.Setenv(part[0], part[1]); err != nil {
+		if err := os.Setenv(key, value); err != nil {
 			return err
 		}
 	}
