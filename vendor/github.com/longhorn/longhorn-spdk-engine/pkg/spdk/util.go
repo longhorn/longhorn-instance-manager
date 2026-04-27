@@ -143,6 +143,7 @@ func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address stri
 		return "", err
 	}
 
+	adrfam := spdkclient.DetectAddressFamily(ip)
 	nvmeBdevNameList := []string{}
 	err = retry.Do(
 		func() error {
@@ -153,7 +154,7 @@ func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address stri
 				ip,
 				port,
 				spdktypes.NvmeTransportTypeTCP,
-				spdktypes.NvmeAddressFamilyIPv4,
+				adrfam,
 				int32(ctrlrLossTimeout),
 				replicaReconnectDelaySec,
 				int32(fastIOFailTimeoutSec),
