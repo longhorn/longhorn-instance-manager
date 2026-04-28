@@ -7,7 +7,7 @@ toolchain go1.25.7
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260329081928-dd6c86c9ba6d
+	github.com/longhorn/backupstore v0.0.0-20260414054550-8570535ce7ad
 	github.com/longhorn/go-common-libs v0.0.0-20260328134226-cafa38fc4ce8
 	github.com/longhorn/go-spdk-helper v0.5.0
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e
