@@ -5,7 +5,7 @@ go 1.26.0
 toolchain go1.26.2
 
 require (
-	github.com/cockroachdb/errors v1.12.0
+	github.com/cockroachdb/errors v1.13.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260414054550-8570535ce7ad
 	github.com/longhorn/go-common-libs v0.0.0-20260328134226-cafa38fc4ce8
@@ -63,7 +63,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gammazero/deque v1.0.0 // indirect
 	github.com/gammazero/workerpool v1.1.3 // indirect
-	github.com/getsentry/sentry-go v0.27.0 // indirect
+	github.com/getsentry/sentry-go v0.46.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
