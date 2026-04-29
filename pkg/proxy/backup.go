@@ -327,7 +327,7 @@ func (ops V1DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.Engi
 	if err != nil {
 		return err
 	}
-	return task.RestoreBackup(req.Url, credential, int(req.ConcurrentLimit))
+	return task.RestoreBackup(req.Url, credential, int(req.ConcurrentLimit), req.NeedCorrectEncryptedVolumeSize)
 }
 
 func (ops V2DataEngineProxyOps) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest, credential map[string]string) error {
