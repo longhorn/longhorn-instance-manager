@@ -318,7 +318,10 @@ func (c *SPDKClient) EngineSnapshotHashStatus(name, snapshotName string) (respon
 }
 
 // EngineSnapshotClone clones a snapshot from a source engine into the target engine.
-func (c *SPDKClient) EngineSnapshotClone(name, snapshotName, srcEngineName, srcEngineAddress string, cloneMode spdkrpc.CloneMode) error {
+// dstReplicaSrcReplicaPairMap maps each dst replica name to its corresponding src replica name.
+// When non-empty (v2 linked-clone), the engine uses this explicit pairing instead of auto-detecting
+// by IP+lvsUUID co-location.
+func (c *SPDKClient) EngineSnapshotClone(name, snapshotName, srcEngineName, srcEngineAddress string, cloneMode spdkrpc.CloneMode, dstReplicaSrcReplicaPairMap map[string]string) error {
 	if err := util.VerifyParams(
 		util.Param{Name: "name", Value: name},
 		util.Param{Name: "snapshotName", Value: snapshotName},
@@ -334,11 +337,12 @@ func (c *SPDKClient) EngineSnapshotClone(name, snapshotName, srcEngineName, srcE
 	defer cancel()
 
 	_, err := client.EngineSnapshotClone(ctx, &spdkrpc.EngineSnapshotCloneRequest{
-		Name:             name,
-		SnapshotName:     snapshotName,
-		SrcEngineName:    srcEngineName,
-		SrcEngineAddress: srcEngineAddress,
-		CloneMode:        cloneMode,
+		Name:                        name,
+		SnapshotName:                snapshotName,
+		SrcEngineName:               srcEngineName,
+		SrcEngineAddress:            srcEngineAddress,
+		CloneMode:                   cloneMode,
+		DstReplicaSrcReplicaPairMap: dstReplicaSrcReplicaPairMap,
 	})
 	return errors.Wrapf(err, "failed to clone snapshot for engine %s, snapshotName %s, srcEngineName %s, srcEngineAddress %s",
 		name, snapshotName, srcEngineName, srcEngineAddress)
