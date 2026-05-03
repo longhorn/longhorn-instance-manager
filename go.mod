@@ -8,8 +8,8 @@ require (
 	github.com/cockroachdb/errors v1.13.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260414054550-8570535ce7ad
-	github.com/longhorn/go-common-libs v0.0.0-20260418032157-c135767e4855
-	github.com/longhorn/go-spdk-helper v0.6.1-0.20260422091955-74dd5ebcf118
+	github.com/longhorn/go-common-libs v0.0.0-20260502033232-8cc14de85b45
+	github.com/longhorn/go-spdk-helper v0.6.1-0.20260502161311-a7689bc3c0e4
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20260419.0.20260429072047-589f2d5665a3
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260424114859-e899814562ff
 	github.com/longhorn/types v0.0.0-20260424095800-4b6385093e88
@@ -104,7 +104,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
