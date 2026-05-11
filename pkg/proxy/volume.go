@@ -374,7 +374,19 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, r
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeSnapshotMaxCountSet is not yet implemented for V2 engine")
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal,
+			"failed to get SPDK client for VolumeSnapshotMaxCountSet: %v", err)
+	}
+	defer c.Close()
+
+	if err := c.VolumeSnapshotMaxCountSet(req.ProxyEngineRequest.EngineName, int(req.Count.Count)); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal,
+			"failed to set snapshot max count for engine %v: %v",
+			req.ProxyEngineRequest.EngineName, err)
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (p *Proxy) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
@@ -419,7 +431,19 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, re
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeSnapshotMaxSizeSet is not yet implemented for V2 engine")
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal,
+			"failed to get SPDK client for VolumeSnapshotMaxSizeSet: %v", err)
+	}
+	defer c.Close()
+
+	if err := c.VolumeSnapshotMaxSizeSet(req.ProxyEngineRequest.EngineName, req.Size.Size); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal,
+			"failed to set snapshot max size for engine %v: %v",
+			req.ProxyEngineRequest.EngineName, err)
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (p *Proxy) RemountReadOnlyVolume(ctx context.Context, req *rpc.RemountVolumeRequest) (resp *emptypb.Empty, err error) {
