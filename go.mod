@@ -19,7 +19,7 @@ require (
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.36.0
+	k8s.io/mount-utils v0.36.1
 )
 
 require (
