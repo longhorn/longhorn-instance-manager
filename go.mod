@@ -10,7 +10,7 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20260502085909-21ee466f5a8a
 	github.com/longhorn/go-common-libs v0.0.0-20260502161928-1e84fa75a8f1
 	github.com/longhorn/go-spdk-helper v0.6.1-0.20260502161311-a7689bc3c0e4
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20260419.0.20260429072047-589f2d5665a3
+	github.com/longhorn/longhorn-engine v1.12.0-dev-20260503
 	github.com/longhorn/longhorn-spdk-engine v1.12.0-rc1.0.20260512063050-140375ad6b81
 	github.com/longhorn/types v0.0.0-20260424095800-4b6385093e88
 	github.com/sirupsen/logrus v1.9.4
