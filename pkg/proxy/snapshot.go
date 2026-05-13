@@ -17,7 +17,6 @@ import (
 
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
-	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
@@ -375,16 +374,18 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to get engine %v", req.EngineName).Error())
 	}
 
-	type replicaCloneStatusEntry struct {
-		name    string
-		address string
-		status  *spdkapi.ReplicaSnapshotCloneDstStatus
+	resp = &rpc.EngineSnapshotCloneStatusProxyResponse{
+		Status: map[string]*enginerpc.SnapshotCloneStatusResponse{},
 	}
 
-	replicaCloneStatusEntries := make([]replicaCloneStatusEntry, 0, len(recv.ReplicaModeMap))
+	// reachableNoState holds names of replicas that were successfully queried
+	// (including a successful Close) but have no clone state yet (State == "").
+	// They are used as a deterministic fallback when no replica has started cloning.
+	var reachableNoState []string
 
-	// Query clone status from all RW replicas so we can prefer the one that
-	// actually reports a valid clone state, and keep the selection deterministic.
+	// Query clone status from all RW replicas and return all that have a clone
+	// state. For N-replica linked-clone, the manager needs status from each
+	// replica to determine overall clone completion.
 	for rName, mode := range recv.ReplicaModeMap {
 		if mode != spdktypes.ModeRW {
 			continue
@@ -406,60 +407,52 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 		}
 
 		status, err := replicaClient.ReplicaSnapshotCloneDstStatusCheck(rName)
-		if closeErr := replicaClient.Close(); closeErr != nil {
+		closeErr := replicaClient.Close()
+		if closeErr != nil {
 			log.WithError(closeErr).
 				WithField("replicaName", rName).
 				WithField("replicaAddress", replicaAddress).
 				Warn("Failed to close SPDK client")
 		}
-		if err != nil {
+		if err != nil || status == nil {
 			log.WithError(err).
 				WithField("replicaName", rName).
 				WithField("replicaAddress", replicaAddress).
-				Debug("Failed to get clone status for replica")
+				Debug("Failed to get or nil clone status for replica, skipping")
 			continue
 		}
 
-		replicaCloneStatusEntries = append(replicaCloneStatusEntries, replicaCloneStatusEntry{
-			name:    rName,
-			status:  status,
-			address: replicaAddress,
-		})
-	}
-
-	if len(replicaCloneStatusEntries) == 0 {
-		return nil, grpcstatus.Error(grpccodes.Internal, "cannot get clone status from any replica")
-	}
-
-	// Prefer replicas that have clone state. If both have (or both don't have)
-	// state, fall back to replica name to keep the selection deterministic.
-	sort.Slice(replicaCloneStatusEntries, func(i, j int) bool {
-		iHasState := replicaCloneStatusEntries[i].status != nil && replicaCloneStatusEntries[i].status.State != ""
-		jHasState := replicaCloneStatusEntries[j].status != nil && replicaCloneStatusEntries[j].status.State != ""
-
-		switch {
-		case iHasState && !jHasState:
-			return true
-		case !iHasState && jHasState:
-			return false
-		default:
-			return replicaCloneStatusEntries[i].name < replicaCloneStatusEntries[j].name
+		if status.State == "" {
+			// No clone operation initiated yet; record as reachable fallback
+			// only if the connection closed cleanly.
+			if closeErr == nil {
+				reachableNoState = append(reachableNoState, rName)
+			}
+			continue
 		}
-	})
 
-	replicaStatus := replicaCloneStatusEntries[0]
-
-	resp = &rpc.EngineSnapshotCloneStatusProxyResponse{
-		Status: map[string]*enginerpc.SnapshotCloneStatusResponse{},
+		tcpAddr := types.AddTcpPrefixForAddress(replicaAddress)
+		resp.Status[tcpAddr] = &enginerpc.SnapshotCloneStatusResponse{
+			IsCloning:          status.IsCloning,
+			Error:              status.Error,
+			Progress:           int32(status.Progress),
+			State:              status.State,
+			FromReplicaAddress: status.SrcReplicaAddress,
+			SnapshotName:       status.SnapshotName,
+		}
 	}
-	tcpReplicaAddress := types.AddTcpPrefixForAddress(replicaStatus.address)
-	resp.Status[tcpReplicaAddress] = &enginerpc.SnapshotCloneStatusResponse{
-		IsCloning:          replicaStatus.status.IsCloning,
-		Error:              replicaStatus.status.Error,
-		Progress:           int32(replicaStatus.status.Progress),
-		State:              replicaStatus.status.State,
-		FromReplicaAddress: replicaStatus.status.SrcReplicaAddress,
-		SnapshotName:       replicaStatus.status.SnapshotName,
+
+	// If no replica has a clone state yet, return a single entry from the
+	// reachable-but-not-started set, sorted by replica name for determinism.
+	if len(resp.Status) == 0 && len(reachableNoState) > 0 {
+		sort.Strings(reachableNoState)
+		replicaAddress := recv.ReplicaAddressMap[reachableNoState[0]]
+		tcpAddr := types.AddTcpPrefixForAddress(replicaAddress)
+		resp.Status[tcpAddr] = &enginerpc.SnapshotCloneStatusResponse{}
+	}
+
+	if len(resp.Status) == 0 {
+		return nil, grpcstatus.Error(grpccodes.Internal, "cannot get clone status from any replica")
 	}
 
 	return resp, nil
