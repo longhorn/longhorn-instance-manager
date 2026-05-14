@@ -152,12 +152,12 @@ github.com/longhorn/go-common-libs v0.0.0-20260502161928-1e84fa75a8f1 h1:sjDswhc
 github.com/longhorn/go-common-libs v0.0.0-20260502161928-1e84fa75a8f1/go.mod h1:+aXFI8DmHTX4Az9pZF16/XKfrVKWIESJjw+hcxdMslw=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260331100542-4c4c6f91525b h1:877AlP/bMchRs0qRHVW3zZ42qt+iNjALc4Sz9XzrgZQ=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260331100542-4c4c6f91525b/go.mod h1:5obSKdWNPiFbFTzPWU09k9mGCSnpN9pgGoHQTUk7kYo=
-github.com/longhorn/go-spdk-helper v0.6.1 h1:eFfQzH+E7jP08K1YjySnfoNLZTED6asuXnkx6MuA8w0=
-github.com/longhorn/go-spdk-helper v0.6.1/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
+github.com/longhorn/go-spdk-helper v0.6.2-0.20260514102642-789b2a1cb467 h1:qwlSBgqM4tRclTcVPHOukZVu4jQjM5BZVgUseiORSk0=
+github.com/longhorn/go-spdk-helper v0.6.2-0.20260514102642-789b2a1cb467/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
 github.com/longhorn/longhorn-engine v1.12.0-rc1.0.20260514055507-33e0c9c94743 h1:qipUnGPoycKQTV4o8fldtADKeZB5wsr3MVxumLH8xQA=
 github.com/longhorn/longhorn-engine v1.12.0-rc1.0.20260514055507-33e0c9c94743/go.mod h1:ElF8baZykwtIhUy3bQmn2BWGPQ5Ctz1fNJV53ByIKbA=
-github.com/longhorn/longhorn-spdk-engine v1.12.0-rc1.0.20260512083446-50c873ec2892 h1:8fHvg2JWck1WJEk1cxYs+GVic2cy2OELpxnuRoKuHAs=
-github.com/longhorn/longhorn-spdk-engine v1.12.0-rc1.0.20260512083446-50c873ec2892/go.mod h1:CXNCPvj82nl6hf2+Wu5r3HoC/iVz0rKFYty1EmY+mJg=
+github.com/longhorn/longhorn-spdk-engine v1.12.0-rc2.0.20260514112050-c9306c85100e h1:kIwRHAdLcAEUyoiExqPnwaZXoESBV98pyuMIba63iqA=
+github.com/longhorn/longhorn-spdk-engine v1.12.0-rc2.0.20260514112050-c9306c85100e/go.mod h1:QKlI5z0NgG/L5tuzKcQlkUcnd4JXtm7GZKN+ir8Qj6s=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20260513135851-499d5d1f4e79 h1:x0gJxB3jaUzpWA1k//Hs1MWjoQjSSC6Bg58GuuojJgM=
