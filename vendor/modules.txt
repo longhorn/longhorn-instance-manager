@@ -240,8 +240,6 @@ github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/docker/go-units v0.5.0
-## explicit
 # github.com/emicklei/go-restful/v3 v3.13.0
 ## explicit; go 1.13
 github.com/emicklei/go-restful/v3
@@ -309,15 +307,9 @@ github.com/google/gnostic-models/openapiv3
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
-# github.com/gorilla/context v1.1.2
-## explicit; go 1.20
 # github.com/gorilla/handlers v1.5.2
 ## explicit; go 1.20
 github.com/gorilla/handlers
-# github.com/gorilla/mux v1.8.1
-## explicit; go 1.20
-# github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
-## explicit; go 1.20
 # github.com/jinzhu/copier v0.4.0
 ## explicit; go 1.13
 github.com/jinzhu/copier
@@ -369,7 +361,7 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.6.1
+# github.com/longhorn/go-spdk-helper v0.6.2-0.20260514102642-789b2a1cb467
 ## explicit; go 1.25.3
 github.com/longhorn/go-spdk-helper/pkg/initiator
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
@@ -391,7 +383,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v0.0.0-20260514004922-b88703c1adf1
+# github.com/longhorn/longhorn-spdk-engine v0.0.0-20260514112010-ace182defb44
 ## explicit; go 1.26.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -420,18 +412,12 @@ github.com/longhorn/types/pkg/generated/spdkrpc
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
-# github.com/mattn/go-colorable v0.1.13
-## explicit; go 1.15
-# github.com/mattn/go-isatty v0.0.20
-## explicit; go 1.15
 # github.com/mitchellh/go-ps v1.0.0
 ## explicit; go 1.13
 github.com/mitchellh/go-ps
 # github.com/moby/sys/mountinfo v0.7.2
 ## explicit; go 1.17
 github.com/moby/sys/mountinfo
-# github.com/moby/sys/reexec v0.1.0
-## explicit; go 1.18
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 ## explicit
 github.com/modern-go/concurrent
@@ -476,8 +462,6 @@ github.com/prometheus/procfs/internal/util
 # github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47
 ## explicit
 github.com/rancher/go-fibmap
-# github.com/rancher/go-rancher v0.1.1-0.20190307222549-9756097e5e4c
-## explicit
 # github.com/rogpeppe/go-internal v1.14.1
 ## explicit; go 1.23
 github.com/rogpeppe/go-internal/fmtsort
@@ -676,27 +660,15 @@ google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/emptypb
 google.golang.org/protobuf/types/known/timestamppb
-# gopkg.in/VividCortex/ewma.v1 v1.1.1
-## explicit
 # gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 ## explicit; go 1.11
 gopkg.in/check.v1
-# gopkg.in/cheggaaa/pb.v2 v2.0.7
-## explicit
 # gopkg.in/evanphx/json-patch.v4 v4.13.0
 ## explicit
 gopkg.in/evanphx/json-patch.v4
-# gopkg.in/fatih/color.v1 v1.7.0
-## explicit
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
-# gopkg.in/mattn/go-colorable.v0 v0.1.0
-## explicit
-# gopkg.in/mattn/go-isatty.v0 v0.0.4
-## explicit
-# gopkg.in/mattn/go-runewidth.v0 v0.0.4
-## explicit
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
