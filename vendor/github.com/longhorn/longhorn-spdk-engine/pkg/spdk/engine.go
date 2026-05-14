@@ -138,6 +138,8 @@ type Engine struct {
 	Head        *api.Lvol
 	SnapshotMap map[string]*api.Lvol
 
+	SnapshotMaxCount int32
+
 	IsRestoring           bool
 	RestoringSnapshotName string
 
@@ -174,7 +176,7 @@ type EngineReplicaStatus struct {
 	Mode     types.Mode
 }
 
-func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineUpdateCh chan interface{}) *Engine {
+func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineUpdateCh chan interface{}, snapshotMaxCount int32) *Engine {
 	log := logrus.StandardLogger().WithFields(logrus.Fields{
 		"engineName": engineName,
 		"volumeName": volumeName,
@@ -206,6 +208,8 @@ func NewEngine(engineName, volumeName, frontend string, specSize uint64, engineU
 		NvmeTcpTarget: &NvmeTcpTarget{},
 
 		State: types.InstanceStatePending,
+
+		SnapshotMaxCount: snapshotMaxCount,
 
 		SnapshotMap: map[string]*api.Lvol{},
 
@@ -466,16 +470,12 @@ func (e *Engine) validateReplicaSize(replicaAddressMap map[string]string) error 
 	// Validate the engine & replica sizes before creating the engine
 	replicaSizeMap := make(map[string]uint64, len(replicaAddressMap))
 	for replicaName, replicaAddr := range replicaAddressMap {
-		replicaClient, err := GetServiceClient(replicaAddr)
+		replicaSize, err := e.getReplicaSpecSize(replicaName, replicaAddr)
 		if err != nil {
 			return err
 		}
-		replica, err := replicaClient.ReplicaGet(replicaName)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get replica %v from %v", replicaName, replicaAddr)
-		}
 
-		replicaSizeMap[replicaName] = replica.SpecSize
+		replicaSizeMap[replicaName] = replicaSize
 	}
 
 	// check if all replica sizes are the same
@@ -496,6 +496,26 @@ func (e *Engine) validateReplicaSize(replicaAddressMap map[string]string) error 
 	}
 
 	return nil
+}
+
+func (e *Engine) getReplicaSpecSize(replicaName, replicaAddr string) (uint64, error) {
+	replicaClient, err := GetServiceClient(replicaAddr)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		errClose := replicaClient.Close()
+		if errClose != nil {
+			e.log.WithError(errClose).Errorf("Failed to close replica %s client with address %s when getting replica spec size", replicaName, replicaAddr)
+		}
+	}()
+
+	replica, err := replicaClient.ReplicaGet(replicaName)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get replica %v from %v", replicaName, replicaAddr)
+	}
+
+	return replica.SpecSize, nil
 }
 
 // filterSalvageCandidates updates the replicaAddressMap by retaining only replicas
@@ -721,6 +741,7 @@ func (e *Engine) getWithoutLock() (res *spdkrpc.Engine) {
 		IsExpanding:           e.isExpanding,
 		LastExpansionError:    e.lastExpansionError,
 		LastExpansionFailedAt: e.lastExpansionFailedAt,
+		SnapshotMaxCount:      e.SnapshotMaxCount,
 	}
 
 	if e.NvmeTcpTarget != nil {
@@ -740,6 +761,17 @@ func (e *Engine) getWithoutLock() (res *spdkrpc.Engine) {
 	}
 
 	return res
+}
+
+func (e *Engine) SetSnapshotMaxCount(count int32) {
+	e.Lock()
+	e.SnapshotMaxCount = count
+	e.Unlock()
+
+	select {
+	case e.UpdateCh <- nil:
+	default:
+	}
 }
 
 type replicaAddFrontendSuspendResumeWrapper func(work func() error) error
@@ -1592,6 +1624,7 @@ func (e *Engine) getReplicaClients() (replicaClients map[string]*client.SPDKClie
 		}
 		c, err := GetServiceClient(replicaStatus.Address)
 		if err != nil {
+			e.closeReplicaClients(replicaClients)
 			return nil, err
 		}
 		replicaClients[replicaName] = c
@@ -1613,6 +1646,10 @@ func (e *Engine) closeReplicaClients(replicaClients map[string]*client.SPDKClien
 func (e *Engine) snapshotOperationPreCheckWithoutLock(replicaClients map[string]*client.SPDKClient, snapshotName string, snapshotOp SnapshotOperationType) (string, error) {
 	if snapshotOp == SnapshotOperationCreate && snapshotName == "" {
 		snapshotName = util.UUID()[:8]
+	}
+
+	if snapshotOp == SnapshotOperationCreate && e.SnapshotMaxCount > 0 && int32(len(e.SnapshotMap)) >= e.SnapshotMaxCount {
+		return "", fmt.Errorf("snapshot count %d is equal or larger than snapshotMaxCount %d", len(e.SnapshotMap), e.SnapshotMaxCount)
 	}
 
 	if snapshotOp == SnapshotOperationDelete {
