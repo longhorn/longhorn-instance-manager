@@ -129,6 +129,7 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 			LastExpansionError:        lastExpansionError,
 			LastExpansionFailedAt:     lastExpansionFailedAt,
 			UnmapMarkSnapChainRemoved: false,
+			SnapshotMaxCount:          engine.SnapshotMaxCount,
 		},
 	}, nil
 }
@@ -374,7 +375,27 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, r
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
-	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeSnapshotMaxCountSet is not yet implemented for V2 engine")
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	err = c.EngineSnapshotMaxCountSet(req.ProxyEngineRequest.EngineName, req.Count.Count)
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func (p *Proxy) VolumeSnapshotMaxSizeSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxSizeSetRequest) (resp *emptypb.Empty, err error) {

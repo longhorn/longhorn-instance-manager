@@ -171,7 +171,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap,
-			req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested)
+			req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested, req.Spec.SpdkInstanceSpec.SnapshotMaxCount)
 		if err != nil {
 			return nil, err
 		}
