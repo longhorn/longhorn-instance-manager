@@ -136,7 +136,7 @@ func (s *Server) ReplicaList(ctx context.Context, req *emptypb.Empty) (*spdkrpc.
 
 // ReplicaWatch returns a stream of replica updates
 func (s *Server) ReplicaWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_ReplicaWatchServer) error {
-	responseCh, err := s.Subscribe(types.InstanceTypeReplica)
+	responseCh, err := s.Subscribe(srv.Context(), types.InstanceTypeReplica)
 	if err != nil {
 		return err
 	}
