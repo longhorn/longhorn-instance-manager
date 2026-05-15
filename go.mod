@@ -10,15 +10,9 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20260502085909-21ee466f5a8a
 	github.com/longhorn/go-common-libs v0.0.0-20260502161928-1e84fa75a8f1
 	github.com/longhorn/go-spdk-helper v0.6.2-0.20260514102642-789b2a1cb467
-<<<<<<< HEAD
 	github.com/longhorn/longhorn-engine v1.12.0-rc1.0.20260514055507-33e0c9c94743
-	github.com/longhorn/longhorn-spdk-engine v1.12.0-rc2.0.20260514112050-c9306c85100e
-	github.com/longhorn/types v0.0.0-20260513135851-499d5d1f4e79
-=======
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20260503.0.20260514055128-ec3f7dbb512f
-	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260515051212-7e0ddb934b91
+	github.com/longhorn/longhorn-spdk-engine v1.12.0-rc2.0.20260515052624-a07df50fb05a
 	github.com/longhorn/types v0.0.0-20260514154143-1dfb06f48eeb
->>>>>>> 1ecf693e (feat: support snapshot max count for v2)
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.20.0
