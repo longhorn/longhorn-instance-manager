@@ -384,7 +384,7 @@ func (s *Server) EngineFrontendList(ctx context.Context, req *emptypb.Empty) (*s
 
 // EngineFrontendWatch watches engine frontends.
 func (s *Server) EngineFrontendWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_EngineFrontendWatchServer) error {
-	responseCh, err := s.Subscribe(types.InstanceTypeEngineFrontend)
+	responseCh, err := s.Subscribe(srv.Context(), types.InstanceTypeEngineFrontend)
 	if err != nil {
 		return err
 	}

@@ -261,7 +261,7 @@ func (s *Server) EngineList(ctx context.Context, req *emptypb.Empty) (*spdkrpc.E
 
 // EngineWatch returns a stream of engine updates
 func (s *Server) EngineWatch(req *emptypb.Empty, srv spdkrpc.SPDKService_EngineWatchServer) error {
-	responseCh, err := s.Subscribe(types.InstanceTypeEngine)
+	responseCh, err := s.Subscribe(srv.Context(), types.InstanceTypeEngine)
 	if err != nil {
 		return err
 	}
