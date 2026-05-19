@@ -213,6 +213,9 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 	}
 
 	if err := pm.registerProcess(p); err != nil {
+		if closeErr := logger.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warnf("Process Manager: failed to close logger for process %v after registration failure", req.Spec.Name)
+		}
 		return nil, err
 	}
 
@@ -369,12 +372,12 @@ func (pm *Manager) broadcastConnector() (chan interface{}, error) {
 	return pm.broadcastCh, nil
 }
 
-func (pm *Manager) Subscribe() (<-chan interface{}, error) {
-	return pm.broadcaster.Subscribe(context.TODO(), pm.broadcastConnector)
+func (pm *Manager) SubscribeWithContext(ctx context.Context) (<-chan interface{}, error) {
+	return pm.broadcaster.Subscribe(ctx, pm.broadcastConnector)
 }
 
 func (pm *Manager) ProcessWatch(req *emptypb.Empty, srv rpc.ProcessManagerService_ProcessWatchServer) (err error) {
-	responseChan, err := pm.Subscribe()
+	responseChan, err := pm.SubscribeWithContext(srv.Context())
 	if err != nil {
 		return err
 	}
@@ -480,11 +483,18 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 
 	processToReplace, err := pm.initProcessReplace(p)
 	if err != nil {
+		if closeErr := logger.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warnf("Process Manager: failed to close logger for replacement process %v after initialization failure", req.Spec.Name)
+		}
 		return nil, err
 	}
 
 	if processToReplace.Binary == p.Binary {
 		logrus.Infof("Process Manager: the existing process already has the updated engine image %v", p.Binary)
+		if closeErr := logger.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warnf("Process Manager: failed to close logger for unneeded replacement process %v", req.Spec.Name)
+		}
+		pm.releaseProcessPorts(p)
 		return processToReplace.RPCResponse(), nil
 	}
 
