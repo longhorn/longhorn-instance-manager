@@ -140,6 +140,7 @@ func (p *Process) Stop() {
 
 func (p *Process) StopWithSignal(signal syscall.Signal) {
 	needStop, needTimeoutKill := false, false
+	needCloseLogger := false
 	now := time.Now()
 
 	p.lock.Lock()
@@ -156,9 +157,21 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 			needTimeoutKill = true
 		}
 	}
+	// If the process stopped or errored on its own (no prior Stop call spawned
+	// a goroutine to close the logger), close it here so callers that observe a
+	// terminal state and then call Stop() do not leave the log file descriptor open.
+	if !needStop && !needTimeoutKill && p.DeletionTimestamp == nil &&
+		(p.State == StateStopped || p.State == StateError) {
+		needCloseLogger = true
+	}
 	p.lock.Unlock()
 
 	if !needStop && !needTimeoutKill {
+		if needCloseLogger {
+			if err := p.logger.Close(); err != nil {
+				logrus.WithError(err).Warnf("Process Manager: failed to close logger for process %v in state %v", p.Name, p.State)
+			}
+		}
 		return
 	}
 	p.UpdateCh <- p
