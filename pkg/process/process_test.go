@@ -4,17 +4,20 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 
-	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
 	. "gopkg.in/check.v1"
+
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
@@ -39,6 +42,10 @@ var _ = Suite(&TestSuite{})
 
 type ProcessWatcher struct {
 	grpc.ServerStream
+}
+
+func (pw *ProcessWatcher) Context() context.Context {
+	return context.Background()
 }
 
 func (pw *ProcessWatcher) Send(resp *rpc.ProcessResponse) error {
@@ -240,6 +247,33 @@ func (s *TestSuite) TestProcessReplaceMissingBinary(c *C) {
 	wg.Wait()
 }
 
+func (s *TestSuite) TestProcessReplaceInitFailureClosesLogger(c *C) {
+	if _, err := os.Stat("/proc/self/fd"); err != nil {
+		c.Skip("/proc/self/fd is not available")
+	}
+
+	name := "test_process_replace_missing_process"
+	logPath, err := filepath.Abs(filepath.Join(s.logDir, name+".log"))
+	c.Assert(err, IsNil)
+
+	baseline, err := countOpenFileDescriptors(logPath)
+	c.Assert(err, IsNil)
+
+	_, err = s.pm.ProcessReplace(context.TODO(), &rpc.ProcessReplaceRequest{
+		Spec:            createProcessSpec(name, TestBinaryReplace),
+		TerminateSignal: "SIGHUP",
+	})
+	c.Assert(err, NotNil)
+	c.Assert(status.Code(err), Equals, codes.NotFound)
+
+	after, err := countOpenFileDescriptors(logPath)
+	c.Assert(err, IsNil)
+	c.Assert(after, Equals, baseline)
+	_, err = os.Stat(logPath)
+	c.Assert(err, IsNil)
+	c.Assert(os.Remove(logPath), IsNil)
+}
+
 // there was a nil pointer case, while updating a process that is being
 // deleted, since when initially checked the process was still in the map
 // but by the time new process has started the old process had been removed
@@ -387,4 +421,33 @@ func waitForProcessListState(pm *Manager, predicate func(processes map[string]*r
 		time.Sleep(RetryInterval)
 	}
 	return false, nil
+}
+
+func countOpenFileDescriptors(targetPath string) (int, error) {
+	targetPath, err := filepath.Abs(targetPath)
+	if err != nil {
+		return 0, err
+	}
+
+	entries, err := os.ReadDir("/proc/self/fd")
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, entry := range entries {
+		resolvedPath, err := os.Readlink(filepath.Join("/proc/self/fd", entry.Name()))
+		if err != nil {
+			continue
+		}
+		resolvedPath, err = filepath.Abs(resolvedPath)
+		if err != nil {
+			continue
+		}
+		if resolvedPath == targetPath {
+			count++
+		}
+	}
+
+	return count, nil
 }

@@ -293,28 +293,34 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 		}
 		// TODO: Need to unify the replica address format for v1 and v2 engine
 		tcpReplicaAddress := types.AddTcpPrefixForAddress(replicaAddress)
-		replicaCli, err := getSPDKClientFromAddress(replicaAddress)
-		if err != nil {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from replica address %v: %v", replicaAddress, err)
-		}
-		defer func() {
-			if closeErr := replicaCli.Close(); closeErr != nil {
-				log.WithError(closeErr).Warn("Failed to close SPDK client")
-			}
-		}()
 
-		shallowCopyResp, err := replicaCli.ReplicaRebuildingDstShallowCopyCheck(replicaName)
+		statusResp, err := func() (*enginerpc.ReplicaRebuildStatusResponse, error) {
+			replicaCli, err := getSPDKClientFromAddress(replicaAddress)
+			if err != nil {
+				return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from replica address %v: %v", replicaAddress, err)
+			}
+			defer func() {
+				if closeErr := replicaCli.Close(); closeErr != nil {
+					log.WithError(closeErr).Warn("Failed to close SPDK client")
+				}
+			}()
+
+			shallowCopyResp, err := replicaCli.ReplicaRebuildingDstShallowCopyCheck(replicaName)
+			if err != nil {
+				return nil, err
+			}
+			return &enginerpc.ReplicaRebuildStatusResponse{
+				Error:                  shallowCopyResp.Error,
+				IsRebuilding:           shallowCopyResp.TotalState == spdktypes.ProgressStateInProgress,
+				Progress:               int32(shallowCopyResp.TotalProgress),
+				State:                  shallowCopyResp.TotalState,
+				FromReplicaAddressList: []string{types.AddTcpPrefixForAddress(shallowCopyResp.SrcReplicaAddress)},
+			}, nil
+		}()
 		if err != nil {
-			// Let the upper layer to handle this error rather than considering it as the error message of a rebuilding failure
 			return nil, err
 		}
-		resp.Status[tcpReplicaAddress] = &enginerpc.ReplicaRebuildStatusResponse{
-			Error:                  shallowCopyResp.Error,
-			IsRebuilding:           shallowCopyResp.TotalState == spdktypes.ProgressStateInProgress,
-			Progress:               int32(shallowCopyResp.TotalProgress),
-			State:                  shallowCopyResp.TotalState,
-			FromReplicaAddressList: []string{types.AddTcpPrefixForAddress(shallowCopyResp.SrcReplicaAddress)},
-		}
+		resp.Status[tcpReplicaAddress] = statusResp
 	}
 
 	return resp, nil
@@ -382,13 +388,12 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingQosSet(ctx context.Context, req
 				Warn("Failed to get SPDK client from replica address")
 			continue
 		}
-		defer func() {
-			if closeErr := replicaCli.Close(); closeErr != nil {
-				log.WithError(closeErr).Warn("Failed to close SPDK replica client")
-			}
-		}()
 
-		if err := replicaCli.ReplicaRebuildingDstSetQosLimit(replicaName, req.QosLimitMbps); err != nil {
+		err = replicaCli.ReplicaRebuildingDstSetQosLimit(replicaName, req.QosLimitMbps)
+		if closeErr := replicaCli.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("Failed to close SPDK replica client")
+		}
+		if err != nil {
 			log.WithError(err).WithFields(logrus.Fields{
 				"replicaName":  replicaName,
 				"replicaAddr":  replicaAddress,
