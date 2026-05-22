@@ -156,12 +156,12 @@ github.com/longhorn/go-spdk-helper v0.6.2-0.20260514102642-789b2a1cb467 h1:qwlSB
 github.com/longhorn/go-spdk-helper v0.6.2-0.20260514102642-789b2a1cb467/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
 github.com/longhorn/longhorn-engine v1.12.0-dev-20260503.0.20260514055128-ec3f7dbb512f h1:R76xekZfQKZTJrWs74QD4YLhXTiGEEUJr5aEjKGoh3k=
 github.com/longhorn/longhorn-engine v1.12.0-dev-20260503.0.20260514055128-ec3f7dbb512f/go.mod h1:WGxRiCkfdUBxNymnS8BaNBB9HXTQjJqUquptuUtM9+o=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260519092406-0325a68a645d h1:81ZnzR1BkmNT2tQw2/DHbpsZQsKM2A523JzbhQMSoyc=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260519092406-0325a68a645d/go.mod h1:f+ZmEC2s5PrQ/ta5jplpY2/WKUbYkKaRTrXrgjRLmrA=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260518104546-6c37fa2831b9 h1:/LHAPqNpne7pbzh4qNDESPqOjNwsP7xSCvERizci3a4=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260518104546-6c37fa2831b9/go.mod h1:/ci5nxRlFU5SVPNrf+Ufplcel6V/PsfDz1GkqdU1Pf0=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
-github.com/longhorn/types v0.0.0-20260518231842-9b3691cc0a26 h1:LJ4I3FRAqbokxVQlR8CdOA56auzXTQpnRz53Ogmei/g=
-github.com/longhorn/types v0.0.0-20260518231842-9b3691cc0a26/go.mod h1:iY4stwsoG8OwvR0WSZr+YeSOr4YNnoX9+GoG3u+uDFw=
+github.com/longhorn/types v0.0.0-20260514154143-1dfb06f48eeb h1:kj/ag7xC8l9QewJ6tpZAWCYRgipYwIOkqPoqY52utW4=
+github.com/longhorn/types v0.0.0-20260514154143-1dfb06f48eeb/go.mod h1:iY4stwsoG8OwvR0WSZr+YeSOr4YNnoX9+GoG3u+uDFw=
 github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0=
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
