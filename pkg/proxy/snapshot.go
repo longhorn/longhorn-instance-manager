@@ -290,7 +290,7 @@ func (ops V2DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.Engi
 		}
 	}()
 
-	err = c.EngineSnapshotClone(req.ProxyEngineRequest.EngineName, req.SnapshotName, req.FromEngineName, req.FromEngineAddress, spdkrpc.CloneMode(req.CloneMode), req.DstReplicaSrcReplicaPairMap)
+	err = c.EngineSnapshotClone(req.ProxyEngineRequest.EngineName, req.SnapshotName, req.FromEngineName, req.FromEngineAddress, spdkrpc.CloneMode(req.CloneMode))
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to do clone snapshot %v: %v", req.SnapshotName, err)
 	}
