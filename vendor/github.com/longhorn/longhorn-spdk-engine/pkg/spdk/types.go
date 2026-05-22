@@ -27,12 +27,10 @@ const (
 	DiskTypeFilesystem = "filesystem"
 	DiskTypeBlock      = "block"
 
-	ReplicaRebuildingLvolSuffix         = "rebuilding"
-	ReplicaExpiredLvolSuffix            = "expired"
-	ReplicaCloningLvolSuffix            = "cloning"
-	RebuildingSnapshotNamePrefix        = "rebuild"
-	ReplicaCloneEntrypointLvolInfix     = "clone-ep"
-	ReplicaCloneEntrypointTmpHeadSuffix = "tmp-head"
+	ReplicaRebuildingLvolSuffix  = "rebuilding"
+	ReplicaExpiredLvolSuffix     = "expired"
+	ReplicaCloningLvolSuffix     = "cloning"
+	RebuildingSnapshotNamePrefix = "rebuild"
 
 	SyncTimeout = 60 * time.Minute
 
@@ -69,10 +67,6 @@ const (
 	replicaTransportAckTimeout  = 10
 	replicaKeepAliveTimeoutMs   = 10000
 	replicaMultipath            = "disable"
-)
-
-var (
-	cloneEntrypointLvolSeparator = "-" + ReplicaCloneEntrypointLvolInfix + "-"
 )
 
 var (
@@ -291,54 +285,6 @@ func GetReplicaNameFromCloningLvolName(lvolName string) string {
 
 func GetTmpSnapNameForCloningLvol(replicaName string) string {
 	return fmt.Sprintf("%s-%s-tmp", replicaName, ReplicaCloningLvolSuffix)
-}
-
-func GetCloneEntrypointLvolNamePrefix(replicaName string) string {
-	return fmt.Sprintf("%s-%s-", replicaName, ReplicaCloneEntrypointLvolInfix)
-}
-
-func GetCloneEntrypointLvolName(replicaName, snapshotName string) string {
-	return fmt.Sprintf("%s%s", GetCloneEntrypointLvolNamePrefix(replicaName), snapshotName)
-}
-
-func GetCloneEntrypointTmpHeadLvolName(replicaName, snapshotName string) string {
-	return fmt.Sprintf("%s-%s", GetCloneEntrypointLvolName(replicaName, snapshotName), ReplicaCloneEntrypointTmpHeadSuffix)
-}
-
-func IsCloneEntrypointLvol(lvolName string) bool {
-	return strings.Contains(lvolName, cloneEntrypointLvolSeparator) && !IsCloneEntrypointTmpHeadLvol(lvolName)
-}
-
-func IsCloneEntrypointOfReplica(replicaName, lvolName string) bool {
-	return strings.HasPrefix(lvolName, GetCloneEntrypointLvolNamePrefix(replicaName)) &&
-		!IsCloneEntrypointTmpHeadLvol(lvolName)
-}
-
-func IsCloneEntrypointTmpHeadLvol(lvolName string) bool {
-	return strings.Contains(lvolName, cloneEntrypointLvolSeparator) && strings.HasSuffix(lvolName, ReplicaCloneEntrypointTmpHeadSuffix)
-}
-
-func GetSnapshotNameFromCloneEntrypointLvolName(replicaName, epLvolName string) string {
-	return strings.TrimPrefix(epLvolName, GetCloneEntrypointLvolNamePrefix(replicaName))
-}
-
-func GetSourceReplicaNameFromCloneEntrypointLvolName(epLvolName string) string {
-	idx := strings.Index(epLvolName, cloneEntrypointLvolSeparator)
-	if idx < 0 {
-		return ""
-	}
-	return epLvolName[:idx]
-}
-
-// GetCloneReplicaNameFromEntrypointChildLvol extracts the clone replica name
-// from a direct child of a clone entrypoint. The child may be the clone
-// replica head (name == replicaName) or a snapshot taken after cloning
-// (name == replicaName-snap-xxx).
-func GetCloneReplicaNameFromEntrypointChildLvol(childLvolName string) string {
-	if idx := strings.Index(childLvolName, "-snap-"); idx > 0 {
-		return childLvolName[:idx]
-	}
-	return childLvolName
 }
 
 func GetNvmfEndpoint(nqn, ip string, port int32) string {
