@@ -24,6 +24,26 @@ function cleanup_spdk_resources() {
     else
         log "Successfully sent SIGTERM to go-spdk-helper"
     fi
+
+    local grace_period=60
+    local elapsed=0
+    while [[ $elapsed -lt $grace_period ]]; do
+        if ! pgrep -f "^spdk_tgt" > /dev/null 2>&1; then
+            log "spdk_tgt process has stopped"
+            return
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+        log "Waiting for spdk_tgt to stop... (${elapsed}/${grace_period}s)"
+    done
+
+    log "spdk_tgt did not stop within ${grace_period}s grace period, sending SIGKILL..."
+    pkill -KILL -f "^spdk_tgt"
+    if [[ $? -eq 0 ]]; then
+        log "Successfully sent SIGKILL to spdk_tgt"
+    else
+        log "Failed to send SIGKILL to spdk_tgt (process may have already exited)"
+    fi
 }
 
 function get_v2_devices() {
