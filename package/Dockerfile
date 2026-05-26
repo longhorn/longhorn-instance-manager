@@ -33,7 +33,7 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
     chmod +x /usr/local/bin/grpc_health_probe
 
 # Stage 2: build binary from c source code
-FROM registry.suse.com/bci/bci-base:15.7@sha256:725aee61c55c30995c8dfb4ee5aee62759970a5e0ec88de0039ead15114b7de0 AS cbuilder
+FROM registry.suse.com/bci/bci-base:15.7@sha256:c2b0859ac7ceaf22c2d75a05c931dd7976dc0ac75e1a3a5f3c14380fcc3fb029 AS cbuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
@@ -84,7 +84,7 @@ RUN export REPO_OVERRIDE="" && \
     bash /usr/src/dep-versions/scripts/build-nvme-cli.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Stage 3: copy binaries to release image
-FROM registry.suse.com/bci/bci-base:15.7@sha256:725aee61c55c30995c8dfb4ee5aee62759970a5e0ec88de0039ead15114b7de0 AS release
+FROM registry.suse.com/bci/bci-base:15.7@sha256:c2b0859ac7ceaf22c2d75a05c931dd7976dc0ac75e1a3a5f3c14380fcc3fb029 AS release
 
 ARG ARCH=amd64
 
