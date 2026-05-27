@@ -60,7 +60,9 @@ type ProxyOps interface {
 }
 
 type V1DataEngineProxyOps struct{}
-type V2DataEngineProxyOps struct{}
+type V2DataEngineProxyOps struct {
+	spdkServiceAddress string
+}
 
 type Proxy struct {
 	rpc.UnimplementedProxyEngineServiceServer
@@ -77,7 +79,7 @@ func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddre
 
 	ops := map[rpc.DataEngine]ProxyOps{
 		rpc.DataEngine_DATA_ENGINE_V1: V1DataEngineProxyOps{},
-		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineProxyOps{},
+		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineProxyOps{spdkServiceAddress: spdkServiceAddress},
 	}
 
 	spdkLocalClient, err := spdkclient.NewSPDKClient(spdkServiceAddress)
@@ -146,9 +148,5 @@ func getSPDKClientFromAddress(address string) (*spdkclient.SPDKClient, error) {
 	}
 
 	spdkServiceAddress := net.JoinHostPort(host, strconv.Itoa(types.InstanceManagerSpdkServiceDefaultPort))
-	if err != nil {
-		return nil, err
-	}
-
 	return spdkclient.NewSPDKClient(spdkServiceAddress)
 }
