@@ -156,8 +156,8 @@ github.com/longhorn/go-spdk-helper v0.6.2 h1:QcXKAvNIqWpRH+3bq+hgnXh1prjacuQrJ10
 github.com/longhorn/go-spdk-helper v0.6.2/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
 github.com/longhorn/longhorn-engine v1.12.0-rc3 h1:d09xrQt4MZMimPma8ktGlrO7cxEhAaIL8+oscCxBN1Q=
 github.com/longhorn/longhorn-engine v1.12.0-rc3/go.mod h1:IaPdeMSPtKt+qvuIym5uPDC7yhqSX/fjvFjbINOhWQo=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260525042301-0b3274770e7d h1:i34QpumCEh8yFK9RLLF4uHuHGyGYWrQxCkBlYWOT5uw=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260525042301-0b3274770e7d/go.mod h1:VrfM/Lw54QdrjNs1uTKuGDqg87NdLh9v/OupX//f9tc=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260528042104-3467ff0de5e1 h1:vVj6EV6+8sxZMq7uw9a9xSSlvQ+AHAoHSW5256kv5N4=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260528042104-3467ff0de5e1/go.mod h1:VrfM/Lw54QdrjNs1uTKuGDqg87NdLh9v/OupX//f9tc=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20260522011813-8f1780fad833 h1:zqVqTago9q7WQcOo1giTG455P0Nk1QmuYSkSO9rUEIY=
