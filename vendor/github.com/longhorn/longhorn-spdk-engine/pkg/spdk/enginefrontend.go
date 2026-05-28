@@ -2719,6 +2719,21 @@ func (ef *EngineFrontend) RecoverFromHost(spdkClient *spdkclient.Client) error {
 			}
 		}
 
+		// Verify the NVMe target is actually reachable. The NVMe device may
+		// still appear in sysfs (kernel ctrl_loss_tmo not expired) even though
+		// the target process is dead (e.g., IM pod restarted). A stale device
+		// would cause I/O errors on the dm device above it.
+		detectedAddr := i.GetTransportAddress()
+		detectedPort := i.GetTransportServiceID()
+		if detectedAddr != "" && detectedPort != "" {
+			targetAddr := net.JoinHostPort(detectedAddr, detectedPort)
+			if dialErr := ef.checkTargetReachable(targetAddr); dialErr != nil {
+				ef.log.WithError(dialErr).Warnf("NVMe device found in sysfs but target %s is not reachable, device is stale", targetAddr)
+				recoverErr = errors.Wrapf(dialErr, "NVMe/TCP target %s is not reachable during recovery (stale device in sysfs)", targetAddr)
+				return recoverErr
+			}
+		}
+
 		// Check cancellation before loading the dm-device endpoint.
 		// A concurrent EngineFrontendCreate may have evicted us during
 		// the preceding reconnect or sysfs scan.
