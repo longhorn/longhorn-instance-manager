@@ -234,8 +234,6 @@ github.com/cockroachdb/redact/internal/markers
 github.com/cockroachdb/redact/internal/redact
 github.com/cockroachdb/redact/internal/rfmt
 github.com/cockroachdb/redact/internal/rfmt/fmtsort
-# github.com/cpuguy83/go-md2man/v2 v2.0.7
-## explicit; go 1.12
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
@@ -382,7 +380,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260722055151-a1ec39f48777
+# github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260723044437-9c6562286f0a
 ## explicit; go 1.26.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -401,7 +399,7 @@ github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20260709032252-3d0a3cd8f06f
+# github.com/longhorn/types v0.0.0-20260723012747-f5be45849762
 ## explicit; go 1.25.0
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc
@@ -464,8 +462,6 @@ github.com/rancher/go-fibmap
 # github.com/rogpeppe/go-internal v1.14.1
 ## explicit; go 1.23
 github.com/rogpeppe/go-internal/fmtsort
-# github.com/russross/blackfriday/v2 v2.1.0
-## explicit
 # github.com/shirou/gopsutil/v3 v3.24.5
 ## explicit; go 1.18
 github.com/shirou/gopsutil/v3/common
@@ -480,8 +476,6 @@ github.com/slok/goresilience
 github.com/slok/goresilience/errors
 github.com/slok/goresilience/metrics
 github.com/slok/goresilience/timeout
-# github.com/urfave/cli v1.22.17
-## explicit; go 1.11
 # github.com/urfave/cli/v3 v3.10.1
 ## explicit; go 1.22
 github.com/urfave/cli/v3
