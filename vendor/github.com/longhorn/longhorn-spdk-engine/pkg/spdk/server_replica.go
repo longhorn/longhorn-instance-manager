@@ -39,6 +39,9 @@ func (s *Server) ReplicaCreate(ctx context.Context, req *spdkrpc.ReplicaCreateRe
 	if req.LvsName == "" && req.LvsUuid == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "either lvstore name or UUID is required")
 	}
+	if err := ValidateReplicaOrSnapshotName(req.Name); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "invalid replica name: %v", err)
+	}
 
 	r, err := s.newReplica(req)
 	if err != nil {
@@ -184,6 +187,9 @@ func (s *Server) ReplicaSnapshotCreate(ctx context.Context, req *spdkrpc.Snapsho
 	}
 	if req.SnapshotName == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "snapshot name is required")
+	}
+	if err := ValidateReplicaOrSnapshotName(req.SnapshotName); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "invalid snapshot name: %v", err)
 	}
 
 	s.RLock()
@@ -332,7 +338,6 @@ func (s *Server) ReplicaSnapshotCloneDstStart(ctx context.Context, req *spdkrpc.
 		util.Param{Name: "name", Value: req.Name},
 		util.Param{Name: "snapshotName", Value: req.SnapshotName},
 		util.Param{Name: "srcReplicaName", Value: req.SrcReplicaName},
-		util.Param{Name: "srcReplicaAddress", Value: req.SrcReplicaAddress},
 	); err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "%v", err)
 	}
@@ -601,7 +606,7 @@ func (s *Server) ReplicaRebuildingDstStart(ctx context.Context, req *spdkrpc.Rep
 	for _, snapshot := range req.RebuildingSnapshotList {
 		rebuildingSnapshotList = append(rebuildingSnapshotList, api.ProtoLvolToLvol(snapshot))
 	}
-	address, err := r.RebuildingDstStart(spdkClient, req.SrcReplicaName, req.SrcReplicaAddress, req.ExternalSnapshotName, req.ExternalSnapshotAddress, rebuildingSnapshotList)
+	address, err := r.RebuildingDstStart(spdkClient, req.SrcReplicaName, req.SrcReplicaAddress, req.ExternalSnapshotName, req.ExternalSnapshotAddress, req.LinkedCloneSrcReplicaName, req.LinkedCloneSrcEngineName, req.LinkedCloneSrcEngineAddress, rebuildingSnapshotList)
 	if err != nil {
 		return nil, err
 	}
