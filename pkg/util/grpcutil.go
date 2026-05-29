@@ -234,9 +234,12 @@ func parseEndpoint(ep string) (proto string, address string, err error) {
 		return "", "", fmt.Errorf("invalid endpoint: %v", ep)
 	}
 
-	if len(s) > 1 && s[1] != "" {
+	if len(s) > 1 {
 		if s[0] != "unix" && s[0] != "tcp" {
 			return "", "", fmt.Errorf("invalid endpoint: %v unsupported proto: %v", ep, s[0])
+		}
+		if s[1] == "" {
+			return "", "", fmt.Errorf("invalid endpoint: %v missing address", ep)
 		}
 		return s[0], s[1], nil
 	}

@@ -18,6 +18,8 @@ func Test_parseEndpoint(t *testing.T) {
 		{name: "testEndpointUnix", args: args{ep: "unix:///tmp/test.sock"}, wantProto: "unix", wantAddress: "/tmp/test.sock", wantErr: false},
 		{name: "testEndpointTcp", args: args{ep: "tcp://127.0.0.1:8500"}, wantProto: "tcp", wantAddress: "127.0.0.1:8500", wantErr: false},
 		{name: "testEndpointProtoMissingFallback", args: args{ep: "localhost:8500"}, wantProto: "tcp", wantAddress: "localhost:8500", wantErr: false},
+		{name: "testEndpointUnixMissingAddress", args: args{ep: "unix://"}, wantProto: "", wantAddress: "", wantErr: true},
+		{name: "testEndpointTcpMissingAddress", args: args{ep: "tcp://"}, wantProto: "", wantAddress: "", wantErr: true},
 		{name: "testEndpointProtoUnsupported", args: args{ep: "unsupported://127.0.0.1:8500"}, wantProto: "", wantAddress: "", wantErr: true},
 	}
 	for _, tt := range tests {
