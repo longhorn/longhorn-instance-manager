@@ -1,5 +1,5 @@
 # Stage 1: build binary from go source code
-FROM  registry.suse.com/bci/golang:1.26@sha256:59204a1a28ed065b75c8e3e8dabbe120d2b31dab820cddb67f0bee1ae8d6421b AS gobuilder
+FROM  registry.suse.com/bci/golang:1.26@sha256:9b829b1026dac4281baa0715c4dd975735665d5ff843b0e1cd20e3fbbde95302 AS gobuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
