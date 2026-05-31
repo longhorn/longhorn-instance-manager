@@ -21,6 +21,7 @@ import (
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	commonbitmap "github.com/longhorn/go-common-libs/bitmap"
+	commonnet "github.com/longhorn/go-common-libs/net"
 	commontypes "github.com/longhorn/go-common-libs/types"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -310,7 +311,7 @@ func (bi *BackingImage) BackingImageExpose(spdkClient *spdkclient.Client, superi
 	}
 
 	// Expose the bdev using nvmf
-	podIP, err := backingImageGetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return "", err
 	}
@@ -422,7 +423,7 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 		if bi.IsExposed {
 			bi.log.Info("Unexposing lvol bdev")
 			backingImageTempHeadName := GetBackingImageTempHeadLvolName(bi.Name, bi.LvsUUID)
-			if err = backingImageStopExposeBdev(spdkClient, helpertypes.GetNQN(backingImageTempHeadName)); err != nil {
+			if err = spdkClient.StopExposeBdev(helpertypes.GetNQN(backingImageTempHeadName)); err != nil {
 				bi.log.WithError(err).Errorf("Failed to unexpose lvol bdev %v after failed to create backing image", backingImageTempHeadName)
 			}
 			bi.IsExposed = false
@@ -484,7 +485,7 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	}()
 
 	bi.Lock()
-	lvsName, err := backingImageGetLvsNameByUUID(spdkClient, bi.LvsUUID)
+	lvsName, err := GetLvsNameByUUID(spdkClient, bi.LvsUUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get the lvs name for backing image %v with lvs uuid %v", bi.Name, bi.LvsUUID)
 	}
@@ -500,11 +501,11 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 
 	// backingImageTempHeadName will be "bi-${biName}-disk-${lvsUUID}-temp-head"
 	backingImageTempHeadName := GetBackingImageTempHeadLvolName(bi.Name, bi.LvsUUID)
-	biTempHeadUUID, err = backingImageBdevLvolCreate(spdkClient, "", bi.LvsUUID, backingImageTempHeadName, util.BytesToMiB(bi.Size), "", true)
+	biTempHeadUUID, err = spdkClient.BdevLvolCreate("", bi.LvsUUID, backingImageTempHeadName, util.BytesToMiB(bi.Size), "", true)
 	if err != nil {
 		return err
 	}
-	bdevLvolList, err := backingImageBdevLvolGet(spdkClient, biTempHeadUUID, 0)
+	bdevLvolList, err := spdkClient.BdevLvolGet(biTempHeadUUID, 0)
 	if err != nil {
 		return err
 	}
@@ -513,7 +514,7 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	}
 	bi.log.Infof("Created a head lvol %v for the new backing image", backingImageTempHeadName)
 
-	podIP, err := backingImageGetIPForPod()
+	podIP, err := commonnet.GetIPForPod()
 	if err != nil {
 		return err
 	}
@@ -526,11 +527,11 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	bi.Unlock()
 	bi.log.Infof("Allocated port %v", port)
 
-	executor, err := backingImageNewExecutor(commontypes.ProcDirectory)
+	executor, err := helperutil.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create executor")
 	}
-	subsystemNQN, controllerName, err := backingImageExposeSnapshotLvolBdev(spdkClient, bi.LvsName, backingImageTempHeadName, podIP, port, executor)
+	subsystemNQN, controllerName, err := exposeSnapshotLvolBdev(spdkClient, bi.LvsName, backingImageTempHeadName, podIP, port, executor)
 	if err != nil {
 		bi.log.WithError(err).Errorf("Failed to expose head lvol")
 		return err
@@ -543,7 +544,7 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	nvmeTCPInfo := &initiator.NVMeTCPInfo{
 		SubsystemNQN: helpertypes.GetNQN(backingImageTempHeadName),
 	}
-	headInitiator, err := newNVMeTCPInitiator(backingImageTempHeadName, nvmeTCPInfo)
+	headInitiator, err := initiator.NewInitiator(backingImageTempHeadName, initiator.HostProc, nvmeTCPInfo, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for head lvol %v", backingImageTempHeadName)
 	}
@@ -552,22 +553,20 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 	}
 	bi.log.Infof("Created NVMe initiator for head lvol %v", backingImageTempHeadName)
 
+	headFh, err := os.OpenFile(headInitiator.Endpoint, os.O_RDWR, 0666)
 	defer func() {
+		// Stop the initiator
+		if errClose := headFh.Close(); errClose != nil {
+			bi.log.WithError(errClose).Error("Failed to close the backing image")
+		}
 		bi.log.Info("Stopping NVMe initiator")
 		if _, opErr := headInitiator.Stop(nil, true, true, false); opErr != nil {
 			bi.log.WithError(opErr).Error("Failed to stop the backing image head NVMe initiator")
 		}
 	}()
-
-	headFh, err := openFile(headInitiator.Endpoint(), os.O_RDWR, 0666)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open NVMe device %v for lvol bdev %v", headInitiator.Endpoint(), backingImageTempHeadName)
+		return errors.Wrapf(err, "failed to open NVMe device %v for lvol bdev %v", headInitiator.Endpoint, backingImageTempHeadName)
 	}
-	defer func() {
-		if errClose := headFh.Close(); errClose != nil {
-			bi.log.WithError(errClose).Error("Failed to close the backing image")
-		}
-	}()
 
 	// An SPDK backing image should only be created by downloading it from BIM if it's a first copy,
 	// or by syncing it from another SPDK server.
@@ -584,9 +583,9 @@ func (bi *BackingImage) prepareBackingImageSnapshot(spdkClient *spdkclient.Clien
 		}
 	}
 
-	currentChecksum, err := util.GetFileChecksum(headInitiator.Endpoint())
+	currentChecksum, err := util.GetFileChecksum(headInitiator.Endpoint)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get the current checksum of the backing image %v target device %v", bi.Name, headInitiator.Endpoint())
+		return errors.Wrapf(err, "failed to get the current checksum of the backing image %v target device %v", bi.Name, headInitiator.Endpoint)
 	}
 	bi.log.Infof("Get the current checksum of the backing image %v: %v", bi.Name, currentChecksum)
 	bi.Lock()
@@ -681,7 +680,7 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 	if fromAddress == "" || srcLvsUUID == "" {
 		return errors.Wrapf(err, "missing required source backing image service address %v or source lvsUUID %v", fromAddress, srcLvsUUID)
 	}
-	srcBackingImageServiceCli, err := backingImageGetServiceClient(fromAddress)
+	srcBackingImageServiceCli, err := GetServiceClient(fromAddress)
 	if err != nil {
 		return errors.Wrapf(err, "failed to init the source backing image spdk service client")
 	}
@@ -706,7 +705,7 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 	if err != nil {
 		return errors.Wrapf(err, "failed to split host and port from address %v", exposedSnapshotLvolAddress)
 	}
-	_, _, err = backingImageDiscoverAndConnectNVMeTarget(srcIP, srcPort, maxRetries, retryInterval)
+	_, _, err = discoverAndConnectNVMeTarget(srcIP, srcPort, maxRetries, retryInterval)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect to NVMe target for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
@@ -715,7 +714,7 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 	nvmeTCPInfo := &initiator.NVMeTCPInfo{
 		SubsystemNQN: helpertypes.GetNQN(externalSnapshotLvolName),
 	}
-	i, err := newNVMeTCPInitiator(externalSnapshotLvolName, nvmeTCPInfo)
+	i, err := initiator.NewInitiator(externalSnapshotLvolName, initiator.HostProc, nvmeTCPInfo, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create NVMe initiator for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
@@ -723,23 +722,21 @@ func (bi *BackingImage) prepareFromSync(targetFh *os.File, fromAddress, srcLvsUU
 		return errors.Wrapf(err, "failed to start NVMe initiator for source backing image %v in lvsUUID %v with address %v", bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
 
+	bi.log.Infof("Opening NVMe device %v", i.Endpoint)
+	srcFh, err := os.OpenFile(i.Endpoint, os.O_RDWR, 0666)
 	defer func() {
+		if errClose := srcFh.Close(); errClose != nil {
+			bi.log.WithError(errClose).Error("Failed to close the source backing image")
+		}
+		// Stop the source initiator
 		bi.log.Info("Stopping NVMe initiator")
 		if _, err := i.Stop(nil, true, true, false); err != nil {
 			bi.log.WithError(err).Warnf("failed to stop NVMe initiator")
 		}
 	}()
-
-	bi.log.Infof("Opening NVMe device %v", i.Endpoint())
-	srcFh, err := openFile(i.Endpoint(), os.O_RDWR, 0666)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open NVMe device %v for source backing image %v in lvsUUID %v with address %v", i.Endpoint(), bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
+		return errors.Wrapf(err, "failed to open NVMe device %v for source backing image %v in lvsUUID %v with address %v", i.Endpoint, bi.Name, srcLvsUUID, exposedSnapshotLvolAddress)
 	}
-	defer func() {
-		if errClose := srcFh.Close(); errClose != nil {
-			bi.log.WithError(errClose).Error("Failed to close the source backing image")
-		}
-	}()
 
 	ctx, cancel := context.WithCancel(bi.ctx)
 	defer cancel()
