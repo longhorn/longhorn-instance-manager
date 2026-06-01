@@ -68,8 +68,8 @@ func (s *Server) EngineSnapshotMaxCountSet(ctx context.Context, req *spdkrpc.Eng
 // EngineDelete deletes an engine
 func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequest) (ret *emptypb.Empty, err error) {
 	s.RLock()
-	e := s.engineMap[req.Name]
 	spdkClient := s.spdkClient
+	e := s.engineMap[req.Name]
 	s.RUnlock()
 
 	defer func() {
@@ -175,13 +175,18 @@ func (s *Server) EngineFrontendSwitchOver(ctx context.Context, req *spdkrpc.Engi
 			ef = frontend
 		}
 	}
-	spdkClient := s.spdkClient
 	s.RUnlock()
 
 	if ef == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine frontend or engine %v for target switchover", req.Name)
 	}
 
+	unlockVolumeHost := s.acquireVolumeHostLock(ef.VolumeName)
+	defer unlockVolumeHost()
+
+	s.RLock()
+	spdkClient := s.spdkClient
+	s.RUnlock()
 	if err := ef.SwitchOverTarget(spdkClient, req.EngineName, req.TargetAddress, req.SwitchoverPhase); err != nil {
 		return nil, toSwitchOverGRPCError(err, "failed to switch over target for %s", req.Name)
 	}
