@@ -79,12 +79,10 @@ type Initiator struct {
 }
 
 type initiatorLock struct {
-	lock       *commonns.FileLock
-	lockedAt   time.Time
-	operation  string
-	logger     logrus.FieldLogger
-	lockFile   string
-	waitedTime time.Duration
+	lock      *commonns.FileLock
+	operation string
+	logger    logrus.FieldLogger
+	lockFile  string
 }
 
 type NVMeTCPInfo struct {
@@ -162,44 +160,25 @@ func (i *Initiator) newLock(operation string) (*initiatorLock, error) {
 	}
 
 	lockFile := i.lockFilePath()
-	start := time.Now()
 	lock := commonns.NewLock(lockFile, LockTimeout)
 	if err := lock.Lock(); err != nil {
 		return nil, errors.Wrapf(err, "failed to get file lock for initiator %s", i.Name)
 	}
 
-	lockedAt := time.Now()
-	timedLock := &initiatorLock{
-		lock:       lock,
-		lockedAt:   lockedAt,
-		operation:  operation,
-		logger:     i.logger,
-		lockFile:   lockFile,
-		waitedTime: lockedAt.Sub(start),
+	il := &initiatorLock{
+		lock:      lock,
+		operation: operation,
+		logger:    i.logger,
+		lockFile:  lockFile,
 	}
 
-	timedLock.logger.WithFields(logrus.Fields{
-		"lockFile":    timedLock.lockFile,
-		"operation":   timedLock.operation,
-		"waitTime":    timedLock.waitedTime,
-		"lockTimeout": LockTimeout,
-	}).Info("Acquired initiator lock")
-
-	return timedLock, nil
+	return il, nil
 }
 
 func (lock *initiatorLock) Unlock() {
 	if lock == nil || lock.lock == nil {
 		return
 	}
-
-	holdTime := time.Since(lock.lockedAt)
-	lock.logger.WithFields(logrus.Fields{
-		"lockFile":  lock.lockFile,
-		"operation": lock.operation,
-		"holdTime":  holdTime,
-		"waitTime":  lock.waitedTime,
-	}).Info("Releasing initiator lock")
 	lock.lock.Unlock()
 }
 
