@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"strconv"
 
@@ -62,6 +63,7 @@ type ProxyOps interface {
 type V1DataEngineProxyOps struct{}
 type V2DataEngineProxyOps struct {
 	spdkServiceAddress string
+	spdkTLSConfig      *tls.Config
 }
 
 type Proxy struct {
@@ -73,16 +75,26 @@ type Proxy struct {
 
 	spdkServiceAddress string
 	spdkLocalClient    *spdkclient.SPDKClient
+	spdkTLSConfig      *tls.Config
 }
 
-func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddress string) (*Proxy, error) {
+func newSPDKClient(address string, tlsConfig *tls.Config) (*spdkclient.SPDKClient, error) {
+	if tlsConfig != nil {
+		return spdkclient.NewSPDKClientWithTLSConfig(address, tlsConfig)
+	}
+	return spdkclient.NewSPDKClient(address)
+}
 
+func NewProxy(ctx context.Context, logsDir, spdkServiceAddress string, spdkTLSConfig *tls.Config) (*Proxy, error) {
 	ops := map[rpc.DataEngine]ProxyOps{
 		rpc.DataEngine_DATA_ENGINE_V1: V1DataEngineProxyOps{},
-		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineProxyOps{spdkServiceAddress: spdkServiceAddress},
+		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineProxyOps{
+			spdkServiceAddress: spdkServiceAddress,
+			spdkTLSConfig:      spdkTLSConfig,
+		},
 	}
 
-	spdkLocalClient, err := spdkclient.NewSPDKClient(spdkServiceAddress)
+	spdkLocalClient, err := newSPDKClient(spdkServiceAddress, spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -95,6 +107,7 @@ func NewProxy(ctx context.Context, logsDir, diskServiceAddress, spdkServiceAddre
 
 		spdkServiceAddress: spdkServiceAddress,
 		spdkLocalClient:    spdkLocalClient,
+		spdkTLSConfig:      spdkTLSConfig,
 	}
 
 	go p.startMonitoring()
@@ -141,12 +154,11 @@ func (p *Proxy) ServerVersionGet(ctx context.Context, req *rpc.ProxyEngineReques
 	}, nil
 }
 
-func getSPDKClientFromAddress(address string) (*spdkclient.SPDKClient, error) {
+func getSPDKClientFromAddress(address string, tlsConfig *tls.Config) (*spdkclient.SPDKClient, error) {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
 	}
-
 	spdkServiceAddress := net.JoinHostPort(host, strconv.Itoa(types.InstanceManagerSpdkServiceDefaultPort))
-	return spdkclient.NewSPDKClient(spdkServiceAddress)
+	return newSPDKClient(spdkServiceAddress, tlsConfig)
 }

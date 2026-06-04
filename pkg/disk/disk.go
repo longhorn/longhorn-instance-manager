@@ -2,6 +2,7 @@ package disk
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"sync"
 	"time"
@@ -55,7 +56,7 @@ type Server struct {
 	ops                map[rpc.DiskType]DiskOps
 }
 
-func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string) (srv *Server, err error) {
+func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string, tlsConfig *tls.Config) (srv *Server, err error) {
 	var spdkClient *spdkclient.SPDKClient
 
 	if spdkEnabled {
@@ -65,7 +66,11 @@ func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string)
 			return nil, fmt.Errorf("spdk_tgt is not ready in %v", spdkTgtReadinessProbeTimeout)
 		}
 
-		spdkClient, err = spdkclient.NewSPDKClient(spdkServiceAddress)
+		if tlsConfig != nil {
+			spdkClient, err = spdkclient.NewSPDKClientWithTLSConfig(spdkServiceAddress, tlsConfig)
+		} else {
+			spdkClient, err = spdkclient.NewSPDKClient(spdkServiceAddress)
+		}
 		if err != nil {
 			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 		}

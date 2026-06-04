@@ -87,7 +87,7 @@ func (p *Proxy) SPDKBackingImageWatch(req *emptypb.Empty, srv rpc.ProxyEngineSer
 	done := make(chan struct{})
 
 	// Create a client for watching SPDK backing image
-	spdkClient, err := spdkclient.NewSPDKClient(p.spdkServiceAddress)
+	spdkClient, err := newSPDKClient(p.spdkServiceAddress, p.spdkTLSConfig)
 	go func() {
 		<-done
 		logrus.Info("Stopped clients for watching SPDK backing image")

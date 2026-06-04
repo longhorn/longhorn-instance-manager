@@ -73,7 +73,7 @@ func (ops V1DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 }
 
 func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineReplicaAddRequest) (resp *emptypb.Empty, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -171,7 +171,7 @@ func replicaModeToGRPCReplicaMode(mode spdktypes.Mode) enginerpc.ReplicaMode {
 }
 
 func (ops V2DataEngineProxyOps) ReplicaList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineReplicaListProxyResponse, err error) {
-	c, err := getSPDKClientFromAddress(req.Address)
+	c, err := getSPDKClientFromAddress(req.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
@@ -264,7 +264,7 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 		"dataEngine": req.DataEngine,
 	})
 
-	engineCli, err := getSPDKClientFromAddress(req.Address)
+	engineCli, err := getSPDKClientFromAddress(req.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
@@ -295,7 +295,7 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingStatus(ctx context.Context, req
 		tcpReplicaAddress := types.AddTcpPrefixForAddress(replicaAddress)
 
 		statusResp, err := func() (*enginerpc.ReplicaRebuildStatusResponse, error) {
-			replicaCli, err := getSPDKClientFromAddress(replicaAddress)
+			replicaCli, err := getSPDKClientFromAddress(replicaAddress, ops.spdkTLSConfig)
 			if err != nil {
 				return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from replica address %v: %v", replicaAddress, err)
 			}
@@ -356,7 +356,7 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingQosSet(ctx context.Context, req
 		"qosLimitMbps": req.QosLimitMbps,
 	})
 
-	engineCli, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	engineCli, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -382,7 +382,7 @@ func (ops V2DataEngineProxyOps) ReplicaRebuildingQosSet(ctx context.Context, req
 			continue
 		}
 
-		replicaCli, err := getSPDKClientFromAddress(replicaAddress)
+		replicaCli, err := getSPDKClientFromAddress(replicaAddress, ops.spdkTLSConfig)
 		if err != nil {
 			log.WithError(err).WithField("replicaAddress", replicaAddress).
 				Warn("Failed to get SPDK client from replica address")
@@ -522,7 +522,7 @@ func (ops V1DataEngineProxyOps) cancelSnapshotHashesForReplica(ctx context.Conte
 }
 
 func (ops V2DataEngineProxyOps) ReplicaRemove(ctx context.Context, req *rpc.EngineReplicaRemoveRequest) (*emptypb.Empty, error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}

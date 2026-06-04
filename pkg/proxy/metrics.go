@@ -64,7 +64,7 @@ func (ops V1DataEngineProxyOps) MetricsGet(ctx context.Context, req *rpc.ProxyEn
 }
 
 func (ops V2DataEngineProxyOps) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineMetricsGetProxyResponse, err error) {
-	c, err := getSPDKClientFromAddress(req.Address)
+	c, err := getSPDKClientFromAddress(req.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}

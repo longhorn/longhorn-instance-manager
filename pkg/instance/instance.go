@@ -2,6 +2,7 @@ package instance
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"time"
@@ -49,9 +50,11 @@ type InstanceOps interface {
 
 type V1DataEngineInstanceOps struct {
 	processManagerServiceAddress string
+	clientTLSConfig              *tls.Config
 }
 type V2DataEngineInstanceOps struct {
 	spdkServiceAddress string
+	spdkTLSConfig      *tls.Config
 }
 
 type Server struct {
@@ -64,13 +67,15 @@ type Server struct {
 	ops                 map[rpc.DataEngine]InstanceOps
 }
 
-func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkServiceAddress string, v2DataEngineEnabled bool) (*Server, error) {
+func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkServiceAddress string, clientTLSConfig *tls.Config, v2DataEngineEnabled bool) (*Server, error) {
 	ops := map[rpc.DataEngine]InstanceOps{
 		rpc.DataEngine_DATA_ENGINE_V1: V1DataEngineInstanceOps{
 			processManagerServiceAddress: processManagerServiceAddress,
+			clientTLSConfig:              clientTLSConfig,
 		},
 		rpc.DataEngine_DATA_ENGINE_V2: V2DataEngineInstanceOps{
 			spdkServiceAddress: spdkServiceAddress,
+			spdkTLSConfig:      clientTLSConfig,
 		},
 	}
 
@@ -90,6 +95,17 @@ func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkS
 func (s *Server) startMonitoring() {
 	<-s.ctx.Done()
 	logrus.Infof("%s: stopped monitoring due to the context done", types.InstanceGrpcService)
+}
+
+func (ops V1DataEngineInstanceOps) newProcessManagerClient(ctx context.Context, cancel context.CancelFunc) (*client.ProcessManagerClient, error) {
+	return client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, ops.clientTLSConfig)
+}
+
+func (ops V2DataEngineInstanceOps) newSPDKClient() (*spdkclient.SPDKClient, error) {
+	if ops.spdkTLSConfig != nil {
+		return spdkclient.NewSPDKClientWithTLSConfig(ops.spdkServiceAddress, ops.spdkTLSConfig)
+	}
+	return spdkclient.NewSPDKClient(ops.spdkServiceAddress)
 }
 
 func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.VersionResponse, error) {
@@ -129,7 +145,7 @@ func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, nil)
+	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -153,7 +169,7 @@ func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 }
 
 func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -214,7 +230,7 @@ func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequ
 func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, nil)
+	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -239,7 +255,7 @@ func (ops V1DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 }
 
 func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -304,7 +320,7 @@ func (s *Server) InstanceGet(ctx context.Context, req *rpc.InstanceGetRequest) (
 func (ops V1DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, nil)
+	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -326,7 +342,7 @@ func (ops V1DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 }
 
 func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -389,7 +405,7 @@ func (s *Server) InstanceList(ctx context.Context, req *emptypb.Empty) (*rpc.Ins
 func (ops V1DataEngineInstanceOps) InstanceList(instances map[string]*rpc.InstanceResponse) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, nil)
+	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -414,7 +430,7 @@ func (ops V1DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 }
 
 func (ops V2DataEngineInstanceOps) InstanceList(instances map[string]*rpc.InstanceResponse) error {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -471,7 +487,7 @@ func (ops V1DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceReque
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, nil)
+	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -515,7 +531,7 @@ func (s *Server) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceServic
 func (ops V1DataEngineInstanceOps) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, nil)
+	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
 	}
@@ -599,7 +615,7 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 	ops := s.ops[rpc.DataEngine_DATA_ENGINE_V1].(V1DataEngineInstanceOps)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pmClient, err := client.NewProcessManagerClient(ctx, cancel, "tcp://"+ops.processManagerServiceAddress, nil)
+	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
 		done <- struct{}{}
 		return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create ProcessManagerClient").Error())
@@ -610,7 +626,7 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 	if s.v2DataEngineEnabled {
 		// Create a client for watching SPDK engines and replicas
 		ops := s.ops[rpc.DataEngine_DATA_ENGINE_V2].(V2DataEngineInstanceOps)
-		spdkClient, err = spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+		spdkClient, err = ops.newSPDKClient()
 		if err != nil {
 			done <- struct{}{}
 			return grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
@@ -952,7 +968,7 @@ func (ops V1DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendReque
 }
 
 func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to create SPDK client")
 	}
@@ -1002,7 +1018,7 @@ func (ops V1DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest
 }
 
 func (ops V2DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest) (*emptypb.Empty, error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to create SPDK client")
 	}
@@ -1053,7 +1069,7 @@ func (ops V1DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 }
 
 func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to create SPDK client")
 	}
@@ -1114,7 +1130,7 @@ func (ops V1DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteT
 }
 
 func (ops V2DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
