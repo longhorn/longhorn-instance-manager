@@ -103,6 +103,8 @@ type EngineFrontend struct {
 	metadataDir string
 
 	log *safelog.SafeLogger
+
+	newServiceClient ServiceClientFactory
 }
 
 type NvmeTcpFrontend struct {
@@ -186,7 +188,11 @@ func getUblkNumberOfQueue(ublkNumberOfQueue int32) int32 {
 }
 
 func NewEngineFrontend(engineFrontendName, engineName, volumeName, frontend string, specSize uint64, ublkQueueDepth, ublkNumberOfQueue int32,
-	engineFrontendUpdateCh chan interface{}) *EngineFrontend {
+	engineFrontendUpdateCh chan interface{}, newServiceClient ServiceClientFactory) *EngineFrontend {
+	if newServiceClient == nil {
+		newServiceClient = GetServiceClient
+	}
+
 	log := logrus.StandardLogger().WithFields(logrus.Fields{
 		"engineFrontendName": engineFrontendName,
 		"engineName":         engineName,
@@ -234,6 +240,8 @@ func NewEngineFrontend(engineFrontendName, engineName, volumeName, frontend stri
 		UpdateCh: engineFrontendUpdateCh,
 		stopCh:   make(chan struct{}),
 		log:      safelog.NewSafeLogger(log),
+
+		newServiceClient: newServiceClient,
 	}
 }
 
@@ -395,7 +403,7 @@ func (ef *EngineFrontend) setRemoteEngineTargetANAState(targetIP, engineName str
 	}
 
 	engineAddress := net.JoinHostPort(targetIP, strconv.Itoa(types.SPDKServicePort))
-	engineClient, err := GetServiceClient(engineAddress)
+	engineClient, err := ef.newServiceClient(engineAddress)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get SPDK client for engine %s at %s", engineName, engineAddress)
 	}
@@ -1093,7 +1101,7 @@ func (ef *EngineFrontend) Expand(ctx context.Context, spdkClient *spdkclient.Cli
 		targetAddress = net.JoinHostPort(ef.NvmeTcpFrontend.TargetIP, strconv.Itoa(int(ef.NvmeTcpFrontend.TargetPort)))
 	}
 
-	engineSpdkClient, err := GetServiceClient(ef.getEngineServiceAddress())
+	engineSpdkClient, err := ef.newServiceClient(ef.getEngineServiceAddress())
 	if err != nil {
 		ef.Unlock()
 		return errors.Wrapf(err, "failed to get SPDK client to expand engine frontend %v", ef.Name)
@@ -2247,7 +2255,7 @@ func (ef *EngineFrontend) resolveEngineNameByTargetAddress(targetAddress string)
 		return "", errors.Wrapf(ErrSwitchOverTargetInvalidInput, "invalid target address %s", targetAddress)
 	}
 
-	targetSpdkClient, err := GetServiceClient(targetAddress)
+	targetSpdkClient, err := ef.newServiceClient(targetAddress)
 	if err != nil {
 		return "", errors.Wrapf(ErrSwitchOverTargetInternal, "failed to get SPDK client for target address %s: %v", targetAddress, err)
 	}
@@ -2365,7 +2373,7 @@ func (ef *EngineFrontend) snapshotOperation(inputSnapshotName string, snapshotOp
 		}
 	}
 
-	engineSpdkClient, err := GetServiceClient(ef.getEngineServiceAddress())
+	engineSpdkClient, err := ef.newServiceClient(ef.getEngineServiceAddress())
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get SPDK client to perform snapshot operation %s for snapshot %q", snapshotOp, inputSnapshotName)
 	}

@@ -72,7 +72,7 @@ func (ops V1DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.Eng
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshot(ctx context.Context, req *rpc.EngineVolumeSnapshotRequest) (resp *rpc.EngineVolumeSnapshotProxyResponse, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -165,7 +165,7 @@ func (ops V1DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.Proxy
 }
 
 func (ops V2DataEngineProxyOps) SnapshotList(ctx context.Context, req *rpc.ProxyEngineRequest) (resp *rpc.EngineSnapshotListProxyResponse, err error) {
-	c, err := getSPDKClientFromAddress(req.Address)
+	c, err := getSPDKClientFromAddress(req.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get SPDK client from engine address %v", req.Address)
 	}
@@ -281,7 +281,7 @@ func (ops V2DataEngineProxyOps) SnapshotClone(ctx context.Context, req *rpc.Engi
 		"snapshotName":      req.SnapshotName,
 	})
 
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -360,7 +360,7 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 		"volumeName": req.VolumeName,
 		"dataEngine": req.DataEngine,
 	})
-	c, err := getSPDKClientFromAddress(req.Address)
+	c, err := getSPDKClientFromAddress(req.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.Address, err)
 	}
@@ -396,7 +396,7 @@ func (ops V2DataEngineProxyOps) SnapshotCloneStatus(ctx context.Context, req *rp
 			continue
 		}
 
-		replicaClient, err := getSPDKClientFromAddress(replicaAddress)
+		replicaClient, err := getSPDKClientFromAddress(replicaAddress, ops.spdkTLSConfig)
 		if err != nil {
 			log.WithError(err).
 				WithField("replicaName", rName).
@@ -507,7 +507,7 @@ func (ops V1DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.Eng
 }
 
 func (ops V2DataEngineProxyOps) SnapshotRevert(ctx context.Context, req *rpc.EngineSnapshotRevertRequest) (resp *emptypb.Empty, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -562,7 +562,7 @@ func (ops V1DataEngineProxyOps) SnapshotPurge(ctx context.Context, req *rpc.Engi
 }
 
 func (ops V2DataEngineProxyOps) SnapshotPurge(ctx context.Context, req *rpc.EngineSnapshotPurgeRequest) (resp *emptypb.Empty, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -669,7 +669,7 @@ func (ops V1DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.Eng
 }
 
 func (ops V2DataEngineProxyOps) SnapshotRemove(ctx context.Context, req *rpc.EngineSnapshotRemoveRequest) (resp *emptypb.Empty, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -727,7 +727,7 @@ func (ops V1DataEngineProxyOps) SnapshotHash(ctx context.Context, req *rpc.Engin
 }
 
 func (ops V2DataEngineProxyOps) SnapshotHash(ctx context.Context, req *rpc.EngineSnapshotHashRequest) (resp *emptypb.Empty, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -790,7 +790,7 @@ func (ops V1DataEngineProxyOps) SnapshotHashStatus(ctx context.Context, req *rpc
 }
 
 func (ops V2DataEngineProxyOps) SnapshotHashStatus(ctx context.Context, req *rpc.EngineSnapshotHashStatusRequest) (resp *rpc.EngineSnapshotHashStatusProxyResponse, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}

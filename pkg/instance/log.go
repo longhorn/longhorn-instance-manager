@@ -11,7 +11,6 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
-	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
 
@@ -57,7 +56,7 @@ func (ops V1DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.Log
 func (ops V2DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.LogSetLevelRequest) (resp *emptypb.Empty, err error) {
 	spdkLevel := strings.ToUpper(req.Level)
 
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -89,7 +88,7 @@ func (ops V1DataEngineInstanceOps) LogSetFlags(ctx context.Context, req *rpc.Log
 }
 
 func (ops V2DataEngineInstanceOps) LogSetFlags(ctx context.Context, req *rpc.LogSetFlagsRequest) (resp *emptypb.Empty, err error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}
@@ -140,7 +139,7 @@ func (ops V1DataEngineInstanceOps) LogGetFlags(ctx context.Context, req *rpc.Log
 }
 
 func (ops V2DataEngineInstanceOps) LogGetFlags(ctx context.Context, req *rpc.LogGetFlagsRequest) (resp *rpc.LogGetFlagsResponse, err error) {
-	c, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	c, err := ops.newSPDKClient()
 	if err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to create SPDK client").Error())
 	}

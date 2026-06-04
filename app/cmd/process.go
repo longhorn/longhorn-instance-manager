@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/client"
+	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
 )
 
@@ -241,10 +242,10 @@ func getProcessManagerClient(c *cli.Context, ctx context.Context, ctxCancel cont
 
 	if tlsDir != "" {
 		imClient, err := client.NewProcessManagerClientWithTLS(ctx, ctxCancel, url,
-			filepath.Join(tlsDir, "ca.crt"),
-			filepath.Join(tlsDir, "tls.crt"),
-			filepath.Join(tlsDir, "tls.key"),
-			"longhorn-backend.longhorn-system")
+			filepath.Join(tlsDir, types.TLSCAFile),
+			filepath.Join(tlsDir, types.TLSCertFile),
+			filepath.Join(tlsDir, types.TLSKeyFile),
+			types.TLSPeerName)
 		if err == nil {
 			return imClient, err
 		}

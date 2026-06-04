@@ -16,7 +16,6 @@ import (
 	lhns "github.com/longhorn/go-common-libs/ns"
 	lhtypes "github.com/longhorn/go-common-libs/types"
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
-	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
@@ -81,7 +80,7 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	// The engine is always local to this IM (proxy runs on engine IM).
 	// Use the local SPDK service for EngineGet so it works even when the
 	// EngineFrontend is on a remote node.
-	localClient, err := spdkclient.NewSPDKClient(ops.spdkServiceAddress)
+	localClient, err := newSPDKClient(ops.spdkServiceAddress, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create local SPDK client for address %v: %v", ops.spdkServiceAddress, err)
 	}
@@ -111,7 +110,7 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	if req.EngineFrontendName != "" {
 		// The EngineFrontend may be on a remote IM. Use req.Address
 		// (the EF IM address) and derive its SPDK service endpoint.
-		efClient, err := getSPDKClientFromAddress(req.Address)
+		efClient, err := getSPDKClientFromAddress(req.Address, ops.spdkTLSConfig)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"serviceURL":         req.Address,
@@ -207,7 +206,7 @@ func (ops V1DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.Engin
 }
 
 func (ops V2DataEngineProxyOps) VolumeExpand(ctx context.Context, req *rpc.EngineVolumeExpandRequest) (resp *emptypb.Empty, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}
@@ -406,7 +405,7 @@ func (ops V1DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, r
 }
 
 func (ops V2DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, req *rpc.EngineVolumeSnapshotMaxCountSetRequest) (resp *emptypb.Empty, err error) {
-	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address)
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
 	}

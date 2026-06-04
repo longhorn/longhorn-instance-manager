@@ -165,21 +165,17 @@ func start(c *cli.Context) (err error) {
 		}
 	}
 
-	// setup tls config
-	var tlsConfig *tls.Config
+	var serverTLSConfig *tls.Config
+	var clientTLSConfig *tls.Config
 	tlsDir := c.GlobalString("tls-dir")
 	if tlsDir != "" {
-		tlsConfig, err = util.LoadServerTLS(
-			filepath.Join(tlsDir, "ca.crt"),
-			filepath.Join(tlsDir, "tls.crt"),
-			filepath.Join(tlsDir, "tls.key"),
-			"longhorn-backend.longhorn-system")
+		serverTLSConfig, clientTLSConfig, err = loadTLSConfigsFromDir(tlsDir)
 		if err != nil {
-			logrus.WithError(err).Warnf("Failed to add TLS key pair from %v", tlsDir)
+			logrus.WithError(err).Warnf("Failed to initialize TLS from %v; starting without TLS", tlsDir)
 		}
 	}
 
-	if tlsConfig != nil {
+	if serverTLSConfig != nil {
 		logrus.Info("Creating gRPC server with mtls auth")
 	} else {
 		logrus.Info("Creating gRPC server with no auth")
@@ -207,8 +203,10 @@ func start(c *cli.Context) (err error) {
 	servers := map[string]*grpc.Server{}
 	listeners := map[string]net.Listener{}
 
+	spdkClientAddr := toClientAddress(addresses[types.SpdkGrpcService])
+
 	// Start disk server
-	diskGRPCServer, diskGRPCListener, err := setupDiskGRPCServer(ctx, addresses[types.DiskGrpcService], addresses[types.SpdkGrpcService], spdkEnabled)
+	diskGRPCServer, diskGRPCListener, err := setupDiskGRPCServer(ctx, addresses[types.DiskGrpcService], spdkClientAddr, spdkEnabled, serverTLSConfig, clientTLSConfig)
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to setup %s", types.DiskGrpcService)
 		return err
@@ -218,8 +216,8 @@ func start(c *cli.Context) (err error) {
 
 	// Start instance server
 	instanceGRPCServer, instanceRPCListener, err := setupInstanceGRPCServer(ctx, logsDir,
-		addresses[types.InstanceGrpcService], addresses[types.ProcessManagerGrpcService],
-		addresses[types.SpdkGrpcService], tlsConfig, spdkEnabled)
+		addresses[types.InstanceGrpcService], toClientAddress(addresses[types.ProcessManagerGrpcService]),
+		spdkClientAddr, serverTLSConfig, clientTLSConfig, spdkEnabled)
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to set up %s", types.InstanceGrpcService)
 		return err
@@ -229,7 +227,7 @@ func start(c *cli.Context) (err error) {
 
 	// Start proxy server
 	proxyGRPCServer, proxyGRPCListener, err := setupProxyGRPCServer(ctx, logsDir,
-		addresses[types.ProxyGRPCService], addresses[types.DiskGrpcService], addresses[types.SpdkGrpcService], tlsConfig)
+		addresses[types.ProxyGRPCService], spdkClientAddr, serverTLSConfig, clientTLSConfig)
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to set up %s", types.ProxyGRPCService)
 		return err
@@ -238,7 +236,7 @@ func start(c *cli.Context) (err error) {
 	listeners[types.ProxyGRPCService] = proxyGRPCListener
 
 	// Start process-manager server
-	pm, pmGRPCServer, pmGRPCListener, err := setupProcessManagerGRPCServer(ctx, processPortRange, logsDir, addresses[types.ProcessManagerGrpcService])
+	pm, pmGRPCServer, pmGRPCListener, err := setupProcessManagerGRPCServer(ctx, processPortRange, logsDir, addresses[types.ProcessManagerGrpcService], serverTLSConfig)
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to set up %s", types.ProcessManagerGrpcService)
 		return err
@@ -248,7 +246,7 @@ func start(c *cli.Context) (err error) {
 
 	// Start spdk server
 	if spdkEnabled {
-		spdkGRPCServer, spdkGRPCListener, err := setupSPDKGRPCServer(ctx, spdkPortRange, addresses[types.SpdkGrpcService])
+		spdkGRPCServer, spdkGRPCListener, err := setupSPDKGRPCServer(ctx, spdkPortRange, addresses[types.SpdkGrpcService], serverTLSConfig, clientTLSConfig)
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to set up %s", types.SpdkGrpcService)
 			return err
@@ -311,6 +309,22 @@ func start(c *cli.Context) (err error) {
 	return nil
 }
 
+func loadTLSConfigsFromDir(tlsDir string) (serverTLSConfig, clientTLSConfig *tls.Config, err error) {
+	caFile := filepath.Join(tlsDir, types.TLSCAFile)
+	certFile := filepath.Join(tlsDir, types.TLSCertFile)
+	keyFile := filepath.Join(tlsDir, types.TLSKeyFile)
+
+	serverTLSConfig, err = util.LoadServerTLS(caFile, certFile, keyFile, types.TLSPeerName)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to initialize server TLS from %v", tlsDir)
+	}
+	clientTLSConfig, err = util.LoadClientTLS(caFile, certFile, keyFile, types.TLSPeerName)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to initialize client TLS from %v", tlsDir)
+	}
+	return serverTLSConfig, clientTLSConfig, nil
+}
+
 func getServiceAddresses(listen string) (addresses map[string]string, err error) {
 	host, port, err := net.SplitHostPort(listen)
 	if err != nil {
@@ -331,14 +345,30 @@ func getServiceAddresses(listen string) (addresses map[string]string, err error)
 	}, nil
 }
 
-func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
-	srv, err := disk.NewServer(ctx, spdkEnabled, spdkServiceAddress)
+// toClientAddress converts a server bind address to a local client dial address.
+// Intra-pod clients must dial the loopback interface, not the bind-all wildcard.
+func toClientAddress(serverAddr string) string {
+	host, port, err := net.SplitHostPort(serverAddr)
+	if err != nil {
+		return serverAddr
+	}
+	switch host {
+	case "0.0.0.0", "":
+		host = "127.0.0.1"
+	case "::":
+		host = "::1"
+	}
+	return net.JoinHostPort(host, port)
+}
+
+func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string, spdkEnabled bool, serverTLSConfig, clientTLSConfig *tls.Config) (*grpc.Server, net.Listener, error) {
+	srv, err := disk.NewServer(ctx, spdkEnabled, spdkServiceAddress, clientTLSConfig)
 	if err != nil {
 		return nil, nil, err
 	}
 	hc := health.NewDiskHealthCheckServer(srv)
 
-	grpcServer, rpcListener, err := util.NewServer(listen, nil,
+	grpcServer, rpcListener, err := util.NewServer(listen, serverTLSConfig,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             10 * time.Second,
 			PermitWithoutStream: true,
@@ -355,19 +385,19 @@ func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string,
 	return grpcServer, rpcListener, nil
 }
 
-func setupSPDKGRPCServer(ctx context.Context, portRange, listen string) (*grpc.Server, net.Listener, error) {
+func setupSPDKGRPCServer(ctx context.Context, portRange, listen string, serverTLSConfig, clientTLSConfig *tls.Config) (*grpc.Server, net.Listener, error) {
 	portStart, portEnd, err := util.ParsePortRange(portRange)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	srv, err := spdk.NewServer(ctx, portStart, portEnd)
+	srv, err := spdk.NewServer(ctx, portStart, portEnd, spdk.NewServiceClientFactory(clientTLSConfig))
 	if err != nil {
 		return nil, nil, err
 	}
 	hc := health.NewSPDKHealthCheckServer(srv)
 
-	grpcServer, grpcListener, err := util.NewServer(listen, nil,
+	grpcServer, grpcListener, err := util.NewServer(listen, serverTLSConfig,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             10 * time.Second,
 			PermitWithoutStream: true,
@@ -384,15 +414,15 @@ func setupSPDKGRPCServer(ctx context.Context, portRange, listen string) (*grpc.S
 	return grpcServer, grpcListener, nil
 }
 
-func setupProxyGRPCServer(ctx context.Context, logsDir, listen, diskServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config) (*grpc.Server, net.Listener, error) {
+func setupProxyGRPCServer(ctx context.Context, logsDir, listen, spdkServiceAddress string, serverTLSConfig, clientTLSConfig *tls.Config) (*grpc.Server, net.Listener, error) {
 	// TODO: skip proxy for replica instance manager pod
-	srv, err := proxy.NewProxy(ctx, logsDir, diskServiceAddress, spdkServiceAddress)
+	srv, err := proxy.NewProxy(ctx, logsDir, spdkServiceAddress, clientTLSConfig)
 	if err != nil {
 		return nil, nil, err
 	}
 	hc := health.NewProxyHealthCheckServer(srv)
 
-	grpcProxyServer, grpcProxyListener, err := util.NewServer(listen, tlsConfig,
+	grpcProxyServer, grpcProxyListener, err := util.NewServer(listen, serverTLSConfig,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             10 * time.Second,
 			PermitWithoutStream: true,
@@ -409,14 +439,14 @@ func setupProxyGRPCServer(ctx context.Context, logsDir, listen, diskServiceAddre
 	return grpcProxyServer, grpcProxyListener, nil
 }
 
-func setupProcessManagerGRPCServer(ctx context.Context, portRange, logsDir, listen string) (*process.Manager, *grpc.Server, net.Listener, error) {
+func setupProcessManagerGRPCServer(ctx context.Context, portRange, logsDir, listen string, tlsConfig *tls.Config) (*process.Manager, *grpc.Server, net.Listener, error) {
 	srv, err := process.NewManager(ctx, portRange, logsDir)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	hc := health.NewHealthCheckServer(srv)
 
-	grpcServer, grpcListener, err := util.NewServer(listen, nil,
+	grpcServer, grpcListener, err := util.NewServer(listen, tlsConfig,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             10 * time.Second,
 			PermitWithoutStream: true,
@@ -433,14 +463,14 @@ func setupProcessManagerGRPCServer(ctx context.Context, portRange, logsDir, list
 	return srv, grpcServer, grpcListener, nil
 }
 
-func setupInstanceGRPCServer(ctx context.Context, logsDir, listen, processManagerServiceAddress, spdkServiceAddress string, tlsConfig *tls.Config, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
-	srv, err := instance.NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, spdkEnabled)
+func setupInstanceGRPCServer(ctx context.Context, logsDir, listen, processManagerServiceAddress, spdkServiceAddress string, serverTLSConfig, clientTLSConfig *tls.Config, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
+	srv, err := instance.NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, clientTLSConfig, spdkEnabled)
 	if err != nil {
 		return nil, nil, err
 	}
 	hc := health.NewInstanceHealthCheckServer(srv)
 
-	grpcServer, grpcListener, err := util.NewServer(listen, tlsConfig,
+	grpcServer, grpcListener, err := util.NewServer(listen, serverTLSConfig,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             10 * time.Second,
 			PermitWithoutStream: true,

@@ -1,6 +1,6 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/cockroachdb/errors v1.13.0
@@ -9,7 +9,7 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20260525102658-c0739cd3e2c2
 	github.com/longhorn/go-spdk-helper v0.6.3-0.20260601101353-0be728aae70e
 	github.com/longhorn/longhorn-engine v1.12.0-rc3
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260601104707-0bd3710d255c
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260608053552-39853298356c
 	github.com/longhorn/types v0.0.0-20260522011813-8f1780fad833
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
