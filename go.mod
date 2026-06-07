@@ -1,6 +1,6 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.25.0
+go 1.25.3
 
 replace (
 	github.com/longhorn/longhorn-spdk-engine => github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555
@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260525102750-1ed7dde50b68
 	github.com/longhorn/go-common-libs v0.0.0-20260525102658-c0739cd3e2c2
-	github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838
+	github.com/longhorn/go-spdk-helper v0.6.2
 	github.com/longhorn/longhorn-engine v1.9.2
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555
 	github.com/longhorn/types v0.0.0-20260522011813-8f1780fad833
@@ -31,6 +31,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
+	github.com/avast/retry-go/v4 v4.7.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.7 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.17 // indirect

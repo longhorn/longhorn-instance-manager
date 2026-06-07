@@ -162,3 +162,7 @@ type BdevStats struct {
 	IoTime            uint64 `json:"io_time"`
 	WeightedIoTime    uint64 `json:"weighted_io_time"`
 }
+
+type SpdkKillInstanceRequest struct {
+	SigName string `json:"sig_name"`
+}

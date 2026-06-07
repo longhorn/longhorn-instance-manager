@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
@@ -21,6 +21,7 @@ import (
 
 const (
 	lsblkBinary    = "lsblk"
+	blkidBinary    = "blkid"
 	BlockdevBinary = "blockdev"
 )
 
@@ -273,4 +274,33 @@ func IsBlockDevice(path string) (bool, error) {
 	}
 
 	return (st.Mode & unix.S_IFMT) == unix.S_IFBLK, nil
+}
+
+// hasFilesystem checks if the device has a filesystem using `blkid -s TYPE`
+func hasFilesystem(devPath string, executor *commonns.Executor) bool {
+	opts := []string{"-s", "TYPE", "-o", "value", devPath}
+	output, err := executor.Execute(nil, blkidBinary, opts, types.ExecuteTimeout)
+	if err != nil {
+		// blkid failed = no filesystem detected
+		return false
+	}
+	return len(strings.TrimSpace(output)) > 0
+}
+
+// hasPartitionTable checks if the device has a partition table using `blkid -s PTTYPE`
+func hasPartitionTable(devPath string, executor *commonns.Executor) bool {
+	opts := []string{"-s", "PTTYPE", "-o", "value", devPath}
+	output, err := executor.Execute(nil, blkidBinary, opts, types.ExecuteTimeout)
+	if err != nil {
+		// blkid failed = no partition table detected
+		return false
+	}
+	return len(strings.TrimSpace(output)) > 0
+}
+
+// IsBlockDeviceInUse returns true if the given block device has a filesystem
+// or partition table detected by blkid, indicating that the device is already
+// in use or contains existing data.
+func IsBlockDeviceInUse(devPath string, executor *commonns.Executor) bool {
+	return hasFilesystem(devPath, executor) || hasPartitionTable(devPath, executor)
 }
