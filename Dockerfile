@@ -1,11 +1,6 @@
-<<<<<<< HEAD
 # syntax=docker/dockerfile:1.23.0@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
-=======
-# syntax=docker/dockerfile:1.24.0@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
-ARG GOLANGCI_LINT_VERSION=v2.12.2
-FROM golangci/golangci-lint:${GOLANGCI_LINT_VERSION} AS golangci-lint
+FROM golangci/golangci-lint:v2.12.2 AS golangci-lint
 
->>>>>>> d192768a (chore: update golangci-lint to v2.12.2)
 FROM registry.suse.com/bci/golang:1.26@sha256:f413accb043d80ea904e972958c06543e5fa3225652b29b44c51f027246b3b81 AS base
 
 ARG TARGETARCH
