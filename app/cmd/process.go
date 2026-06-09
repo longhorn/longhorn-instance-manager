@@ -248,7 +248,7 @@ func getProcessManagerClient(c *cli.Context, ctx context.Context, ctxCancel cont
 		if err == nil {
 			return imClient, err
 		}
-		logrus.WithError(err).Info("Falling back to non tls ProcessManager client")
+		return nil, errors.Wrap(err, "failed to initialize TLS ProcessManager client")
 	}
 
 	return client.NewProcessManagerClient(ctx, ctxCancel, url, nil)
