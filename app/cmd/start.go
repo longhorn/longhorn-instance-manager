@@ -173,7 +173,7 @@ func start(c *cli.Command) (err error) {
 	if tlsDir != "" {
 		serverTLSConfig, clientTLSConfig, err = loadTLSConfigsFromDir(tlsDir)
 		if err != nil {
-			logrus.WithError(err).Warnf("Failed to initialize TLS from %v; starting without TLS", tlsDir)
+			return err
 		}
 	}
 
