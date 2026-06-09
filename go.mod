@@ -1,8 +1,6 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.26.0
-
-toolchain go1.26.3
+go 1.26
 
 require (
 	github.com/cockroachdb/errors v1.13.0
