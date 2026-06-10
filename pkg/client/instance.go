@@ -120,6 +120,15 @@ type ShardCreateRequest struct {
 	SlotIndex uint32
 }
 
+// ShardGroupCreateRequest carries the EC creation parameters for a ShardGroup instance.
+type ShardGroupCreateRequest struct {
+	DataChunks       uint32
+	ParityChunks     uint32
+	StripSizeKb      uint32
+	Shards           map[string]*rpc.ShardEndpoint
+	SalvageRequested bool
+}
+
 type InstanceCreateRequest struct {
 	DataEngine   string
 	Name         string
@@ -136,6 +145,7 @@ type InstanceCreateRequest struct {
 	EngineFrontend EngineFrontendCreateRequest
 	Replica        ReplicaCreateRequest
 	Shard          ShardCreateRequest
+	ShardGroup     ShardGroupCreateRequest
 	DataLayoutType rpc.DataLayoutType
 
 	// Deprecated: replaced by DataEngine.
@@ -197,6 +207,17 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 				LvsName:   req.Shard.LvsName,
 				LvsUuid:   req.Shard.LvsUUID,
 				SlotIndex: req.Shard.SlotIndex,
+			}
+		case types.InstanceTypeShardGroup:
+			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
+				Size: req.Size,
+				ShardGroupSpec: &rpc.ShardGroupSpec{
+					DataChunks:       req.ShardGroup.DataChunks,
+					ParityChunks:     req.ShardGroup.ParityChunks,
+					StripSizeKb:      req.ShardGroup.StripSizeKb,
+					Shards:           req.ShardGroup.Shards,
+					SalvageRequested: req.ShardGroup.SalvageRequested,
+				},
 			}
 		default:
 			return nil, fmt.Errorf("failed to create instance: invalid instance type %v", req.InstanceType)
