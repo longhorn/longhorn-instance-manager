@@ -129,6 +129,7 @@ type InstanceCreateRequest struct {
 	Engine         EngineCreateRequest
 	EngineFrontend EngineFrontendCreateRequest
 	Replica        ReplicaCreateRequest
+	DataLayoutType rpc.DataLayoutType
 
 	// Deprecated: replaced by DataEngine.
 	BackendStoreDriver string
@@ -217,6 +218,7 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 				return ""
 			}(),
 		},
+		DataLayoutType: req.DataLayoutType,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create instance")
