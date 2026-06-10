@@ -225,6 +225,28 @@ func loadCertificate(caFile, certFile, keyFile string) (certPool *x509.CertPool,
 	return
 }
 
+// NewReloadableServerTLS returns a *tls.Config that reloads certificates from
+// disk on each incoming TLS handshake if the files have changed since the last
+// successful load. On failure the last known good snapshot is retained.
+func NewReloadableServerTLS(caFile, certFile, keyFile, peerName string) (*tls.Config, error) {
+	p, err := newTLSConfigProvider(caFile, certFile, keyFile, peerName)
+	if err != nil {
+		return nil, err
+	}
+	return p.ServerConfig(), nil
+}
+
+// NewReloadableClientTLS returns a *tls.Config that reloads the client certificate
+// and CA pool on each outgoing TLS handshake if the files have changed since the
+// last successful load. On failure the last known good snapshot is retained.
+func NewReloadableClientTLS(caFile, certFile, keyFile, peerName string) (*tls.Config, error) {
+	p, err := newTLSConfigProvider(caFile, certFile, keyFile, peerName)
+	if err != nil {
+		return nil, err
+	}
+	return p.ClientConfig(), nil
+}
+
 // parseEndpoint splits ep string into proto and address
 // the supported protocols are "tcp" and "unix" unsupported protocols will return error
 // if the ep (url) does not contain a protocol, we return "tcp" for backwards compatibility

@@ -80,7 +80,7 @@ func NewProcessManagerClient(ctx context.Context, ctxCancel context.CancelFunc, 
 }
 
 func NewProcessManagerClientWithTLS(ctx context.Context, ctxCancel context.CancelFunc, serviceURL, caFile, certFile, keyFile, peerName string) (*ProcessManagerClient, error) {
-	tlsConfig, err := util.LoadClientTLS(caFile, certFile, keyFile, peerName)
+	tlsConfig, err := util.NewReloadableClientTLS(caFile, certFile, keyFile, peerName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load tls key pair from file")
 	}

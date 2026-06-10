@@ -79,7 +79,7 @@ func NewInstanceServiceClient(ctx context.Context, ctxCancel context.CancelFunc,
 }
 
 func NewInstanceServiceClientWithTLS(ctx context.Context, ctxCancel context.CancelFunc, serviceURL, caFile, certFile, keyFile, peerName string) (*InstanceServiceClient, error) {
-	tlsConfig, err := util.LoadClientTLS(caFile, certFile, keyFile, peerName)
+	tlsConfig, err := util.NewReloadableClientTLS(caFile, certFile, keyFile, peerName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load tls key pair from file")
 	}

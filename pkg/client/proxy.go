@@ -93,7 +93,7 @@ func NewProxyClient(ctx context.Context, ctxCancel context.CancelFunc, address s
 }
 
 func NewProxyClientWithTLS(ctx context.Context, ctxCancel context.CancelFunc, address string, port int, caFile, certFile, keyFile, peerName string) (*ProxyClient, error) {
-	tlsConfig, err := util.LoadClientTLS(caFile, certFile, keyFile, peerName)
+	tlsConfig, err := util.NewReloadableClientTLS(caFile, certFile, keyFile, peerName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load tls key pair from file")
 	}
