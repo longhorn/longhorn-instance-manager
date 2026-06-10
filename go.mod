@@ -8,7 +8,7 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20260525102750-1ed7dde50b68
 	github.com/longhorn/go-common-libs v0.0.0-20260525102658-c0739cd3e2c2
 	github.com/longhorn/go-spdk-helper v0.6.3-0.20260601101353-0be728aae70e
-	github.com/longhorn/longhorn-engine v1.12.0-rc3
+	github.com/longhorn/longhorn-engine v1.12.0-rc4
 	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260608053552-39853298356c
 	github.com/longhorn/types v0.0.0-20260522011813-8f1780fad833
 	github.com/sirupsen/logrus v1.9.4
@@ -112,9 +112,9 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.36.0 // indirect
-	k8s.io/apimachinery v0.36.0 // indirect
-	k8s.io/client-go v0.36.0 // indirect
+	k8s.io/api v0.36.1 // indirect
+	k8s.io/apimachinery v0.36.1 // indirect
+	k8s.io/client-go v0.36.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
