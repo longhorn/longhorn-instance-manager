@@ -114,6 +114,12 @@ type ReplicaCreateRequest struct {
 	BackingImageName string
 }
 
+type ShardCreateRequest struct {
+	LvsName   string
+	LvsUUID   string
+	SlotIndex uint32
+}
+
 type InstanceCreateRequest struct {
 	DataEngine   string
 	Name         string
@@ -129,6 +135,7 @@ type InstanceCreateRequest struct {
 	Engine         EngineCreateRequest
 	EngineFrontend EngineFrontendCreateRequest
 	Replica        ReplicaCreateRequest
+	Shard          ShardCreateRequest
 	DataLayoutType rpc.DataLayoutType
 
 	// Deprecated: replaced by DataEngine.
@@ -183,6 +190,13 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 				DiskUuid:         req.Replica.DiskUUID,
 				ExposeRequired:   req.Replica.ExposeRequired,
 				BackingImageName: req.Replica.BackingImageName,
+			}
+		case types.InstanceTypeShard:
+			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
+				Size:      req.Size,
+				LvsName:   req.Shard.LvsName,
+				LvsUuid:   req.Shard.LvsUUID,
+				SlotIndex: req.Shard.SlotIndex,
 			}
 		default:
 			return nil, fmt.Errorf("failed to create instance: invalid instance type %v", req.InstanceType)
