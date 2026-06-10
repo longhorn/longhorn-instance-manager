@@ -3,13 +3,13 @@ module github.com/longhorn/longhorn-instance-manager
 go 1.26.0
 
 require (
-	github.com/cockroachdb/errors v1.13.0
+	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260709065232-ca96411485d4
 	github.com/longhorn/go-common-libs v0.0.0-20260712050051-67a253016448
 	github.com/longhorn/go-spdk-helper v0.6.3-0.20260712050109-6357546afe9a
-	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260709162415-abb110c60396
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260710034836-0461d1232f63
+	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260714091810-bb3f7589ea5f
 	github.com/longhorn/types v0.0.0-20260709032252-3d0a3cd8f06f
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
@@ -103,7 +103,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
