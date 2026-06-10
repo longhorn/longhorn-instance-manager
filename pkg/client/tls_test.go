@@ -87,7 +87,11 @@ func TestWithTLSConstructors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewDiskServiceClientWithTLS: %v", err)
 	}
-	defer diskClient.Close()
+	defer func() {
+		if err := diskClient.Close(); err != nil {
+			t.Logf("failed to close DiskServiceClient: %v", err)
+		}
+	}()
 	if diskClient.tlsConfig == nil {
 		t.Fatal("DiskServiceClient: tlsConfig must not be nil")
 	}
@@ -99,7 +103,11 @@ func TestWithTLSConstructors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewInstanceServiceClientWithTLS: %v", err)
 	}
-	defer instanceClient.Close()
+	defer func() {
+		if err := instanceClient.Close(); err != nil {
+			t.Logf("failed to close InstanceServiceClient: %v", err)
+		}
+	}()
 	if instanceClient.tlsConfig == nil {
 		t.Fatal("InstanceServiceClient: tlsConfig must not be nil")
 	}
@@ -108,7 +116,11 @@ func TestWithTLSConstructors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewProcessManagerClientWithTLS: %v", err)
 	}
-	defer processClient.Close()
+	defer func() {
+		if err := processClient.Close(); err != nil {
+			t.Logf("failed to close ProcessManagerClient: %v", err)
+		}
+	}()
 	if processClient.tlsConfig == nil {
 		t.Fatal("ProcessManagerClient: tlsConfig must not be nil")
 	}
@@ -117,7 +129,11 @@ func TestWithTLSConstructors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewProxyClientWithTLS: %v", err)
 	}
-	defer proxyClient.Close()
+	defer func() {
+		if err := proxyClient.Close(); err != nil {
+			t.Logf("failed to close ProxyClient: %v", err)
+		}
+	}()
 	if proxyClient.tlsConfig == nil {
 		t.Fatal("ProxyClient: tlsConfig must not be nil")
 	}
