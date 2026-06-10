@@ -233,6 +233,38 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 			"port":    shard.Port,
 		}).Info("Created shard instance")
 		return shardResponseToInstanceResponse(shard), nil
+	case types.InstanceTypeShardGroup:
+		spec := req.Spec.SpdkInstanceSpec.ShardGroupSpec
+		if spec == nil {
+			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "shard_group_spec is required for shardgroup instance %v", req.Spec.Name)
+		}
+		if len(spec.Shards) == 0 {
+			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "shard_group_spec.shards is empty for shardgroup instance %v", req.Spec.Name)
+		}
+		shards := make(map[string]*spdkrpc.ShardEndpoint, len(spec.Shards))
+		for k, v := range spec.Shards {
+			shards[k] = &spdkrpc.ShardEndpoint{
+				Address:   v.Address,
+				SlotIndex: v.SlotIndex,
+			}
+		}
+		shardGroup, err := c.ShardGroupCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Size,
+			spec.DataChunks, spec.ParityChunks, spec.StripSizeKb, shards, req.Spec.PortCount, spec.SalvageRequested)
+		if err != nil {
+			return nil, err
+		}
+		logrus.WithFields(logrus.Fields{
+			"name":             req.Spec.Name,
+			"dataChunks":       spec.DataChunks,
+			"parityChunks":     spec.ParityChunks,
+			"stripSizeKb":      spec.StripSizeKb,
+			"shardCount":       len(shards),
+			"salvageRequested": spec.SalvageRequested,
+			"processState":     shardGroup.ProcessState,
+			"ip":               shardGroup.Ip,
+			"port":             shardGroup.Port,
+		}).Info("Created shardgroup instance")
+		return shardGroupResponseToInstanceResponse(shardGroup), nil
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Spec.Type)
 	}
@@ -315,6 +347,11 @@ func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 		err = c.ReplicaDelete(req.Name, req.CleanupRequired)
 	case types.InstanceTypeShard:
 		err = c.ShardDelete(req.Name, req.CleanupRequired)
+	case types.InstanceTypeShardGroup:
+		// cleanup_required gates lvstore + head lvol destruction inside the
+		// ShardGroup process. Detach must pass cleanup_required=false to
+		// preserve user data across pod re-create cycles.
+		err = c.ShardGroupDelete(req.Name, req.CleanupRequired)
 	default:
 		err = grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
@@ -411,6 +448,12 @@ func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 			return nil, err
 		}
 		return shardResponseToInstanceResponse(shard), nil
+	case types.InstanceTypeShardGroup:
+		shardGroup, err := c.ShardGroupGet(req.Name)
+		if err != nil {
+			return nil, err
+		}
+		return shardGroupResponseToInstanceResponse(shardGroup), nil
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
@@ -512,6 +555,20 @@ func (ops V2DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 			"ip":      shard.IP,
 			"port":    shard.Port,
 		}).Trace("Listed shard instance")
+	}
+
+	shardGroups, err := c.ShardGroupList()
+	if err != nil {
+		return err
+	}
+	for _, shardGroup := range shardGroups {
+		instances[shardGroup.Name] = shardGroupResponseToInstanceResponse(shardGroup)
+		logrus.WithFields(logrus.Fields{
+			"name":         shardGroup.Name,
+			"processState": shardGroup.ProcessState,
+			"ip":           shardGroup.Ip,
+			"port":         shardGroup.Port,
+		}).Trace("Listed shardgroup instance")
 	}
 	return nil
 }
@@ -721,6 +778,10 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 		g.Go(func() error {
 			return s.watchSPDKShard(ctx, req, spdkClient, notifyChan)
 		})
+
+		g.Go(func() error {
+			return s.watchSPDKShardGroup(ctx, req, spdkClient, notifyChan)
+		})
 	}
 
 	if err := g.Wait(); err != nil {
@@ -870,6 +931,43 @@ func (s *Server) watchSPDKShard(ctx context.Context, req *emptypb.Empty, client 
 					return err
 				}
 				logrus.WithError(err).Error("Failed to receive next item in SPDK shard watch")
+				time.Sleep(monitorRetryPollInterval)
+				failureCount++
+			} else {
+				notifyChan <- struct{}{}
+			}
+		}
+	}
+}
+
+func (s *Server) watchSPDKShardGroup(ctx context.Context, req *emptypb.Empty, client *spdkclient.SPDKClient, notifyChan chan struct{}) error {
+	logrus.Info("Start watching SPDK shardgroups")
+
+	notifier, err := client.ShardGroupWatch(context.Background())
+	if err != nil {
+		return errors.Wrap(err, "failed to create SPDK shardgroup watch notifier")
+	}
+
+	failureCount := 0
+	for {
+		if failureCount >= maxMonitorRetryCount {
+			logrus.Errorf("Continuously receiving errors for %v times, stopping watching SPDK shardgroups", maxMonitorRetryCount)
+			return fmt.Errorf("continuously receiving errors for %v times, stopping watching SPDK shardgroups", maxMonitorRetryCount)
+		}
+
+		select {
+		case <-ctx.Done():
+			logrus.Info("Stopped watching SPDK shardgroups")
+			return ctx.Err()
+		default:
+			_, err := notifier.Recv()
+			if err != nil {
+				status, ok := grpcstatus.FromError(err)
+				if ok && status.Code() == grpccodes.Canceled {
+					logrus.WithError(err).Warn("SPDK shardgroup watch is canceled")
+					return err
+				}
+				logrus.WithError(err).Error("Failed to receive next item in SPDK shardgroup watch")
 				time.Sleep(monitorRetryPollInterval)
 				failureCount++
 			} else {
@@ -1061,6 +1159,28 @@ func shardResponseToInstanceResponse(s *spdkapi.Shard) *rpc.InstanceResponse {
 	}
 }
 
+func shardGroupResponseToInstanceResponse(sg *spdkrpc.ShardGroup) *rpc.InstanceResponse {
+	return &rpc.InstanceResponse{
+		Spec: &rpc.InstanceSpec{
+			Name:       sg.Name,
+			Type:       types.InstanceTypeShardGroup,
+			VolumeName: sg.VolumeName,
+			// Deprecated
+			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
+		},
+		Status: &rpc.InstanceStatus{
+			State:      sg.ProcessState,
+			ErrorMsg:   sg.ErrorMsg,
+			PortStart:  sg.Port,
+			PortEnd:    sg.Port,
+			Conditions: make(map[string]bool),
+			Endpoint:   sg.NvmfNqn,
+			Uuid:       sg.HeadLvolUuid,
+		},
+	}
+}
+
 func (s *Server) InstanceSuspend(ctx context.Context, req *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
 	logrus.WithFields(logrus.Fields{
 		"name":       req.Name,
@@ -1104,7 +1224,7 @@ func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendReque
 			return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to suspend engine frontend %v", req.Name)
 		}
 		return &emptypb.Empty{}, nil
-	case types.InstanceTypeReplica, types.InstanceTypeShard:
+	case types.InstanceTypeReplica, types.InstanceTypeShard, types.InstanceTypeShardGroup:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "suspend is not supported for instance type %v", req.Type)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
@@ -1154,7 +1274,7 @@ func (ops V2DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest
 			return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to resume engine frontend %v", req.Name)
 		}
 		return &emptypb.Empty{}, nil
-	case types.InstanceTypeReplica, types.InstanceTypeShard:
+	case types.InstanceTypeReplica, types.InstanceTypeShard, types.InstanceTypeShardGroup:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "resume is not supported for instance type %v", req.Type)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
@@ -1208,7 +1328,7 @@ func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 			return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to switch over target for engine frontend %v", req.Name)
 		}
 		return &emptypb.Empty{}, nil
-	case types.InstanceTypeReplica, types.InstanceTypeShard:
+	case types.InstanceTypeReplica, types.InstanceTypeShard, types.InstanceTypeShardGroup:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "target switch over is not supported for instance type %v", req.Type)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
@@ -1272,7 +1392,7 @@ func (ops V2DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteT
 			return nil, grpcstatus.Error(grpccodes.Internal, errors.Wrapf(err, "failed to delete target for engine %v", req.Name).Error())
 		}
 		return &emptypb.Empty{}, nil
-	case types.InstanceTypeReplica, types.InstanceTypeShard:
+	case types.InstanceTypeReplica, types.InstanceTypeShard, types.InstanceTypeShardGroup:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "target deletion is not supported for instance type %v", req.Type)
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
