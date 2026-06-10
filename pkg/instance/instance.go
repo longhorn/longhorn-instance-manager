@@ -19,6 +19,7 @@ import (
 	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/client"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
@@ -139,6 +140,9 @@ func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequ
 }
 
 func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
+	if req.DataLayoutType == rpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "data_layout_type SHARDED is not supported on the V1 data engine")
+	}
 	if req.Spec.ProcessInstanceSpec == nil {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn data engine")
 	}
@@ -186,8 +190,14 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 
 	switch req.Spec.Type {
 	case types.InstanceTypeEngine:
-		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size, req.Spec.SpdkInstanceSpec.ReplicaAddressMap,
-			req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested, req.Spec.SpdkInstanceSpec.SnapshotMaxCount)
+		// Engine creation is topology-agnostic. For RAID1 volumes the
+		// replica_address_map carries N replica endpoints; for EC volumes it
+		// carries a single ShardGroup endpoint. The engine itself owns no
+		// EC-specific state.
+		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
+			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
+			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
+			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType))
 		if err != nil {
 			return nil, err
 		}
@@ -1109,6 +1119,15 @@ func toSPDKGRPCError(err error, defaultCode grpccodes.Code, format string, args 
 		code = statusErr.Code()
 	}
 	return grpcstatus.Error(code, errors.Wrapf(err, format, args...).Error())
+}
+
+func convertIMDataLayoutTypeToSPDKDataLayoutType(layout rpc.DataLayoutType) spdkrpc.DataLayoutType {
+	switch layout {
+	case rpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED:
+		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED
+	default:
+		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_REPLICATED
+	}
 }
 
 func (s *Server) InstanceDeleteTarget(ctx context.Context, req *rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error) {
