@@ -152,12 +152,12 @@ github.com/longhorn/go-common-libs v0.0.0-20260525102658-c0739cd3e2c2 h1:2xTjL2H
 github.com/longhorn/go-common-libs v0.0.0-20260525102658-c0739cd3e2c2/go.mod h1:6dyqqzjGfiPBn0OTKZcTBOjyViexE/L2D56741sch5s=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260331100542-4c4c6f91525b h1:877AlP/bMchRs0qRHVW3zZ42qt+iNjALc4Sz9XzrgZQ=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260331100542-4c4c6f91525b/go.mod h1:5obSKdWNPiFbFTzPWU09k9mGCSnpN9pgGoHQTUk7kYo=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260601101353-0be728aae70e h1:EsEn30wYJccl6W0Y0WLOqtU7xkS63RLcKNa6m0I3rbM=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260601101353-0be728aae70e/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
+github.com/longhorn/go-spdk-helper v0.6.3-0.20260618001233-9facf639a5f8 h1:BxDe/UNMGqlK+K98cp3BM5QbpzNOMSZ2T32kWAVrPFQ=
+github.com/longhorn/go-spdk-helper v0.6.3-0.20260618001233-9facf639a5f8/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
 github.com/longhorn/longhorn-engine v1.12.0-rc4 h1:CWtk4K8mKWop32MULpZOYXb9MpdqOF/urGBpezGRqco=
 github.com/longhorn/longhorn-engine v1.12.0-rc4/go.mod h1:6c41d/rq3bLoYB9t8UcurWZkbVjok/6KlNOZoOvKmnI=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260608053552-39853298356c h1:XgTGG4bCnvcM5pw1pEVujftxB4NxnDouid3KSXVhcBo=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260608053552-39853298356c/go.mod h1:HI/ag2xMe9xAcZsKcfo6H2NkwC5h3Xpl315BlWczHro=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260618104522-6d594473e43b h1:tRQYoE6tCQ+HdbPBjpxcvqG6NiNrakkHe6f/sGAe0uM=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260618104522-6d594473e43b/go.mod h1:GEfQXxWm5KjoLZeqy+FyDF2WubhiEGUqYOcvYuba4H4=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20260522011813-8f1780fad833 h1:zqVqTago9q7WQcOo1giTG455P0Nk1QmuYSkSO9rUEIY=
