@@ -9,6 +9,7 @@ Options:
         --spdk-interrupt-mode  Enable SPDK interrupt mode
         --spdk-memory-size     SPDK memory size in MB
         --spdk-cpumask         SPDK CPU mask
+        --spdk-iobuf-large-pool-size  SPDK iobuf large_pool_count (0 = SPDK default)
         --spdk-no-hugepage     Disable SPDK hugepage usage
     -l, --spdk-log             SPDK log level
     -h, --help                 Show this help message and exit
@@ -43,6 +44,38 @@ function generate_nvme_hostid_and_hostnqn() {
     cat /sys/class/dmi/id/product_uuid > /etc/nvme/hostid
 }
 
+# prepare_spdk_startup_config writes an SPDK startup JSON config that sets the
+# iobuf large buffer pool size (large_pool_count). The iobuf pool can ONLY be
+# sized during spdk_tgt startup (iobuf_set_options is a startup-only RPC), which
+# is why this is fed via --json instead of a runtime RPC. The NVMe-oF TCP
+# transport is created later at runtime by the engine and draws from this pool;
+#   $1: iobuf large_pool_count (> 1024)
+#   $2: output config path
+# Only emitted when the value exceeds SPDK's default iobuf large pool size
+# (1024, IOBUF_DEFAULT_LARGE_POOL_SIZE); values <= 1024 keep the SPDK default.
+function prepare_spdk_startup_config() {
+    local large_pool_count="$1"
+    local config_path="$2"
+
+    cat > "$config_path" <<EOF
+{
+  "subsystems": [
+    {
+      "subsystem": "iobuf",
+      "config": [
+        {
+          "method": "iobuf_set_options",
+          "params": { "large_pool_count": ${large_pool_count} }
+        }
+      ]
+    }
+  ]
+}
+EOF
+    echo "Generated SPDK startup config at ${config_path} (iobuf large_pool_count=${large_pool_count}):"
+    cat "$config_path"
+}
+
 function enable_spdk_tgt() {
     local options=("$@")
     echo "Enabling spdk_tgt with options: ${options[*]}"
@@ -67,6 +100,7 @@ function enable_spdk_tgt() {
 }
 
 enable_spdk=0
+iobuf_large_pool_size=0
 spdk_options=()
 instance_manager_options=()
 
@@ -82,6 +116,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -s|--spdk-memory-size)
             spdk_options+=("--mem-size" "$2")
+            shift
+            ;;
+        --spdk-iobuf-large-pool-size)
+            iobuf_large_pool_size="$2"
             shift
             ;;
         -g|--spdk-no-hugepage)
@@ -117,6 +155,15 @@ bind_sys
 bind_lib_modules
 [ "$enable_spdk" -eq 0 ] && enable_tgtd
 [ "$enable_spdk" -eq 1 ] && generate_nvme_hostid_and_hostnqn
+
+# When the iobuf large pool size is set above the SPDK default (1024), feed it to
+# spdk_tgt via a startup JSON config. Values <= 1024 keep SPDK's built-in default,
+# so nothing is generated and the launch is unchanged.
+if [ "$enable_spdk" -eq 1 ] && [ "$iobuf_large_pool_size" -gt 1024 ]; then
+    prepare_spdk_startup_config "$iobuf_large_pool_size" "/tmp/spdk-startup.json"
+    spdk_options+=("--json" "/tmp/spdk-startup.json")
+fi
+
 [ "$enable_spdk" -eq 1 ] && enable_spdk_tgt "${spdk_options[@]}"
 
 if [ "$enable_spdk" -eq 1 ]; then
