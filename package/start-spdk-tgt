@@ -1,0 +1,117 @@
+#!/bin/bash
+set -euo pipefail
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') $*"
+}
+
+cpu_mask=""
+cpu_core_number=0
+instance_manager_options=()
+
+# The caller will validate the input arguments and set the cpu_mask or cpu_core_number accordingly.
+# The cpu_mask will be an empty string when the cpu_core_number is set, and vice versa.
+function start_spdk_tgt() {
+    if [ -n "$cpu_core_number" ] && [ "$cpu_core_number" -gt 0 ] && [ -z "$cpu_mask" ]; then
+        log "Starting get pinned CPU set..."
+        # 1. Get the pinned CPU string from cgroup
+        if [ -f /host/sys/fs/cgroup/cgroup.controllers ]; then
+            # cgroup v2
+            cgroup_path=$(awk -F: '$1=="0" {print $3}' /proc/self/cgroup)
+            cpu_set=$(cat "/host/sys/fs/cgroup${cgroup_path}/cpuset.cpus.effective" 2>/dev/null || \
+                      cat "/host/sys/fs/cgroup${cgroup_path}/cpuset.cpus" 2>/dev/null)
+        else
+            # cgroup v1
+            cgroup_path=$(awk -F: '$2~/cpuset/ {print $3}' /proc/self/cgroup)
+            cpu_set=$(cat "/host/sys/fs/cgroup/cpuset${cgroup_path}/cpuset.cpus" 2>/dev/null)
+        fi
+        if [ -z "$cpu_set" ]; then
+            log "ERROR: Failed to read cpuset from cgroup. Exiting."
+            exit 1
+        fi
+        log "Pinned CPUs are: $cpu_set"
+        # 2. Collect CPU IDs limited to cpu_core_number CPUs
+        cpu_ids=()
+        count=0
+        for i in $(echo "$cpu_set" | tr ',' ' '); do
+            if [ "$count" -ge "$cpu_core_number" ]; then
+                break
+            fi
+            if [[ "$i" == *-* ]]; then
+                start=$(echo "$i" | cut -d'-' -f1)
+                range_end=$(echo "$i" | cut -d'-' -f2)
+                if [[ "$range_end" == *:* ]]; then
+                    step=$(echo "$range_end" | cut -d':' -f2)
+                    end=$(echo "$range_end" | cut -d':' -f1)
+                else
+                    end=$range_end
+                    step=1
+                fi
+                start=$((start))
+                end=$((end))
+                step=$((step))
+                if [ "$step" -le 0 ]; then
+                    log "ERROR: Invalid cpuset stride in '$i'"
+                    exit 1
+                fi
+                if [ "$start" -gt "$end" ]; then
+                    log "ERROR: Invalid cpuset range '$i': start > end"
+                    exit 1
+                fi
+                for ((j=start; j<=end; j+=step)); do
+                    if [ "$count" -ge "$cpu_core_number" ]; then
+                        break
+                    fi
+                    cpu_ids+=("$j")
+                    count=$((count + 1))
+                done
+            else
+                cpu_id=$((i))
+                cpu_ids+=("$cpu_id")
+                count=$((count + 1))
+            fi
+        done
+        # 3. Calculate hex bitmask supporting CPU IDs >= 64
+        cpu_mask=$(python3 -c "
+import sys
+ids = [int(x) for x in sys.argv[1:]]
+mask = 0
+for i in ids:
+    mask |= (1 << i)
+print('0x{:x}'.format(mask))
+" "${cpu_ids[@]}")
+        log "Calculated CPU Mask: $cpu_mask"
+    fi
+    # 4. Execute the main process replacing the shell
+    exec instance-manager "${instance_manager_options[@]}" --spdk-cpumask "$cpu_mask"
+}
+while [[ $# -gt 0 ]]; do
+    opt="$1"
+    case $opt in
+        -m|--spdk-cpumask)
+            if [[ $# -lt 2 ]]; then
+                log "ERROR: --spdk-cpumask requires a value"
+                exit 1
+            fi
+            cpu_mask="$2"
+            shift
+            ;;
+        -c|--spdk-core-number)
+            if [[ $# -lt 2 ]]; then
+                log "ERROR: --spdk-core-number requires a value"
+                exit 1
+            fi
+            cpu_core_number="$2"
+            if ! [[ "$cpu_core_number" =~ ^[0-9]+$ ]]; then
+                log "ERROR: --spdk-core-number must be a non-negative integer, got: $cpu_core_number"
+                exit 1
+            fi
+            shift
+            ;;
+        *)
+            instance_manager_options+=("$1")
+            ;;
+    esac
+    shift
+done
+start_spdk_tgt
