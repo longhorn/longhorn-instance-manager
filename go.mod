@@ -1,20 +1,25 @@
 module github.com/longhorn/longhorn-instance-manager
 
-go 1.25.3
+go 1.25.11
+
+replace (
+	github.com/longhorn/longhorn-spdk-engine => github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
+	github.com/longhorn/types => github.com/longhorn/types v0.0.0-20260327130848-66f6de8a2fb3
+)
 
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260414054550-8570535ce7ad
-	github.com/longhorn/go-common-libs v0.0.0-20260502161928-1e84fa75a8f1
+	github.com/longhorn/go-common-libs v0.0.0-20260628115219-04bbf202b08e
 	github.com/longhorn/go-spdk-helper v0.6.2
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
-	github.com/longhorn/types v0.0.0-20260327130848-66f6de8a2fb3
+	github.com/longhorn/types v0.0.0-20260608145242-38c27234df4b
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.21.0
-	google.golang.org/grpc v1.79.3
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.35.4
@@ -76,7 +81,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20260125095104-688e170e56e5 // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 // indirect
 	github.com/longhorn/sparse-tools v0.0.0-20260117144214-070853c24eda // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
@@ -102,14 +107,13 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
