@@ -7,23 +7,21 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 )
 
-func VersionCmd() cli.Command {
-	return cli.Command{
+func VersionCmd() *cli.Command {
+	return &cli.Command{
 		Name: "version",
 		Flags: []cli.Flag{
-			cli.BoolFlag{
+			&cli.BoolFlag{
 				Name: "client-only",
 			},
 		},
-		Action: func(c *cli.Context) {
-			if err := version(c); err != nil {
-				logrus.WithError(err).Fatal("Error running info command")
-			}
+		Action: func(_ context.Context, c *cli.Command) error {
+			return version(c)
 		},
 	}
 }
@@ -33,7 +31,7 @@ type VersionOutput struct {
 	ServerVersion *meta.VersionOutput `json:"serverVersion"`
 }
 
-func version(c *cli.Context) error {
+func version(c *cli.Command) error {
 	clientVersion := meta.GetVersion()
 	v := VersionOutput{ClientVersion: &clientVersion}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -8,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/longhorn-instance-manager/app/cmd"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
@@ -22,7 +23,7 @@ var (
 )
 
 func main() {
-	a := cli.NewApp()
+	a := &cli.Command{}
 
 	a.Version = Version
 	meta.Version = Version
@@ -40,34 +41,37 @@ func main() {
 		FullTimestamp:   true,
 	})
 
-	a.Before = func(c *cli.Context) error {
-		if c.GlobalBool("debug") {
+	a.Before = func(ctx context.Context, c *cli.Command) (context.Context, error) {
+		if c.Bool("debug") {
 			logrus.SetLevel(logrus.DebugLevel)
 		}
-		return nil
+		return ctx, nil
 	}
 	a.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "url",
+			Local: true,
 			Value: "tcp://localhost:8500",
 			Usage: "specifies the server endpoint to connect to supported protocols are 'tcp' and 'unix'",
 		},
-		cli.BoolFlag{
-			Name: "debug",
+		&cli.BoolFlag{
+			Name:  "debug",
+			Local: true,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:     "tls-dir",
 			Usage:    "when present will look for `tls.crt` and `tls.key` and `ca.crt` file in the specified directory",
-			EnvVar:   "TLS_DIR",
+			Sources:  cli.EnvVars("TLS_DIR"),
+			Local:    true,
 			Required: false,
 		},
 	}
-	a.Commands = []cli.Command{
+	a.Commands = []*cli.Command{
 		cmd.StartCmd(),
 		cmd.ProcessCmd(),
 		cmd.VersionCmd(),
 	}
-	if err := a.Run(os.Args); err != nil {
+	if err := a.Run(context.Background(), os.Args); err != nil {
 		logrus.WithError(err).Fatal("Error when executing command")
 	}
 }
