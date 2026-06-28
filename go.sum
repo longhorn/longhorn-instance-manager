@@ -152,8 +152,8 @@ github.com/longhorn/go-common-libs v0.0.0-20260624092814-b3e1f4451fb9 h1:KGiMQE/
 github.com/longhorn/go-common-libs v0.0.0-20260624092814-b3e1f4451fb9/go.mod h1:hUt4rnI7Q7Rv0VjO2e3x/cZrvTt8eIxswW3pqcWMg14=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 h1:i4yKScA3sFjO9wJUMqlIQ0JjpQhhGd14jziljO3Og34=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260618001233-9facf639a5f8 h1:BxDe/UNMGqlK+K98cp3BM5QbpzNOMSZ2T32kWAVrPFQ=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260618001233-9facf639a5f8/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
+github.com/longhorn/go-spdk-helper v0.6.3-0.20260628115240-ebdbbdcde6a9 h1:QYkclPXAuDtBIh++iqAyHJWew1rN4G9Dr+bRM4BbBjA=
+github.com/longhorn/go-spdk-helper v0.6.3-0.20260628115240-ebdbbdcde6a9/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260614.0.20260627042506-a6cd158c63e7 h1:DuHhTMcLD1mwLtUXmCEstGtcoXAvAkRwyWgUY2hKtUY=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260614.0.20260627042506-a6cd158c63e7/go.mod h1:ecxNmrM4TRKhDCvtw+SKa1dCLU+R9NqFlrYy9UNZ1mA=
 github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260614.0.20260618083513-3367e7cd2b7b h1:1k0AnWrYa/GaUE2H3lf8R5XanwinddXoBwrbC8K6mOE=
@@ -240,8 +240,6 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/urfave/cli v1.22.17 h1:SYzXoiPfQjHBbkYxbew5prZHS1TOLT3ierW8SYLqtVQ=
 github.com/urfave/cli v1.22.17/go.mod h1:b0ht0aqgH/6pBYzzxURyrM4xXNgsoT/n2ZzwQiEhNVo=
-github.com/urfave/cli/v3 v3.9.0/go.mod h1:ysVLtOEmg2tOy6PknnYVhDoouyC/6N42TMeoMzskhso=
-github.com/urfave/cli/v3 v3.9.1/go.mod h1:ysVLtOEmg2tOy6PknnYVhDoouyC/6N42TMeoMzskhso=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
