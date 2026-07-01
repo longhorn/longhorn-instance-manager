@@ -1,4 +1,4 @@
-FROM  registry.suse.com/bci/golang:1.25@sha256:2c8e7d25c10a6296c5ffca13a785512917671fd6a6cb2881fa3bffa38517f6ca AS gobuilder
+FROM  registry.suse.com/bci/golang:1.25@sha256:a086bf3003dd1d8124e77f2d8d4e9aa2e8a163f5e0399294ec515a714a3b8e0d AS gobuilder
 
 ARG DAPPER_HOST_ARCH
 ARG http_proxy
