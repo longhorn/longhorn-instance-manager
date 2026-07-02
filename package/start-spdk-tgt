@@ -25,7 +25,8 @@ host_control_path=""
 cpu_mask_file=""
 host_proc_irq_dir="${host_mount_prefix}/proc/irq"
 host_online_cpus_file="${host_mount_prefix}/sys/devices/system/cpu/online"
-host_workqueue_cpumask_file="${host_mount_prefix}/sys/devices/virtual/workqueue/cpumask"
+host_workqueue_dir="${host_mount_prefix}/sys/devices/virtual/workqueue"
+host_workqueue_cpumask_file="${host_workqueue_dir}/cpumask"
 instance_manager_options=()
 
 # Determine the number of online CPUs on the host (falls back to nproc).
@@ -151,9 +152,20 @@ print(inv)
     apply_irq_affinity "$linux_mask"
 }
 
-# Write the given Linux-formatted affinity mask to the workqueue cpumask, which
-# controls which CPUs unbound kernel workqueue workers may run on. There is a
-# single file with no per-CPU nuance to tolerate, so any failure is fatal.
+# Write the given Linux-formatted affinity mask to the workqueue cpumask, and
+# also propagate it to every per-workqueue cpumask under
+# /sys/devices/virtual/workqueue/<name>/cpumask.
+#
+# The global cpumask is only the *default* for newly-created unbound
+# workqueues and the *ceiling* for per-workqueue cpumasks; existing
+# per-workqueue cpumasks are not visibly shrunk when the global mask is
+# narrowed, so operators (and any code that reads the per-wq file) may still
+# see workers permitted on the SPDK CPUs. Write the same mask to each
+# per-workqueue cpumask so the runtime state matches the intent.
+#
+# The global write is strict-fatal (single well-known file). Per-workqueue
+# writes are best-effort: some workqueues expose a read-only cpumask or
+# reject writes for kernel reasons; those are counted as skipped, not fatal.
 function apply_workqueue_affinity() {
     local linux_mask="$1"
 
@@ -169,7 +181,23 @@ function apply_workqueue_affinity() {
         log "ERROR: Failed to write workqueue cpumask (${linux_mask}) to $host_workqueue_cpumask_file"
         return 1
     fi
-    log "Applied workqueue cpumask ${linux_mask}"
+    log "Applied global workqueue cpumask ${linux_mask}"
+
+    local updated=0
+    local skipped=0
+    local wq f
+    for wq in "${host_workqueue_dir}"/*/; do
+        [ -d "$wq" ] || continue
+        f="${wq}cpumask"
+        [ -f "$f" ] || continue
+        [ -w "$f" ] || { skipped=$((skipped + 1)); continue; }
+        if echo "$linux_mask" > "$f" 2>/dev/null; then
+            updated=$((updated + 1))
+        else
+            skipped=$((skipped + 1))
+        fi
+    done
+    log "Applied per-workqueue cpumask ${linux_mask}: ${updated} workqueues updated, ${skipped} workqueues skipped"
     return 0
 }
 
