@@ -7,7 +7,316 @@ log() {
 
 cpu_mask=""
 cpu_core_number=0
+# Host path to the longhorn control directory (e.g. /var/lib/longhorn). When set,
+# the script persists the SPDK cpu mask under this directory so that IRQ
+# affinity changes survive crashes and can be reconciled on the next start.
+longhorn_control_path=""
+# Each flag independently gates one CPU-isolation mechanism. When --enable-irq-
+# affinity is set, host IRQ smp_affinity is steered away from the SPDK CPUs;
+# when --enable-workqueue-affinity is set, /sys/devices/virtual/workqueue/cpumask
+# is steered away from the SPDK CPUs. Either, both, or neither may be enabled.
+# When both are 0 (default), the script still reconciles stale state from a
+# previous run (so toggling either off cleans up) but does NOT install any new
+# affinity.
+irq_affinity_enabled=0
+workqueue_affinity_enabled=0
+host_mount_prefix="/host"
+host_control_path=""
+cpu_mask_file=""
+host_proc_irq_dir="${host_mount_prefix}/proc/irq"
+host_online_cpus_file="${host_mount_prefix}/sys/devices/system/cpu/online"
+host_workqueue_dir="${host_mount_prefix}/sys/devices/virtual/workqueue"
+host_workqueue_cpumask_file="${host_workqueue_dir}/cpumask"
 instance_manager_options=()
+
+# Determine the number of online CPUs on the host (falls back to nproc).
+function get_online_cpu_count() {
+    if [ -r "$host_online_cpus_file" ]; then
+        local range
+        range=$(cat "$host_online_cpus_file")
+        python3 -c "
+import sys
+s = sys.argv[1].strip()
+mx = 0
+for part in s.split(','):
+    if '-' in part:
+        a, b = part.split('-', 1)
+        mx = max(mx, int(b))
+    elif part:
+        mx = max(mx, int(part))
+print(mx + 1)
+" "$range"
+    else
+        nproc
+    fi
+}
+
+# Convert an integer (decimal or 0x hex) into the comma-separated 32-bit hex
+# group format expected by /proc/irq/*/smp_affinity (e.g. ffffffff,ffffffff).
+function format_affinity_mask() {
+    python3 -c "
+import sys
+m = int(sys.argv[1], 0)
+if m == 0:
+    print('0')
+    sys.exit(0)
+groups = []
+while m > 0:
+    groups.append('{:08x}'.format(m & 0xffffffff))
+    m >>= 32
+print(','.join(reversed(groups)))
+" "$1"
+}
+
+# Write the given Linux-formatted affinity mask to default_smp_affinity and to
+# every per-IRQ smp_affinity file. Per-IRQ failures are tolerated because the
+# kernel forbids reassigning some IRQs (e.g. percpu/managed); a failure to write
+# the default mask is treated as fatal.
+function apply_irq_affinity() {
+    local linux_mask="$1"
+
+    if [ ! -d "$host_proc_irq_dir" ]; then
+        log "ERROR: $host_proc_irq_dir is not available; cannot manage IRQ affinity"
+        return 1
+    fi
+
+    if [ -w "${host_proc_irq_dir}/default_smp_affinity" ]; then
+        if ! echo "$linux_mask" > "${host_proc_irq_dir}/default_smp_affinity"; then
+            log "ERROR: Failed to write default_smp_affinity"
+            return 1
+        fi
+    else
+        log "ERROR: ${host_proc_irq_dir}/default_smp_affinity is not writable"
+        return 1
+    fi
+
+    local updated=0
+    local skipped=0
+    local d irq target
+    for d in "${host_proc_irq_dir}"/[0-9]*; do
+        [ -d "$d" ] || continue
+        target="${d}/smp_affinity"
+        [ -w "$target" ] || { skipped=$((skipped + 1)); continue; }
+        irq=$(basename "$d")
+        if echo "$linux_mask" > "$target" 2>/dev/null; then
+            updated=$((updated + 1))
+        else
+            skipped=$((skipped + 1))
+        fi
+    done
+    log "Applied IRQ affinity mask ${linux_mask}: ${updated} IRQs updated, ${skipped} IRQs skipped"
+    return 0
+}
+
+# Restore IRQ affinity to "all online CPUs", i.e. remove any restriction we may
+# have installed for spdk_tgt on a previous run.
+function clear_irq_affinity() {
+    local cpu_count
+    cpu_count=$(get_online_cpu_count)
+    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
+        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+        return 1
+    fi
+    local all_mask_int
+    all_mask_int=$(python3 -c "print((1 << $cpu_count) - 1)")
+    local linux_mask
+    linux_mask=$(format_affinity_mask "$all_mask_int")
+    log "Clearing IRQ affinity: restoring all ${cpu_count} CPUs (mask=${linux_mask})"
+    apply_irq_affinity "$linux_mask"
+}
+
+# Restrict IRQs to the CPUs that are NOT used by spdk_tgt.
+function set_irq_affinity_for_spdk_mask() {
+    local spdk_mask_hex="$1"
+    local cpu_count
+    cpu_count=$(get_online_cpu_count)
+    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
+        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+        return 1
+    fi
+    local inv_mask_int
+    inv_mask_int=$(python3 -c "
+spdk = int('${spdk_mask_hex}', 0)
+n = ${cpu_count}
+full = (1 << n) - 1
+inv = full & ~spdk
+print(inv)
+")
+    if [ "$inv_mask_int" -eq 0 ]; then
+        log "ERROR: SPDK cpu mask ${spdk_mask_hex} covers every online CPU; refusing to set IRQ affinity to an empty set"
+        return 1
+    fi
+    local linux_mask
+    linux_mask=$(format_affinity_mask "$inv_mask_int")
+    log "Setting IRQ affinity to exclude SPDK CPUs (spdk_mask=${spdk_mask_hex}, irq_mask=${linux_mask})"
+    apply_irq_affinity "$linux_mask"
+}
+
+# Write the given Linux-formatted affinity mask to the workqueue cpumask, and
+# also propagate it to every per-workqueue cpumask under
+# /sys/devices/virtual/workqueue/<name>/cpumask.
+#
+# The global cpumask is only the *default* for newly-created unbound
+# workqueues and the *ceiling* for per-workqueue cpumasks; existing
+# per-workqueue cpumasks are not visibly shrunk when the global mask is
+# narrowed, so operators (and any code that reads the per-wq file) may still
+# see workers permitted on the SPDK CPUs. Write the same mask to each
+# per-workqueue cpumask so the runtime state matches the intent.
+#
+# The global write is strict-fatal (single well-known file). Per-workqueue
+# writes are best-effort: some workqueues expose a read-only cpumask or
+# reject writes for kernel reasons; those are counted as skipped, not fatal.
+function apply_workqueue_affinity() {
+    local linux_mask="$1"
+
+    if [ ! -e "$host_workqueue_cpumask_file" ]; then
+        log "ERROR: $host_workqueue_cpumask_file is not available; cannot manage workqueue cpumask"
+        return 1
+    fi
+    if [ ! -w "$host_workqueue_cpumask_file" ]; then
+        log "ERROR: $host_workqueue_cpumask_file is not writable"
+        return 1
+    fi
+    if ! echo "$linux_mask" > "$host_workqueue_cpumask_file"; then
+        log "ERROR: Failed to write workqueue cpumask (${linux_mask}) to $host_workqueue_cpumask_file"
+        return 1
+    fi
+    log "Applied global workqueue cpumask ${linux_mask}"
+
+    local updated=0
+    local skipped=0
+    local wq f
+    for wq in "${host_workqueue_dir}"/*/; do
+        [ -d "$wq" ] || continue
+        f="${wq}cpumask"
+        [ -f "$f" ] || continue
+        [ -w "$f" ] || { skipped=$((skipped + 1)); continue; }
+        if echo "$linux_mask" > "$f" 2>/dev/null; then
+            updated=$((updated + 1))
+        else
+            skipped=$((skipped + 1))
+        fi
+    done
+    log "Applied per-workqueue cpumask ${linux_mask}: ${updated} workqueues updated, ${skipped} workqueues skipped"
+    return 0
+}
+
+# Restore the workqueue cpumask to "all online CPUs". If the sysfs file is not
+# present (older kernels), this is treated as a no-op so reconcile stays
+# best-effort — reconcile does not know which mechanism the previous run had
+# enabled, so it optimistically tries both.
+function clear_workqueue_affinity() {
+    if [ ! -e "$host_workqueue_cpumask_file" ]; then
+        log "Workqueue cpumask file $host_workqueue_cpumask_file not present; skipping workqueue clear"
+        return 0
+    fi
+    local cpu_count
+    cpu_count=$(get_online_cpu_count)
+    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
+        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+        return 1
+    fi
+    local all_mask_int
+    all_mask_int=$(python3 -c "print((1 << $cpu_count) - 1)")
+    local linux_mask
+    linux_mask=$(format_affinity_mask "$all_mask_int")
+    log "Clearing workqueue cpumask: restoring all ${cpu_count} CPUs (mask=${linux_mask})"
+    apply_workqueue_affinity "$linux_mask"
+}
+
+# Restrict unbound kernel workqueues to the CPUs that are NOT used by spdk_tgt.
+function set_workqueue_affinity_for_spdk_mask() {
+    local spdk_mask_hex="$1"
+    local cpu_count
+    cpu_count=$(get_online_cpu_count)
+    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
+        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+        return 1
+    fi
+    local inv_mask_int
+    inv_mask_int=$(python3 -c "
+spdk = int('${spdk_mask_hex}', 0)
+n = ${cpu_count}
+full = (1 << n) - 1
+inv = full & ~spdk
+print(inv)
+")
+    if [ "$inv_mask_int" -eq 0 ]; then
+        log "ERROR: SPDK cpu mask ${spdk_mask_hex} covers every online CPU; refusing to set workqueue cpumask to an empty set"
+        return 1
+    fi
+    local linux_mask
+    linux_mask=$(format_affinity_mask "$inv_mask_int")
+    log "Setting workqueue cpumask to exclude SPDK CPUs (spdk_mask=${spdk_mask_hex}, wq_mask=${linux_mask})"
+    apply_workqueue_affinity "$linux_mask"
+}
+
+# Orchestrator: apply whichever of IRQ / workqueue affinity are enabled. If
+# both flags are 0 the caller should not have invoked us; we still short-circuit
+# to a no-op for safety.
+function apply_cpu_isolation_for_spdk_mask() {
+    local spdk_mask_hex="$1"
+    if [ "$irq_affinity_enabled" -eq 1 ]; then
+        set_irq_affinity_for_spdk_mask "$spdk_mask_hex" || return 1
+    fi
+    if [ "$workqueue_affinity_enabled" -eq 1 ]; then
+        set_workqueue_affinity_for_spdk_mask "$spdk_mask_hex" || return 1
+    fi
+}
+
+# Orchestrator: undo any IRQ / workqueue affinity we may have installed. Always
+# attempts both because the on-disk marker (cpu_mask_file) does not record which
+# mechanism was active last time; individual clears tolerate "nothing to do".
+function clear_cpu_isolation() {
+    clear_irq_affinity || return 1
+    clear_workqueue_affinity || return 1
+}
+
+# Handle leftover state from a previous (possibly crashed) instance-manager run.
+# If we previously persisted a cpu_mask, the host IRQ / workqueue affinity may
+# still be restricted to non-SPDK CPUs; clear it before we (potentially) compute
+# a new mask so the system is in a known state.
+function reconcile_previous_cpu_mask_file() {
+    [ -n "$cpu_mask_file" ] || return 0
+    [ -f "$cpu_mask_file" ] || return 0
+
+    local previous_mask
+    previous_mask=$(tr -d '[:space:]' < "$cpu_mask_file" || true)
+    log "Found leftover SPDK cpu_mask file at ${cpu_mask_file} (previous mask: ${previous_mask:-<empty>}); clearing stale IRQ / workqueue affinity"
+    if ! clear_cpu_isolation; then
+        log "ERROR: Failed to clear stale CPU isolation state"
+        return 1
+    fi
+    rm -f "$cpu_mask_file"
+}
+
+# Persist the cpu_mask used by spdk_tgt and program the matching IRQ and
+# workqueue affinity so host kernel work is steered away from SPDK CPUs.
+function persist_cpu_mask_and_apply_cpu_isolation() {
+    [ -n "$cpu_mask_file" ] || return 0
+    if [ -z "$cpu_mask" ]; then
+        log "ERROR: cpu_mask is empty; cannot persist or apply CPU isolation"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$cpu_mask_file")"
+    local tmp="${cpu_mask_file}.tmp"
+    if ! printf '%s\n' "$cpu_mask" > "$tmp"; then
+        log "ERROR: Failed to write ${tmp}"
+        return 1
+    fi
+    if ! mv -f "$tmp" "$cpu_mask_file"; then
+        log "ERROR: Failed to move ${tmp} to ${cpu_mask_file}"
+        rm -f "$tmp"
+        return 1
+    fi
+    log "Persisted SPDK cpu mask ${cpu_mask} to ${cpu_mask_file}"
+
+    if ! apply_cpu_isolation_for_spdk_mask "$cpu_mask"; then
+        log "ERROR: Failed to apply CPU isolation for SPDK cpu mask ${cpu_mask}"
+        return 1
+    fi
+}
 
 # The caller will validate the input arguments and set the cpu_mask or cpu_core_number accordingly.
 # The cpu_mask will be an empty string when the cpu_core_number is set, and vice versa.
@@ -82,6 +391,16 @@ print('0x{:x}'.format(mask))
 " "${cpu_ids[@]}")
         log "Calculated CPU Mask: $cpu_mask"
     fi
+    # Persist the cpu mask (so a crashed run can be reconciled) and, if any
+    # isolation mechanism is enabled, steer host IRQs and/or unbound kernel
+    # workqueues away from the SPDK CPUs before launching spdk_tgt. When both
+    # flags are disabled, this is a no-op.
+    if [ "$irq_affinity_enabled" -eq 1 ] || [ "$workqueue_affinity_enabled" -eq 1 ]; then
+        if ! persist_cpu_mask_and_apply_cpu_isolation; then
+            log "ERROR: Aborting spdk_tgt start because CPU isolation preparation failed"
+            exit 1
+        fi
+    fi
     # 4. Execute the main process replacing the shell
     exec instance-manager "${instance_manager_options[@]}" --spdk-cpumask "$cpu_mask"
 }
@@ -108,10 +427,41 @@ while [[ $# -gt 0 ]]; do
             fi
             shift
             ;;
+        --longhorn-control-path)
+            if [[ $# -lt 2 ]]; then
+                log "ERROR: --longhorn-control-path requires a value"
+                exit 1
+            fi
+            longhorn_control_path="$2"
+            if [[ "$longhorn_control_path" != /* ]]; then
+                log "ERROR: --longhorn-control-path must be an absolute host path, got: $longhorn_control_path"
+                exit 1
+            fi
+            shift
+            ;;
+        --enable-irq-affinity)
+            irq_affinity_enabled=1
+            ;;
+        --enable-workqueue-affinity)
+            workqueue_affinity_enabled=1
+            ;;
         *)
             instance_manager_options+=("$1")
             ;;
     esac
     shift
 done
+
+if [ -n "$longhorn_control_path" ]; then
+    host_control_path="${host_mount_prefix}${longhorn_control_path}"
+    # Keep state under a dedicated subdirectory so it does not collide with
+    # user data, replica files, etc. under the longhorn control path.
+    cpu_mask_file="${host_control_path}/instance-manager/v2/spdk_cpu_mask"
+    log "Using longhorn control path: ${longhorn_control_path} (cpu_mask file in-container: ${cpu_mask_file})"
+    if ! reconcile_previous_cpu_mask_file; then
+        log "ERROR: Failed to reconcile previous cpu_mask state; aborting"
+        exit 1
+    fi
+fi
+
 start_spdk_tgt
