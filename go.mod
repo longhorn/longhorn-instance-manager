@@ -3,7 +3,7 @@ module github.com/longhorn/longhorn-instance-manager
 go 1.26.0
 
 require (
-	github.com/cockroachdb/errors v1.13.0
+	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260618071319-84c767bdab16
 	github.com/longhorn/go-common-libs v0.0.0-20260624092814-b3e1f4451fb9
