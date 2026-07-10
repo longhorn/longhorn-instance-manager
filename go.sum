@@ -152,12 +152,12 @@ github.com/longhorn/go-common-libs v0.0.0-20260709061022-21a84065aa86 h1:PjgmbRc
 github.com/longhorn/go-common-libs v0.0.0-20260709061022-21a84065aa86/go.mod h1:oA+Qstu0szGJ5DiHI+hCVlx378Wjn/LyS0gALULHpbM=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 h1:i4yKScA3sFjO9wJUMqlIQ0JjpQhhGd14jziljO3Og34=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260628115240-ebdbbdcde6a9 h1:QYkclPXAuDtBIh++iqAyHJWew1rN4G9Dr+bRM4BbBjA=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260628115240-ebdbbdcde6a9/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
+github.com/longhorn/go-spdk-helper v0.6.3-0.20260708005919-f426680e9585 h1:2UdaApR7410inmGNZEFxao/sgdrHylYjCqntBAiht2Q=
+github.com/longhorn/go-spdk-helper v0.6.3-0.20260708005919-f426680e9585/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260628.0.20260709130630-18ee51872a22 h1:rjGK2jsu0Fe7HWfn76yNo6gGIvQ4Hfu6He8X70fSCwI=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260628.0.20260709130630-18ee51872a22/go.mod h1:fmERzeUE98TKP8I/OCGkFSW5kuPXNFhzPZIDYBeXfOc=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260614.0.20260618083513-3367e7cd2b7b h1:1k0AnWrYa/GaUE2H3lf8R5XanwinddXoBwrbC8K6mOE=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260614.0.20260618083513-3367e7cd2b7b/go.mod h1:pG9h/XkKjU5xukbZCYBqLm5Drm9cFOHY4BBcmDZbCaM=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260628.0.20260710031915-0532125e0aa5 h1:bqPgDazgjA/G0mPVD4BIxXHaYay8oIkTwh5a3HgHjuM=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260628.0.20260710031915-0532125e0aa5/go.mod h1:iX9QiMmi/0WxKxNEiCatxg53Dw3y+zL1+94q/DMnR3g=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20260608145242-38c27234df4b h1:7elZcRGyGyvxFS+NYht21Gnfx2uHcUcqwR09giTXKLY=
