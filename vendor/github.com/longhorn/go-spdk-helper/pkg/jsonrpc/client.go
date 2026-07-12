@@ -160,7 +160,7 @@ func (c *Client) handleSend(msgWrapper *messageWrapper) {
 	id := c.idCounter
 
 	if err := c.encoder.Encode(NewMessage(id, msgWrapper.method, msgWrapper.params)); err != nil {
-		logrus.WithError(err).Errorf("Failed to encode during handleSend")
+		logrus.WithError(err).Errorf("Failed to encode during handleSend for method %s, params %+v", msgWrapper.method, msgWrapper.params)
 
 		// In case of the cached error info of the old encoder fails the following response, it's better to recreate the encoder.
 		c.encoder = json.NewEncoder(c.conn)

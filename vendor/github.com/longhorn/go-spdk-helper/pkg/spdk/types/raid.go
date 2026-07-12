@@ -37,6 +37,7 @@ type BdevRaidCreateRequest struct {
 	RaidLevel   BdevRaidLevel `json:"raid_level"`
 	StripSizeKb uint32        `json:"strip_size_kb"`
 	BaseBdevs   []string      `json:"base_bdevs"`
+	UUID        string        `json:"uuid,omitempty"`
 }
 
 type BdevRaidDeleteRequest struct {

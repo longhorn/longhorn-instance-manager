@@ -15,6 +15,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2/go.mod h1:wP83
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/RoaringBitmap/roaring v1.9.4 h1:yhEIoH4YezLYT04s1nHehNO64EKFTop/wBhxv2QzDdQ=
 github.com/RoaringBitmap/roaring v1.9.4/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
+github.com/avast/retry-go/v4 v4.7.0 h1:yjDs35SlGvKwRNSykujfjdMxMhMQQM0TnIjJaHB+Zio=
+github.com/avast/retry-go/v4 v4.7.0/go.mod h1:ZMPDa3sY2bKgpLtap9JRUgk2yTAba7cgiFhqxY2Sg6Q=
 github.com/aws/aws-sdk-go-v2 v1.41.7 h1:DWpAJt66FmnnaRIOT/8ASTucrvuDPZASqhhLey6tLY8=
 github.com/aws/aws-sdk-go-v2 v1.41.7/go.mod h1:4LAfZOPHNVNQEckOACQx60Y8pSRjIkNZQz1w92xpMJc=
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.10 h1:gx1AwW1Iyk9Z9dD9F4akX5gnN3QZwUB20GGKH/I+Rho=
@@ -158,8 +160,8 @@ github.com/longhorn/go-common-libs v0.0.0-20260525102658-c0739cd3e2c2 h1:2xTjL2H
 github.com/longhorn/go-common-libs v0.0.0-20260525102658-c0739cd3e2c2/go.mod h1:6dyqqzjGfiPBn0OTKZcTBOjyViexE/L2D56741sch5s=
 github.com/longhorn/go-iscsi-helper v0.0.0-20250810143507-5c5f9a0060b4 h1:i6Wac1SO2YwXkqZetnc1KZc+2PnFZ9xSUs99nFAhHiU=
 github.com/longhorn/go-iscsi-helper v0.0.0-20250810143507-5c5f9a0060b4/go.mod h1:EIkghFAyqv+8ktznS4a+leJ6KKQLPt9zrcdS2Zsfk+M=
-github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838 h1:j3PgIRQihtn7R94mnVyTvc8YStYKH7JumiEI2yP4YQI=
-github.com/longhorn/go-spdk-helper v0.0.3-0.20250712161648-42d38592f838/go.mod h1:QOzb0AX/CUcVtf5h6DMyr0W/7EkQrjKn2N593t35UWs=
+github.com/longhorn/go-spdk-helper v0.6.2 h1:QcXKAvNIqWpRH+3bq+hgnXh1prjacuQrJ106WfNuIHM=
+github.com/longhorn/go-spdk-helper v0.6.2/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
 github.com/longhorn/longhorn-engine v1.9.2 h1:2WB+5QENqO2xtVOJfxa0nX1D40/Qpxu8YLzwaxgiOBg=
 github.com/longhorn/longhorn-engine v1.9.2/go.mod h1:JwIMErlXODX8Ee4P4CrShkX0Q82+0gUIA5bzgC10s0c=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20250805013325-da3d062c9555 h1:KGL+tVjp1lDZkIPrEAuJZmL8Px2aSP0T/HyK/6zApnc=

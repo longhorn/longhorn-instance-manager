@@ -54,6 +54,17 @@ type ShallowCopyStatus struct {
 	Error            string `json:"error,omitempty"`
 }
 
+type DeepCopy struct {
+	OperationId uint32 `json:"operation_id"`
+}
+
+type DeepCopyStatus struct {
+	State             string `json:"state"`
+	ProcessedClusters uint64 `json:"processed_clusters"`
+	TotalClusters     uint64 `json:"total_clusters"`
+	Error             string `json:"error,omitempty"`
+}
+
 type BdevLvolCreateLvstoreRequest struct {
 	BdevName string `json:"bdev_name"`
 	LvsName  string `json:"lvs_name"`
@@ -154,6 +165,11 @@ type BdevLvolRangeShallowCopyRequest struct {
 	SrcLvolName string   `json:"src_lvol_name"`
 	DstBdevName string   `json:"dst_bdev_name"`
 	Clusters    []uint64 `json:"clusters"`
+}
+
+type BdevLvolDeepCopyRequest struct {
+	SrcLvolName string `json:"src_lvol_name"`
+	DstBdevName string `json:"dst_bdev_name"`
 }
 
 type BdevLvolGetFragmapRequest struct {
