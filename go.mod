@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260709065232-ca96411485d4
 	github.com/longhorn/go-common-libs v0.0.0-20260712050051-67a253016448
-	github.com/longhorn/go-spdk-helper v0.6.3-0.20260618001233-9facf639a5f8
+	github.com/longhorn/go-spdk-helper v0.6.3-0.20260712050109-6357546afe9a
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260709162415-abb110c60396
 	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260710034836-0461d1232f63
 	github.com/longhorn/types v0.0.0-20260709032252-3d0a3cd8f06f
