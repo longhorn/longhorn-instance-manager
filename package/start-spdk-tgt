@@ -29,25 +29,39 @@ host_workqueue_dir="${host_mount_prefix}/sys/devices/virtual/workqueue"
 host_workqueue_cpumask_file="${host_workqueue_dir}/cpumask"
 instance_manager_options=()
 
-# Determine the number of online CPUs on the host (falls back to nproc).
-function get_online_cpu_count() {
+# Compute a bitmask (as a hex "0x..." string) of all currently-online host CPUs
+# by parsing /sys/devices/system/cpu/online. Handles arbitrary CPU id sets that
+# are non-contiguous and/or do not start at 0 (e.g. "1-4", "0,2-3,5"). If the
+# sysfs file cannot be read, falls back to a mask covering CPUs 0..nproc-1.
+function get_online_cpu_mask() {
     if [ -r "$host_online_cpus_file" ]; then
         local range
         range=$(cat "$host_online_cpus_file")
         python3 -c "
 import sys
 s = sys.argv[1].strip()
-mx = 0
+mask = 0
 for part in s.split(','):
+    part = part.strip()
+    if not part:
+        continue
     if '-' in part:
         a, b = part.split('-', 1)
-        mx = max(mx, int(b))
-    elif part:
-        mx = max(mx, int(part))
-print(mx + 1)
+        a, b = int(a), int(b)
+        if a > b:
+            sys.exit('ERROR: invalid CPU range: ' + part)
+        for i in range(a, b + 1):
+            mask |= (1 << i)
+    else:
+        mask |= (1 << int(part))
+if mask == 0:
+    sys.exit('ERROR: parsed empty online CPU set from: ' + repr(sys.argv[1]))
+print('0x{:x}'.format(mask))
 " "$range"
     else
-        nproc
+        local n
+        n=$(nproc)
+        python3 -c "print('0x{:x}'.format((1 << ${n}) - 1))"
     fi
 }
 
@@ -111,44 +125,41 @@ function apply_irq_affinity() {
 # Restore IRQ affinity to "all online CPUs", i.e. remove any restriction we may
 # have installed for spdk_tgt on a previous run.
 function clear_irq_affinity() {
-    local cpu_count
-    cpu_count=$(get_online_cpu_count)
-    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
-        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+    local online_mask_hex
+    online_mask_hex=$(get_online_cpu_mask) || return 1
+    if ! [[ "$online_mask_hex" =~ ^0x[0-9a-fA-F]+$ ]] || [ "$online_mask_hex" = "0x0" ]; then
+        log "ERROR: Unable to determine online CPU mask (got: $online_mask_hex)"
         return 1
     fi
-    local all_mask_int
-    all_mask_int=$(python3 -c "print((1 << $cpu_count) - 1)")
     local linux_mask
-    linux_mask=$(format_affinity_mask "$all_mask_int")
-    log "Clearing IRQ affinity: restoring all ${cpu_count} CPUs (mask=${linux_mask})"
+    linux_mask=$(format_affinity_mask "$online_mask_hex")
+    log "Clearing IRQ affinity: restoring all online CPUs (online_mask=${online_mask_hex}, mask=${linux_mask})"
     apply_irq_affinity "$linux_mask"
 }
 
 # Restrict IRQs to the CPUs that are NOT used by spdk_tgt.
 function set_irq_affinity_for_spdk_mask() {
     local spdk_mask_hex="$1"
-    local cpu_count
-    cpu_count=$(get_online_cpu_count)
-    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
-        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+    local online_mask_hex
+    online_mask_hex=$(get_online_cpu_mask) || return 1
+    if ! [[ "$online_mask_hex" =~ ^0x[0-9a-fA-F]+$ ]] || [ "$online_mask_hex" = "0x0" ]; then
+        log "ERROR: Unable to determine online CPU mask (got: $online_mask_hex)"
         return 1
     fi
     local inv_mask_int
     inv_mask_int=$(python3 -c "
+online = int('${online_mask_hex}', 0)
 spdk = int('${spdk_mask_hex}', 0)
-n = ${cpu_count}
-full = (1 << n) - 1
-inv = full & ~spdk
-print(inv)
+print(online & ~spdk)
 ")
-    if [ "$inv_mask_int" -eq 0 ]; then
-        log "ERROR: SPDK cpu mask ${spdk_mask_hex} covers every online CPU; refusing to set IRQ affinity to an empty set"
+    # inv_mask_int may exceed 64 bits, so use string comparison rather than -eq.
+    if [ "$inv_mask_int" = "0" ]; then
+        log "ERROR: SPDK cpu mask ${spdk_mask_hex} covers every online CPU (online_mask=${online_mask_hex}); refusing to set IRQ affinity to an empty set"
         return 1
     fi
     local linux_mask
     linux_mask=$(format_affinity_mask "$inv_mask_int")
-    log "Setting IRQ affinity to exclude SPDK CPUs (spdk_mask=${spdk_mask_hex}, irq_mask=${linux_mask})"
+    log "Setting IRQ affinity to exclude SPDK CPUs (spdk_mask=${spdk_mask_hex}, online_mask=${online_mask_hex}, irq_mask=${linux_mask})"
     apply_irq_affinity "$linux_mask"
 }
 
@@ -210,44 +221,41 @@ function clear_workqueue_affinity() {
         log "Workqueue cpumask file $host_workqueue_cpumask_file not present; skipping workqueue clear"
         return 0
     fi
-    local cpu_count
-    cpu_count=$(get_online_cpu_count)
-    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
-        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+    local online_mask_hex
+    online_mask_hex=$(get_online_cpu_mask) || return 1
+    if ! [[ "$online_mask_hex" =~ ^0x[0-9a-fA-F]+$ ]] || [ "$online_mask_hex" = "0x0" ]; then
+        log "ERROR: Unable to determine online CPU mask (got: $online_mask_hex)"
         return 1
     fi
-    local all_mask_int
-    all_mask_int=$(python3 -c "print((1 << $cpu_count) - 1)")
     local linux_mask
-    linux_mask=$(format_affinity_mask "$all_mask_int")
-    log "Clearing workqueue cpumask: restoring all ${cpu_count} CPUs (mask=${linux_mask})"
+    linux_mask=$(format_affinity_mask "$online_mask_hex")
+    log "Clearing workqueue cpumask: restoring all online CPUs (online_mask=${online_mask_hex}, mask=${linux_mask})"
     apply_workqueue_affinity "$linux_mask"
 }
 
 # Restrict unbound kernel workqueues to the CPUs that are NOT used by spdk_tgt.
 function set_workqueue_affinity_for_spdk_mask() {
     local spdk_mask_hex="$1"
-    local cpu_count
-    cpu_count=$(get_online_cpu_count)
-    if ! [[ "$cpu_count" =~ ^[0-9]+$ ]] || [ "$cpu_count" -le 0 ]; then
-        log "ERROR: Unable to determine online CPU count (got: $cpu_count)"
+    local online_mask_hex
+    online_mask_hex=$(get_online_cpu_mask) || return 1
+    if ! [[ "$online_mask_hex" =~ ^0x[0-9a-fA-F]+$ ]] || [ "$online_mask_hex" = "0x0" ]; then
+        log "ERROR: Unable to determine online CPU mask (got: $online_mask_hex)"
         return 1
     fi
     local inv_mask_int
     inv_mask_int=$(python3 -c "
+online = int('${online_mask_hex}', 0)
 spdk = int('${spdk_mask_hex}', 0)
-n = ${cpu_count}
-full = (1 << n) - 1
-inv = full & ~spdk
-print(inv)
+print(online & ~spdk)
 ")
-    if [ "$inv_mask_int" -eq 0 ]; then
-        log "ERROR: SPDK cpu mask ${spdk_mask_hex} covers every online CPU; refusing to set workqueue cpumask to an empty set"
+    # inv_mask_int may exceed 64 bits, so use string comparison rather than -eq.
+    if [ "$inv_mask_int" = "0" ]; then
+        log "ERROR: SPDK cpu mask ${spdk_mask_hex} covers every online CPU (online_mask=${online_mask_hex}); refusing to set workqueue cpumask to an empty set"
         return 1
     fi
     local linux_mask
     linux_mask=$(format_affinity_mask "$inv_mask_int")
-    log "Setting workqueue cpumask to exclude SPDK CPUs (spdk_mask=${spdk_mask_hex}, wq_mask=${linux_mask})"
+    log "Setting workqueue cpumask to exclude SPDK CPUs (spdk_mask=${spdk_mask_hex}, online_mask=${online_mask_hex}, wq_mask=${linux_mask})"
     apply_workqueue_affinity "$linux_mask"
 }
 
@@ -267,9 +275,14 @@ function apply_cpu_isolation_for_spdk_mask() {
 # Orchestrator: undo any IRQ / workqueue affinity we may have installed. Always
 # attempts both because the on-disk marker (cpu_mask_file) does not record which
 # mechanism was active last time; individual clears tolerate "nothing to do".
+# A failure in one clear must NOT prevent the other from running, otherwise a
+# transient IRQ clear failure would leave a stale workqueue restriction (or
+# vice versa) in place across the whole node.
 function clear_cpu_isolation() {
-    clear_irq_affinity || return 1
-    clear_workqueue_affinity || return 1
+    local rc=0
+    clear_irq_affinity       || rc=1
+    clear_workqueue_affinity || rc=1
+    return "$rc"
 }
 
 # Handle leftover state from a previous (possibly crashed) instance-manager run.
