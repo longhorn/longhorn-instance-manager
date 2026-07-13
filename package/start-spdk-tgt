@@ -11,15 +11,17 @@ cpu_core_number=0
 # the script persists the SPDK cpu mask under this directory so that IRQ
 # affinity changes survive crashes and can be reconciled on the next start.
 longhorn_control_path=""
-# Each flag independently gates one CPU-isolation mechanism. When --enable-irq-
-# affinity is set, host IRQ smp_affinity is steered away from the SPDK CPUs;
-# when --enable-workqueue-affinity is set, /sys/devices/virtual/workqueue/cpumask
-# is steered away from the SPDK CPUs. Either, both, or neither may be enabled.
-# When both are 0 (default), the script still reconciles stale state from a
-# previous run (so toggling either off cleans up) but does NOT install any new
-# affinity.
+# Each flag independently gates one host-tuning mechanism that steers kernel
+# work away from the SPDK CPUs. --enable-irq-affinity steers host IRQ
+# smp_affinity; --enable-workqueue-affinity steers
+# /sys/devices/virtual/workqueue/cpumask; --enable-rps steers Receive Packet
+# Steering (rps_cpus) of the physical interfaces. Any combination may be enabled.
+# When all are 0 (default), the script still reconciles stale state from a
+# previous run (so toggling any off cleans up) but does NOT install any new
+# tuning.
 irq_affinity_enabled=0
 workqueue_affinity_enabled=0
+rps_enabled=0
 host_mount_prefix="/host"
 host_control_path=""
 cpu_mask_file=""
@@ -27,6 +29,7 @@ host_proc_irq_dir="${host_mount_prefix}/proc/irq"
 host_online_cpus_file="${host_mount_prefix}/sys/devices/system/cpu/online"
 host_workqueue_dir="${host_mount_prefix}/sys/devices/virtual/workqueue"
 host_workqueue_cpumask_file="${host_workqueue_dir}/cpumask"
+host_net_dir="${host_mount_prefix}/sys/class/net"
 instance_manager_options=()
 
 # Compute a bitmask (as a hex "0x..." string) of all currently-online host CPUs
@@ -259,8 +262,98 @@ print(online & ~spdk)
     apply_workqueue_affinity "$linux_mask"
 }
 
-# Orchestrator: apply whichever of IRQ / workqueue affinity are enabled. If
-# both flags are 0 the caller should not have invoked us; we still short-circuit
+# List the physical (non-virtual) network interfaces on the host. Interfaces
+# whose /sys/class/net symlink resolves under devices/virtual (lo, bridges,
+# veth, cni, ...) are skipped.
+function list_physical_interfaces() {
+    local path target
+    for path in "${host_net_dir}"/*; do
+        [ -L "$path" ] || continue
+        target=$(readlink "$path" 2>/dev/null || true)
+        case "$target" in
+            *virtual*) continue ;;
+        esac
+        basename "$path"
+    done
+}
+
+# Write the given Linux-formatted mask to rps_cpus of every rx queue of every
+# physical interface. Per-queue failures are tolerated (counted, not fatal),
+# because some queues may expose a read-only rps_cpus.
+function apply_rps() {
+    local linux_mask="$1"
+
+    if [ ! -d "$host_net_dir" ]; then
+        log "ERROR: $host_net_dir is not available; cannot manage RPS"
+        return 1
+    fi
+
+    local ifaces
+    ifaces=$(list_physical_interfaces)
+    if [ -z "$ifaces" ]; then
+        log "No physical interfaces found; skipping RPS"
+        return 0
+    fi
+
+    local updated=0 skipped=0 ifname q
+    for ifname in $ifaces; do
+        for q in "${host_net_dir}/${ifname}"/queues/rx-*/rps_cpus; do
+            [ -e "$q" ] || continue
+            [ -w "$q" ] || { skipped=$((skipped + 1)); continue; }
+            if echo "$linux_mask" > "$q" 2>/dev/null; then
+                updated=$((updated + 1))
+            else
+                skipped=$((skipped + 1))
+            fi
+        done
+    done
+    log "Applied RPS mask ${linux_mask} on interfaces [${ifaces//$'\n'/ }]: ${updated} queues updated, ${skipped} skipped"
+    return 0
+}
+
+# Restore RPS to "all online CPUs", i.e. remove any restriction we may have
+# installed for spdk_tgt on a previous run.
+function clear_rps() {
+    local online_mask_hex
+    online_mask_hex=$(get_online_cpu_mask) || return 1
+    if ! [[ "$online_mask_hex" =~ ^0x[0-9a-fA-F]+$ ]] || [ "$online_mask_hex" = "0x0" ]; then
+        log "ERROR: Unable to determine online CPU mask (got: $online_mask_hex)"
+        return 1
+    fi
+    local linux_mask
+    linux_mask=$(format_affinity_mask "$online_mask_hex")
+    log "Clearing RPS: restoring all online CPUs (online_mask=${online_mask_hex}, mask=${linux_mask})"
+    apply_rps "$linux_mask"
+}
+
+# Restrict RPS to the CPUs that are NOT used by spdk_tgt.
+function set_rps_for_spdk_mask() {
+    local spdk_mask_hex="$1"
+    local online_mask_hex
+    online_mask_hex=$(get_online_cpu_mask) || return 1
+    if ! [[ "$online_mask_hex" =~ ^0x[0-9a-fA-F]+$ ]] || [ "$online_mask_hex" = "0x0" ]; then
+        log "ERROR: Unable to determine online CPU mask (got: $online_mask_hex)"
+        return 1
+    fi
+    local inv_mask_int
+    inv_mask_int=$(python3 -c "
+online = int('${online_mask_hex}', 0)
+spdk = int('${spdk_mask_hex}', 0)
+print(online & ~spdk)
+")
+    # inv_mask_int may exceed 64 bits, so use string comparison rather than -eq.
+    if [ "$inv_mask_int" = "0" ]; then
+        log "ERROR: SPDK cpu mask ${spdk_mask_hex} covers every online CPU (online_mask=${online_mask_hex}); refusing to set RPS to an empty set"
+        return 1
+    fi
+    local linux_mask
+    linux_mask=$(format_affinity_mask "$inv_mask_int")
+    log "Setting RPS to exclude SPDK CPUs (spdk_mask=${spdk_mask_hex}, online_mask=${online_mask_hex}, rps_mask=${linux_mask})"
+    apply_rps "$linux_mask"
+}
+
+# Orchestrator: apply whichever of IRQ / workqueue / RPS tuning are enabled. If
+# all flags are 0 the caller should not have invoked us; we still short-circuit
 # to a no-op for safety.
 function apply_cpu_isolation_for_spdk_mask() {
     local spdk_mask_hex="$1"
@@ -270,18 +363,22 @@ function apply_cpu_isolation_for_spdk_mask() {
     if [ "$workqueue_affinity_enabled" -eq 1 ]; then
         set_workqueue_affinity_for_spdk_mask "$spdk_mask_hex" || return 1
     fi
+    if [ "$rps_enabled" -eq 1 ]; then
+        set_rps_for_spdk_mask "$spdk_mask_hex" || return 1
+    fi
 }
 
-# Orchestrator: undo any IRQ / workqueue affinity we may have installed. Always
-# attempts both because the on-disk marker (cpu_mask_file) does not record which
-# mechanism was active last time; individual clears tolerate "nothing to do".
-# A failure in one clear must NOT prevent the other from running, otherwise a
-# transient IRQ clear failure would leave a stale workqueue restriction (or
-# vice versa) in place across the whole node.
+# Orchestrator: undo any IRQ / workqueue / RPS tuning we may have installed.
+# Always attempts all of them because the on-disk marker (cpu_mask_file) does not
+# record which mechanism was active last time; individual clears tolerate
+# "nothing to do". A failure in one clear must NOT prevent the others from
+# running, otherwise a transient failure in one would leave a stale restriction
+# from another in place across the whole node.
 function clear_cpu_isolation() {
     local rc=0
     clear_irq_affinity       || rc=1
     clear_workqueue_affinity || rc=1
+    clear_rps                || rc=1
     return "$rc"
 }
 
@@ -408,7 +505,7 @@ print('0x{:x}'.format(mask))
     # isolation mechanism is enabled, steer host IRQs and/or unbound kernel
     # workqueues away from the SPDK CPUs before launching spdk_tgt. When both
     # flags are disabled, this is a no-op.
-    if [ "$irq_affinity_enabled" -eq 1 ] || [ "$workqueue_affinity_enabled" -eq 1 ]; then
+    if [ "$irq_affinity_enabled" -eq 1 ] || [ "$workqueue_affinity_enabled" -eq 1 ] || [ "$rps_enabled" -eq 1 ]; then
         if ! persist_cpu_mask_and_apply_cpu_isolation; then
             log "ERROR: Aborting spdk_tgt start because CPU isolation preparation failed"
             exit 1
@@ -457,6 +554,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         --enable-workqueue-affinity)
             workqueue_affinity_enabled=1
+            ;;
+        --enable-rps)
+            rps_enabled=1
             ;;
         *)
             instance_manager_options+=("$1")
