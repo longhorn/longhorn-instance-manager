@@ -1,5 +1,5 @@
 # Stage 1: build binary from go source code
-FROM  registry.suse.com/bci/golang:1.26@sha256:48310d854fccd578867a510cf9fc8b5bbe80c95a5368679f4f9c830c0e33a868 AS gobuilder
+FROM  registry.suse.com/bci/golang:1.26@sha256:0b87344bc2f8be1e87f86f8a3c4777621bb72685618fab24a37c169b7910b2c6 AS gobuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
@@ -33,7 +33,7 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
     chmod +x /usr/local/bin/grpc_health_probe
 
 # Stage 2: build binary from c source code
-FROM registry.suse.com/bci/bci-base:15.7@sha256:29bf09c9e2b25cac3f27967590195bf448b1b5f6773dedc16f214d8e531466eb AS cbuilder
+FROM registry.suse.com/bci/bci-base:15.7@sha256:1e16d612972586476f9e349c8b635c4085e0ba467f7c5d305391ef3bfdae1851 AS cbuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
@@ -84,7 +84,7 @@ RUN export REPO_OVERRIDE="" && \
     bash /usr/src/dep-versions/scripts/build-nvme-cli.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Stage 3: copy binaries to release image
-FROM registry.suse.com/bci/bci-base:15.7@sha256:29bf09c9e2b25cac3f27967590195bf448b1b5f6773dedc16f214d8e531466eb AS release
+FROM registry.suse.com/bci/bci-base:15.7@sha256:1e16d612972586476f9e349c8b635c4085e0ba467f7c5d305391ef3bfdae1851 AS release
 
 ARG ARCH=amd64
 
