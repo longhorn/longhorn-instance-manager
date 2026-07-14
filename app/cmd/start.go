@@ -16,7 +16,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -45,36 +45,38 @@ const (
 	spdkTgtStopTimeout = 120 * time.Second
 )
 
-func StartCmd() cli.Command {
-	return cli.Command{
+func StartCmd() *cli.Command {
+	return &cli.Command{
 		Name: "daemon",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "listen",
 				Value: "localhost:8500",
 				Usage: "specifies the server endpoint to listen on supported protocols are 'tcp' and 'unix'. The proxy server will be listening on the next port.",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "logs-dir",
 				Value: "/var/log/instances",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "port-range",
 				Value: "10000-20000",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "spdk-port-range",
 				Value: "20001-30000",
 			},
-			cli.BoolFlag{
+			&cli.BoolFlag{
 				Name:  "spdk-enabled",
 				Usage: "enable SPDK support",
 			},
 		},
-		Action: func(c *cli.Context) {
-			if err := start(c); err != nil {
+		Action: func(_ context.Context, c *cli.Command) error {
+			err := start(c)
+			if err != nil {
 				logrus.WithError(err).Fatal("Failed to run start command")
 			}
+			return err
 		},
 	}
 }
@@ -139,7 +141,7 @@ func unfreezeFilesystems() error {
 	return nil
 }
 
-func start(c *cli.Context) (err error) {
+func start(c *cli.Command) (err error) {
 	listen := c.String("listen")
 	logsDir := c.String("logs-dir")
 	processPortRange := c.String("port-range")
@@ -167,7 +169,7 @@ func start(c *cli.Context) (err error) {
 
 	var serverTLSConfig *tls.Config
 	var clientTLSConfig *tls.Config
-	tlsDir := c.GlobalString("tls-dir")
+	tlsDir := c.String("tls-dir")
 	if tlsDir != "" {
 		serverTLSConfig, clientTLSConfig, err = loadTLSConfigsFromDir(tlsDir)
 		if err != nil {
