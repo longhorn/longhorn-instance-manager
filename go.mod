@@ -12,7 +12,6 @@ require (
 	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260712132529-3d7109a8cdad
 	github.com/longhorn/types v0.0.0-20260709032252-3d0a3cd8f06f
 	github.com/sirupsen/logrus v1.9.4
-	github.com/urfave/cli v1.22.17
 	github.com/urfave/cli/v3 v3.10.1
 	golang.org/x/sync v0.21.0
 	google.golang.org/grpc v1.81.1
@@ -54,7 +53,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -94,7 +92,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rancher/go-fibmap v0.0.0-20160418233256-5fc9f8c1ed47 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/slok/goresilience v0.2.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
