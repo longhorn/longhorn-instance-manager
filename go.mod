@@ -5,8 +5,8 @@ go 1.26.0
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260709065232-ca96411485d4
-	github.com/longhorn/go-common-libs v0.0.0-20260712050051-67a253016448
+	github.com/longhorn/backupstore v0.0.0-20260717143317-0e4420e3d34a
+	github.com/longhorn/go-common-libs v0.0.0-20260717062941-2c0ab58da729
 	github.com/longhorn/go-spdk-helper v0.7.1-0.20260717074340-e6426a9f29f9
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712
 	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260717085106-d586d604c542
