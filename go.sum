@@ -152,12 +152,12 @@ github.com/longhorn/go-common-libs v0.0.0-20260712050051-67a253016448 h1:YPLfd/4
 github.com/longhorn/go-common-libs v0.0.0-20260712050051-67a253016448/go.mod h1:oA+Qstu0szGJ5DiHI+hCVlx378Wjn/LyS0gALULHpbM=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 h1:i4yKScA3sFjO9wJUMqlIQ0JjpQhhGd14jziljO3Og34=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260712050109-6357546afe9a h1:htOz2d6M8/TGtxyDx0G1wzia/mYx+EN8sNgiRmW8+tw=
-github.com/longhorn/go-spdk-helper v0.6.3-0.20260712050109-6357546afe9a/go.mod h1:kDYmxxJqiNKlpQKhYdgdts0AXs1sShYRvcLwjEJbhCY=
+github.com/longhorn/go-spdk-helper v0.7.1-0.20260717074340-e6426a9f29f9 h1:1CoryirnoL6/5O9AFt07dFZQzEUpfK4EI1TuTu8RqtQ=
+github.com/longhorn/go-spdk-helper v0.7.1-0.20260717074340-e6426a9f29f9/go.mod h1:kDYmxxJqiNKlpQKhYdgdts0AXs1sShYRvcLwjEJbhCY=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260712 h1:rrH01izc8KhLoPBVVk0wt8d029uVoNnfYWqpJFQi7zg=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260712/go.mod h1:fmERzeUE98TKP8I/OCGkFSW5kuPXNFhzPZIDYBeXfOc=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260714091810-bb3f7589ea5f h1:suazJ7Y6ZzOSPtD5rR1iB/nvYeW5Coa6dgW/ecaw5MQ=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260714091810-bb3f7589ea5f/go.mod h1:pP9780gHhLlpb2wiyQqv43P1IoU4LXZRiZ8SZsEQYu8=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260717085106-d586d604c542 h1:krbVs9hgaswdc8dsoK/ZQeSoN7+52548wmi+lfys5lA=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260717085106-d586d604c542/go.mod h1:M7S/40HL/o+EBFP/LNhtQ66urJ2Dx8Du7+RcOfH2pCc=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20260709032252-3d0a3cd8f06f h1:nE+95cq4uc/RUwMVzw6GQDlch7+JHKVo0qXviowWbe0=
