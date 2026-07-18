@@ -155,12 +155,12 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/longhorn/backupstore v0.0.0-20260618071319-84c767bdab16 h1:SZu+6bi5/926cmknrm9pGULAWu51iOafhgEk9WJ5rrs=
 github.com/longhorn/backupstore v0.0.0-20260618071319-84c767bdab16/go.mod h1:sJ3YQBK1exSY+Gep0cKaQhZ9f2rOem2hy6NTOk7iFg8=
-github.com/longhorn/go-common-libs v0.0.0-20260628115219-04bbf202b08e h1:UUnpSSx/N1FA9WTdjVqFjC3pdnvcccMOHgG01e9fNfI=
-github.com/longhorn/go-common-libs v0.0.0-20260628115219-04bbf202b08e/go.mod h1:oA+Qstu0szGJ5DiHI+hCVlx378Wjn/LyS0gALULHpbM=
+github.com/longhorn/go-common-libs v0.0.0-20260709061022-21a84065aa86 h1:PjgmbRcpP9kumcLpnCZN+DcPp5poS2ovI4KG2jGFV+E=
+github.com/longhorn/go-common-libs v0.0.0-20260709061022-21a84065aa86/go.mod h1:oA+Qstu0szGJ5DiHI+hCVlx378Wjn/LyS0gALULHpbM=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 h1:i4yKScA3sFjO9wJUMqlIQ0JjpQhhGd14jziljO3Og34=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.6.2 h1:QcXKAvNIqWpRH+3bq+hgnXh1prjacuQrJ106WfNuIHM=
-github.com/longhorn/go-spdk-helper v0.6.2/go.mod h1:ZxbMkGsbC2TpzuGLjn9yXXExolt8/F3dl/C8O9/Qa7s=
+github.com/longhorn/go-spdk-helper v0.7.0 h1:4kaJZpXEbJyoaV7H5oAY7+RHA4qTft3cfUMj/8VvtL4=
+github.com/longhorn/go-spdk-helper v0.7.0/go.mod h1:kDYmxxJqiNKlpQKhYdgdts0AXs1sShYRvcLwjEJbhCY=
 github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e h1:e4IK/JabbpdcfkB+2npIDc6YeCUTz5lYlbBmRBM23ME=
 github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e/go.mod h1:7pJjEHU10hSCks9Bvc6g22FGful/p371PJHNwEBXsEE=
 github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd h1:OoL45LWCa/XETFRlVyu3NoR4oh/GVo1z+Tw5q3KvEL4=

@@ -11,8 +11,8 @@ require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260618071319-84c767bdab16
-	github.com/longhorn/go-common-libs v0.0.0-20260628115219-04bbf202b08e
-	github.com/longhorn/go-spdk-helper v0.6.2
+	github.com/longhorn/go-common-libs v0.0.0-20260709061022-21a84065aa86
+	github.com/longhorn/go-spdk-helper v0.7.0
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
 	github.com/longhorn/types v0.0.0-20260608145242-38c27234df4b
