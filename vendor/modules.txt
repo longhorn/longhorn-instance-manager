@@ -383,7 +383,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260717085106-d586d604c542
+# github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260718040637-093cc3da7e98
 ## explicit; go 1.25.10
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
