@@ -124,6 +124,7 @@ func (ops V2DataEngineProxyOps) SnapshotBackup(ctx context.Context, req *rpc.Eng
 		CompressionMethod:    req.CompressionMethod,
 		ConcurrentLimit:      req.ConcurrentLimit,
 		Labels:               labels,
+		Parameters:           req.Parameters,
 		Credential:           credential,
 	})
 	if err != nil {
