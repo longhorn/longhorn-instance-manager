@@ -2047,6 +2047,15 @@ func (e *Engine) BackupCreate(backupName, volumeName, engineName, snapshotName, 
 		}
 	}()
 
+	// NOTE: labels are forwarded to the replica opaquely on purpose. Well-known
+	// backup parameters are smuggled into this slice under a reserved
+	// DNS-qualified prefix by the entry-side client wrapper
+	// (client.EngineBackupCreate via types.EncodeBackupParametersIntoLabels)
+	// and extracted again on the replica-side server
+	// (server_replica.ReplicaBackupCreate via types.ExtractBackupParametersFromLabels).
+	// Do not filter, deduplicate, or normalize labels here or those reserved
+	// entries will silently disappear and callers' intent (e.g. forcing a full
+	// backup) will be lost.
 	recv, err := replicaServiceCli.ReplicaBackupCreate(&client.BackupCreateRequest{
 		BackupName:           backupName,
 		SnapshotName:         snapshotName,

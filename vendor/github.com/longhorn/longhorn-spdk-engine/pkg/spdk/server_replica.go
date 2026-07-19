@@ -748,6 +748,14 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 		}
 	}
 
+	// The v2 (SPDK) BackupCreateRequest has no dedicated field for backup
+	// parameters such as forcing a full backup, so callers (e.g. longhorn-manager)
+	// smuggle them through the existing Labels field under a reserved
+	// DNS-qualified prefix (see pkg/types). Extract them here so they drive
+	// backupstore's isFullBackup() decision, and remove them from labelMap so
+	// the reserved entries are not persisted as user-visible backup labels.
+	parameters := types.ExtractBackupParametersFromLabels(labelMap)
+
 	s.Lock()
 	defer s.Unlock()
 
@@ -789,9 +797,10 @@ func (s *Server) ReplicaBackupCreate(ctx context.Context, req *spdkrpc.BackupCre
 			Name:        req.SnapshotName,
 			CreatedTime: util.Now(),
 		},
-		DestURL:  req.BackupTarget,
-		DeltaOps: backup,
-		Labels:   labelMap,
+		DestURL:    req.BackupTarget,
+		DeltaOps:   backup,
+		Labels:     labelMap,
+		Parameters: parameters,
 	}
 
 	s.trackBackupLocked(backupName, backup)
