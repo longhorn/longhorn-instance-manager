@@ -10,6 +10,7 @@ import (
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
+	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
 )
 
@@ -656,7 +657,7 @@ func (c *SPDKClient) ReplicaBackupCreate(req *BackupCreateRequest) (*spdkrpc.Bac
 		VolumeName:           req.VolumeName,
 		ReplicaName:          req.ReplicaName,
 		Size:                 int64(req.Size),
-		Labels:               req.Labels,
+		Labels:               types.EncodeBackupParametersIntoLabels(req.Labels, req.Parameters),
 		Credential:           req.Credential,
 		BackingImageName:     req.BackingImageName,
 		BackingImageChecksum: req.BackingImageChecksum,
