@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260717143317-0e4420e3d34a
+	github.com/longhorn/backupstore v0.0.0-20260722010828-e5f4ddc47e4d
 	github.com/longhorn/go-common-libs v0.0.0-20260717062941-2c0ab58da729
 	github.com/longhorn/go-spdk-helper v0.7.1-0.20260717074340-e6426a9f29f9
-	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260720014944-aab43d797cac
+	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712.0.20260722045630-fbcdec882798
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260722041335-4a18b841d2c8
 	github.com/longhorn/types v0.0.0-20260709032252-3d0a3cd8f06f
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli/v3 v3.10.1
@@ -101,7 +101,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
