@@ -319,8 +319,8 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20260618071319-84c767bdab16
-## explicit; go 1.25.0
+# github.com/longhorn/backupstore v0.0.0-20260722010828-e5f4ddc47e4d
+## explicit; go 1.25.10
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
 github.com/longhorn/backupstore/cifs
@@ -364,8 +364,8 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e
-## explicit; go 1.25.0
+# github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260722045437-7d2817052ef8
+## explicit; go 1.25.10
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
 github.com/longhorn/longhorn-engine/pkg/interceptor
@@ -391,7 +391,7 @@ github.com/longhorn/longhorn-spdk-engine/pkg/spdk/disk/virtio-scsi
 github.com/longhorn/longhorn-spdk-engine/pkg/types
 github.com/longhorn/longhorn-spdk-engine/pkg/util
 github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
-# github.com/longhorn/sparse-tools v0.0.0-20260117144214-070853c24eda
+# github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a
 ## explicit; go 1.24.0
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
@@ -663,7 +663,7 @@ gopkg.in/inf.v0
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/api v0.35.2
+# k8s.io/api v0.35.4
 ## explicit; go 1.25.0
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1alpha1
@@ -722,7 +722,7 @@ k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 k8s.io/api/storagemigration/v1beta1
-# k8s.io/apimachinery v0.35.2
+# k8s.io/apimachinery v0.35.4
 ## explicit; go 1.25.0
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -777,7 +777,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.35.2
+# k8s.io/client-go v0.35.4
 ## explicit; go 1.25.0
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1alpha1

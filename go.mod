@@ -10,10 +10,10 @@ replace (
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260618071319-84c767bdab16
+	github.com/longhorn/backupstore v0.0.0-20260722010828-e5f4ddc47e4d
 	github.com/longhorn/go-common-libs v0.0.0-20260709061022-21a84065aa86
 	github.com/longhorn/go-spdk-helper v0.7.0
-	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260304083656-dd371a6a558e
+	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20260722045437-7d2817052ef8
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
 	github.com/longhorn/types v0.0.0-20260608145242-38c27234df4b
 	github.com/sirupsen/logrus v1.9.4
@@ -81,7 +81,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 // indirect
-	github.com/longhorn/sparse-tools v0.0.0-20260117144214-070853c24eda // indirect
+	github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/moby/sys/mountinfo v0.7.2 // indirect
@@ -116,9 +116,9 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.35.2 // indirect
-	k8s.io/apimachinery v0.35.2 // indirect
-	k8s.io/client-go v0.35.2 // indirect
+	k8s.io/api v0.35.4 // indirect
+	k8s.io/apimachinery v0.35.4 // indirect
+	k8s.io/client-go v0.35.4 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
