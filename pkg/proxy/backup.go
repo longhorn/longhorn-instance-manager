@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/cockroachdb/errors"
@@ -14,14 +15,16 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+
 	backupstore "github.com/longhorn/backupstore"
 	butil "github.com/longhorn/backupstore/util"
 	eclient "github.com/longhorn/longhorn-engine/pkg/controller/client"
 	rclient "github.com/longhorn/longhorn-engine/pkg/replica/client"
 	esync "github.com/longhorn/longhorn-engine/pkg/sync"
 	etypes "github.com/longhorn/longhorn-engine/pkg/types"
-
 	spdkclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
+	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
@@ -264,19 +267,104 @@ func (ops V2DataEngineProxyOps) SnapshotBackupStatus(ctx context.Context, req *r
 		}
 	}()
 
-	status, err := c.EngineBackupStatus(req.BackupName, req.ProxyEngineRequest.EngineName, req.ReplicaAddress)
-	if err != nil {
-		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get backup status: %v", err)
+	replicaAddress := req.ReplicaAddress
+	var status *spdkrpc.BackupStatusResponse
+	if replicaAddress == "" {
+		engine, engineErr := c.EngineGet(req.ProxyEngineRequest.EngineName)
+		if engineErr != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get engine %v for backup status recovery: %v", req.ProxyEngineRequest.EngineName, engineErr)
+		}
+
+		status, replicaAddress, err = getV2BackupStatusFromReplicas(c, req.BackupName, req.ProxyEngineRequest.EngineName,
+			findV2BackupReplicaAddresses(engine.ReplicaModeMap, engine.ReplicaAddressMap))
+		if err != nil && grpcstatus.Code(err) != grpccodes.NotFound {
+			return nil, err
+		}
+		if replicaAddress == "" {
+			logrus.WithFields(logrus.Fields{
+				"backupName":     req.BackupName,
+				"engineName":     req.ProxyEngineRequest.EngineName,
+				"volumeName":     req.ProxyEngineRequest.VolumeName,
+				"dataEngine":     req.ProxyEngineRequest.DataEngine,
+				"replicaModeMap": engine.ReplicaModeMap,
+			}).WithError(err).Error("Failed to find an available replica with the backup")
+			return nil, errors.Errorf("failed to find a replica with backup %s", req.BackupName)
+		}
+	} else {
+		status, err = c.EngineBackupStatus(req.BackupName, req.ProxyEngineRequest.EngineName, replicaAddress)
+		if err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get backup status: %v", err)
+		}
 	}
 
+	if status == nil {
+		return nil, errors.Errorf(`received an empty backup status from replica address "%s"`, replicaAddress)
+	}
+
+	// Prefer the replica address returned by SPDK, falling back to the requested or probed address.
+	if status.ReplicaAddress != "" {
+		replicaAddress = status.ReplicaAddress
+	}
 	return &rpc.EngineSnapshotBackupStatusProxyResponse{
 		BackupUrl:      status.BackupUrl,
 		Error:          status.Error,
 		Progress:       int32(status.Progress),
 		SnapshotName:   status.SnapshotName,
 		State:          status.State,
-		ReplicaAddress: status.ReplicaAddress,
+		ReplicaAddress: replicaAddress,
 	}, nil
+}
+
+type v2BackupStatusClient interface {
+	EngineBackupStatus(backupName, engineName, replicaAddress string) (*spdkrpc.BackupStatusResponse, error)
+}
+
+func getV2BackupStatusFromReplicas(c v2BackupStatusClient, backupName, engineName string,
+	replicaAddresses []string) (*spdkrpc.BackupStatusResponse, string, error) {
+	var firstErr error
+	var notFoundErr error
+	for _, replicaAddress := range replicaAddresses {
+		status, err := c.EngineBackupStatus(backupName, engineName, replicaAddress)
+		if err == nil {
+			if status != nil {
+				return status, replicaAddress, nil
+			}
+			err = errors.Errorf("received an empty backup status from replica %s", replicaAddress)
+		}
+		if grpcstatus.Code(err) == grpccodes.NotFound {
+			notFoundErr = err
+			continue
+		}
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	if firstErr != nil {
+		return nil, "", firstErr
+	}
+	return nil, "", notFoundErr
+}
+
+func findV2BackupReplicaAddresses(replicaModeMap map[string]spdktypes.Mode, replicaAddressMap map[string]string) []string {
+	replicaNames := make([]string, 0, len(replicaModeMap))
+	for replicaName := range replicaModeMap {
+		replicaNames = append(replicaNames, replicaName)
+	}
+	sort.Strings(replicaNames)
+
+	replicaAddresses := make([]string, 0, len(replicaNames))
+	for _, replicaName := range replicaNames {
+		if replicaModeMap[replicaName] != spdktypes.ModeRW {
+			continue
+		}
+
+		if replicaAddress := replicaAddressMap[replicaName]; replicaAddress != "" {
+			replicaAddresses = append(replicaAddresses, replicaAddress)
+		}
+	}
+
+	return replicaAddresses
 }
 
 func (p *Proxy) BackupRestore(ctx context.Context, req *rpc.EngineBackupRestoreRequest) (resp *rpc.EngineBackupRestoreProxyResponse, err error) {
@@ -445,9 +533,9 @@ func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rp
 // environment so that github.com/longhorn/backupstore helpers (which consume
 // credentials through os.Getenv) can observe them.
 //
-// Keys are first validated against backupEnvAllowlist. Any unknown key —
+// Keys are first validated against backupEnvAllowlist. Any unknown key -
 // including LD_PRELOAD, LD_LIBRARY_PATH, LD_AUDIT, PATH, and similar loader
-// variables — causes the whole request to be rejected before any os.Setenv
+// variables - causes the whole request to be rejected before any os.Setenv
 // call is made, so partially-applied state cannot leak. See
 // GHSA-wgh7-5vxp-4qr4.
 func setEnv(envs []string) error {

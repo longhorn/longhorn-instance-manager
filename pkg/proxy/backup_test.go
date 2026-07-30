@@ -4,6 +4,13 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
+
+	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 )
 
 // TestSetEnv_RejectsUnsafeLoaderKeys is the direct regression test for
@@ -177,5 +184,154 @@ func TestValidateBackupEnv_TableDriven(t *testing.T) {
 				t.Fatalf("validateBackupEnv(%v) returned %v; expected nil", tc.envs, err)
 			}
 		})
+	}
+}
+
+func TestFindV2BackupReplicaAddressesSortsRWReplicas(t *testing.T) {
+	const (
+		firstRWAddress  = "10.0.0.1:10000"
+		secondRWAddress = "10.0.0.2:10000"
+		nonRWAddress    = "10.0.0.3:10000"
+	)
+	replicaModeMap := map[string]spdktypes.Mode{
+		"replica-2": spdktypes.ModeRW,
+		"replica-3": spdktypes.ModeWO,
+		"replica-1": spdktypes.ModeRW,
+	}
+	replicaAddressMap := map[string]string{
+		"replica-1": firstRWAddress,
+		"replica-2": secondRWAddress,
+		"replica-3": nonRWAddress,
+	}
+
+	replicaAddresses := findV2BackupReplicaAddresses(replicaModeMap, replicaAddressMap)
+	if len(replicaAddresses) != 2 {
+		t.Fatalf("findV2BackupReplicaAddresses returned %v, expected two addresses", replicaAddresses)
+	}
+	if replicaAddresses[0] != firstRWAddress || replicaAddresses[1] != secondRWAddress {
+		t.Fatalf("findV2BackupReplicaAddresses returned %v, expected [%s %s]", replicaAddresses, firstRWAddress, secondRWAddress)
+	}
+}
+
+func TestFindV2BackupReplicaAddressesSkipsUnavailableRWReplicas(t *testing.T) {
+	const availableAddress = "10.0.0.2:10000"
+	replicaModeMap := map[string]spdktypes.Mode{
+		"replica-1": spdktypes.ModeRW,
+		"replica-2": spdktypes.ModeRW,
+	}
+	replicaAddressMap := map[string]string{
+		"replica-1": "",
+		"replica-2": availableAddress,
+	}
+
+	replicaAddresses := findV2BackupReplicaAddresses(replicaModeMap, replicaAddressMap)
+	if len(replicaAddresses) != 1 || replicaAddresses[0] != availableAddress {
+		t.Fatalf("findV2BackupReplicaAddresses returned %v, expected [%s]", replicaAddresses, availableAddress)
+	}
+}
+
+func TestFindV2BackupReplicaAddressesReturnsEmptyWhenUnavailable(t *testing.T) {
+	replicaModeMap := map[string]spdktypes.Mode{
+		"replica-rw-1": spdktypes.ModeRW,
+		"replica-rw-2": spdktypes.ModeRW,
+		"replica-wo":   spdktypes.ModeWO,
+	}
+	replicaAddressMap := map[string]string{
+		"replica-rw-1": "",
+		"replica-wo":   "10.0.0.3:10000",
+	}
+
+	replicaAddresses := findV2BackupReplicaAddresses(replicaModeMap, replicaAddressMap)
+	if len(replicaAddresses) != 0 {
+		t.Fatalf("findV2BackupReplicaAddresses returned %v, expected no addresses", replicaAddresses)
+	}
+}
+
+type fakeV2BackupStatusClient struct {
+	responses map[string]*spdkrpc.BackupStatusResponse
+	errors    map[string]error
+	probed    []string
+}
+
+func (c *fakeV2BackupStatusClient) EngineBackupStatus(_, _, replicaAddress string) (*spdkrpc.BackupStatusResponse, error) {
+	c.probed = append(c.probed, replicaAddress)
+	return c.responses[replicaAddress], c.errors[replicaAddress]
+}
+
+func TestGetV2BackupStatusFromPartiallyBrokenReplicas(t *testing.T) {
+	const (
+		firstAddress  = "10.0.0.1:10000"
+		secondAddress = "10.0.0.2:10000"
+	)
+	tests := []struct {
+		name        string
+		expectedErr error
+	}{
+		{
+			name:        "NotFound",
+			expectedErr: grpcstatus.Error(grpccodes.NotFound, "backup not found"),
+		},
+		{
+			name:        "Unavailable",
+			expectedErr: grpcstatus.Error(grpccodes.Unavailable, "replica unavailable"),
+		},
+		{
+			name: "nil-status",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedStatus := &spdkrpc.BackupStatusResponse{
+				BackupUrl: "s3://backup-target/backup-1",
+				Progress:  100,
+				State:     "complete",
+			}
+			client := &fakeV2BackupStatusClient{
+				responses: map[string]*spdkrpc.BackupStatusResponse{
+					secondAddress: expectedStatus,
+				},
+				errors: map[string]error{
+					firstAddress: tt.expectedErr,
+				},
+			}
+
+			status, replicaAddress, err := getV2BackupStatusFromReplicas(client, "backup-1", "engine-1",
+				[]string{firstAddress, secondAddress})
+			if err != nil {
+				t.Fatalf("getV2BackupStatusFromReplicas returned error: %v", err)
+			}
+			if status != expectedStatus || replicaAddress != secondAddress {
+				t.Fatalf("getV2BackupStatusFromReplicas returned status %v and address %q, expected status %v and address %q",
+					status, replicaAddress, expectedStatus, secondAddress)
+			}
+			if len(client.probed) != 2 || client.probed[0] != firstAddress || client.probed[1] != secondAddress {
+				t.Fatalf("getV2BackupStatusFromReplicas probed %v, expected [%s %s]", client.probed, firstAddress, secondAddress)
+			}
+		})
+	}
+}
+
+func TestGetV2BackupStatusFromReplicasPreservesFirstNonNotFoundError(t *testing.T) {
+	const (
+		firstAddress  = "10.0.0.1:10000"
+		secondAddress = "10.0.0.2:10000"
+	)
+	firstErr := grpcstatus.Error(grpccodes.Unavailable, "replica unavailable")
+	client := &fakeV2BackupStatusClient{
+		responses: map[string]*spdkrpc.BackupStatusResponse{},
+		errors: map[string]error{
+			firstAddress:  firstErr,
+			secondAddress: grpcstatus.Error(grpccodes.Internal, "replica failed"),
+		},
+	}
+
+	_, _, err := getV2BackupStatusFromReplicas(client, "backup-1", "engine-1",
+		[]string{firstAddress, secondAddress})
+	if err != firstErr {
+		t.Fatalf("getV2BackupStatusFromReplicas returned %v, expected first error %v", err, firstErr)
+	}
+	if len(client.probed) != 2 || client.probed[0] != firstAddress || client.probed[1] != secondAddress {
+		t.Fatalf("getV2BackupStatusFromReplicas probed %v, expected [%s %s]", client.probed, firstAddress, secondAddress)
 	}
 }
