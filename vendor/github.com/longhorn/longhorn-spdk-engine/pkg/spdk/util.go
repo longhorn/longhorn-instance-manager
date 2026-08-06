@@ -159,6 +159,7 @@ func connectNVMfBdev(spdkClient *spdkclient.Client, controllerName, address stri
 				replicaReconnectDelaySec,
 				int32(fastIOFailTimeoutSec),
 				replicaMultipath,
+				helpertypes.InternalHostNQN,
 			)
 			return err
 		},
