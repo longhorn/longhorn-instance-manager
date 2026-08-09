@@ -19,6 +19,7 @@ import (
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
 
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
@@ -80,26 +81,33 @@ func (ops V2DataEngineProxyOps) ReplicaAdd(ctx context.Context, req *rpc.EngineR
 	defer func() {
 		if closeErr := c.Close(); closeErr != nil {
 			logrus.WithFields(logrus.Fields{
-				"serviceURL":                  req.ProxyEngineRequest.Address,
-				"engineFrontendName":          req.ProxyEngineRequest.EngineFrontendName,
-				"volumeName":                  req.ProxyEngineRequest.VolumeName,
-				"replicaName":                 req.ReplicaName,
-				"replicaAddress":              req.ReplicaAddress,
-				"restore":                     req.Restore,
-				"size":                        req.Size,
-				"currentSize":                 req.CurrentSize,
-				"fastSync":                    req.FastSync,
-				"localSync":                   req.LocalSync,
-				"linkedCloneSrcReplicaName":   req.LinkedCloneSrcReplicaName,
-				"linkedCloneSrcEngineName":    req.LinkedCloneSrcEngineName,
-				"linkedCloneSrcEngineAddress": req.LinkedCloneSrcEngineAddress,
+				"serviceURL":         req.ProxyEngineRequest.Address,
+				"engineFrontendName": req.ProxyEngineRequest.EngineFrontendName,
+				"volumeName":         req.ProxyEngineRequest.VolumeName,
+				"replicaName":        req.ReplicaName,
+				"replicaAddress":     req.ReplicaAddress,
+				"restore":            req.Restore,
+				"size":               req.Size,
+				"currentSize":        req.CurrentSize,
+				"fastSync":           req.FastSync,
+				"localSync":          req.LocalSync,
+				"linkedCloneSource":  req.LinkedCloneSource,
 			}).WithError(closeErr).Warn("Failed to close SPDK client")
 		}
 	}()
 
 	replicaAddress := strings.TrimPrefix(req.ReplicaAddress, "tcp://")
 
-	err = c.EngineFrontendReplicaAdd(req.ProxyEngineRequest.EngineFrontendName, req.ReplicaName, replicaAddress, req.FastSync, req.LinkedCloneSrcReplicaName, req.LinkedCloneSrcEngineName, req.LinkedCloneSrcEngineAddress)
+	var spdkLinkedCloneSource *spdkrpc.LinkedCloneSource
+	if req.LinkedCloneSource != nil {
+		spdkLinkedCloneSource = &spdkrpc.LinkedCloneSource{
+			ReplicaName:   req.LinkedCloneSource.ReplicaName,
+			EngineName:    req.LinkedCloneSource.EngineName,
+			EngineAddress: req.LinkedCloneSource.EngineAddress,
+		}
+	}
+
+	err = c.EngineFrontendReplicaAdd(req.ProxyEngineRequest.EngineFrontendName, req.ReplicaName, replicaAddress, req.FastSync, spdkLinkedCloneSource)
 	if err != nil {
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to add replica %v: %v", replicaAddress, err)
 	}
