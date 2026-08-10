@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
-	_ "net/http/pprof" // for runtime profiling
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	_ "net/http/pprof" // for runtime profiling
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
@@ -311,7 +312,36 @@ func start(c *cli.Command) (err error) {
 	return nil
 }
 
+func tlsMaterialExists(tlsDir string) (bool, error) {
+	tlsDirInfo, err := os.Stat(tlsDir)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to stat TLS directory %v", tlsDir)
+	}
+	if !tlsDirInfo.IsDir() {
+		return false, errors.Errorf("TLS path %v is not a directory", tlsDir)
+	}
+
+	tlsMaterial := false
+	for _, tlsFileName := range []string{types.TLSCAFile, types.TLSCertFile, types.TLSKeyFile} {
+		tlsFile := filepath.Join(tlsDir, tlsFileName)
+		if _, err := os.Lstat(tlsFile); err == nil {
+			tlsMaterial = true
+		} else if !os.IsNotExist(err) {
+			return false, errors.Wrapf(err, "failed to stat TLS file %v", tlsFile)
+		}
+	}
+	return tlsMaterial, nil
+}
+
 func loadTLSConfigsFromDir(tlsDir string) (serverTLSConfig, clientTLSConfig *tls.Config, err error) {
+	tlsMaterial, err := tlsMaterialExists(tlsDir)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to initialize server TLS from %v", tlsDir)
+	}
+	if !tlsMaterial {
+		return nil, nil, nil
+	}
+
 	caFile := filepath.Join(tlsDir, types.TLSCAFile)
 	certFile := filepath.Join(tlsDir, types.TLSCertFile)
 	keyFile := filepath.Join(tlsDir, types.TLSKeyFile)

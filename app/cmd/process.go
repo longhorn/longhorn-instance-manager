@@ -251,6 +251,14 @@ func getProcessManagerClient(c *cli.Command, ctx context.Context, ctxCancel cont
 	tlsDir := c.String("tls-dir")
 
 	if tlsDir != "" {
+		tlsMaterial, err := tlsMaterialExists(tlsDir)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to initialize TLS ProcessManager client")
+		}
+		if !tlsMaterial {
+			return client.NewProcessManagerClient(ctx, ctxCancel, url, nil)
+		}
+
 		imClient, err := client.NewProcessManagerClientWithTLS(ctx, ctxCancel, url,
 			filepath.Join(tlsDir, types.TLSCAFile),
 			filepath.Join(tlsDir, types.TLSCertFile),
