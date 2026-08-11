@@ -2,7 +2,9 @@ package meta
 
 const (
 	// InstanceManagerAPIVersion is used for compatibility check for longhorn-manager
-	InstanceManagerAPIVersion    = 7
+	// 8: SpdkInstanceSpec.restrict_host_acl - the instance manager honors the
+	//    replica host-ACL restriction flag on replica creation
+	InstanceManagerAPIVersion    = 8
 	InstanceManagerAPIMinVersion = 1
 
 	// InstanceManagerProxyAPIVersion is used for compatibility check for longhorn-manager

@@ -112,6 +112,7 @@ type ReplicaCreateRequest struct {
 	DiskUUID         string
 	ExposeRequired   bool
 	BackingImageName string
+	RestrictHostACL  bool
 }
 
 type ShardCreateRequest struct {
@@ -200,6 +201,7 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 				DiskUuid:         req.Replica.DiskUUID,
 				ExposeRequired:   req.Replica.ExposeRequired,
 				BackingImageName: req.Replica.BackingImageName,
+				RestrictHostAcl:  req.Replica.RestrictHostACL,
 			}
 		case types.InstanceTypeShard:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
