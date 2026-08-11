@@ -8,19 +8,13 @@ require (
 	github.com/longhorn/backupstore v0.0.0-20260722010828-e5f4ddc47e4d
 	github.com/longhorn/go-common-libs v0.0.0-20260717062941-2c0ab58da729
 	github.com/longhorn/go-spdk-helper v0.8.1-0.20260805151852-965182d14959
-<<<<<<< HEAD
-	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260722045608-3db3e1026651
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260806094547-8cd42fb34455
-	github.com/longhorn/types v0.0.0-20260729075217-67e368561d11
-=======
-	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712.0.20260722045630-fbcdec882798
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260811004518-ddc112d81591
+	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260811002413-f97d5257ac06
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260811013036-d19dbb3abcea
 	github.com/longhorn/types v0.0.0-20260810232958-141f76734364
->>>>>>> 58c4722f (fix(clone): update vendors for linked clone refactor)
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.22.0
-	google.golang.org/grpc v1.82.1
+	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.36.3
@@ -33,7 +27,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
 	github.com/avast/retry-go/v4 v4.7.0 // indirect
-	github.com/avast/retry-go/v5 v5.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.7 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.17 // indirect
@@ -114,7 +107,7 @@ require (
 	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
