@@ -204,7 +204,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		return engineResponseToInstanceResponse(engine), nil
 	case types.InstanceTypeEngineFrontend:
 		engineFrontend, err := c.EngineFrontendCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.EngineName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
-			req.Spec.TargetAddress, int32(req.Spec.SpdkInstanceSpec.UblkQueueDepth), int32(req.Spec.SpdkInstanceSpec.UblkNumberOfQueue))
+			req.Spec.TargetAddress, int32(req.Spec.SpdkInstanceSpec.UblkQueueDepth), int32(req.Spec.SpdkInstanceSpec.UblkNumberOfQueue), int32(req.Spec.SpdkInstanceSpec.NvmeTcpNrIoQueues))
 		if err != nil {
 			return nil, err
 		}
