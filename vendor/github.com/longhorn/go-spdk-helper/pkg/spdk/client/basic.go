@@ -8,6 +8,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
@@ -106,10 +107,18 @@ func (c *Client) BdevAioGet(name string, timeout uint64) (bdevAioInfoList []spdk
 
 // BdevLvolCreateLvstore constructs a logical volume store.
 func (c *Client) BdevLvolCreateLvstore(bdevName, lvsName string, clusterSize uint32) (uuid string, err error) {
+	return c.BdevLvolCreateLvstoreWithMdRatio(bdevName, lvsName, clusterSize, 0)
+}
+
+// BdevLvolCreateLvstoreWithMdRatio constructs a logical volume store and also sets
+// num_md_pages_per_cluster_ratio, which fixes the blobstore metadata budget at
+// creation. 0 leaves it to the SPDK default.
+func (c *Client) BdevLvolCreateLvstoreWithMdRatio(bdevName, lvsName string, clusterSize, mdPagesPerClusterRatio uint32) (uuid string, err error) {
 	req := spdktypes.BdevLvolCreateLvstoreRequest{
-		BdevName:  bdevName,
-		LvsName:   lvsName,
-		ClusterSz: clusterSize,
+		BdevName:                  bdevName,
+		LvsName:                   lvsName,
+		ClusterSz:                 clusterSize,
+		NumMdPagesPerClusterRatio: mdPagesPerClusterRatio,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_create_lvstore", req)
@@ -338,19 +347,28 @@ func (c *Client) BdevLvolGetWithFilter(name string, timeout uint64, filter func(
 			continue
 		}
 		b.DriverSpecific.Lvol.Xattrs = make(map[string]string)
-		user_created, err := c.BdevLvolGetXattr(b.Name, UserCreated)
-		if err == nil {
-			b.DriverSpecific.Lvol.Xattrs[UserCreated] = user_created
-		} else {
-			b.DriverSpecific.Lvol.Xattrs[UserCreated] = strconv.FormatBool(true)
+		userCreated, err := c.BdevLvolGetXattr(b.Name, UserCreated)
+		if err != nil {
+			if !jsonrpc.IsJSONRPCRespErrorNoSuchFileOrDirectory(err) {
+				return nil, err
+			}
+			userCreated = strconv.FormatBool(true)
 		}
-		snapshot_timestamp, err := c.BdevLvolGetXattr(b.Name, SnapshotTimestamp)
-		if err == nil {
-			b.DriverSpecific.Lvol.Xattrs[SnapshotTimestamp] = snapshot_timestamp
+		b.DriverSpecific.Lvol.Xattrs[UserCreated] = userCreated
+
+		snapshotTimestamp, err := c.BdevLvolGetXattr(b.Name, SnapshotTimestamp)
+		if err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchFileOrDirectory(err) {
+			return nil, err
 		}
+		b.DriverSpecific.Lvol.Xattrs[SnapshotTimestamp] = snapshotTimestamp
+
 		if b.DriverSpecific.Lvol.Snapshot {
 			checksum, err := c.BdevLvolGetSnapshotChecksum(b.Name)
-			if err == nil {
+			if err != nil {
+				if !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+					return nil, err
+				}
+			} else {
 				b.DriverSpecific.Lvol.Xattrs[SnapshotChecksum] = checksum
 			}
 		}
