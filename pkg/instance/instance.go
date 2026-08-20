@@ -197,7 +197,8 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
 			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
 			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
-			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType))
+			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType),
+			convertIMDataEngineTransportToSPDKDataEngineTransport(req.Spec.SpdkInstanceSpec.DataEngineTransport))
 		if err != nil {
 			return nil, err
 		}
@@ -210,7 +211,8 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		}
 		return engineFrontendResponseToInstanceResponse(engineFrontend), nil
 	case types.InstanceTypeReplica:
-		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName)
+		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName,
+			convertIMDataEngineTransportToSPDKDataEngineTransport(req.Spec.SpdkInstanceSpec.DataEngineTransport))
 		if err != nil {
 			return nil, err
 		}
@@ -1349,6 +1351,20 @@ func convertIMDataLayoutTypeToSPDKDataLayoutType(layout rpc.DataLayoutType) spdk
 		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED
 	default:
 		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_REPLICATED
+	}
+}
+
+// convertIMDataEngineTransportToSPDKDataEngineTransport maps the imrpc
+// NVMe-oF transport selector to its spdkrpc equivalent. The zero value
+// (DATA_ENGINE_TRANSPORT_TCP) maps to TCP so instances created by an older
+// control plane - which never sets the field - keep their historical TCP
+// behavior.
+func convertIMDataEngineTransportToSPDKDataEngineTransport(transport rpc.DataEngineTransport) spdkrpc.DataEngineTransport {
+	switch transport {
+	case rpc.DataEngineTransport_DATA_ENGINE_TRANSPORT_RDMA:
+		return spdkrpc.DataEngineTransport_DATA_ENGINE_TRANSPORT_RDMA
+	default:
+		return spdkrpc.DataEngineTransport_DATA_ENGINE_TRANSPORT_TCP
 	}
 }
 

@@ -102,11 +102,11 @@ RUN zypper -n install sg3_utils iproute2
 RUN zypper -n install util-linux-systemd nfs-client nfs4-acl-tools
 RUN zypper clean -a
 
-# Install SPDK dependencies
+# Install SPDK dependencies (--rdma pulls libibverbs/librdmacm runtime libs for the NVMe-oF RDMA transport)
 COPY --from=cbuilder /usr/src/spdk/scripts /usr/src/spdk/scripts
 COPY --from=cbuilder /usr/src/spdk/include /usr/src/spdk/include
 RUN for i in {1..10}; do \
-        bash /usr/src/spdk/scripts/pkgdep.sh && break || sleep 1; \
+        bash /usr/src/spdk/scripts/pkgdep.sh --rdma && break || sleep 1; \
     done
 
 # Copy pre-built binaries from cbuilder and gobuilder
