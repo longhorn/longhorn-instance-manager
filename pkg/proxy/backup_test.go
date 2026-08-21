@@ -78,6 +78,7 @@ func TestSetEnv_AcceptsAllowlistedCredentials(t *testing.T) {
 		"AWS_ENDPOINTS",
 		"AWS_CERT",
 		"VIRTUAL_HOSTED_STYLE",
+		"AWS_SIGN_ACCEPT_ENCODING",
 		"CIFS_USERNAME",
 		"CIFS_PASSWORD",
 		"AZBLOB_ACCOUNT_NAME",
