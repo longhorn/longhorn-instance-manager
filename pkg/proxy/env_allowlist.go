@@ -28,6 +28,10 @@ var backupEnvAllowlist = map[string]struct{}{
 	btypes.AWSCert:            {},
 	btypes.VirtualHostedStyle: {},
 
+	// Selects whether Accept-Encoding is part of the SigV4 signature. It is a
+	// signing option, not a credential, and carries no secret.
+	btypes.AWSSignAcceptEncoding: {},
+
 	// CIFS
 	btypes.CIFSUsername: {},
 	btypes.CIFSPassword: {},
