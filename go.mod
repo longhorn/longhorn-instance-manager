@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260722010828-e5f4ddc47e4d
+	github.com/longhorn/backupstore v0.0.0-20260820153238-ab5179ec9ca0
 	github.com/longhorn/go-common-libs v0.0.0-20260730002911-add09e6eb92c
 	github.com/longhorn/go-spdk-helper v0.9.1-0.20260814082531-318b4a23bb34
-	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712.0.20260722045630-fbcdec882798
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260814120037-66c5cd076ebb
+	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712.0.20260821031814-5939910cc1fe
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260821025959-57f5131c863e
 	github.com/longhorn/types v0.0.0-20260814104707-529643438923
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli/v3 v3.10.1
