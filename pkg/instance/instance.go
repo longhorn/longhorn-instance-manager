@@ -198,7 +198,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
 			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
 			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType),
-			convertIMDataEngineTransportToSPDKDataEngineTransport(req.Spec.SpdkInstanceSpec.DataEngineTransport))
+			convertIMTransportTypeToSPDKTransportType(req.Spec.SpdkInstanceSpec.TransportType))
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +212,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		return engineFrontendResponseToInstanceResponse(engineFrontend), nil
 	case types.InstanceTypeReplica:
 		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName,
-			convertIMDataEngineTransportToSPDKDataEngineTransport(req.Spec.SpdkInstanceSpec.DataEngineTransport))
+			convertIMTransportTypeToSPDKTransportType(req.Spec.SpdkInstanceSpec.TransportType))
 		if err != nil {
 			return nil, err
 		}
@@ -1354,17 +1354,17 @@ func convertIMDataLayoutTypeToSPDKDataLayoutType(layout rpc.DataLayoutType) spdk
 	}
 }
 
-// convertIMDataEngineTransportToSPDKDataEngineTransport maps the imrpc
+// convertIMTransportTypeToSPDKTransportType maps the imrpc
 // NVMe-oF transport selector to its spdkrpc equivalent. The zero value
-// (DATA_ENGINE_TRANSPORT_TCP) maps to TCP so instances created by an older
+// (TRANSPORT_TYPE_TCP) maps to TCP so instances created by an older
 // control plane - which never sets the field - keep their historical TCP
 // behavior.
-func convertIMDataEngineTransportToSPDKDataEngineTransport(transport rpc.DataEngineTransport) spdkrpc.DataEngineTransport {
+func convertIMTransportTypeToSPDKTransportType(transport rpc.TransportType) spdkrpc.TransportType {
 	switch transport {
-	case rpc.DataEngineTransport_DATA_ENGINE_TRANSPORT_RDMA:
-		return spdkrpc.DataEngineTransport_DATA_ENGINE_TRANSPORT_RDMA
+	case rpc.TransportType_TRANSPORT_TYPE_RDMA:
+		return spdkrpc.TransportType_TRANSPORT_TYPE_RDMA
 	default:
-		return spdkrpc.DataEngineTransport_DATA_ENGINE_TRANSPORT_TCP
+		return spdkrpc.TransportType_TRANSPORT_TYPE_TCP
 	}
 }
 

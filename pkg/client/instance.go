@@ -149,10 +149,10 @@ type InstanceCreateRequest struct {
 	ShardGroup     ShardGroupCreateRequest
 	DataLayoutType rpc.DataLayoutType
 
-	// DataEngineTransport selects the NVMe-oF transport for the internal
+	// TransportType selects the NVMe-oF transport for the internal
 	// engine<->replica connections of a v2 (SPDK) volume (TCP or RDMA). The
 	// zero value is TCP, preserving the pre-existing default behavior.
-	DataEngineTransport rpc.DataEngineTransport
+	TransportType rpc.TransportType
 
 	// Deprecated: replaced by DataEngine.
 	BackendStoreDriver string
@@ -191,7 +191,7 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 				SnapshotMaxCount:    int32(req.Engine.SnapshotMaxCount),
 				UblkQueueDepth:      int32(req.Engine.UblkQueueDepth),
 				UblkNumberOfQueue:   int32(req.Engine.UblkNumberOfQueue),
-				DataEngineTransport: req.DataEngineTransport,
+				TransportType: req.TransportType,
 			}
 		case types.InstanceTypeEngineFrontend:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
@@ -208,7 +208,7 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 				DiskUuid:            req.Replica.DiskUUID,
 				ExposeRequired:      req.Replica.ExposeRequired,
 				BackingImageName:    req.Replica.BackingImageName,
-				DataEngineTransport: req.DataEngineTransport,
+				TransportType: req.TransportType,
 			}
 		case types.InstanceTypeShard:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
