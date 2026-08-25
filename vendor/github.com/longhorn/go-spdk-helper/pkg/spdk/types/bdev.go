@@ -77,7 +77,7 @@ type BdevInfoBasic struct {
 
 	MemoryDomains []struct {
 		DmaDeviceID   string `json:"dma_device_id"`
-		DmaDeviceType int32  `json:"dma_device_type"`
+		DmaDeviceType string `json:"dma_device_type"`
 	} `json:"memory_domains,omitempty"`
 }
 
