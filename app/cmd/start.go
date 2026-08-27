@@ -35,6 +35,7 @@ import (
 	"github.com/longhorn/longhorn-instance-manager/pkg/disk"
 	"github.com/longhorn/longhorn-instance-manager/pkg/health"
 	"github.com/longhorn/longhorn-instance-manager/pkg/instance"
+	"github.com/longhorn/longhorn-instance-manager/pkg/lvm"
 	"github.com/longhorn/longhorn-instance-manager/pkg/process"
 	"github.com/longhorn/longhorn-instance-manager/pkg/proxy"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
@@ -69,6 +70,10 @@ func StartCmd() *cli.Command {
 			&cli.BoolFlag{
 				Name:  "spdk-enabled",
 				Usage: "enable SPDK support",
+			},
+			&cli.BoolFlag{
+				Name:  "local-data-engine-enabled",
+				Usage: "enable the LVM-backed local data engine",
 			},
 		},
 		Action: func(_ context.Context, c *cli.Command) error {
@@ -147,6 +152,7 @@ func start(c *cli.Command) (err error) {
 	processPortRange := c.String("port-range")
 	spdkPortRange := c.String("spdk-port-range")
 	spdkEnabled := c.Bool("spdk-enabled")
+	localDataEngineEnabled := c.Bool("local-data-engine-enabled")
 
 	defer func() {
 		if spdkEnabled {
@@ -159,6 +165,11 @@ func start(c *cli.Command) (err error) {
 
 	if err := util.SetUpLogger(logsDir); err != nil {
 		return err
+	}
+	if localDataEngineEnabled {
+		if err := lvm.InitializeDevicesFile(); err != nil {
+			return errors.Wrap(err, "failed to initialize local data engine")
+		}
 	}
 
 	if !spdkEnabled {
@@ -219,7 +230,7 @@ func start(c *cli.Command) (err error) {
 	// Start instance server
 	instanceGRPCServer, instanceRPCListener, err := setupInstanceGRPCServer(ctx, logsDir,
 		addresses[types.InstanceGrpcService], toClientAddress(addresses[types.ProcessManagerGrpcService]),
-		spdkClientAddr, serverTLSConfig, clientTLSConfig, spdkEnabled)
+		spdkClientAddr, serverTLSConfig, clientTLSConfig, spdkEnabled, localDataEngineEnabled)
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to set up %s", types.InstanceGrpcService)
 		return err
@@ -465,8 +476,8 @@ func setupProcessManagerGRPCServer(ctx context.Context, portRange, logsDir, list
 	return srv, grpcServer, grpcListener, nil
 }
 
-func setupInstanceGRPCServer(ctx context.Context, logsDir, listen, processManagerServiceAddress, spdkServiceAddress string, serverTLSConfig, clientTLSConfig *tls.Config, spdkEnabled bool) (*grpc.Server, net.Listener, error) {
-	srv, err := instance.NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, clientTLSConfig, spdkEnabled)
+func setupInstanceGRPCServer(ctx context.Context, logsDir, listen, processManagerServiceAddress, spdkServiceAddress string, serverTLSConfig, clientTLSConfig *tls.Config, spdkEnabled, localDataEngineEnabled bool) (*grpc.Server, net.Listener, error) {
+	srv, err := instance.NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, clientTLSConfig, spdkEnabled, localDataEngineEnabled)
 	if err != nil {
 		return nil, nil, err
 	}

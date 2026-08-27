@@ -13,6 +13,7 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/longhorn/longhorn-instance-manager/pkg/lvm"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 
 	"github.com/longhorn/types/pkg/generated/enginerpc"
@@ -60,10 +61,17 @@ type ProxyOps interface {
 	MetricsGet(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineMetricsGetProxyResponse, error)
 }
 
+type MetricsOps interface {
+	MetricsGet(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineMetricsGetProxyResponse, error)
+}
+
 type V1DataEngineProxyOps struct{}
 type V2DataEngineProxyOps struct {
 	spdkServiceAddress string
 	spdkTLSConfig      *tls.Config
+}
+type LocalDataEngineMetricsOps struct {
+	metrics lvm.EngineMetrics
 }
 
 type Proxy struct {
@@ -72,6 +80,7 @@ type Proxy struct {
 	logsDir       string
 	HealthChecker HealthChecker
 	ops           map[rpc.DataEngine]ProxyOps
+	metricsOps    map[rpc.DataEngine]MetricsOps
 
 	spdkServiceAddress string
 	spdkLocalClient    *spdkclient.SPDKClient
@@ -93,6 +102,13 @@ func NewProxy(ctx context.Context, logsDir, spdkServiceAddress string, spdkTLSCo
 			spdkTLSConfig:      spdkTLSConfig,
 		},
 	}
+	metricsOps := map[rpc.DataEngine]MetricsOps{
+		rpc.DataEngine_DATA_ENGINE_V1: ops[rpc.DataEngine_DATA_ENGINE_V1],
+		rpc.DataEngine_DATA_ENGINE_V2: ops[rpc.DataEngine_DATA_ENGINE_V2],
+		rpc.DataEngine_DATA_ENGINE_LOCAL: LocalDataEngineMetricsOps{
+			metrics: lvm.NewEngineMetrics(),
+		},
+	}
 
 	spdkLocalClient, err := newSPDKClient(spdkServiceAddress, spdkTLSConfig)
 	if err != nil {
@@ -104,6 +120,7 @@ func NewProxy(ctx context.Context, logsDir, spdkServiceAddress string, spdkTLSCo
 		logsDir:       logsDir,
 		HealthChecker: &GRPCHealthChecker{},
 		ops:           ops,
+		metricsOps:    metricsOps,
 
 		spdkServiceAddress: spdkServiceAddress,
 		spdkLocalClient:    spdkLocalClient,

@@ -21,6 +21,7 @@ import (
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
 
+	"github.com/longhorn/longhorn-instance-manager/pkg/lvm"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 	"github.com/longhorn/longhorn-instance-manager/pkg/util"
@@ -43,6 +44,9 @@ type DiskOps interface {
 type FilesystemDiskOps struct{}
 type BlockDiskOps struct {
 	spdkClient *spdkclient.SPDKClient
+}
+type LVMDiskOps struct {
+	disk lvm.Disk
 }
 
 type Server struct {
@@ -81,6 +85,7 @@ func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string,
 		rpc.DiskType_block: BlockDiskOps{
 			spdkClient: spdkClient,
 		},
+		rpc.DiskType_lvm: LVMDiskOps{disk: lvm.NewDisk()},
 	}
 
 	s := &Server{
@@ -146,6 +151,10 @@ func (ops BlockDiskOps) DiskCreate(ctx context.Context, req *rpc.DiskCreateReque
 	return spdkDiskToDisk(ret), nil
 }
 
+func (ops LVMDiskOps) DiskCreate(_ context.Context, req *rpc.DiskCreateRequest) (*rpc.Disk, error) {
+	return ops.disk.Create(req)
+}
+
 func (s *Server) DiskDelete(ctx context.Context, req *rpc.DiskDeleteRequest) (*emptypb.Empty, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskType":   req.DiskType,
@@ -174,6 +183,10 @@ func (ops FilesystemDiskOps) DiskDelete(req *rpc.DiskDeleteRequest) (*emptypb.Em
 
 func (ops BlockDiskOps) DiskDelete(req *rpc.DiskDeleteRequest) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, ops.spdkClient.DiskDelete(req.DiskName, req.DiskUuid, req.DiskPath, req.DiskDriver)
+}
+
+func (ops LVMDiskOps) DiskDelete(req *rpc.DiskDeleteRequest) (*emptypb.Empty, error) {
+	return ops.disk.Delete(req)
 }
 
 func (s *Server) DiskGet(ctx context.Context, req *rpc.DiskGetRequest) (*rpc.Disk, error) {
@@ -206,6 +219,10 @@ func (ops BlockDiskOps) DiskGet(req *rpc.DiskGetRequest) (*rpc.Disk, error) {
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 	return spdkDiskToDisk(ret), nil
+}
+
+func (ops LVMDiskOps) DiskGet(req *rpc.DiskGetRequest) (*rpc.Disk, error) {
+	return ops.disk.Get(req)
 }
 
 func (s *Server) DiskHealthGet(ctx context.Context, req *rpc.DiskHealthGetRequest) (*rpc.DiskHealthGetResponse, error) {
@@ -255,6 +272,10 @@ func (op BlockDiskOps) DiskHealthGet(req *rpc.DiskHealthGetRequest) (*rpc.DiskHe
 	}, nil
 }
 
+func (ops LVMDiskOps) DiskHealthGet(req *rpc.DiskHealthGetRequest) (*rpc.DiskHealthGetResponse, error) {
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported disk type %v", req.DiskType)
+}
+
 func (s *Server) DiskReplicaInstanceList(ctx context.Context, req *rpc.DiskReplicaInstanceListRequest) (*rpc.DiskReplicaInstanceListResponse, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskType": req.DiskType,
@@ -292,6 +313,13 @@ func (ops BlockDiskOps) DiskReplicaInstanceList(req *rpc.DiskReplicaInstanceList
 	}, nil
 }
 
+func (ops LVMDiskOps) DiskReplicaInstanceList(_ *rpc.DiskReplicaInstanceListRequest) (*rpc.DiskReplicaInstanceListResponse, error) {
+	// TODO: List replica LVs in this disk's VG for local orphan detection.
+	return &rpc.DiskReplicaInstanceListResponse{
+		ReplicaInstances: map[string]*rpc.ReplicaInstance{},
+	}, nil
+}
+
 func (s *Server) DiskReplicaInstanceDelete(ctx context.Context, req *rpc.DiskReplicaInstanceDeleteRequest) (*emptypb.Empty, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"diskType":            req.DiskType,
@@ -323,6 +351,11 @@ func (ops BlockDiskOps) DiskReplicaInstanceDelete(req *rpc.DiskReplicaInstanceDe
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (ops LVMDiskOps) DiskReplicaInstanceDelete(req *rpc.DiskReplicaInstanceDeleteRequest) (*emptypb.Empty, error) {
+	// TODO: Remove a confirmed orphan replica LV after validating its VG UUID.
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported disk type %v", req.DiskType)
 }
 
 func (s *Server) MetricsGet(ctx context.Context, req *rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error) {
@@ -366,6 +399,10 @@ func (ops BlockDiskOps) MetricsGet(req *rpc.DiskGetRequest) (*rpc.DiskMetricsGet
 			WriteIOPS:       metrics.WriteIOPS,
 		},
 	}, nil
+}
+
+func (ops LVMDiskOps) MetricsGet(req *rpc.DiskGetRequest) (*rpc.DiskMetricsGetReply, error) {
+	return ops.disk.Metrics(req)
 }
 
 func spdkDiskToDisk(disk *spdkrpc.Disk) *rpc.Disk {
