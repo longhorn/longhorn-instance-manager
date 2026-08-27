@@ -94,7 +94,7 @@ ARG ARCH=amd64
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper netcat libfuse3-3 logrotate && \
+RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper lvm2 netcat libfuse3-3 logrotate && \
     zypper -n install cifs-utils && \
     zypper -n install sg3_utils iproute2 && \
     zypper -n install util-linux-systemd nfs-client nfs4-acl-tools && \
