@@ -109,6 +109,12 @@ RUN for i in {1..10}; do \
         bash /usr/src/spdk/scripts/pkgdep.sh && break || sleep 1; \
     done
 
+# pkgdep.sh (since SPDK longhorn-v26.05) sets up a Python venv with pip,
+# which is only needed at build time and carries known vulnerabilities
+# (including its vendored dependencies). Remove it from the runtime image.
+# https://github.com/longhorn/spdk/blob/efc102055ebb8123d1215089cb3f2c4693af629b/scripts/pkgdep/helpers.sh
+RUN /var/spdk/dependencies/pip/bin/python -m pip uninstall -y pip
+
 # Copy pre-built binaries from cbuilder and gobuilder
 COPY --from=gobuilder \
     /usr/local/bin/grpc_health_probe \
