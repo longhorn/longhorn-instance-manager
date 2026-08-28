@@ -7,15 +7,15 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260820153238-ab5179ec9ca0
 	github.com/longhorn/go-common-libs v0.0.0-20260730002911-add09e6eb92c
-	github.com/longhorn/go-spdk-helper v0.9.1-0.20260814082531-318b4a23bb34
+	github.com/longhorn/go-spdk-helper v0.9.1-0.20260828012436-4ec507083142
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260712.0.20260821031814-5939910cc1fe
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260821025959-57f5131c863e
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260809.0.20260828020507-6c70feafc0aa
 	github.com/longhorn/types v0.0.0-20260814104707-529643438923
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli/v3 v3.10.1
 	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.0
-	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
+	google.golang.org/protobuf v1.36.12
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.36.4
 )

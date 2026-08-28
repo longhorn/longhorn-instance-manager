@@ -151,12 +151,12 @@ github.com/longhorn/go-common-libs v0.0.0-20260730002911-add09e6eb92c h1:WR2BAcT
 github.com/longhorn/go-common-libs v0.0.0-20260730002911-add09e6eb92c/go.mod h1:pjOR2fdQA0dNp3is1xfA+Ni2PjPDP+JuOoSEjdL2cfQ=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 h1:i4yKScA3sFjO9wJUMqlIQ0JjpQhhGd14jziljO3Og34=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.9.1-0.20260814082531-318b4a23bb34 h1:Z2wW5IKkz3NaLsVYl2TsBjAt2jhbMsHeIUsqTFvY5XY=
-github.com/longhorn/go-spdk-helper v0.9.1-0.20260814082531-318b4a23bb34/go.mod h1:YUwrW7NQVp3WS4o/i2ModjHu7BELeJWBKtsCkBwU7xI=
+github.com/longhorn/go-spdk-helper v0.9.1-0.20260828012436-4ec507083142 h1:UjcSekzUXjujX4N/5GPAnxESwltV4D4Ud9P35OLlvR8=
+github.com/longhorn/go-spdk-helper v0.9.1-0.20260828012436-4ec507083142/go.mod h1:r9Yrw5Pi/tIOPUIU4auCGcKIOfQG3cv7XAzR+4zrnyc=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260712.0.20260821031814-5939910cc1fe h1:B3DAEnVZAShSkIm0paQNExlXrpoZJiz+6ri7LJbsQ3s=
 github.com/longhorn/longhorn-engine v1.13.0-dev-20260712.0.20260821031814-5939910cc1fe/go.mod h1:7iEHdw6nxaPnKBFEQWn60KbhwyHR9restnR+lLAxwTE=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260821025959-57f5131c863e h1:w3l5TT+PdEcfXka4BU+UfW3YJdc8hzk7YFtt3X8vzt4=
-github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260712.0.20260821025959-57f5131c863e/go.mod h1:CRAu/wISHvaJ8A0pKMidy2WqyEmjDAMyJdWc28BodN4=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260809.0.20260828020507-6c70feafc0aa h1:F5ibpbwYtXAwqL0rL1Vf7mq4xM/BkEQVTrqlJo/3vx8=
+github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260809.0.20260828020507-6c70feafc0aa/go.mod h1:aiFcIuQ2nPokqA3yR8o3siUG4krnropO9rpOG+oHVDg=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20260814104707-529643438923 h1:Zvsu1JrjCuyk15diqGt3GM5WsZF4pdwKHygIZe45xnQ=
@@ -313,8 +313,8 @@ google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa h1:
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa/go.mod h1:4Hqkh8ycfw05ld/3BWL7rJOSfebL2Q+DVDeRgYgxUU8=
 google.golang.org/grpc v1.83.0 h1:JeNZEKJFbQxArAMl+hiytHauacDNqJUllNfmIMmpqnQ=
 google.golang.org/grpc v1.83.0/go.mod h1:kDyl6SKsiHKt0uylY5gtn5cEjkrIOhQOGDgIc4JGwzQ=
-google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af h1:+5/Sw3GsDNlEmu7TfklWKPdQ0Ykja5VEmq2i817+jbI=
-google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
+google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=
+google.golang.org/protobuf v1.36.12/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
