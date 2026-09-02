@@ -7,21 +7,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260820153238-ab5179ec9ca0
 	github.com/longhorn/go-common-libs v0.0.0-20260730002911-add09e6eb92c
-<<<<<<< HEAD
-	github.com/longhorn/go-spdk-helper v0.9.1-0.20260814082531-318b4a23bb34
-	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260821031756-28866d9a7f79
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260821024438-641f387e74d2
-	github.com/longhorn/types v0.0.0-20260814104707-529643438923
-	github.com/sirupsen/logrus v1.9.4
-	github.com/urfave/cli v1.22.17
-=======
 	github.com/longhorn/go-spdk-helper v0.9.1-0.20260828012436-4ec507083142
-	github.com/longhorn/longhorn-engine v1.13.0-dev-20260809.0.20260828052751-4235b6472168
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260809.0.20260831095525-e1a9ef41b726
+	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260830070050-99c2b8cc4d0d
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260831140246-4f40fb41bba1
 	github.com/longhorn/types v0.0.0-20260831072945-0bac432e7872
 	github.com/sirupsen/logrus v1.10.0
-	github.com/urfave/cli/v3 v3.10.1
->>>>>>> f1a23df (chore(vendor): update dependencies)
+	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.12
