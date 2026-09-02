@@ -294,7 +294,6 @@ func TestSetupSPDKGRPCServer_WithTLS(t *testing.T) {
 	tlsConfig := loadTestTLSConfig(t)
 	portRange := "18506-18507"
 	listen := "localhost:18506"
-
 	server, listener, err := setupSPDKGRPCServer(ctx, portRange, listen, tlsConfig, nil)
 
 	if err != nil {

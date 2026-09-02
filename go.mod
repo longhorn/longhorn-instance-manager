@@ -2,14 +2,20 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.26.0
 
+replace (
+	github.com/longhorn/go-common-libs => github.com/COLDTURNIP/longhorn-go-common-libs v0.0.0-20260902114220-f588954a78f0
+	github.com/longhorn/longhorn-spdk-engine => github.com/COLDTURNIP/longhorn-spdk-engine v0.0.0-20260902115033-ff73eed8104b
+	github.com/longhorn/types => github.com/COLDTURNIP/longhorn-types v0.0.0-20260901081106-f341181aebaf
+)
+
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260831070834-77c184cc059a
-	github.com/longhorn/go-common-libs v0.0.0-20260830093844-bff76489ddfd
+	github.com/longhorn/go-common-libs v0.0.0-20260902114220-f588954a78f0
 	github.com/longhorn/go-spdk-helper v0.9.1-0.20260828012436-4ec507083142
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260809.0.20260901065543-e0f8f0952a6e
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260809.0.20260901011635-a650e4d8d56f
+	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260902115033-ff73eed8104b
 	github.com/longhorn/types v0.0.0-20260831072945-0bac432e7872
 	github.com/sirupsen/logrus v1.10.0
 	github.com/urfave/cli/v3 v3.10.1

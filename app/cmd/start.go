@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
-	_ "net/http/pprof" // for runtime profiling
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	_ "net/http/pprof" // for runtime profiling
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
@@ -392,7 +393,6 @@ func setupSPDKGRPCServer(ctx context.Context, portRange, listen string, serverTL
 	if err != nil {
 		return nil, nil, err
 	}
-
 	srv, err := spdk.NewServer(ctx, portStart, portEnd, spdk.NewServiceClientFactory(clientTLSConfig))
 	if err != nil {
 		return nil, nil, err

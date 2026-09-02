@@ -197,20 +197,20 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
 			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
 			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
-			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType))
+			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType), req.Spec.IpFamily)
 		if err != nil {
 			return nil, err
 		}
 		return engineResponseToInstanceResponse(engine), nil
 	case types.InstanceTypeEngineFrontend:
 		engineFrontend, err := c.EngineFrontendCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.EngineName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
-			req.Spec.TargetAddress, int32(req.Spec.SpdkInstanceSpec.UblkQueueDepth), int32(req.Spec.SpdkInstanceSpec.UblkNumberOfQueue), int32(req.Spec.SpdkInstanceSpec.NvmeTcpNrIoQueues))
+			req.Spec.TargetAddress, int32(req.Spec.SpdkInstanceSpec.UblkQueueDepth), int32(req.Spec.SpdkInstanceSpec.UblkNumberOfQueue), int32(req.Spec.SpdkInstanceSpec.NvmeTcpNrIoQueues), req.Spec.IpFamily)
 		if err != nil {
 			return nil, err
 		}
 		return engineFrontendResponseToInstanceResponse(engineFrontend), nil
 	case types.InstanceTypeReplica:
-		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName)
+		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName, req.Spec.IpFamily)
 		if err != nil {
 			return nil, err
 		}
@@ -1065,6 +1065,7 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 			ErrorMsg:   r.ErrorMsg,
 			PortStart:  r.PortStart,
 			PortEnd:    r.PortEnd,
+			IpFamily:   r.IPFamily,
 			Conditions: make(map[string]bool),
 			Uuid:       r.UUID,
 		},
@@ -1083,6 +1084,7 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 		Status: &rpc.InstanceStatus{
 			State:                  e.State,
 			ErrorMsg:               e.ErrorMsg,
+			IpFamily:               e.IPFamily,
 			PortStart:              e.Port,
 			PortEnd:                e.Port,
 			TargetPortStart:        0,
@@ -1123,6 +1125,7 @@ func engineFrontendResponseToInstanceResponse(e *spdkapi.EngineFrontend) *rpc.In
 		Status: &rpc.InstanceStatus{
 			State:           e.State,
 			ErrorMsg:        e.ErrorMsg,
+			IpFamily:        e.IPFamily,
 			TargetPortStart: int32(e.TargetPort),
 			TargetPortEnd:   int32(e.TargetPort),
 			Conditions:      make(map[string]bool),
