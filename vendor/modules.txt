@@ -361,7 +361,7 @@ github.com/longhorn/go-iscsi-helper/iscsidev
 github.com/longhorn/go-iscsi-helper/longhorndev
 github.com/longhorn/go-iscsi-helper/types
 github.com/longhorn/go-iscsi-helper/util
-# github.com/longhorn/go-spdk-helper v0.9.1-0.20260814082531-318b4a23bb34
+# github.com/longhorn/go-spdk-helper v0.9.1-0.20260828012436-4ec507083142
 ## explicit; go 1.25.10
 github.com/longhorn/go-spdk-helper/pkg/initiator
 github.com/longhorn/go-spdk-helper/pkg/jsonrpc
@@ -370,7 +370,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260821031756-28866d9a7f79
+# github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260830070050-99c2b8cc4d0d
 ## explicit; go 1.26.0
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -383,13 +383,8 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-<<<<<<< HEAD
-# github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260821024438-641f387e74d2
+# github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260831140246-4f40fb41bba1
 ## explicit; go 1.25.10
-=======
-# github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260809.0.20260831095525-e1a9ef41b726
-## explicit; go 1.26.0
->>>>>>> f1a23df (chore(vendor): update dependencies)
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
 github.com/longhorn/longhorn-spdk-engine/pkg/log
@@ -478,8 +473,8 @@ github.com/russross/blackfriday/v2
 github.com/shirou/gopsutil/v3/common
 github.com/shirou/gopsutil/v3/disk
 github.com/shirou/gopsutil/v3/internal/common
-# github.com/sirupsen/logrus v1.9.4
-## explicit; go 1.17
+# github.com/sirupsen/logrus v1.10.0
+## explicit; go 1.23
 github.com/sirupsen/logrus
 # github.com/slok/goresilience v0.2.0
 ## explicit
