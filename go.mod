@@ -9,12 +9,12 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20260730002911-add09e6eb92c
 	github.com/longhorn/go-spdk-helper v0.9.1-0.20260828012436-4ec507083142
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260830070050-99c2b8cc4d0d
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260831140246-4f40fb41bba1
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260903040037-0eb8aae6092f
 	github.com/longhorn/types v0.0.0-20260831072945-0bac432e7872
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.22.0
-	google.golang.org/grpc v1.83.0
+	google.golang.org/grpc v1.83.1
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.36.4
@@ -100,7 +100,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
