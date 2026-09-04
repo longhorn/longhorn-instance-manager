@@ -511,7 +511,8 @@ func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rp
 	}
 
 	resp = &rpc.EngineBackupRestoreStatusProxyResponse{
-		Status: map[string]*rpc.EngineBackupRestoreStatus{},
+		Status:      map[string]*rpc.EngineBackupRestoreStatus{},
+		EngineError: recv.EngineError,
 	}
 	for address, status := range recv.Status {
 		replicaURL := "tcp://" + address
