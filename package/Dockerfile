@@ -69,8 +69,8 @@ RUN export REPO_OVERRIDE="" && \
     bash /usr/src/dep-versions/scripts/build-tgt.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}"
 
 # Build spdk
-RUN export REPO_OVERRIDE="" && \
-    export COMMIT_ID_OVERRIDE="" && \
+RUN export REPO_OVERRIDE="https://github.com/c3y1huang/longhorn-spdk.git" && \
+    export COMMIT_ID_OVERRIDE="05267cda07baa2b485d8264d19db4c2e39b9116b" && \
     bash /usr/src/dep-versions/scripts/build-spdk.sh "${REPO_OVERRIDE}" "${COMMIT_ID_OVERRIDE}" "${ARCH}"
 
 # Build libjson-c-devel
