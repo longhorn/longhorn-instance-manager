@@ -7,10 +7,11 @@ import (
 
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
-
-	"github.com/longhorn/types/pkg/generated/spdkrpc"
+	"google.golang.org/protobuf/proto"
 
 	spdktypes "github.com/longhorn/longhorn-spdk-engine/pkg/types"
+	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
 )
 
 // TestSetEnv_RejectsUnsafeLoaderKeys is the direct regression test for
@@ -334,5 +335,59 @@ func TestGetV2BackupStatusFromReplicasPreservesFirstNonNotFoundError(t *testing.
 	}
 	if len(client.probed) != 2 || client.probed[0] != firstAddress || client.probed[1] != secondAddress {
 		t.Fatalf("getV2BackupStatusFromReplicas probed %v, expected [%s %s]", client.probed, firstAddress, secondAddress)
+	}
+}
+
+// TestConvertRestoreStatusToProxyResponse guards the SPDK-to-proxy restore
+// status conversion against silent field drops and verifies its two
+// transformations: the "tcp://" address prefix and DestFileName -> Filename.
+func TestConvertRestoreStatusToProxyResponse(t *testing.T) {
+	recv := &spdkrpc.RestoreStatusResponse{
+		Status: map[string]*spdkrpc.ReplicaRestoreStatusResponse{
+			"10.0.0.1:20001": {
+				IsRestoring:            true,
+				LastRestored:           "backup-1",
+				CurrentRestoringBackup: "backup-2",
+				Progress:               42,
+				Error:                  "replica error",
+				DestFileName:           "volume-head-001.img",
+				State:                  "in_progress",
+				BackupUrl:              "s3://bucket@region/path",
+			},
+		},
+		EngineError: "engine-level restore error",
+	}
+
+	resp := convertRestoreStatusToProxyResponse(recv)
+
+	if resp.EngineError != "engine-level restore error" {
+		t.Errorf("EngineError = %q, want %q", resp.EngineError, "engine-level restore error")
+	}
+	got, ok := resp.Status["tcp://10.0.0.1:20001"]
+	if !ok {
+		t.Fatalf("expected replica key %q, got keys %v", "tcp://10.0.0.1:20001", resp.Status)
+	}
+	want := &rpc.EngineBackupRestoreStatus{
+		IsRestoring:            true,
+		LastRestored:           "backup-1",
+		CurrentRestoringBackup: "backup-2",
+		Progress:               42,
+		Error:                  "replica error",
+		Filename:               "volume-head-001.img",
+		State:                  "in_progress",
+		BackupUrl:              "s3://bucket@region/path",
+	}
+	if !proto.Equal(got, want) {
+		t.Errorf("conversion mismatch:\ngot  %+v\nwant %+v", got, want)
+	}
+}
+
+func TestConvertRestoreStatusToProxyResponseEmpty(t *testing.T) {
+	resp := convertRestoreStatusToProxyResponse(&spdkrpc.RestoreStatusResponse{})
+	if resp.EngineError != "" {
+		t.Errorf("expected empty EngineError, got %q", resp.EngineError)
+	}
+	if resp.Status == nil || len(resp.Status) != 0 {
+		t.Errorf("expected non-nil empty status map, got %+v", resp.Status)
 	}
 }
