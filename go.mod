@@ -2,14 +2,16 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.26.0
 
+replace github.com/longhorn/backupstore => github.com/c3y1huang/backupstore v0.0.0-20261104003827-f04c8d3405eb
+
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20261023052728-3d3f7521be06
 	github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9
-	github.com/longhorn/go-spdk-helper v0.13.1-0.20261029031309-fbec96a41518
+	github.com/longhorn/go-spdk-helper v0.14.1-0.20261105073243-fc901c166c71
 	github.com/longhorn/longhorn-engine v1.14.0-dev-20261004.0.20261022020249-032fb18c0f00
-	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261030113344-28a7a8e50542
+	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261106030411-7e8bd6472ffd
 	github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v3 v3.14.0
@@ -49,7 +51,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.33.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.7 // indirect
-	github.com/aws/smithy-go v1.28.4 // indirect
+	github.com/aws/smithy-go v1.28.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.16.0 // indirect
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 // indirect
@@ -60,8 +62,8 @@ require (
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
-	github.com/gammazero/deque v1.2.1 // indirect
-	github.com/gammazero/workerpool v1.2.1 // indirect
+	github.com/gammazero/deque v1.2.2 // indirect
+	github.com/gammazero/workerpool v1.2.2 // indirect
 	github.com/getsentry/sentry-go v0.46.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
