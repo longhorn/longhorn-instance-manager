@@ -43,6 +43,7 @@ const (
 const (
 	ErrorMessageCannotFindValidNvmeDevice = "cannot find a valid NVMe device"
 	ErrorMessageDeviceOrResourceBusy      = "device or resource busy"
+	ErrorMessageDuplicateCntlid           = "duplicate cntlid"
 	ErrorMessageNoSuchFileOrDirectory     = "no such file or directory"
 	ErrorMessageFailedToGetInitiatorLock  = "failed to get file lock for initiator"
 	// ErrorMessageTimeoutExecuting is what go-common-libs reports when a command
@@ -97,13 +98,17 @@ type DiskStatus struct {
 }
 
 func ErrorIsDeviceOrResourceBusy(err error) bool {
-	return strings.Contains(strings.ToLower(err.Error()), ErrorMessageDeviceOrResourceBusy)
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), ErrorMessageDeviceOrResourceBusy)
 }
 
 func ErrorIsValidNvmeDeviceNotFound(err error) bool {
-	return strings.Contains(err.Error(), ErrorMessageCannotFindValidNvmeDevice)
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), ErrorMessageCannotFindValidNvmeDevice)
 }
 
 func ErrorIsTimeoutExecuting(err error) bool {
-	return err != nil && strings.Contains(err.Error(), ErrorMessageTimeoutExecuting)
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), ErrorMessageTimeoutExecuting)
+}
+
+func ErrorIsDuplicateCntlid(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), ErrorMessageDuplicateCntlid)
 }
