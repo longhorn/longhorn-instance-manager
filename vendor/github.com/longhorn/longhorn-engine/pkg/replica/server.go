@@ -17,7 +17,6 @@ type Server struct {
 	ctx                       context.Context
 	r                         *Replica
 	dir                       string
-	volumeName                string
 	sectorSize                int64
 	backing                   *backingfile.BackingFile
 	revisionCounterDisabled   bool
@@ -28,11 +27,10 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, dir string, backing *backingfile.BackingFile, sectorSize int64, disableRevCounter, unmapMarkDiskChainRemoved bool,
-	snapshotMaxCount int, snapshotMaxSize int64, encrypted bool, volumeName string) *Server {
+	snapshotMaxCount int, snapshotMaxSize int64, encrypted bool) *Server {
 	return &Server{
 		ctx:                       ctx,
 		dir:                       dir,
-		volumeName:                volumeName,
 		backing:                   backing,
 		sectorSize:                sectorSize,
 		revisionCounterDisabled:   disableRevCounter,
@@ -62,7 +60,7 @@ func (s *Server) Create(size int64) error {
 	sectorSize := s.getSectorSize()
 
 	logrus.Infof("Creating replica %s, size %d/%d", s.dir, size, sectorSize)
-	r, err := New(s.ctx, size, sectorSize, s.dir, s.backing, s.revisionCounterDisabled, s.unmapMarkDiskChainRemoved, s.snapshotMaxCount, s.snapshotMaxSize, s.encrypted, false, state, size, s.volumeName)
+	r, err := New(s.ctx, size, sectorSize, s.dir, s.backing, s.revisionCounterDisabled, s.unmapMarkDiskChainRemoved, s.snapshotMaxCount, s.snapshotMaxSize, s.encrypted, false, state, size)
 	if err != nil {
 		return err
 	}
@@ -82,7 +80,7 @@ func (s *Server) Open(isUpgrade bool, expectedBackendSize int64) error {
 	sectorSize := s.getSectorSize()
 
 	logrus.Infof("Opening replica: dir %s, size %d, sector size %d, state: %v, upgrading: %v, expected backend size: %v", s.dir, info.Size, sectorSize, state, isUpgrade, expectedBackendSize)
-	r, err := New(s.ctx, info.Size, sectorSize, s.dir, s.backing, s.revisionCounterDisabled, s.unmapMarkDiskChainRemoved, s.snapshotMaxCount, s.snapshotMaxSize, s.encrypted, isUpgrade, state, expectedBackendSize, s.volumeName)
+	r, err := New(s.ctx, info.Size, sectorSize, s.dir, s.backing, s.revisionCounterDisabled, s.unmapMarkDiskChainRemoved, s.snapshotMaxCount, s.snapshotMaxSize, s.encrypted, isUpgrade, state, expectedBackendSize)
 	if err != nil {
 		return err
 	}
