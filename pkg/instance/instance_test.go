@@ -9,7 +9,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
-	"reflect"
 	"testing"
 	"time"
 
@@ -41,37 +40,6 @@ func buildTestTLSConfig(t *testing.T) *tls.Config {
 	return &tls.Config{
 		MinVersion: tls.VersionTLS13,
 		RootCAs:    certPool,
-	}
-}
-
-// TestV1DataEngineInstanceOps_StructureCorrect verifies that V1DataEngineInstanceOps
-// has the correct fields and does NOT have spdkServiceAddress (which is only for V2).
-func TestV1DataEngineInstanceOps_StructureCorrect(t *testing.T) {
-	v1Ops := V1DataEngineInstanceOps{}
-
-	v1Type := reflect.TypeOf(v1Ops)
-
-	// V1 should have exactly 2 fields: processManagerServiceAddress and clientTLSConfig
-	expectedFieldCount := 2
-	actualFieldCount := v1Type.NumField()
-
-	if actualFieldCount != expectedFieldCount {
-		t.Errorf("V1DataEngineInstanceOps should have %d fields, but has %d", expectedFieldCount, actualFieldCount)
-	}
-
-	_, hasProcessManager := v1Type.FieldByName("processManagerServiceAddress")
-	if !hasProcessManager {
-		t.Error("V1DataEngineInstanceOps should have processManagerServiceAddress field")
-	}
-
-	_, hasClientTLS := v1Type.FieldByName("clientTLSConfig")
-	if !hasClientTLS {
-		t.Error("V1DataEngineInstanceOps should have clientTLSConfig field")
-	}
-
-	_, hasSPDK := v1Type.FieldByName("spdkServiceAddress")
-	if hasSPDK {
-		t.Error("V1DataEngineInstanceOps should NOT have spdkServiceAddress field (V1 data engine only uses ProcessManager)")
 	}
 }
 

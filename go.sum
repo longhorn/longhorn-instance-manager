@@ -14,6 +14,8 @@ github.com/Azure/azure-sdk-for-go/sdk/storage/internal v0.1.0 h1:X/bTwe0qpvmvPPu
 github.com/Azure/azure-sdk-for-go/sdk/storage/internal v0.1.0/go.mod h1:+kX7ahyFelQ42F3RScM2CFgHJljp0phc/FieKLYVpFI=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 h1:Nljr4q1GRA/5vCrMONS+g4u4LRHNgOXVSh3O43J2CnI=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0/go.mod h1:Y33QHnf0FfdVewFFISOGe20mkZbxX4H839o955/PoeI=
+github.com/COLDTURNIP/longhorn-spdk-engine v0.0.0-20261126095528-e10ec00d3c06 h1:VwuSsXbSnaazMrbnPo1Bldtp5SrrFIkhNktgha2VQlk=
+github.com/COLDTURNIP/longhorn-spdk-engine v0.0.0-20261126095528-e10ec00d3c06/go.mod h1:y/9qaFmrG03LV63Vy74G1Zd0+AyJZI9MxjI0OfybUtw=
 github.com/RoaringBitmap/roaring v1.9.4 h1:yhEIoH4YezLYT04s1nHehNO64EKFTop/wBhxv2QzDdQ=
 github.com/RoaringBitmap/roaring v1.9.4/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
 github.com/andybalholm/brotli v1.2.2 h1:HzTuoo2ErYQqf5qvcJInB8uvqSVxRttzkFexPWtnceM=
@@ -191,8 +193,6 @@ github.com/longhorn/go-spdk-helper v0.14.1-0.20261117055102-2128d458b38c h1:GjnV
 github.com/longhorn/go-spdk-helper v0.14.1-0.20261117055102-2128d458b38c/go.mod h1:ylU9MDQ8ELBH5SoVxSx7qj11GQ7pUmnHs0fKnm9Rnd0=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261116.0.20261126021152-abb9f588a936 h1:HbhUhf9Eh+iRHcbmhxJxgG+sK+PIGibH7wRgArTB5Fk=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261116.0.20261126021152-abb9f588a936/go.mod h1:XvbspDYnqZuglGvSR9VozzjqYSlD3wcUBI9z92QQze8=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261126025430-6866938be969 h1:8m/Q1wNxOPCv5aP0OwWeHXI0ao1bsVQFkIOlOdCtKrU=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261126025430-6866938be969/go.mod h1:y/9qaFmrG03LV63Vy74G1Zd0+AyJZI9MxjI0OfybUtw=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965 h1:082mjqY6STBnO4SEN7DBG+NubfUeyMlgwEQhOxC6T1o=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf h1:yY4WuDKME+/QCn2YL+k32A+z0jQl0GClYQUOdGH5NZk=
