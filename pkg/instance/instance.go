@@ -1027,8 +1027,8 @@ func processResponseToInstanceResponse(p *rpc.ProcessResponse, processType strin
 		Spec: &rpc.InstanceSpec{
 			Name: p.Spec.Name,
 			Type: processType,
-			// Deprecated
-			BackendStoreDriver: rpc.BackendStoreDriver_v1,
+			//lint:ignore SA1019 replaced with DataEngine
+			BackendStoreDriver: rpc.BackendStoreDriver_v1, // nolint: staticcheck
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V1,
 			ProcessInstanceSpec: &rpc.ProcessInstanceSpec{
 				Binary: p.Spec.Binary,
@@ -1056,8 +1056,8 @@ func replicaResponseToInstanceResponse(r *spdkapi.Replica) *rpc.InstanceResponse
 		Spec: &rpc.InstanceSpec{
 			Name: r.Name,
 			Type: types.InstanceTypeReplica,
-			// Deprecated
-			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			//lint:ignore SA1019 replaced with DataEngine
+			BackendStoreDriver: rpc.BackendStoreDriver_v2, // nolint: staticcheck
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
@@ -1076,8 +1076,8 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 		Spec: &rpc.InstanceSpec{
 			Name: e.Name,
 			Type: types.InstanceTypeEngine,
-			// Deprecated
-			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			//lint:ignore SA1019 replaced with DataEngine
+			BackendStoreDriver: rpc.BackendStoreDriver_v2, // nolint: staticcheck
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
@@ -1116,8 +1116,8 @@ func engineFrontendResponseToInstanceResponse(e *spdkapi.EngineFrontend) *rpc.In
 		Spec: &rpc.InstanceSpec{
 			Name: e.Name,
 			Type: types.InstanceTypeEngineFrontend,
-			// Deprecated
-			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			//lint:ignore SA1019 replaced with DataEngine
+			BackendStoreDriver: rpc.BackendStoreDriver_v2, // nolint: staticcheck
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
@@ -1143,8 +1143,8 @@ func shardResponseToInstanceResponse(s *spdkapi.Shard) *rpc.InstanceResponse {
 		Spec: &rpc.InstanceSpec{
 			Name: s.ShardID,
 			Type: types.InstanceTypeShard,
-			// Deprecated
-			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			//lint:ignore SA1019 replaced with DataEngine
+			BackendStoreDriver: rpc.BackendStoreDriver_v2, // nolint: staticcheck
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
@@ -1165,8 +1165,8 @@ func shardGroupResponseToInstanceResponse(sg *spdkrpc.ShardGroup) *rpc.InstanceR
 			Name:       sg.Name,
 			Type:       types.InstanceTypeShardGroup,
 			VolumeName: sg.VolumeName,
-			// Deprecated
-			BackendStoreDriver: rpc.BackendStoreDriver_v2,
+			//lint:ignore SA1019 replaced with DataEngine
+			BackendStoreDriver: rpc.BackendStoreDriver_v2, // nolint: staticcheck
 			DataEngine:         rpc.DataEngine_DATA_ENGINE_V2,
 		},
 		Status: &rpc.InstanceStatus{
