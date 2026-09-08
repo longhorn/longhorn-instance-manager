@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Liveness probe helper for the v2 data engine instance manager.
+#
+# It verifies that
+#   1. at least one spdk_tgt process exists, and
+#   2. no spdk_tgt process is stuck in a stopped or traced state (for example, after SIGSTOP).
+#
+# The script always exits with 0 (healthy) or 1 (unhealthy) and never with a shell
+# error, so a transiently missing spdk_tgt process cannot turn the probe into an
+# unexpected failure that kills the instance manager.
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') $*"
+}
+
+pids=$(pgrep -f "^spdk_tgt")
+if [[ -z "${pids}" ]]; then
+    log "spdk_tgt process is not found"
+    exit 1
+fi
+
+status=0
+for pid in ${pids}; do
+    state=$(awk '/^State:/ {print $2}' "/proc/${pid}/status" 2>/dev/null)
+    if [[ -z "${state}" ]]; then
+        log "Failed to get the state of spdk_tgt process ${pid}"
+        status=1
+        continue
+    fi
+
+    if [[ "${state}" == "T" ]] || [[ "${state}" == "t" ]]; then
+        log "spdk_tgt process ${pid} is in ${state} (stopped or traced) state"
+        status=1
+    fi
+done
+
+exit "${status}"
