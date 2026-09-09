@@ -149,6 +149,11 @@ type InstanceCreateRequest struct {
 	ShardGroup     ShardGroupCreateRequest
 	DataLayoutType rpc.DataLayoutType
 
+	// TransportType selects the NVMe-oF transport for the internal
+	// engine<->replica connections of a v2 (SPDK) volume (TCP or RDMA). The
+	// zero value is TCP, preserving the pre-existing default behavior.
+	TransportType rpc.TransportType
+
 	// Deprecated: replaced by DataEngine.
 	BackendStoreDriver string
 }
@@ -179,13 +184,14 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 		switch req.InstanceType {
 		case types.InstanceTypeEngine:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
-				Size:              req.Size,
-				ReplicaAddressMap: req.Engine.ReplicaAddressMap,
-				Frontend:          req.Engine.Frontend,
-				SalvageRequested:  req.Engine.SalvageRequested,
-				SnapshotMaxCount:  int32(req.Engine.SnapshotMaxCount),
-				UblkQueueDepth:    int32(req.Engine.UblkQueueDepth),
-				UblkNumberOfQueue: int32(req.Engine.UblkNumberOfQueue),
+				Size:                req.Size,
+				ReplicaAddressMap:   req.Engine.ReplicaAddressMap,
+				Frontend:            req.Engine.Frontend,
+				SalvageRequested:    req.Engine.SalvageRequested,
+				SnapshotMaxCount:    int32(req.Engine.SnapshotMaxCount),
+				UblkQueueDepth:      int32(req.Engine.UblkQueueDepth),
+				UblkNumberOfQueue:   int32(req.Engine.UblkNumberOfQueue),
+				TransportType: req.TransportType,
 			}
 		case types.InstanceTypeEngineFrontend:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
@@ -197,11 +203,12 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 			}
 		case types.InstanceTypeReplica:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
-				Size:             req.Size,
-				DiskName:         req.Replica.DiskName,
-				DiskUuid:         req.Replica.DiskUUID,
-				ExposeRequired:   req.Replica.ExposeRequired,
-				BackingImageName: req.Replica.BackingImageName,
+				Size:                req.Size,
+				DiskName:            req.Replica.DiskName,
+				DiskUuid:            req.Replica.DiskUUID,
+				ExposeRequired:      req.Replica.ExposeRequired,
+				BackingImageName:    req.Replica.BackingImageName,
+				TransportType: req.TransportType,
 			}
 		case types.InstanceTypeShard:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
