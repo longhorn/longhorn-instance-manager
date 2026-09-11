@@ -153,6 +153,7 @@ RUN ldconfig
 COPY bin/longhorn-instance-manager /usr/local/bin/
 COPY package/instance-manager /usr/local/bin/
 COPY package/instance-manager-v2-prestop /usr/local/bin/
+COPY package/instance-manager-v2-liveness-probe /usr/local/bin/
 COPY package/exec-logrotate /usr/local/bin/
 COPY package/start-spdk-tgt /usr/local/bin/
 
