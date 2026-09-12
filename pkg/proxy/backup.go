@@ -510,10 +510,18 @@ func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rp
 		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get restore status: %v", err)
 	}
 
-	resp = &rpc.EngineBackupRestoreStatusProxyResponse{
-		Status: map[string]*rpc.EngineBackupRestoreStatus{},
+	return convertRestoreStatusToProxyResponse(recv), nil
+}
+
+// convertRestoreStatusToProxyResponse converts the SPDK restore status into
+// the proxy gRPC response. Beyond field copying it prefixes replica addresses
+// with "tcp://" and maps DestFileName to Filename.
+func convertRestoreStatusToProxyResponse(spdkResp *spdkrpc.RestoreStatusResponse) *rpc.EngineBackupRestoreStatusProxyResponse {
+	resp := &rpc.EngineBackupRestoreStatusProxyResponse{
+		Status:      map[string]*rpc.EngineBackupRestoreStatus{},
+		EngineError: spdkResp.EngineError,
 	}
-	for address, status := range recv.Status {
+	for address, status := range spdkResp.Status {
 		replicaURL := "tcp://" + address
 		resp.Status[replicaURL] = &rpc.EngineBackupRestoreStatus{
 			IsRestoring:            status.IsRestoring,
@@ -526,7 +534,7 @@ func (ops V2DataEngineProxyOps) BackupRestoreStatus(ctx context.Context, req *rp
 			Filename:               status.DestFileName,
 		}
 	}
-	return resp, nil
+	return resp
 }
 
 // setEnv exports caller-supplied KEY=VALUE entries into the process
