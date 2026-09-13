@@ -11,7 +11,7 @@ require (
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20260830070050-99c2b8cc4d0d
 	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20260909081303-a8855eeeda66
 	github.com/longhorn/types v0.0.0-20260831072945-0bac432e7872
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.2
