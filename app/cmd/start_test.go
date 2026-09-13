@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	commonnet "github.com/longhorn/go-common-libs/net"
+
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
 )
 
@@ -295,7 +297,7 @@ func TestSetupSPDKGRPCServer_WithTLS(t *testing.T) {
 	portRange := "18506-18507"
 	listen := "localhost:18506"
 
-	server, listener, err := setupSPDKGRPCServer(ctx, portRange, listen, tlsConfig, nil)
+	server, listener, err := setupSPDKGRPCServer(ctx, portRange, listen, tlsConfig, nil, commonnet.IPFamilyUnspecified)
 
 	if err != nil {
 		t.Fatalf("setupSPDKGRPCServer should not return error with valid TLS config: %v", err)
