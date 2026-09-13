@@ -11,7 +11,7 @@ require (
 	github.com/longhorn/longhorn-engine v1.13.0-rc1
 	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20260907102425-963d8500c439
 	github.com/longhorn/types v0.0.0-20260831072945-0bac432e7872
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v3 v3.11.0
 	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.2
@@ -99,7 +99,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
