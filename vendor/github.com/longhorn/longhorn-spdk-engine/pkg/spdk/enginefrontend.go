@@ -1225,7 +1225,7 @@ func (ef *EngineFrontend) Expand(ctx context.Context, spdkClient *spdkclient.Cli
 			// the reconnected controller to reach the live state before reporting the
 			// expansion complete, so the new size is not published on a path that is still
 			// reconnecting.
-			if ef.Frontend == types.FrontendSPDKTCPBlockdev {
+			if frontend == types.FrontendSPDKTCPBlockdev {
 				if err := ef.waitForNvmeTCPControllerLive(targetIP, targetPort); err != nil {
 					expansionError = errors.Wrapf(err, "NVMe controller did not reach live state after expanding engine %s", engineName).Error()
 					expansionFailedAt = time.Now().UTC().Format(time.RFC3339Nano)
