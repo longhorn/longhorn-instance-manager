@@ -2731,35 +2731,7 @@ func (e *Engine) waitForRestoreComplete() error {
 		retrygo.DelayType(retrygo.FixedDelay),
 		retrygo.Attempts(0), // retry forever until success or unrecoverable error
 	).Do(
-		func() error {
-			e.restore.RLock()
-			restoreProgress := e.restore.Progress
-			restoreError := e.restore.Error
-			restoreState := e.restore.State
-			e.restore.RUnlock()
-
-			if restoreState == btypes.ProgressStateCanceled {
-				return retrygo.Unrecoverable(fmt.Errorf("%v", btypes.ErrorMsgRestoreCancelled))
-			}
-			if restoreProgress == 100 {
-				e.log.Infof("Backup restore is done: %v%%", restoreProgress)
-				return nil
-			}
-
-			e.log.WithFields(logrus.Fields{
-				"progress":     restoreProgress,
-				"state":        restoreState,
-				"snapshotName": e.RestoringSnapshotName,
-			}).Debug("Restore is still in progress")
-
-			if restoreError != "" {
-				err := fmt.Errorf("%v", restoreError)
-				e.log.WithError(err).Error("Found backup restoration error")
-				return retrygo.Unrecoverable(err)
-			}
-
-			return fmt.Errorf("restore is still in progress")
-		},
+		e.waitForRestoreCompleteOnce,
 	)
 
 	if err != nil {
@@ -2767,6 +2739,40 @@ func (e *Engine) waitForRestoreComplete() error {
 	}
 
 	return nil
+}
+
+func (e *Engine) waitForRestoreCompleteOnce() error {
+	e.restore.RLock()
+	restoreProgress := e.restore.Progress
+	restoreError := e.restore.Error
+	restoreState := e.restore.State
+	volumeDevClosed := e.restore.VolumeDevClosed
+	e.restore.RUnlock()
+
+	if restoreState == btypes.ProgressStateCanceled {
+		return retrygo.Unrecoverable(fmt.Errorf("%v", btypes.ErrorMsgRestoreCancelled))
+	}
+	if restoreError != "" {
+		err := fmt.Errorf("%v", restoreError)
+		e.log.WithError(err).Error("Found backup restoration error")
+		return retrygo.Unrecoverable(err)
+	}
+	if restoreState == btypes.ProgressStateError {
+		return retrygo.Unrecoverable(fmt.Errorf("backup restoration failed without a recorded error"))
+	}
+	if restoreProgress == 100 && volumeDevClosed {
+		e.log.Infof("Backup restore is done: %v%%", restoreProgress)
+		return nil
+	}
+
+	e.log.WithFields(logrus.Fields{
+		"progress":        restoreProgress,
+		"state":           restoreState,
+		"volumeDevClosed": volumeDevClosed,
+		"snapshotName":    e.RestoringSnapshotName,
+	}).Debug("Restore is still in progress")
+
+	return fmt.Errorf("restore is still in progress")
 }
 
 func (e *Engine) RestoreStatus() (*spdkrpc.RestoreStatusResponse, error) {
