@@ -173,7 +173,7 @@ func (i *Initiator) newLock(operation string) (*initiatorLock, error) {
 	lockFile := i.lockFilePath()
 	lock := commonns.NewLock(lockFile, LockTimeout)
 	if err := lock.Lock(); err != nil {
-		return nil, errors.Wrapf(err, "failed to get file lock for initiator %s", i.Name)
+		return nil, errors.Wrapf(err, types.ErrorMessageFailedToGetInitiatorLock+" %s", i.Name)
 	}
 
 	il := &initiatorLock{
@@ -266,22 +266,6 @@ func (i *Initiator) ConnectNVMeTCPPath(transportAddress, transportServiceID stri
 // path when present and otherwise establishes a new multipath connection.
 func (i *Initiator) ReconnectNVMeTCPPath(transportAddress, transportServiceID string) error {
 	return i.executeNVMeTCPPathOp(transportAddress, transportServiceID, "reconnect", i.ensureNVMeTCPPathWithoutLock)
-}
-
-// DisconnectNVMeTCPTarget disconnects a target
-func (i *Initiator) DisconnectNVMeTCPTarget() error {
-	if i.NVMeTCPInfo == nil {
-		return fmt.Errorf("failed to DisconnectNVMeTCPTarget because nvmeTCPInfo is nil")
-	}
-	if i.hostProc != "" {
-		lock, err := i.newLock("DisconnectNVMeTCPTarget")
-		if err != nil {
-			return err
-		}
-		defer lock.Unlock()
-	}
-
-	return DisconnectTarget(i.NVMeTCPInfo.SubsystemNQN, i.executor)
 }
 
 func (i *Initiator) connectNVMeTCPPathWithoutLock(transportAddress, transportServiceID string) error {
@@ -450,6 +434,35 @@ func (i *Initiator) resumeLinearDmDevice() error {
 	return util.DmsetupResume(i.Name, i.executor)
 }
 
+// isDmDeviceTargetUpToDate reports whether the linear dm device already maps the
+// device the initiator resolved to.
+//
+// With NVMe native multipath every path of a subsystem shares one namespace head
+// (e.g. /dev/nvme0n1), so reconnecting to a new target address usually yields the
+// very same block device the dm table was built on.
+func (i *Initiator) isDmDeviceTargetUpToDate() (bool, error) {
+	if i.dev == nil || i.dev.Source.Name == "" {
+		return false, fmt.Errorf("initiator device source is not initialized")
+	}
+
+	depDevices, err := i.findDependentDevices(i.Name)
+	if err != nil {
+		return false, err
+	}
+	if len(depDevices) != 1 || depDevices[0] != i.dev.Source.Name {
+		return false, nil
+	}
+
+	// A name outlives the device that carried it, so a table left over from a previous
+	// target can name the current device without mapping it.
+	major, minor, err := util.GetDeviceNumbers(filepath.Join("/dev", depDevices[0]), i.executor)
+	if err != nil {
+		return false, err
+	}
+
+	return major == i.dev.Source.Major && minor == i.dev.Source.Minor, nil
+}
+
 func (i *Initiator) replaceDmDeviceTarget() error {
 	deferredRemove, err := i.IsDeferredRemoveSet()
 	if err != nil {
@@ -464,8 +477,27 @@ func (i *Initiator) replaceDmDeviceTarget() error {
 		return errors.Wrapf(err, "failed to check if linear dm device is suspended for initiator %s", i.Name)
 	}
 
+	// Reloading an identical table still requires a suspend, which blocks until the
+	// I/O queued on the target device drains. That is exactly what cannot happen while
+	// the old path of the namespace head is still being torn down, so skip the whole
+	// dance when the table needs no change at all.
+	upToDate, err := i.isDmDeviceTargetUpToDate()
+	if err != nil {
+		i.logger.WithError(err).Warn("Failed to check whether the linear dm device already maps the current device, falling back to replacing the target")
+	} else if upToDate {
+		i.logger.Info("Linear dm device already maps the current device, skipping the target replacement")
+		if suspended {
+			if err := i.resumeLinearDmDevice(); err != nil {
+				return errors.Wrapf(err, "failed to resume linear dm device for initiator %s", i.Name)
+			}
+		}
+		return i.loadDmDeviceNumbers()
+	}
+
 	if !suspended {
-		if err := i.suspendLinearDmDevice(true, false); err != nil {
+		// Never freeze the filesystem here: the target device is being replaced because
+		// the previous one is gone, so the sync that lockfs performs would never finish.
+		if err := i.suspendLinearDmDevice(true, true); err != nil {
 			return errors.Wrapf(err, "failed to suspend linear dm device for initiator %s", i.Name)
 		}
 	}
@@ -545,14 +577,15 @@ func (i *Initiator) StartNvmeTCPInitiator(transportAddress, transportServiceID s
 
 	if dmDeviceAndEndpointCleanupRequired {
 		if dmDeviceIsBusy {
-			// Endpoint is already created, just replace the target device
-			i.logger.Info("Linear dm device is busy, trying the best to replace the target device for NVMe/TCP initiator")
+			// Endpoint is already created, just replace the target device. The stale paths
+			// are deliberately left alone: the dm device still holds the namespace, so
+			// deleting a controller here would only re-enable the kernel's I/O requeueing.
+			i.logger.Info("Linear dm device is busy, replacing the target device for NVMe/TCP initiator")
 			if err := i.replaceDmDeviceTarget(); err != nil {
-				i.logger.WithError(err).Warnf("Failed to replace the target device for NVMe/TCP initiator")
-			} else {
-				i.logger.Info("Successfully replaced the target device for NVMe/TCP initiator")
-				dmDeviceIsBusy = false
+				return dmDeviceIsBusy, errors.Wrapf(err, "failed to replace the target device of the busy linear dm device for NVMe/TCP initiator %s", i.Name)
 			}
+			i.logger.Info("Successfully replaced the target device for NVMe/TCP initiator")
+			dmDeviceIsBusy = false
 		} else {
 			i.logger.Info("Creating linear dm device for NVMe/TCP initiator")
 			if err := i.createLinearDmDevice(); err != nil {
@@ -731,13 +764,12 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 	if dmDeviceAndEndpointCleanupRequired {
 		if dmDeviceIsBusy {
 			// Endpoint is already created, just replace the target device
-			i.logger.Info("Linear dm device is busy, trying the best to replace the target device for ublk initiator")
+			i.logger.Info("Linear dm device is busy, replacing the target device for ublk initiator")
 			if err := i.replaceDmDeviceTarget(); err != nil {
-				i.logger.WithError(err).Warnf("Failed to replace the target device for ublk initiator")
-			} else {
-				i.logger.Info("Successfully replaced the target device for ublk initiator")
-				dmDeviceIsBusy = false
+				return dmDeviceIsBusy, errors.Wrapf(err, "failed to replace the target device of the busy linear dm device for ublk initiator %s", i.Name)
 			}
+			i.logger.Info("Successfully replaced the target device for ublk initiator")
+			dmDeviceIsBusy = false
 		} else {
 			i.logger.Info("Creating linear dm device for ublk initiator")
 			if err := i.createLinearDmDevice(); err != nil {
@@ -996,6 +1028,10 @@ func (i *Initiator) stopWithoutLock(spdkClient *client.Client, dmDeviceAndEndpoi
 					if returnErrorForBusyDevice {
 						return true, err
 					}
+					// The removal genuinely failed. Callers that tolerate a busy device
+					// only see the boolean, so record the reason here, otherwise a stop
+					// that did not stop anything looks like a success.
+					i.logger.WithError(err).Warn("Linear dm device is still busy, the stop left it in place")
 					dmDeviceIsBusy = true
 				} else {
 					return false, err
@@ -1011,7 +1047,7 @@ func (i *Initiator) stopWithoutLock(spdkClient *client.Client, dmDeviceAndEndpoi
 
 	// stopping NvmeTcp initiator
 	if i.NVMeTCPInfo != nil {
-		err = DisconnectTarget(i.NVMeTCPInfo.SubsystemNQN, i.executor)
+		err = DisconnectUsableTargetPaths(i.NVMeTCPInfo.SubsystemNQN, i.executor)
 		if err != nil {
 			return dmDeviceIsBusy, errors.Wrapf(err, "failed to disconnect target for NVMe/TCP initiator %s", i.Name)
 		}
@@ -1103,7 +1139,7 @@ func (i *Initiator) WaitForControllerLive(transportAddress, transportServiceID s
 				for _, path := range sys.Paths {
 					controllerIP, controllerPort := GetIPAndPortFromControllerAddress(path.Address)
 					if util.IsSameNvmeAddr(controllerIP, transportAddress) && controllerPort == transportServiceID {
-						if path.State == "live" {
+						if path.State == NvmeControllerStateLive {
 							i.logger.Infof("NVMe controller %s for %s:%s reached live state",
 								path.Name, transportAddress, transportServiceID)
 							return nil
@@ -1194,11 +1230,26 @@ func selectControllerForNVMeDevice(device Device, transportAddress, transportSer
 	}
 
 	if transportAddress != "" && transportServiceID != "" {
+		matched := Controller{}
+		found := false
 		for _, controller := range device.Controllers {
 			controllerAddress, controllerServiceID := GetIPAndPortFromControllerAddress(controller.Address)
-			if util.IsSameNvmeAddr(controllerAddress, transportAddress) && controllerServiceID == transportServiceID {
+			if !util.IsSameNvmeAddr(controllerAddress, transportAddress) || controllerServiceID != transportServiceID {
+				continue
+			}
+			if controller.State == NvmeControllerStateLive {
 				return controller, nil
 			}
+			// A stop that leaves a dead path behind and a reconnect to the same target
+			// put two controllers on one address.
+			if !found {
+				matched, found = controller, true
+			}
+		}
+		if found {
+			logrus.Warnf("No live NVMe controller at address %s:%s for subsystem %s, using %s in %q state",
+				transportAddress, transportServiceID, device.SubsystemNQN, matched.Controller, matched.State)
+			return matched, nil
 		}
 	}
 
@@ -1210,8 +1261,16 @@ func selectControllerForNVMeDevice(device Device, transportAddress, transportSer
 		}
 	}
 
-	logrus.Warnf("No NVMe controller matched address %s:%s or recorded name %q for subsystem %s, falling back to first controller %s",
-		transportAddress, transportServiceID, recordedControllerName, device.SubsystemNQN, device.Controllers[0].Controller)
+	// A dead path left over from a previous target is indistinguishable from the
+	// current one by position, so never let it win the fallback.
+	for _, controller := range device.Controllers {
+		if controller.State == NvmeControllerStateLive {
+			return controller, nil
+		}
+	}
+
+	logrus.Warnf("No NVMe controller matched address %s:%s or recorded name %q for subsystem %s and none is live, falling back to first controller %s in %q state",
+		transportAddress, transportServiceID, recordedControllerName, device.SubsystemNQN, device.Controllers[0].Controller, device.Controllers[0].State)
 	return device.Controllers[0], nil
 }
 
@@ -1305,14 +1364,48 @@ func (i *Initiator) removeEndpoint() error {
 	return nil
 }
 
+// isDmDeviceExist asks device-mapper whether the linear dm device exists.
+//
+// The node under /dev/mapper is created by udev, which lags or blocks entirely when a
+// backing device is unresponsive. Trusting it makes a live dm device look absent, and
+// the following create then fails with EBUSY forever.
+func (i *Initiator) isDmDeviceExist() (bool, error) {
+	devices, err := util.DmsetupInfo(i.Name, i.executor)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "device does not exist") {
+			return false, nil
+		}
+		return false, err
+	}
+
+	for _, device := range devices {
+		if device.Name == i.Name {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (i *Initiator) removeLinearDmDevice(force, deferred bool) error {
-	dmDevPath := getDmDevicePath(i.Name)
-	if _, err := os.Stat(dmDevPath); err != nil {
+	exist, err := i.isDmDeviceExist()
+	if err != nil {
 		return err
+	}
+	if !exist {
+		return os.ErrNotExist
 	}
 
 	i.logger.Info("Removing linear dm device")
-	return util.DmsetupRemove(i.Name, force, deferred, i.executor)
+	if err := util.DmsetupRemove(i.Name, force, deferred, i.executor); err != nil {
+		return err
+	}
+
+	// Nothing announces the removal now, so drop the node instead of leaving one that
+	// points at a device that is gone.
+	if err := util.DmsetupMknodes("", i.executor); err != nil {
+		i.logger.WithError(err).Warn("Failed to reconcile the device mapper nodes after removing the linear dm device")
+	}
+	return nil
 }
 
 func (i *Initiator) createLinearDmDevice() error {
@@ -1334,13 +1427,33 @@ func (i *Initiator) createLinearDmDevice() error {
 		return err
 	}
 
+	// dmsetup no longer waits for udev, so the node is ours to publish.
+	if err := util.DmsetupMknodes(i.Name, i.executor); err != nil {
+		i.logger.WithError(err).Warn("Failed to create the node of the linear dm device, falling back to udev")
+	}
+
 	dmDevPath := getDmDevicePath(i.Name)
 	if err := i.validateDiskCreation(dmDevPath, validateDiskCreationMaxRetries, validateDiskCreationRetryInterval); err != nil {
 		return err
 	}
 
-	// Get the device numbers
-	major, minor, err := util.GetDeviceNumbers(dmDevPath, i.executor)
+	return i.loadDmDeviceNumbers()
+}
+
+// loadDmDeviceNumbers records the device numbers of the linear dm device as the
+// export of the initiator, which is what the endpoint device node is created from.
+func (i *Initiator) loadDmDeviceNumbers() error {
+	if i.dev == nil {
+		return fmt.Errorf("found nil device for linear dm device number loading")
+	}
+
+	// The numbers are read through the /dev/mapper node, and callers that did not just
+	// create the device have no other reason to have published it.
+	if err := util.DmsetupMknodes(i.Name, i.executor); err != nil {
+		i.logger.WithError(err).Warn("Failed to create the node of the linear dm device, falling back to udev")
+	}
+
+	major, minor, err := util.GetDeviceNumbers(getDmDevicePath(i.Name), i.executor)
 	if err != nil {
 		return err
 	}
@@ -1513,18 +1626,7 @@ func (i *Initiator) reloadLinearDmDevice() error {
 		return err
 	}
 
-	// Reload the device numbers
-	dmDevPath := getDmDevicePath(i.Name)
-	major, minor, err := util.GetDeviceNumbers(dmDevPath, i.executor)
-	if err != nil {
-		return err
-	}
-
-	i.dev.Export.Name = i.Name
-	i.dev.Export.Major = major
-	i.dev.Export.Minor = minor
-
-	return nil
+	return i.loadDmDeviceNumbers()
 }
 
 func getDmDevicePath(name string) string {
