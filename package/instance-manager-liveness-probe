@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Liveness probe helper for the instance manager (--data-engine v1|v2, default v1).
+#
+# It verifies that
+#   1. all instance manager service ports are reachable,
+#   2. for v2, at least one spdk_tgt process exists, and
+#   3. for v2, no spdk_tgt process is stuck in a stopped or traced state (for example, after SIGSTOP).
+#
+# The script always exits with 0 (healthy) or 1 (unhealthy) and never with a shell
+# error, so a transiently missing spdk_tgt process cannot turn the probe into an
+# unexpected failure that kills the instance manager.
+INSTANCE_MANAGER_PROCESS_MANAGER_SERVICE_PORT=8500
+INSTANCE_MANAGER_PROXY_SERVICE_PORT=8501
+INSTANCE_MANAGER_DISK_SERVICE_PORT=8502
+INSTANCE_MANAGER_INSTANCE_SERVICE_PORT=8503
+INSTANCE_MANAGER_SPDK_SERVICE_PORT=8504
+DEFAULT_DATA_ENGINE=v1
+DEFAULT_LIVENESS_PROBE_TIMEOUT=10
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') $*"
+}
+
+# Sets the global data_engine variable (default v1) from the script arguments.
+parse_args() {
+    data_engine="${DEFAULT_DATA_ENGINE}"
+    liveness_probe_timeout="${DEFAULT_LIVENESS_PROBE_TIMEOUT}"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --data-engine)
+                if [[ $# -lt 2 ]]; then
+                    log "Missing value for --data-engine"
+                    exit 1
+                fi
+                data_engine="$2"
+                shift 2
+                ;;
+            --timeout)
+                if [[ $# -lt 2 ]]; then
+                    log "Missing value for --timeout"
+                    exit 1
+                fi
+                liveness_probe_timeout="$2"
+                shift 2
+                ;;
+            *)
+                log "Unknown argument: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    if [[ "${data_engine}" != "v1" && "${data_engine}" != "v2" ]]; then
+        log "Invalid data engine: ${data_engine}; expected v1 or v2"
+        exit 1
+    fi
+}
+
+# Checks that all instance manager service ports are reachable, exiting 1 on the first failure.
+check_services() {
+    local ports=(
+        "${INSTANCE_MANAGER_PROCESS_MANAGER_SERVICE_PORT}"
+        "${INSTANCE_MANAGER_PROXY_SERVICE_PORT}"
+        "${INSTANCE_MANAGER_DISK_SERVICE_PORT}"
+        "${INSTANCE_MANAGER_INSTANCE_SERVICE_PORT}"
+    )
+    if [[ "${data_engine}" == "v2" ]]; then
+        ports+=("${INSTANCE_MANAGER_SPDK_SERVICE_PORT}")
+    fi
+
+    local pids=()
+    local port
+    # Parallelly check for each port
+    for port in "${ports[@]}"; do
+        (
+            # Check if the port is reachable within the specified timeout
+            if ! nc -zv -w "${liveness_probe_timeout}" localhost "${port}" > /dev/null 2>&1; then
+                log "Instance manager service port ${port} is not reachable"
+                exit 1
+            fi
+        ) &
+        pids+=($!)
+    done
+
+    local status=0
+    local pid
+    for pid in "${pids[@]}"; do
+        if ! wait "${pid}"; then
+            status=1
+        fi
+    done
+
+    if [[ "${status}" -ne 0 ]]; then
+        exit 1
+    fi
+}
+
+# Checks that at least one spdk_tgt process exists and none is stopped or traced.
+check_spdk_tgt() {
+    local pids
+    pids=$(pgrep -f "^spdk_tgt")
+    if [[ -z "${pids}" ]]; then
+        log "spdk_tgt process is not found"
+        exit 1
+    fi
+
+    local status=0
+    local pid state
+    for pid in ${pids}; do
+        state=$(awk '/^State:/ {print $2}' "/proc/${pid}/status" 2>/dev/null)
+        if [[ -z "${state}" ]]; then
+            log "Failed to get the state of spdk_tgt process ${pid}"
+            status=1
+            continue
+        fi
+
+        # Check if the spdk_tgt process is stopped (T/t) or zombie (Z)
+        if [[ "${state}" == "T" ]] || [[ "${state}" == "t" ]] || [[ "${state}" == "Z" ]]; then
+            log "spdk_tgt process ${pid} is in ${state} (stopped or traced) state"
+            status=1
+        fi
+    done
+
+    exit "${status}"
+}
+
+main() {
+    parse_args "$@"
+    check_services
+
+    if [[ "${data_engine}" == "v2" ]]; then
+        check_spdk_tgt
+    fi
+
+    exit 0
+}
+
+main "$@"
