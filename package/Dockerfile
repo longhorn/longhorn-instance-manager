@@ -150,11 +150,12 @@ RUN find /usr/lib64 -depth -type f -name 'wininst-*.exe' -exec rm -f {} \;
 
 RUN ldconfig
 
-COPY bin/longhorn-instance-manager /usr/local/bin/
-COPY package/instance-manager /usr/local/bin/
-COPY package/instance-manager-v2-prestop /usr/local/bin/
-COPY package/exec-logrotate /usr/local/bin/
-COPY package/start-spdk-tgt /usr/local/bin/
+COPY --chmod=0755 bin/longhorn-instance-manager /usr/local/bin/
+COPY --chmod=0755 package/instance-manager /usr/local/bin/
+COPY --chmod=0755 package/instance-manager-v2-prestop /usr/local/bin/
+COPY --chmod=0755 package/instance-manager-liveness-probe /usr/local/bin/
+COPY --chmod=0755 package/exec-logrotate /usr/local/bin/
+COPY --chmod=0755 package/start-spdk-tgt /usr/local/bin/
 
 # Verify the dependencies for the binaries
 RUN ldd /usr/local/bin/* /usr/local/sbin/* /usr/sbin/* | grep "not found" && exit 1 || true
