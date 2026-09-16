@@ -934,6 +934,9 @@ func (i *Initiator) discoverAndConnectNVMeTCPTarget(transportAddress, transportS
 			i.logger.Infof("Connecting to NVMe/TCP target %s:%s with subsystemNQN %s", transportAddress, transportServiceID, subsystemNQN)
 			controllerName, e = ConnectTargetWithNrIoQueues(transportAddress, transportServiceID, subsystemNQN, i.nrIoQueues(), i.executor)
 			if e != nil {
+				if types.ErrorIsDuplicateCntlid(e) {
+					return retry.Unrecoverable(errors.Wrapf(e, "connect NVMe/TCP target %s:%s (nqn=%s) failed", transportAddress, transportServiceID, subsystemNQN))
+				}
 				// "already connected" means the path is present in the kernel
 				// but GetDevices() couldn't find a namespace device yet (e.g.
 				// multipath ANA inaccessible). Since the goal is to ensure
