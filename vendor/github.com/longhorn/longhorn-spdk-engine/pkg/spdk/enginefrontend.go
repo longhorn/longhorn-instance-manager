@@ -70,6 +70,12 @@ type EngineFrontend struct {
 	lastExpansionFailedAt string
 	lastExpansionError    string
 
+	// transientDeviceStateSince is when validation first tolerated a transient
+	// NVMe device state, and zero once validation has read the device again.
+	transientDeviceStateSince time.Time
+	// lastTransientDeviceStateAt is when validation last tolerated one.
+	lastTransientDeviceStateAt time.Time
+
 	// UpdateCh should not be protected by the engine lock
 	UpdateCh chan interface{}
 
@@ -141,7 +147,53 @@ const (
 	// to the recovery path — normal creation and switchover paths use the
 	// full retry loop in the initiator package.
 	recoveryTargetReachabilityTimeout = 5 * time.Second
+
+	// maxTransientDeviceStateDuration is how long validation keeps reporting a
+	// frontend as running while the kernel is between NVMe device states. A
+	// reconnect to a target that is still there resolves in seconds; past this
+	// point the target is most likely gone for good, and only the error state
+	// gets the controller to rebuild the frontend against the current target.
+	maxTransientDeviceStateDuration = 3 * time.Minute
+
+	// transientDeviceStateClearInterval is how long the device has to read cleanly
+	// before the tolerance above starts over. A frontend whose target has moved
+	// alternates between reading the device and failing on it, so a single good
+	// read is not recovery and must not put the deadline out of reach.
+	transientDeviceStateClearInterval = 30 * time.Second
 )
+
+const (
+	// nvmeControllerStateConnecting is the bare nvme-cli state of a path the kernel
+	// is still bringing up.
+	nvmeControllerStateConnecting = "connecting"
+	// nvmeControllerStateResetting is the bare nvme-cli state of a path the kernel is
+	// re-establishing after an error.
+	nvmeControllerStateResetting = "resetting"
+)
+
+// transientNvmeDeviceStates are the states a path can be reported in while the
+// kernel is still working on it, or while the device the frontend wants is not
+// the one the path leads to.
+var transientNvmeDeviceStates = []string{
+	nvmeControllerStateConnecting,
+	nvmeControllerStateResetting,
+	initiator.NvmeControllerStateLive,
+	initiator.NvmeControllerStateDeleting,
+}
+
+func isTransientNvmeDeviceStateError(err error) bool {
+	for _, state := range transientNvmeDeviceStates {
+		if strings.Contains(err.Error(), fmt.Sprintf("%s state", state)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (ef *EngineFrontend) forgetTransientDeviceState() {
+	ef.transientDeviceStateSince = time.Time{}
+	ef.lastTransientDeviceStateAt = time.Time{}
+}
 
 type NvmeTCPPath struct {
 	TargetIP   string
@@ -2539,13 +2591,30 @@ func (ef *EngineFrontend) validateAndUpdateNvmeTcpFrontend() (err error) {
 			return fmt.Errorf("invalid initiator with nil NvmeTcpInfo")
 		}
 		if err := ef.loadInitiatorNVMeDeviceInfo(ef.initiator.NVMeTCPInfo.TransportAddress, ef.initiator.NVMeTCPInfo.TransportServiceID, ef.initiator.NVMeTCPInfo.SubsystemNQN); err != nil {
-			if strings.Contains(err.Error(), "connecting state") ||
-				strings.Contains(err.Error(), "resetting state") ||
-				strings.Contains(err.Error(), "live state") {
-				ef.log.WithError(err).Warn("Ignored to validate and update engine frontend, because the device is still in a transient state")
+			if isTransientNvmeDeviceStateError(err) {
+				now := time.Now()
+				if ef.transientDeviceStateSince.IsZero() {
+					ef.transientDeviceStateSince = now
+				}
+				ef.lastTransientDeviceStateAt = now
+				if waited := now.Sub(ef.transientDeviceStateSince); waited < maxTransientDeviceStateDuration {
+					ef.log.WithError(err).Warnf("Ignored to validate and update engine frontend, because the device has been in a transient state for %v", waited.Truncate(time.Second))
+					return nil
+				}
+				ef.forgetTransientDeviceState()
+				return errors.Wrapf(err, "device of engine frontend %s stayed in a transient state for over %v", ef.Name, maxTransientDeviceStateDuration)
+			}
+			// Losing the race for the per-volume initiator lock says nothing about the
+			// health of the frontend, so leave the state to the next validation round.
+			if strings.Contains(err.Error(), helpertypes.ErrorMessageFailedToGetInitiatorLock) {
+				ef.log.WithError(err).Warn("Ignored to validate and update engine frontend, because another operation holds the initiator lock")
 				return nil
 			}
 			return err
+		}
+		// A clean read can be intermittent while a stale target path is still present.
+		if !ef.transientDeviceStateSince.IsZero() && time.Since(ef.lastTransientDeviceStateAt) >= transientDeviceStateClearInterval {
+			ef.forgetTransientDeviceState()
 		}
 		if err := ef.loadInitiatorEndpoint(ef.dmDeviceIsBusy); err != nil {
 			return err
