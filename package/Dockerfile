@@ -8,7 +8,8 @@ ARG SRC_TAG
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n install jq wget
+RUN zypper -n install jq wget && \
+    rm -rf /var/cache/zypp/*
 
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
@@ -43,7 +44,8 @@ ARG SRC_TAG
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python311 python311-pip fuse3-devel jq nasm
+RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python311 python311-pip fuse3-devel jq nasm && \
+    rm -rf /var/cache/zypp/*
 
 RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
     ln -sf /usr/bin/python3.11 /usr/local/bin/python3 && \
@@ -92,15 +94,14 @@ ARG ARCH=amd64
 RUN zypper -n ref && \
     zypper update -y
 
-RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper netcat fuse3-devel logrotate libcmocka-devel
+RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper netcat libfuse3-3 logrotate && \
+    zypper -n install cifs-utils && \
+    zypper -n install sg3_utils iproute2 && \
+    zypper -n install util-linux-systemd nfs-client nfs4-acl-tools && \
+    zypper clean -a
 
 RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
     ln -sf /usr/bin/python3.11 /usr/local/bin/python3
-
-RUN zypper -n install cifs-utils
-RUN zypper -n install sg3_utils iproute2
-RUN zypper -n install util-linux-systemd nfs-client nfs4-acl-tools
-RUN zypper clean -a
 
 # Install SPDK dependencies
 COPY --from=cbuilder /usr/src/spdk/scripts /usr/src/spdk/scripts
