@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
 
@@ -31,7 +32,7 @@ func DmsetupCreate(dmDeviceName, table string, executor *commonns.Executor) erro
 }
 
 // DmsetupSuspend suspends the device mapper device with the given name
-func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, executor *commonns.Executor) error {
+func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, timeout time.Duration, executor *commonns.Executor) error {
 	opts := []string{
 		"suspend", dmDeviceName,
 	}
@@ -44,25 +45,25 @@ func DmsetupSuspend(dmDeviceName string, noflush, nolockfs bool, executor *commo
 		opts = append(opts, "--nolockfs")
 	}
 
-	_, err := executor.Execute(nil, dmsetupBinary, opts, types.DmsetupTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, timeout)
 	return err
 }
 
 // DmsetupResume resumes the suspended device mapper device with the given name
-func DmsetupResume(dmDeviceName string, executor *commonns.Executor) error {
+func DmsetupResume(dmDeviceName string, timeout time.Duration, executor *commonns.Executor) error {
 	opts := []string{
 		"resume", dmDeviceName,
 	}
-	_, err := executor.Execute(nil, dmsetupBinary, opts, types.DmsetupTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, timeout)
 	return err
 }
 
 // DmsetupReload reloads the table of the device mapper device with the given name and table
-func DmsetupReload(dmDeviceName, table string, executor *commonns.Executor) error {
+func DmsetupReload(dmDeviceName, table string, timeout time.Duration, executor *commonns.Executor) error {
 	opts := []string{
 		"reload", dmDeviceName, "--table", table,
 	}
-	_, err := executor.Execute(nil, dmsetupBinary, opts, types.DmsetupTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, timeout)
 	return err
 }
 

@@ -175,12 +175,12 @@ github.com/longhorn/go-common-libs v0.0.0-20260907073218-e53e6775eb8a h1:wrhPwDD
 github.com/longhorn/go-common-libs v0.0.0-20260907073218-e53e6775eb8a/go.mod h1:pjOR2fdQA0dNp3is1xfA+Ni2PjPDP+JuOoSEjdL2cfQ=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4 h1:i4yKScA3sFjO9wJUMqlIQ0JjpQhhGd14jziljO3Og34=
 github.com/longhorn/go-iscsi-helper v0.0.0-20260625081921-94479d1d3cf4/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.9.1-0.20260915235134-7ca6b45f840f h1:edXKLOP6KkTE2Ix7aO0mKVcZTXGdImJdFMV+0X9d9XI=
-github.com/longhorn/go-spdk-helper v0.9.1-0.20260915235134-7ca6b45f840f/go.mod h1:+Rv4u2k9uiDJGBT4IqtOSQ2XSOHsKIgQUz4dFqXmiCQ=
+github.com/longhorn/go-spdk-helper v0.10.1-0.20260921021616-6102449746a0 h1:G5xruV32BYYo0ijxpjzLUH53IQGVnYmuVmO6tAWN0G0=
+github.com/longhorn/go-spdk-helper v0.10.1-0.20260921021616-6102449746a0/go.mod h1:+Rv4u2k9uiDJGBT4IqtOSQ2XSOHsKIgQUz4dFqXmiCQ=
 github.com/longhorn/longhorn-engine v1.13.0-rc1 h1:dXxKUCpYDHDI4b3lFXnbk6Q10S0kCH/52mrOMSLoZ6g=
 github.com/longhorn/longhorn-engine v1.13.0-rc1/go.mod h1:MQ8ZFgO2qzpueyZNy/6slt7jf2lfqejCo5qCw+VNh1M=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20260916232021-587319d36109 h1:hfKmzuB+dyNvSzhO+vXoepMan85GTxB3w8NvQPHJgcI=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20260916232021-587319d36109/go.mod h1:MlkgejafRnAepo+ihD/GFu0FJ3gbdRikuRZ+lzKBBWg=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20260921030111-f5469f4cdeb4 h1:HCdSjEPBJFKSgN3XI2jOUekGBF6TTbaUVB4GgjqpTlQ=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20260921030111-f5469f4cdeb4/go.mod h1:x98Mptq2xgQTTq75UunnGUZT6TAuI/tBSbvmR48IYhs=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a h1:xb71oeVPI7XZymAAG8ts5deC8s40dnX5IgxTYAB/qnk=
 github.com/longhorn/sparse-tools v0.0.0-20260423074222-280e61de741a/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20260831072945-0bac432e7872 h1:PzsqquPSCChJa+sPq8yp0pjvw3MR48ieqRcq90+PhYs=
