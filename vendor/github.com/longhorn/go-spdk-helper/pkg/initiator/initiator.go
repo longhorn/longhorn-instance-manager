@@ -387,8 +387,12 @@ func (i *Initiator) WaitForNVMeTCPTargetDisconnect(maxRetries int, retryInterval
 	return lastErr
 }
 
-// Suspend suspends the device mapper device for the NVMe/TCP initiator
-func (i *Initiator) Suspend(noflush, nolockfs bool) error {
+// Suspend suspends the device mapper device for the NVMe/TCP initiator.
+//
+// timeout bounds the suspend dmsetup call. IsSuspended can run two dmsetup
+// commands, each with types.DmsetupTimeout, so keep timeout plus both budgets
+// below the per-volume lock timeout to avoid starving operations waiting on the same lock.
+func (i *Initiator) Suspend(noflush, nolockfs bool, timeout time.Duration) error {
 	if i.hostProc != "" {
 		lock, err := i.newLock("Suspend")
 		if err != nil {
@@ -403,7 +407,7 @@ func (i *Initiator) Suspend(noflush, nolockfs bool) error {
 	}
 
 	if !suspended {
-		if err := i.suspendLinearDmDevice(noflush, nolockfs); err != nil {
+		if err := i.suspendLinearDmDevice(noflush, nolockfs, timeout); err != nil {
 			return errors.Wrapf(err, "failed to suspend linear dm device for NVMe/TCP initiator %s", i.Name)
 		}
 	}
@@ -411,8 +415,9 @@ func (i *Initiator) Suspend(noflush, nolockfs bool) error {
 	return nil
 }
 
-// Resume resumes the device mapper device for the NVMe/TCP initiator
-func (i *Initiator) Resume() error {
+// Resume resumes the device mapper device for the NVMe/TCP initiator.
+// See Suspend for how to pick timeout.
+func (i *Initiator) Resume(timeout time.Duration) error {
 	if i.hostProc != "" {
 		lock, err := i.newLock("Resume")
 		if err != nil {
@@ -421,17 +426,17 @@ func (i *Initiator) Resume() error {
 		defer lock.Unlock()
 	}
 
-	if err := i.resumeLinearDmDevice(); err != nil {
+	if err := i.resumeLinearDmDevice(timeout); err != nil {
 		return errors.Wrapf(err, "failed to resume linear dm device for NVMe/TCP initiator %s", i.Name)
 	}
 
 	return nil
 }
 
-func (i *Initiator) resumeLinearDmDevice() error {
+func (i *Initiator) resumeLinearDmDevice(timeout time.Duration) error {
 	i.logger.Info("Resuming linear dm device")
 
-	return util.DmsetupResume(i.Name, i.executor)
+	return util.DmsetupResume(i.Name, timeout, i.executor)
 }
 
 // isDmDeviceTargetUpToDate reports whether the linear dm device already maps the
@@ -487,7 +492,7 @@ func (i *Initiator) replaceDmDeviceTarget() error {
 	} else if upToDate {
 		i.logger.Info("Linear dm device already maps the current device, skipping the target replacement")
 		if suspended {
-			if err := i.resumeLinearDmDevice(); err != nil {
+			if err := i.resumeLinearDmDevice(types.DmsetupTimeout); err != nil {
 				return errors.Wrapf(err, "failed to resume linear dm device for initiator %s", i.Name)
 			}
 		}
@@ -497,16 +502,16 @@ func (i *Initiator) replaceDmDeviceTarget() error {
 	if !suspended {
 		// Never freeze the filesystem here: the target device is being replaced because
 		// the previous one is gone, so the sync that lockfs performs would never finish.
-		if err := i.suspendLinearDmDevice(true, true); err != nil {
+		if err := i.suspendLinearDmDevice(true, true, types.DmsetupTimeout); err != nil {
 			return errors.Wrapf(err, "failed to suspend linear dm device for initiator %s", i.Name)
 		}
 	}
 
-	if err := i.reloadLinearDmDevice(); err != nil {
+	if err := i.reloadLinearDmDevice(types.DmsetupTimeout); err != nil {
 		return errors.Wrapf(err, "failed to reload linear dm device for initiator %s", i.Name)
 	}
 
-	if err := i.resumeLinearDmDevice(); err != nil {
+	if err := i.resumeLinearDmDevice(types.DmsetupTimeout); err != nil {
 		return errors.Wrapf(err, "failed to resume linear dm device for initiator %s", i.Name)
 	}
 	return nil
@@ -1504,10 +1509,10 @@ func (i *Initiator) validateDiskCreation(path string, maxRetries int, retryInter
 	return nil
 }
 
-func (i *Initiator) suspendLinearDmDevice(noflush, nolockfs bool) error {
+func (i *Initiator) suspendLinearDmDevice(noflush, nolockfs bool, timeout time.Duration) error {
 	i.logger.Info("Suspending linear dm device")
 
-	return util.DmsetupSuspend(i.Name, noflush, nolockfs, i.executor)
+	return util.DmsetupSuspend(i.Name, noflush, nolockfs, timeout, i.executor)
 }
 
 // ReloadDmDevice reloads the linear dm device
@@ -1520,18 +1525,25 @@ func (i *Initiator) ReloadDmDevice() (err error) {
 		defer lock.Unlock()
 	}
 
-	return i.reloadLinearDmDevice()
+	return i.reloadLinearDmDevice(types.DmsetupTimeout)
 }
 
-func (i *Initiator) SyncDmDeviceSize(expectedSize uint64) error {
+func (i *Initiator) validateDeviceSource() error {
 	if i.dev == nil || i.dev.Source.Name == "" {
 		return fmt.Errorf("initiator device source is not initialized")
+	}
+	return nil
+}
+
+func (i *Initiator) WaitForDeviceSize(expectedSize uint64) error {
+	if err := i.validateDeviceSource(); err != nil {
+		return err
 	}
 
 	devPath := fmt.Sprintf("/dev/%s", i.dev.Source.Name)
 	expectedSectors := int64(expectedSize / DmSectorSize)
 
-	i.logger.Infof("Start reloading dm device %v to expected size %v bytes (%v sectors)", i.Name, expectedSize, expectedSectors)
+	i.logger.Infof("Waiting for device %v to reach expected size %v bytes (%v sectors)", devPath, expectedSize, expectedSectors)
 
 	var sectors int64
 
@@ -1571,7 +1583,16 @@ func (i *Initiator) SyncDmDeviceSize(expectedSize uint64) error {
 	if sectors < expectedSectors {
 		return fmt.Errorf("timeout waiting for device %v to reach expected size %v", devPath, expectedSectors)
 	}
-	return i.reloadLinearDmDevice()
+	return nil
+}
+
+func (i *Initiator) SyncDmDeviceSize(expectedSize uint64) error {
+	if err := i.WaitForDeviceSize(expectedSize); err != nil {
+		return err
+	}
+
+	i.logger.Infof("Reloading dm device %v to expected size %v bytes", i.Name, expectedSize)
+	return i.reloadLinearDmDevice(types.DmsetupTimeout)
 }
 
 // IsSuspended checks if the linear dm device is suspended
@@ -1604,7 +1625,7 @@ func (i *Initiator) IsDeferredRemoveSet() (bool, error) {
 	return false, fmt.Errorf("failed to find linear dm device %s", i.Name)
 }
 
-func (i *Initiator) reloadLinearDmDevice() error {
+func (i *Initiator) reloadLinearDmDevice(timeout time.Duration) error {
 	devPath := fmt.Sprintf("/dev/%s", i.dev.Source.Name)
 
 	// Get the size of the device
@@ -1624,7 +1645,7 @@ func (i *Initiator) reloadLinearDmDevice() error {
 
 	i.logger.Infof("Reloading linear dm device with table '%s'", table)
 
-	err = util.DmsetupReload(i.Name, table, i.executor)
+	err = util.DmsetupReload(i.Name, table, timeout, i.executor)
 	if err != nil {
 		return err
 	}
