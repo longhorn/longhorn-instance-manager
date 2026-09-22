@@ -276,20 +276,10 @@ func (b *Backup) CompareSnapshot(snapshotName, compareSnapshotName, volumeName s
 // through backupstore's error path when the replica is no longer running,
 // matching v1 behavior where killing the replica process stops the backup.
 func (b *Backup) ReadSnapshot(snapshotName, volumeName string, offset int64, data []byte) error {
-	// Cleanup can release the replica while backupstore readers are still
-	// unwinding. Keep a local reference, and drop the backup lock before taking
-	// the replica lock so the two locks are never held together here.
-	b.Lock()
-	replica := b.replica
-	b.Unlock()
-	if replica == nil {
-		return fmt.Errorf("backup %s snapshot is closed", b.Name)
-	}
-
-	replica.RLock()
-	replicaState := replica.State
-	replicaName := replica.Name
-	replica.RUnlock()
+	b.replica.RLock()
+	replicaState := b.replica.State
+	replicaName := b.replica.Name
+	b.replica.RUnlock()
 
 	if replicaState != types.InstanceStateRunning {
 		return fmt.Errorf("replica %s is in %s state", replicaName, replicaState)
@@ -297,10 +287,6 @@ func (b *Backup) ReadSnapshot(snapshotName, volumeName string, offset int64, dat
 
 	b.Lock()
 	defer b.Unlock()
-
-	if b.devFh == nil {
-		return fmt.Errorf("backup %s snapshot is closed", b.Name)
-	}
 
 	_, err := b.devFh.ReadAt(data, offset)
 

@@ -359,8 +359,13 @@ func (e *Engine) createNVMeTCPTarget(spdkClient *spdkclient.Client, superiorPort
 		return errors.Wrapf(err, "failed to blindly stop exposing RAID bdev for engine target %v", e.Name)
 	}
 
-	cntlid := getTargetCntlid(e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port)
-	if err := e.startExposeNVMeTCPTarget(spdkClient, initialANAState, spdkANAState, cntlid); err != nil {
+	cntlid := getEngineCntlid(e.Name)
+	nsUUID := getStableVolumeNsUUID(e.VolumeName)
+
+	e.log.Infof("Starting to expose RAID bdev for engine target %v on %v:%v with initial ANA state %v, cntlid %v, nsUUID %v",
+		e.Name, e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port, initialANAState, cntlid, nsUUID)
+	if err := spdkClient.StartExposeBdevWithANAState(e.NvmeTcpTarget.Nqn, e.Name, e.NvmeTcpTarget.Nguid, nsUUID,
+		e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port)), spdkANAState, cntlid, cntlid); err != nil {
 		// No need to release ports here. The engine will be marked as ERR by
 		// Create's deferred error handler, and Delete will release the ports
 		// when the user cleans up this engine.
@@ -370,14 +375,6 @@ func (e *Engine) createNVMeTCPTarget(spdkClient *spdkclient.Client, superiorPort
 	e.NvmeTcpTarget.ANAState = initialANAState
 
 	return nil
-}
-
-func (e *Engine) startExposeNVMeTCPTarget(spdkClient *spdkclient.Client, anaState NvmeTCPANAState, spdkANAState spdktypes.NvmfSubsystemListenerAnaState, cntlid uint16) error {
-	nsUUID := getStableVolumeNsUUID(e.VolumeName)
-	e.log.Infof("Starting to expose RAID bdev for engine target %v on %v:%v with ANA state %v, cntlid %v, nsUUID %v",
-		e.Name, e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port, anaState, cntlid, nsUUID)
-	return spdkClient.StartExposeBdevWithANAState(e.NvmeTcpTarget.Nqn, e.Name, e.NvmeTcpTarget.Nguid, nsUUID,
-		e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port)), spdkANAState, cntlid, cntlid)
 }
 
 // connectReplicas connects to each backend's NVMf bdev and populates
@@ -2734,35 +2731,7 @@ func (e *Engine) waitForRestoreComplete() error {
 		retrygo.DelayType(retrygo.FixedDelay),
 		retrygo.Attempts(0), // retry forever until success or unrecoverable error
 	).Do(
-		func() error {
-			e.restore.RLock()
-			restoreProgress := e.restore.Progress
-			restoreError := e.restore.Error
-			restoreState := e.restore.State
-			e.restore.RUnlock()
-
-			if restoreState == btypes.ProgressStateCanceled {
-				return retrygo.Unrecoverable(fmt.Errorf("%v", btypes.ErrorMsgRestoreCancelled))
-			}
-			if restoreProgress == 100 {
-				e.log.Infof("Backup restore is done: %v%%", restoreProgress)
-				return nil
-			}
-
-			e.log.WithFields(logrus.Fields{
-				"progress":     restoreProgress,
-				"state":        restoreState,
-				"snapshotName": e.RestoringSnapshotName,
-			}).Debug("Restore is still in progress")
-
-			if restoreError != "" {
-				err := fmt.Errorf("%v", restoreError)
-				e.log.WithError(err).Error("Found backup restoration error")
-				return retrygo.Unrecoverable(err)
-			}
-
-			return fmt.Errorf("restore is still in progress")
-		},
+		e.waitForRestoreCompleteOnce,
 	)
 
 	if err != nil {
@@ -2770,6 +2739,40 @@ func (e *Engine) waitForRestoreComplete() error {
 	}
 
 	return nil
+}
+
+func (e *Engine) waitForRestoreCompleteOnce() error {
+	e.restore.RLock()
+	restoreProgress := e.restore.Progress
+	restoreError := e.restore.Error
+	restoreState := e.restore.State
+	volumeDevClosed := e.restore.VolumeDevClosed
+	e.restore.RUnlock()
+
+	if restoreState == btypes.ProgressStateCanceled {
+		return retrygo.Unrecoverable(fmt.Errorf("%v", btypes.ErrorMsgRestoreCancelled))
+	}
+	if restoreError != "" {
+		err := fmt.Errorf("%v", restoreError)
+		e.log.WithError(err).Error("Found backup restoration error")
+		return retrygo.Unrecoverable(err)
+	}
+	if restoreState == btypes.ProgressStateError {
+		return retrygo.Unrecoverable(fmt.Errorf("backup restoration failed without a recorded error"))
+	}
+	if restoreProgress == 100 && volumeDevClosed {
+		e.log.Infof("Backup restore is done: %v%%", restoreProgress)
+		return nil
+	}
+
+	e.log.WithFields(logrus.Fields{
+		"progress":        restoreProgress,
+		"state":           restoreState,
+		"volumeDevClosed": volumeDevClosed,
+		"snapshotName":    e.RestoringSnapshotName,
+	}).Debug("Restore is still in progress")
+
+	return fmt.Errorf("restore is still in progress")
 }
 
 func (e *Engine) RestoreStatus() (*spdkrpc.RestoreStatusResponse, error) {
@@ -2906,7 +2909,8 @@ func (e *Engine) Expand(spdkClient *spdkclient.Client, size uint64) (err error) 
 
 	switch e.Frontend {
 	case types.FrontendSPDKTCPBlockdev, types.FrontendSPDKTCPNvmf:
-		cntlid := getTargetCntlid(e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port)
+		cntlid := getEngineCntlid(e.Name)
+		nsUUID := getStableVolumeNsUUID(e.VolumeName)
 		// Preserve the current ANA state across the expand. If this engine
 		// was demoted to inaccessible during a switchover, re-exposing with
 		// optimized would create a dual-write window.
@@ -2918,7 +2922,11 @@ func (e *Engine) Expand(spdkClient *spdkclient.Client, size uint64) (err error) 
 		if err != nil {
 			return errors.Wrapf(err, "invalid ANA state %q for engine target %v during expand", currentANAState, e.Name)
 		}
-		if err := e.startExposeNVMeTCPTarget(spdkClient, currentANAState, spdkANAState, cntlid); err != nil {
+		e.log.Infof("Starting to expose RAID bdev for engine target %v on %v:%v with ANA state %v, cntlid %v, nsUUID %v",
+			e.Name, e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port, currentANAState, cntlid, nsUUID)
+		if err := spdkClient.StartExposeBdevWithANAState(e.NvmeTcpTarget.Nqn, e.Name, e.NvmeTcpTarget.Nguid, nsUUID,
+			e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port)),
+			spdkANAState, cntlid, cntlid); err != nil {
 			return errors.Wrapf(err, "failed to start exposing RAID bdev for engine target %v", e.Name)
 		}
 	case types.FrontendEmpty:
