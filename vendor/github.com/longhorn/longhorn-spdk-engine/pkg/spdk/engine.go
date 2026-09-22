@@ -359,10 +359,7 @@ func (e *Engine) createNVMeTCPTarget(spdkClient *spdkclient.Client, superiorPort
 		return errors.Wrapf(err, "failed to blindly stop exposing RAID bdev for engine target %v", e.Name)
 	}
 
-	cntlid, err := getTargetCntlid(e.NvmeTcpTarget.Port)
-	if err != nil {
-		return errors.Wrapf(err, "failed to derive cntlid for engine target %v", e.Name)
-	}
+	cntlid := getTargetCntlid(e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port)
 	if err := e.startExposeNVMeTCPTarget(spdkClient, initialANAState, spdkANAState, cntlid); err != nil {
 		// No need to release ports here. The engine will be marked as ERR by
 		// Create's deferred error handler, and Delete will release the ports
@@ -2909,10 +2906,7 @@ func (e *Engine) Expand(spdkClient *spdkclient.Client, size uint64) (err error) 
 
 	switch e.Frontend {
 	case types.FrontendSPDKTCPBlockdev, types.FrontendSPDKTCPNvmf:
-		cntlid, err := getTargetCntlid(e.NvmeTcpTarget.Port)
-		if err != nil {
-			return errors.Wrapf(err, "failed to derive cntlid for engine target %v during expand", e.Name)
-		}
+		cntlid := getTargetCntlid(e.NvmeTcpTarget.IP, e.NvmeTcpTarget.Port)
 		// Preserve the current ANA state across the expand. If this engine
 		// was demoted to inaccessible during a switchover, re-exposing with
 		// optimized would create a dual-write window.
