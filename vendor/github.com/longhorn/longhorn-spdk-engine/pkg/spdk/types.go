@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"hash/fnv"
 	"net"
 	"regexp"
 	"strconv"
@@ -537,16 +538,16 @@ func generateNsUUID(name string) string {
 // maxValidCntlid is the largest controller ID the NVMe spec allows to be assigned.
 const maxValidCntlid = 0xFFEF
 
-// getTargetCntlid derives an NVMe controller ID from the allocated target port.
+// getTargetCntlid derives an NVMe controller ID from the target address.
 //
 // The ID only has to be unique among the controllers a host currently holds for the
-// subsystem NQN. Reusing the allocated target port preserves that uniqueness guarantee
-// while avoiding the stale-controller reuse caused by deriving the ID from the engine
-// identity. It also stays stable while the address does, so re-exposing the same target
-// during an expansion keeps the existing controller session.
-func getTargetCntlid(port int32) (uint16, error) {
-	if port <= 0 || port > maxValidCntlid {
-		return 0, fmt.Errorf("target port %d is outside the valid NVMe cntlid range 1-%d", port, maxValidCntlid)
-	}
-	return uint16(port), nil
+// subsystem NQN. Deriving it from the address rather than the engine name keeps a
+// re-created engine from reusing the ID of its own stale controller, which a host that
+// could not tear that controller down (e.g. after a network outage) rejects with
+// "Duplicate cntlid". It stays stable while the address does, so re-exposing the same
+// target during an expansion keeps the existing controller session.
+func getTargetCntlid(ip string, port int32) uint16 {
+	h := fnv.New32a()
+	_, _ = fmt.Fprintf(h, "%s:%d", ip, port)
+	return uint16(h.Sum32()%maxValidCntlid) + 1
 }
