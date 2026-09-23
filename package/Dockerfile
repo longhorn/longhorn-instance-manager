@@ -34,7 +34,7 @@ RUN export GRPC_HEALTH_PROBE_DOWNLOAD_URL=$(wget -qO- https://api.github.com/rep
     chmod +x /usr/local/bin/grpc_health_probe
 
 # Stage 2: build binary from c source code
-FROM registry.suse.com/bci/bci-base:15.7@sha256:4a0d40a2c4b0b9c1e58fd270e4030d4defb385ffbfcf70f25493283193042d4d AS cbuilder
+FROM registry.suse.com/bci/bci-base:15.7@sha256:a1bff75c7ab3d66c8423e3f2370838d5dbed077a4133e9f38a98d7525a630958 AS cbuilder
 
 ARG ARCH=amd64
 ARG SRC_BRANCH=master
