@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	. "gopkg.in/check.v1"
 
@@ -421,6 +422,56 @@ func waitForProcessListState(pm *Manager, predicate func(processes map[string]*r
 		time.Sleep(RetryInterval)
 	}
 	return false, nil
+}
+
+func (s *TestSuite) TestRPCResponseConditionsNotShared(c *C) {
+	p := &Process{
+		Name:       "test_conditions_not_shared",
+		Conditions: map[string]bool{types.EngineConditionFilesystemReadOnly: false},
+		lock:       &sync.RWMutex{},
+	}
+
+	resp := p.RPCResponse()
+
+	p.lock.Lock()
+	p.Conditions[types.EngineConditionFilesystemReadOnly] = true
+	p.lock.Unlock()
+
+	c.Assert(resp.Status.Conditions[types.EngineConditionFilesystemReadOnly], Equals, false)
+}
+
+// Marshalling a response while the mount point check updates the conditions
+// used to crash the process with "concurrent map iteration and map write".
+func (s *TestSuite) TestRPCResponseMarshalWhileUpdatingConditions(c *C) {
+	p := &Process{
+		Name:       "test_conditions_marshal",
+		Conditions: map[string]bool{types.EngineConditionFilesystemReadOnly: false},
+		lock:       &sync.RWMutex{},
+	}
+
+	done := make(chan struct{})
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; ; i++ {
+			select {
+			case <-done:
+				return
+			default:
+			}
+			p.lock.Lock()
+			p.Conditions[types.EngineConditionFilesystemReadOnly] = i%2 == 0
+			p.lock.Unlock()
+		}
+	}()
+
+	for i := 0; i < 100000; i++ {
+		_, err := proto.Marshal(p.RPCResponse())
+		c.Assert(err, IsNil)
+	}
+	close(done)
+	wg.Wait()
 }
 
 func countOpenFileDescriptors(targetPath string) (int, error) {

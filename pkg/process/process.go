@@ -1,6 +1,7 @@
 package process
 
 import (
+	"maps"
 	"sync"
 	"syscall"
 	"time"
@@ -114,6 +115,8 @@ func (p *Process) RPCResponse() *rpc.ProcessResponse {
 	if p.ErrorMsg != "" {
 		logrus.Warnf("Process update: %v: state %v: errorMsg: %v", p.Name, p.State, p.ErrorMsg)
 	}
+	// Conditions is copied because gRPC marshals the response after p.lock is
+	// released, while the mount point check keeps writing p.Conditions.
 	return &rpc.ProcessResponse{
 		Spec: &rpc.ProcessSpec{
 			Name:      p.Name,
@@ -128,7 +131,7 @@ func (p *Process) RPCResponse() *rpc.ProcessResponse {
 			ErrorMsg:   p.ErrorMsg,
 			PortStart:  p.PortStart,
 			PortEnd:    p.PortEnd,
-			Conditions: p.Conditions,
+			Conditions: maps.Clone(p.Conditions),
 			Uuid:       p.UUID,
 		},
 	}
