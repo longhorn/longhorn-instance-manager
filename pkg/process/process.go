@@ -1,6 +1,7 @@
 package process
 
 import (
+	"maps"
 	"sync"
 	"syscall"
 	"time"
@@ -124,11 +125,14 @@ func (p *Process) RPCResponse() *rpc.ProcessResponse {
 		},
 
 		Status: &rpc.ProcessStatus{
-			State:      string(p.State),
-			ErrorMsg:   p.ErrorMsg,
-			PortStart:  p.PortStart,
-			PortEnd:    p.PortEnd,
-			Conditions: p.Conditions,
+			State:     string(p.State),
+			ErrorMsg:  p.ErrorMsg,
+			PortStart: p.PortStart,
+			PortEnd:   p.PortEnd,
+			// Clone the conditions map. Returning the live map would let gRPC
+			// marshal it after the lock is released, racing with the condition
+			// updates done by the mount point check loop.
+			Conditions: maps.Clone(p.Conditions),
 			Uuid:       p.UUID,
 		},
 	}
