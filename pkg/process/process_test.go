@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	. "gopkg.in/check.v1"
 
@@ -326,6 +327,53 @@ func (s *TestSuite) TestProcessReplaceDuringDeletion(c *C) {
 			c.Assert(deleted, Equals, true)
 		}(i)
 	}
+	wg.Wait()
+}
+
+// TestRPCResponseConditionsNotSharedWithProcess verifies that the conditions map
+// returned by RPCResponse is a copy. Otherwise, marshalling the response (which
+// happens after the process lock is released) races with the condition updates
+// done by the mount point check loop, which crashes the instance manager with
+// "fatal error: concurrent map iteration and map write".
+func (s *TestSuite) TestRPCResponseConditionsNotSharedWithProcess(c *C) {
+	p := &Process{
+		Name:       "test_process_rpc_response_conditions",
+		State:      StateRunning,
+		Conditions: make(map[string]bool),
+		lock:       &sync.RWMutex{},
+	}
+
+	resp := p.RPCResponse()
+	resp.Status.Conditions[types.EngineConditionFilesystemReadOnly] = true
+	p.lock.RLock()
+	_, exists := p.Conditions[types.EngineConditionFilesystemReadOnly]
+	p.lock.RUnlock()
+	c.Assert(exists, Equals, false)
+
+	stopCh := make(chan struct{})
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; ; i++ {
+			select {
+			case <-stopCh:
+				return
+			default:
+			}
+			// Mimic getProcessesToUpdateConditions.
+			p.lock.Lock()
+			p.Conditions[types.EngineConditionFilesystemReadOnly] = i%2 == 0
+			p.lock.Unlock()
+		}
+	}()
+
+	for i := 0; i < 10000; i++ {
+		// Mimic gRPC marshalling the response after the handler returned.
+		_, err := proto.Marshal(p.RPCResponse())
+		c.Assert(err, IsNil)
+	}
+	close(stopCh)
 	wg.Wait()
 }
 
