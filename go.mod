@@ -6,18 +6,18 @@ require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260922010936-57b3845ad4ef
-	github.com/longhorn/go-common-libs v0.0.0-20260907073218-e53e6775eb8a
+	github.com/longhorn/go-common-libs v0.0.0-20260909075701-1a37e0e5083e
 	github.com/longhorn/go-spdk-helper v0.10.1-0.20260921021616-6102449746a0
 	github.com/longhorn/longhorn-engine v1.14.0-dev-20260823.0.20260922023432-4d144df2a773
 	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20260922025523-7ec03791a09c
-	github.com/longhorn/types v0.0.0-20260831072945-0bac432e7872
+	github.com/longhorn/types v0.0.0-20260912171147-ce65698c8b35
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v3 v3.11.0
 	golang.org/x/sync v0.23.0
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	k8s.io/mount-utils v0.37.0
+	k8s.io/mount-utils v0.37.1
 )
 
 require (
