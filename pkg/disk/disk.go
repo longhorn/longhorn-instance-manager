@@ -60,7 +60,7 @@ type Server struct {
 	ops                map[rpc.DiskType]DiskOps
 }
 
-func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string, tlsConfig *tls.Config) (srv *Server, err error) {
+func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string, localDataEngineEnabled bool, tlsConfig *tls.Config) (srv *Server, err error) {
 	var spdkClient *spdkclient.SPDKClient
 
 	if spdkEnabled {
@@ -85,7 +85,12 @@ func NewServer(ctx context.Context, spdkEnabled bool, spdkServiceAddress string,
 		rpc.DiskType_block: BlockDiskOps{
 			spdkClient: spdkClient,
 		},
-		rpc.DiskType_lvm: LVMDiskOps{disk: lvm.NewDisk()},
+	}
+	// Only the local data engine instance manager serves LVM disks, like the
+	// instance server only serves local instances behind the same flag. The
+	// others answer LVM disk requests as an unsupported disk type.
+	if localDataEngineEnabled {
+		ops[rpc.DiskType_lvm] = LVMDiskOps{disk: lvm.NewDisk()}
 	}
 
 	s := &Server{

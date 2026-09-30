@@ -335,6 +335,18 @@ func TestLocalInstanceDelete(t *testing.T) {
 		t.Fatalf("lvremove must not run on UUID mismatch: %v", executor.calls)
 	}
 
+	// Deletion without a disk UUID is refused: a name match alone must never
+	// choose which LV lvremove runs on.
+	executor = &fakeInstanceExecutor{outputs: map[string]string{"lvs": lvsActiveReplica}}
+	ops = Instance{executor: executor}
+	_, err = ops.Delete(&rpc.InstanceDeleteRequest{Name: "vol-1-r-abc", CleanupRequired: true})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("delete error code = %v, want %v: %v", status.Code(err), codes.InvalidArgument, err)
+	}
+	if executor.calledWithPrefix("lvremove") || executor.calledWithPrefix("lvchange") {
+		t.Fatalf("no LVM change may run without a disk UUID: %v", executor.calls)
+	}
+
 	// Engine instance: remove the tag, keep the LV.
 	executor = &fakeInstanceExecutor{outputs: map[string]string{"lvs": lvsTaggedReplica}}
 	ops = Instance{executor: executor}
@@ -458,5 +470,34 @@ func TestLocalReplicaInstanceExpandRejectsShrink(t *testing.T) {
 	}
 	if executor.calledWithPrefix("lvextend") {
 		t.Fatalf("lvextend must not run for a shrink: %v", executor.calls)
+	}
+}
+
+func TestActivateAttachedLogicalVolumes(t *testing.T) {
+	// After a node reboot every thick LV is inactive. Only the LV whose engine
+	// tag says the volume was attached is brought back; a detached LV and the
+	// thin pool stay as they are, and an already active LV is left alone.
+	executor := &fakeInstanceExecutor{outputs: map[string]string{
+		"lvs": `{"report":[{"lv":[
+			{"vg_name":"longhorn-disk-1","lv_name":"vol-1-r-abc","lv_size":"1073741824","lv_active":"","lv_path":"/dev/longhorn-disk-1/vol-1-r-abc","lv_tags":"longhorn-engine=vol-1-e-0","lv_attr":"-wi-------","pool_lv":""},
+			{"vg_name":"longhorn-disk-1","lv_name":"vol-2-r-def","lv_size":"1073741824","lv_active":"","lv_path":"/dev/longhorn-disk-1/vol-2-r-def","lv_tags":"","lv_attr":"-wi-------","pool_lv":""},
+			{"vg_name":"longhorn-disk-1","lv_name":"vol-3-r-ghi","lv_size":"1073741824","lv_active":"active","lv_path":"/dev/longhorn-disk-1/vol-3-r-ghi","lv_tags":"longhorn-engine=vol-3-e-0","lv_attr":"-wi-a-----","pool_lv":""},
+			{"vg_name":"longhorn-disk-1","lv_name":"longhorn-thin-pool","lv_size":"10737418240","lv_active":"","lv_path":"","lv_tags":"","lv_attr":"twi-------","pool_lv":""}
+		]}]}`,
+	}}
+
+	if err := ActivateAttachedLogicalVolumes(executor); err != nil {
+		t.Fatalf("ActivateAttachedLogicalVolumes failed: %v", err)
+	}
+	if !executor.calledWithPrefix(lvmCommandPrefix("lvchange", "-ay", "longhorn-disk-1/vol-1-r-abc")) {
+		t.Fatalf("expected the attached replica to be activated: %v", executor.calls)
+	}
+	for _, untouched := range []string{"vol-2-r-def", "vol-3-r-ghi", "longhorn-thin-pool"} {
+		if executor.calledWithPrefix(lvmCommandPrefix("lvchange", "-ay", "longhorn-disk-1/"+untouched)) {
+			t.Fatalf("%v must not be activated: %v", untouched, executor.calls)
+		}
+	}
+	if !executor.calledWithPrefix(lvmCommandPrefix("lvs")) {
+		t.Fatalf("lvs did not use the Longhorn devices file: %v", executor.calls)
 	}
 }

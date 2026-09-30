@@ -16,7 +16,16 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 )
 
-const kernelSectorSize = 512
+const (
+	kernelSectorSize = 512
+
+	// sampleRetention bounds the sampler's memory to devices that are still
+	// being polled. Entries are refreshed on every metrics scrape while an
+	// engine or disk exists, so one that has not been touched for this long
+	// belongs to a device that is gone. It must stay well above any scrape
+	// interval, or a live device would lose its baseline between scrapes.
+	sampleRetention = 10 * time.Minute
+)
 
 type blockCounters struct {
 	readOps, readSectors, readMillis    uint64
@@ -101,6 +110,11 @@ func (s *KernelBlockMetricsSampler) Sample(key, devicePath string) (*enginerpc.M
 	}
 
 	now := s.now()
+	for staleKey, sample := range s.samples {
+		if now.Sub(sample.at) > sampleRetention {
+			delete(s.samples, staleKey)
+		}
+	}
 	previous, exists := s.samples[key]
 	s.samples[key] = blockSample{at: now, counters: current}
 	if !exists || !countersAtLeast(current, previous.counters) {

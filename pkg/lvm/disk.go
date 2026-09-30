@@ -240,44 +240,20 @@ func (ops Disk) Create(req *rpc.DiskCreateRequest) (*rpc.Disk, error) {
 	if req.DiskPath == "" {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "disk path is required for LVM disk creation")
 	}
+	if !isSupportedStorageLayout(req.StorageLayout) {
+		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unsupported LVM storage layout %v for disk %v", req.StorageLayout, req.DiskPath)
+	}
 	if err := ops.addDevice(req.DiskPath); err != nil {
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 
-	pv, err := ops.getPV(req.DiskPath)
+	pv, err := ops.joinVolumeGroup(req)
 	if err != nil {
-		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
-	}
-	if pv == nil {
-		if err := ops.verifyDeviceEmpty(req.DiskPath); err != nil {
-			_ = ops.removeDevice(req.DiskPath)
-			return nil, grpcstatus.Error(grpccodes.InvalidArgument, err.Error())
-		}
-
-		if _, err := ops.executor.Execute(nil, "pvcreate", CommandArgs(req.DiskPath), lhtypes.ExecuteDefaultTimeout); err != nil {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create physical volume on %v: %v", req.DiskPath, err)
-		}
-		pv, err = ops.getPV(req.DiskPath)
-		if err != nil || pv == nil {
-			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to inspect newly created physical volume %v: %v", req.DiskPath, err)
-		}
-	}
-
-	if pv.VGName == "" {
-		vgName, needExtend, err := ops.getVG(req.StorageLayout)
-		if err != nil {
-			return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
-		}
-		if needExtend {
-			if _, err := ops.executor.Execute(nil, "vgextend", CommandArgs(vgName, req.DiskPath), lhtypes.ExecuteDefaultTimeout); err != nil {
-				return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to extend volume group %v with %v: %v", vgName, req.DiskPath, err)
-			}
-		} else {
-			if _, err := ops.executor.Execute(nil, "vgcreate", CommandArgs(vgName, req.DiskPath), lhtypes.ExecuteDefaultTimeout); err != nil {
-				return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create volume group %v on %v: %v", vgName, req.DiskPath, err)
-			}
-		}
-		pv.VGName = vgName
+		// Until the PV is a member of a Longhorn VG the device has nothing to
+		// lose, and keeping it in the devices file would make whatever VG it
+		// carries visible to every later vgs call. A retry adds it back.
+		_ = ops.removeDevice(req.DiskPath)
+		return nil, err
 	}
 
 	if req.StorageLayout == rpc.LVMStorageLayout_LVM_STORAGE_LAYOUT_PER_NODE {
@@ -298,6 +274,69 @@ func (ops Disk) Create(req *rpc.DiskCreateRequest) (*rpc.Disk, error) {
 		}).Info("Initialized LVM disk")
 	}
 	return diskInfo, err
+}
+
+func isSupportedStorageLayout(layout rpc.LVMStorageLayout) bool {
+	switch layout {
+	case rpc.LVMStorageLayout_LVM_STORAGE_LAYOUT_PER_DISK, rpc.LVMStorageLayout_LVM_STORAGE_LAYOUT_PER_NODE:
+		return true
+	default:
+		return false
+	}
+}
+
+// isLonghornVG reports whether a VG was created by the local data engine.
+// Only devices Longhorn added are visible through its devices file, so the
+// name prefix only has to catch a device that already carried somebody
+// else's VG when it was added.
+func isLonghornVG(vgName string) bool {
+	return strings.HasPrefix(vgName, VGOpaquePrefix)
+}
+
+// joinVolumeGroup makes the device a PV inside a Longhorn VG, creating or
+// extending one as the layout requires, and returns the resulting PV. The
+// device is already in the devices file; the caller removes it again on error.
+func (ops Disk) joinVolumeGroup(req *rpc.DiskCreateRequest) (*lvmPV, error) {
+	pv, err := ops.getPV(req.DiskPath)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
+	}
+	if pv == nil {
+		if err := ops.verifyDeviceEmpty(req.DiskPath); err != nil {
+			return nil, grpcstatus.Error(grpccodes.InvalidArgument, err.Error())
+		}
+
+		if _, err := ops.executor.Execute(nil, "pvcreate", CommandArgs(req.DiskPath), lhtypes.ExecuteDefaultTimeout); err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create physical volume on %v: %v", req.DiskPath, err)
+		}
+		pv, err = ops.getPV(req.DiskPath)
+		if err != nil || pv == nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to inspect newly created physical volume %v: %v", req.DiskPath, err)
+		}
+	}
+
+	if pv.VGName != "" {
+		if !isLonghornVG(pv.VGName) {
+			return nil, grpcstatus.Errorf(grpccodes.FailedPrecondition, "device %v belongs to volume group %v, which Longhorn does not manage", req.DiskPath, pv.VGName)
+		}
+		return pv, nil
+	}
+
+	vgName, needExtend, err := ops.getVG(req.StorageLayout)
+	if err != nil {
+		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
+	}
+	if needExtend {
+		if _, err := ops.executor.Execute(nil, "vgextend", CommandArgs(vgName, req.DiskPath), lhtypes.ExecuteDefaultTimeout); err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to extend volume group %v with %v: %v", vgName, req.DiskPath, err)
+		}
+	} else {
+		if _, err := ops.executor.Execute(nil, "vgcreate", CommandArgs(vgName, req.DiskPath), lhtypes.ExecuteDefaultTimeout); err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to create volume group %v on %v: %v", vgName, req.DiskPath, err)
+		}
+	}
+	pv.VGName = vgName
+	return pv, nil
 }
 
 func (ops Disk) getVG(layout rpc.LVMStorageLayout) (name string, needExtend bool, err error) {

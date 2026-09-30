@@ -84,9 +84,6 @@ func (ops Instance) replicaCreate(name, diskUUID string, size int64, mode string
 	}
 	vgName, err := VGNameForPVUUID(ops.executor, diskUUID)
 	if err != nil {
-		if grpcstatus.Code(err) != grpccodes.Unknown {
-			return nil, err
-		}
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 
@@ -223,12 +220,15 @@ func (ops Instance) Delete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceRespons
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 	if lv != nil {
+		// The disk UUID is the only thing that ties the request to a VG. A
+		// destructive request without it is refused rather than matched by
+		// LV name alone.
+		if req.CleanupRequired && req.DiskUuid == "" {
+			return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "disk UUID is required to remove local replica logical volume %v", req.Name)
+		}
 		if req.DiskUuid != "" {
 			vgName, err := VGNameForPVUUID(ops.executor, req.DiskUuid)
 			if err != nil {
-				if grpcstatus.Code(err) != grpccodes.Unknown {
-					return nil, err
-				}
 				return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 			}
 			if vgName != lv.VGName {
@@ -344,9 +344,6 @@ func (ops Instance) Replace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceRespo
 
 	vgName, err := VGNameForPVUUID(ops.executor, spec.DiskUuid)
 	if err != nil {
-		if grpcstatus.Code(err) != grpccodes.Unknown {
-			return nil, err
-		}
 		return nil, grpcstatus.Error(grpccodes.Internal, err.Error())
 	}
 
@@ -408,11 +405,58 @@ func localLVEngineName(lv *LogicalVolume) string {
 }
 
 func (ops Instance) activateLV(vgName, lvName string) error {
-	if _, err := ops.executor.Execute(nil, "lvchange", CommandArgs("-ay", vgName+"/"+lvName), lhtypes.ExecuteDefaultTimeout); err != nil {
-		lv, inspectErr := ops.getLV(vgName, lvName)
+	return activateLogicalVolume(ops.executor, vgName, lvName)
+}
+
+func activateLogicalVolume(executor lhexec.ExecuteInterface, vgName, lvName string) error {
+	if _, err := executor.Execute(nil, "lvchange", CommandArgs("-ay", vgName+"/"+lvName), lhtypes.ExecuteDefaultTimeout); err != nil {
+		lv, inspectErr := GetLogicalVolume(executor, vgName, lvName)
 		if inspectErr != nil || lv == nil || !lv.Active {
 			return fmt.Errorf("failed to activate logical volume %v/%v: %v", vgName, lvName, err)
 		}
+	}
+	return nil
+}
+
+// ActivateAttachedLogicalVolumes activates every replica LV that still
+// carries an engine attachment tag. Thick LVs are created with host
+// autoactivation off, so after a node reboot the LV of a volume that was
+// attached is inactive and would drop out of InstanceList; the manager would
+// then mark the engine and replica as errored with no path back short of a
+// detach. Run before the gRPC servers serve, so the manager never sees an
+// instance manager that is running while the LV it needs is inactive.
+// Detached volumes have no tag and stay inactive. A failure is reported but
+// does not stop the instance manager: the other volumes still need serving,
+// and the manager surfaces the failed one as an errored instance.
+func ActivateAttachedLogicalVolumes(executor lhexec.ExecuteInterface) error {
+	lvs, err := ListLogicalVolumes(executor)
+	if err != nil {
+		return err
+	}
+	var failures []string
+	for i := range lvs {
+		lv := &lvs[i]
+		if lv.Active || lv.IsThinPool() {
+			continue
+		}
+		engineName := localLVEngineName(lv)
+		if engineName == "" {
+			continue
+		}
+		log := logrus.WithFields(logrus.Fields{
+			"engineName":  engineName,
+			"replicaName": lv.Name,
+			"vgName":      lv.VGName,
+		})
+		if err := activateLogicalVolume(executor, lv.VGName, lv.Name); err != nil {
+			log.WithError(err).Warn("Failed to reactivate the local replica of an attached engine")
+			failures = append(failures, fmt.Sprintf("%v/%v: %v", lv.VGName, lv.Name, err))
+			continue
+		}
+		log.Info("Reactivated the local replica of an attached engine")
+	}
+	if len(failures) > 0 {
+		return fmt.Errorf("failed to reactivate %d attached local replica(s): %v", len(failures), strings.Join(failures, "; "))
 	}
 	return nil
 }

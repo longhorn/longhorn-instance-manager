@@ -95,3 +95,36 @@ func TestParseLogicalVolumesRejectsMalformedJSON(t *testing.T) {
 		t.Fatal("expected malformed lvs JSON to be rejected")
 	}
 }
+
+func TestKernelBlockMetricsSamplerForgetsStaleDevices(t *testing.T) {
+	now := time.Unix(100, 0)
+	counters := blockCounters{readOps: 10, readSectors: 100, readMillis: 20, writeOps: 20, writeSectors: 200, writeMillis: 40}
+	sampler := &KernelBlockMetricsSampler{
+		samples: map[string]blockSample{},
+		now:     func() time.Time { return now },
+		read:    func(string) (blockCounters, error) { return counters, nil },
+	}
+
+	if _, err := sampler.Sample("engine:gone", "/dev/vg/gone"); err != nil {
+		t.Fatalf("sample failed: %v", err)
+	}
+	now = now.Add(sampleRetention / 2)
+	if _, err := sampler.Sample("engine:live", "/dev/vg/live"); err != nil {
+		t.Fatalf("sample failed: %v", err)
+	}
+	if len(sampler.samples) != 2 {
+		t.Fatalf("entries within the retention window must be kept: %v", sampler.samples)
+	}
+
+	// The gone engine is never sampled again; the live one keeps being polled.
+	now = now.Add(sampleRetention/2 + time.Second)
+	if _, err := sampler.Sample("engine:live", "/dev/vg/live"); err != nil {
+		t.Fatalf("sample failed: %v", err)
+	}
+	if _, exists := sampler.samples["engine:gone"]; exists {
+		t.Fatalf("stale entry must be forgotten: %v", sampler.samples)
+	}
+	if _, exists := sampler.samples["engine:live"]; !exists {
+		t.Fatalf("live entry must be kept: %v", sampler.samples)
+	}
+}

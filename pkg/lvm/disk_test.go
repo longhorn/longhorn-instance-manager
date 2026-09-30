@@ -422,10 +422,97 @@ func TestLVMDiskDeleteRefusesRepresentativeWithMembers(t *testing.T) {
 }
 
 func TestLVMDiskCreateRequiresStorageLayout(t *testing.T) {
-	ops := Disk{executor: &fakeExecutor{}}
+	executor := &fakeExecutor{}
+	ops := Disk{executor: executor}
 	_, err := ops.Create(&rpc.DiskCreateRequest{DiskName: "disk-1", DiskPath: "/dev/sdb"})
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("DiskCreate error code = %v, want %v: %v", status.Code(err), codes.InvalidArgument, err)
+	}
+	// The layout is checked before any LVM command or device access, so the
+	// outcome does not depend on the host the test runs on.
+	if len(executor.calls) != 0 {
+		t.Fatalf("no LVM command must run for an unsupported layout: %v", executor.calls)
+	}
+}
+
+func TestLVMDiskCreateRejectsForeignVG(t *testing.T) {
+	executor := &fakeExecutor{outputs: map[string]string{
+		lvmPVGetPrefix("/dev/sdb"): lvmPVLine("/dev/sdb", "PV-1", "rhel", false),
+	}}
+	ops := Disk{executor: executor}
+
+	_, err := ops.Create(&rpc.DiskCreateRequest{
+		DiskName: "disk-1", DiskPath: "/dev/sdb",
+		StorageLayout: rpc.LVMStorageLayout_LVM_STORAGE_LAYOUT_PER_NODE,
+	})
+	if status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("DiskCreate error code = %v, want %v: %v", status.Code(err), codes.FailedPrecondition, err)
+	}
+	if !slicesContainPrefix(executor.calls, lvmCommandPrefix("lvmdevices", "--deldev", "/dev/sdb")) {
+		t.Fatalf("a device with a foreign VG must leave the devices file again: %v", executor.calls)
+	}
+	for _, forbidden := range []string{"pvchange", "vgextend", "vgcreate", "lvextend", "lvcreate"} {
+		if slicesContainPrefix(executor.calls, forbidden) {
+			t.Fatalf("%v must not run on a VG Longhorn does not manage: %v", forbidden, executor.calls)
+		}
+	}
+}
+
+func TestLVMDiskCreateForgetsDeviceWhenVGCreationFails(t *testing.T) {
+	executor := &fakeExecutor{
+		outputs: map[string]string{
+			lvmPVGetPrefix("/dev/sdb"): lvmPVLine("/dev/sdb", "PV-1", "", false),
+		},
+		errs: map[string]error{
+			lvmCommandPrefix("vgcreate"): fmt.Errorf("vgcreate exploded"),
+		},
+	}
+	ops := Disk{executor: executor}
+
+	_, err := ops.Create(&rpc.DiskCreateRequest{
+		DiskName: "disk-1", DiskPath: "/dev/sdb",
+		StorageLayout: rpc.LVMStorageLayout_LVM_STORAGE_LAYOUT_PER_DISK,
+	})
+	if status.Code(err) != codes.Internal || !strings.Contains(err.Error(), "vgcreate exploded") {
+		t.Fatalf("unexpected DiskCreate error: %v", err)
+	}
+	if !slicesContainPrefix(executor.calls, lvmCommandPrefix("lvmdevices", "--deldev", "/dev/sdb")) {
+		t.Fatalf("a device that never joined a Longhorn VG must leave the devices file: %v", executor.calls)
+	}
+}
+
+func TestLVMDiskCreateKeepsDeviceAfterJoiningVG(t *testing.T) {
+	executor := &fakeExecutor{
+		outputs: map[string]string{
+			lvmCommandPrefix("vgs", "--noheadings", "-o", "vg_name"): "longhorn-vg-a\n",
+			lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
+				lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
+			lvmLVListPrefix("longhorn-vg-a"): lvmLVReport("longhorn-vg-a", ThinPoolName),
+		},
+		outputSequences: map[string][]string{
+			lvmPVGetPrefix("/dev/sdc"): {
+				lvmPVLine("/dev/sdc", "PV-2", "", false),
+				lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
+			},
+		},
+	}
+	ops := Disk{executor: executor}
+
+	// The VG got extended, then the thin pool inspection finds an unexpected LV
+	// under the pool name. The device is now a VG member, so it must stay in
+	// the devices file for the retry to resume from.
+	_, err := ops.Create(&rpc.DiskCreateRequest{
+		DiskName: "disk-2", DiskPath: "/dev/sdc",
+		StorageLayout: rpc.LVMStorageLayout_LVM_STORAGE_LAYOUT_PER_NODE,
+	})
+	if err == nil {
+		t.Fatal("expected DiskCreate to fail on the unexpected thin pool")
+	}
+	if !slicesContainPrefix(executor.calls, lvmCommandPrefix("vgextend", "longhorn-vg-a", "/dev/sdc")) {
+		t.Fatalf("expected vgextend, calls: %v", executor.calls)
+	}
+	if slicesContainPrefix(executor.calls, lvmCommandPrefix("lvmdevices", "--deldev", "/dev/sdc")) {
+		t.Fatalf("a VG member must not be removed from the devices file: %v", executor.calls)
 	}
 }
 

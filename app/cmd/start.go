@@ -170,6 +170,11 @@ func start(c *cli.Command) (err error) {
 		if err := lvm.InitializeDevicesFile(); err != nil {
 			return errors.Wrap(err, "failed to initialize local data engine")
 		}
+		// Before any gRPC server serves: the manager must never observe a
+		// running instance manager whose attached LVs are still inactive.
+		if err := lvm.ActivateAttachedLogicalVolumes(lvm.NewExecutor()); err != nil {
+			logrus.WithError(err).Warn("Failed to reactivate every attached local replica after start")
+		}
 	}
 
 	if !spdkEnabled {
@@ -219,7 +224,7 @@ func start(c *cli.Command) (err error) {
 	spdkClientAddr := toClientAddress(addresses[types.SpdkGrpcService])
 
 	// Start disk server
-	diskGRPCServer, diskGRPCListener, err := setupDiskGRPCServer(ctx, addresses[types.DiskGrpcService], spdkClientAddr, spdkEnabled, serverTLSConfig, clientTLSConfig)
+	diskGRPCServer, diskGRPCListener, err := setupDiskGRPCServer(ctx, addresses[types.DiskGrpcService], spdkClientAddr, spdkEnabled, localDataEngineEnabled, serverTLSConfig, clientTLSConfig)
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to setup %s", types.DiskGrpcService)
 		return err
@@ -374,8 +379,8 @@ func toClientAddress(serverAddr string) string {
 	return net.JoinHostPort(host, port)
 }
 
-func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string, spdkEnabled bool, serverTLSConfig, clientTLSConfig *tls.Config) (*grpc.Server, net.Listener, error) {
-	srv, err := disk.NewServer(ctx, spdkEnabled, spdkServiceAddress, clientTLSConfig)
+func setupDiskGRPCServer(ctx context.Context, listen, spdkServiceAddress string, spdkEnabled, localDataEngineEnabled bool, serverTLSConfig, clientTLSConfig *tls.Config) (*grpc.Server, net.Listener, error) {
+	srv, err := disk.NewServer(ctx, spdkEnabled, spdkServiceAddress, localDataEngineEnabled, clientTLSConfig)
 	if err != nil {
 		return nil, nil, err
 	}
