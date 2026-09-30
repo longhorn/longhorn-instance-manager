@@ -258,7 +258,7 @@ func TestSetupDiskGRPCServer_WithTLS(t *testing.T) {
 	spdkServiceAddress := "localhost:18508" // dummy address, not actually used in this test
 	spdkEnabled := false
 
-	server, listener, err := setupDiskGRPCServer(ctx, listen, spdkServiceAddress, spdkEnabled, tlsConfig, tlsConfig)
+	server, listener, err := setupDiskGRPCServer(ctx, listen, spdkServiceAddress, spdkEnabled, false, tlsConfig, tlsConfig)
 
 	if err != nil {
 		t.Fatalf("setupDiskGRPCServer should not return error with valid TLS config: %v", err)

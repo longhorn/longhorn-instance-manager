@@ -22,8 +22,10 @@ import (
 	spdkrpc "github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/client"
+	"github.com/longhorn/longhorn-instance-manager/pkg/lvm"
 	"github.com/longhorn/longhorn-instance-manager/pkg/meta"
 	"github.com/longhorn/longhorn-instance-manager/pkg/types"
+	"github.com/longhorn/longhorn-instance-manager/pkg/util/broadcaster"
 )
 
 const (
@@ -57,6 +59,9 @@ type V2DataEngineInstanceOps struct {
 	spdkServiceAddress string
 	spdkTLSConfig      *tls.Config
 }
+type LocalDataEngineInstanceOps struct {
+	instance lvm.Instance
+}
 
 type Server struct {
 	rpc.UnimplementedInstanceServiceServer
@@ -64,11 +69,18 @@ type Server struct {
 	logsDir       string
 	HealthChecker HealthChecker
 
-	v2DataEngineEnabled bool
-	ops                 map[rpc.DataEngine]InstanceOps
+	v2DataEngineEnabled    bool
+	localDataEngineEnabled bool
+	ops                    map[rpc.DataEngine]InstanceOps
+
+	// localUpdateCh/localBroadcaster relay local data engine state changes to
+	// the instance watch streams: unlike v1/v2 there is no external service to
+	// watch, so the local ops report their own changes in-process.
+	localUpdateCh    chan interface{}
+	localBroadcaster *broadcaster.Broadcaster
 }
 
-func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkServiceAddress string, clientTLSConfig *tls.Config, v2DataEngineEnabled bool) (*Server, error) {
+func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkServiceAddress string, clientTLSConfig *tls.Config, v2DataEngineEnabled, localDataEngineEnabled bool) (*Server, error) {
 	ops := map[rpc.DataEngine]InstanceOps{
 		rpc.DataEngine_DATA_ENGINE_V1: V1DataEngineInstanceOps{
 			processManagerServiceAddress: processManagerServiceAddress,
@@ -79,18 +91,48 @@ func NewServer(ctx context.Context, logsDir, processManagerServiceAddress, spdkS
 			spdkTLSConfig:      clientTLSConfig,
 		},
 	}
-
 	s := &Server{
-		ctx:                 ctx,
-		logsDir:             logsDir,
-		v2DataEngineEnabled: v2DataEngineEnabled,
-		HealthChecker:       &GRPCHealthChecker{},
-		ops:                 ops,
+		ctx:                    ctx,
+		logsDir:                logsDir,
+		v2DataEngineEnabled:    v2DataEngineEnabled,
+		localDataEngineEnabled: localDataEngineEnabled,
+		HealthChecker:          &GRPCHealthChecker{},
+		ops:                    ops,
+	}
+
+	// Register the local ops only in the local data engine instance manager so
+	// v1/v2 instance managers on the same node neither claim the local LVs nor
+	// depend on the lvm2 tools.
+	if localDataEngineEnabled {
+		s.localUpdateCh = make(chan interface{}, 100)
+		s.localBroadcaster = &broadcaster.Broadcaster{}
+		// Kickstart the broadcaster so it drains localUpdateCh even before the
+		// first watcher connects.
+		if _, err := s.localBroadcaster.Subscribe(ctx, s.localBroadcastConnector); err != nil {
+			return nil, err
+		}
+		ops[rpc.DataEngine_DATA_ENGINE_LOCAL] = LocalDataEngineInstanceOps{
+			instance: lvm.NewInstance(s.notifyLocalChange),
+		}
 	}
 
 	go s.startMonitoring()
 
 	return s, nil
+}
+
+func (s *Server) localBroadcastConnector() (chan interface{}, error) {
+	return s.localUpdateCh, nil
+}
+
+// notifyLocalChange rings the instance watch doorbell after a local instance
+// state change. Non-blocking: a dropped signal only delays the manager until
+// its fallback poll.
+func (s *Server) notifyLocalChange() {
+	select {
+	case s.localUpdateCh <- nil:
+	default:
+	}
 }
 
 func (s *Server) startMonitoring() {
@@ -270,6 +312,10 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 	}
 }
 
+func (ops LocalDataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
+	return ops.instance.Create(req)
+}
+
 func (s *Server) InstanceDelete(ctx context.Context, req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
 		"name":            req.Name,
@@ -370,6 +416,10 @@ func (ops V2DataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest
 	}, nil
 }
 
+func (ops LocalDataEngineInstanceOps) InstanceDelete(req *rpc.InstanceDeleteRequest) (*rpc.InstanceResponse, error) {
+	return ops.instance.Delete(req)
+}
+
 func (s *Server) InstanceGet(ctx context.Context, req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
 		"name":       req.Name,
@@ -459,6 +509,10 @@ func (ops V2DataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rp
 	}
 }
 
+func (ops LocalDataEngineInstanceOps) InstanceGet(req *rpc.InstanceGetRequest) (*rpc.InstanceResponse, error) {
+	return ops.instance.Get(req)
+}
+
 func (s *Server) InstanceList(ctx context.Context, req *emptypb.Empty) (*rpc.InstanceListResponse, error) {
 	logrus.WithFields(logrus.Fields{}).Trace("Listing instances")
 
@@ -472,6 +526,12 @@ func (s *Server) InstanceList(ctx context.Context, req *emptypb.Empty) (*rpc.Ins
 	if s.v2DataEngineEnabled {
 		err := s.ops[rpc.DataEngine_DATA_ENGINE_V2].InstanceList(instances)
 		if err != nil {
+			return nil, err
+		}
+	}
+
+	if localOps, ok := s.ops[rpc.DataEngine_DATA_ENGINE_LOCAL]; ok {
+		if err := localOps.InstanceList(instances); err != nil {
 			return nil, err
 		}
 	}
@@ -573,6 +633,10 @@ func (ops V2DataEngineInstanceOps) InstanceList(instances map[string]*rpc.Instan
 	return nil
 }
 
+func (ops LocalDataEngineInstanceOps) InstanceList(instances map[string]*rpc.InstanceResponse) error {
+	return ops.instance.List(instances)
+}
+
 func (s *Server) InstanceReplace(ctx context.Context, req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
 	logrus.WithFields(logrus.Fields{
 		"name":       req.Spec.Name,
@@ -619,6 +683,10 @@ func (ops V1DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceReque
 
 func (ops V2DataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
 	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v2 data engine instance replace is not supported")
+}
+
+func (ops LocalDataEngineInstanceOps) InstanceReplace(req *rpc.InstanceReplaceRequest) (*rpc.InstanceResponse, error) {
+	return ops.instance.Replace(req)
 }
 
 func (s *Server) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
@@ -674,6 +742,10 @@ func (ops V1DataEngineInstanceOps) InstanceLog(req *rpc.InstanceLogRequest, srv 
 
 func (ops V2DataEngineInstanceOps) InstanceLog(req *rpc.InstanceLogRequest, srv rpc.InstanceService_InstanceLogServer) error {
 	return grpcstatus.Error(grpccodes.Unimplemented, "v2 data engine instance log is not supported")
+}
+
+func (ops LocalDataEngineInstanceOps) InstanceLog(_ *rpc.InstanceLogRequest, _ rpc.InstanceService_InstanceLogServer) error {
+	return grpcstatus.Error(grpccodes.Unimplemented, "local data engine instance log is not supported")
 }
 
 func (s *Server) handleNotify(ctx context.Context, notifyChan chan struct{}, srv rpc.InstanceService_InstanceWatchServer) error {
@@ -784,6 +856,12 @@ func (s *Server) InstanceWatch(req *emptypb.Empty, srv rpc.InstanceService_Insta
 		})
 	}
 
+	if s.localDataEngineEnabled {
+		g.Go(func() error {
+			return s.watchLocal(ctx, notifyChan)
+		})
+	}
+
 	if err := g.Wait(); err != nil {
 		logrus.WithError(err).Error("Failed to watch instances")
 		return errors.Wrap(err, "failed to watch instances")
@@ -825,6 +903,34 @@ func (s *Server) watchSPDKReplica(ctx context.Context, req *emptypb.Empty, clien
 			} else {
 				notifyChan <- struct{}{}
 			}
+		}
+	}
+}
+
+// watchLocal forwards local data engine state changes to the watch stream.
+// The source is the in-process broadcaster fed by the local ops themselves —
+// there is no external service to watch, so no client or retry loop is needed.
+func (s *Server) watchLocal(ctx context.Context, notifyChan chan struct{}) error {
+	logrus.Info("Start watching local data engine instances")
+
+	sub, err := s.localBroadcaster.Subscribe(ctx, s.localBroadcastConnector)
+	if err != nil {
+		return errors.Wrap(err, "failed to subscribe to local data engine updates")
+	}
+	// Prompt the manager to perform an initial list after every IM restart.
+	notifyChan <- struct{}{}
+
+	for {
+		select {
+		case <-ctx.Done():
+			logrus.Info("Stopped watching local data engine instances")
+			return ctx.Err()
+		case _, ok := <-sub:
+			if !ok {
+				logrus.Info("Stopped watching local data engine instances: update channel closed")
+				return nil
+			}
+			notifyChan <- struct{}{}
 		}
 	}
 }
@@ -1231,6 +1337,10 @@ func (ops V2DataEngineInstanceOps) InstanceSuspend(req *rpc.InstanceSuspendReque
 	}
 }
 
+func (ops LocalDataEngineInstanceOps) InstanceSuspend(_ *rpc.InstanceSuspendRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine instance suspend is not supported")
+}
+
 func (s *Server) InstanceResume(ctx context.Context, req *rpc.InstanceResumeRequest) (*emptypb.Empty, error) {
 	logrus.WithFields(logrus.Fields{
 		"name":       req.Name,
@@ -1279,6 +1389,10 @@ func (ops V2DataEngineInstanceOps) InstanceResume(req *rpc.InstanceResumeRequest
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
+}
+
+func (ops LocalDataEngineInstanceOps) InstanceResume(_ *rpc.InstanceResumeRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine instance resume is not supported")
 }
 
 func (s *Server) InstanceSwitchOverTarget(ctx context.Context, req *rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error) {
@@ -1333,6 +1447,10 @@ func (ops V2DataEngineInstanceOps) InstanceSwitchOverTarget(req *rpc.InstanceSwi
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
+}
+
+func (ops LocalDataEngineInstanceOps) InstanceSwitchOverTarget(_ *rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine instance target switch over is not supported")
 }
 
 func toSPDKGRPCError(err error, defaultCode grpccodes.Code, format string, args ...interface{}) error {
@@ -1397,4 +1515,8 @@ func (ops V2DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteT
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
+}
+
+func (ops LocalDataEngineInstanceOps) InstanceDeleteTarget(_ *rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine instance target delete is not supported")
 }

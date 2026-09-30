@@ -23,7 +23,7 @@ func (p *Proxy) MetricsGet(ctx context.Context, req *rpc.ProxyEngineRequest) (re
 	})
 	log.Trace("Getting metrics")
 
-	ops, ok := p.ops[req.DataEngine]
+	ops, ok := p.metricsOps[req.DataEngine]
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
 	}
@@ -94,4 +94,12 @@ func (ops V2DataEngineProxyOps) MetricsGet(ctx context.Context, req *rpc.ProxyEn
 			WriteIOPS:       metrics.WriteIOPS,
 		},
 	}, nil
+}
+
+func (ops LocalDataEngineMetricsOps) MetricsGet(_ context.Context, req *rpc.ProxyEngineRequest) (*rpc.EngineMetricsGetProxyResponse, error) {
+	metrics, err := ops.metrics.Get(req.EngineName)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.EngineMetricsGetProxyResponse{Metrics: metrics}, nil
 }
