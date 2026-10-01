@@ -98,6 +98,7 @@ RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprog
     zypper -n install cifs-utils && \
     zypper -n install sg3_utils iproute2 && \
     zypper -n install util-linux-systemd nfs-client nfs4-acl-tools && \
+    zypper -n install rdma-core libibverbs librdmacm1 && \
     zypper clean -a
 
 RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
