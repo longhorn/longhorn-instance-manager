@@ -362,7 +362,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20260922010936-57b3845ad4ef
+# github.com/longhorn/backupstore v0.0.0-20260922010936-57b3845ad4ef => github.com/alliasgher/backupstore v0.0.0-20261003101151-224b449e9847
 ## explicit; go 1.25.10
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -511,7 +511,7 @@ github.com/slok/goresilience
 github.com/slok/goresilience/errors
 github.com/slok/goresilience/metrics
 github.com/slok/goresilience/timeout
-# github.com/urfave/cli/v3 v3.11.0
+# github.com/urfave/cli/v3 v3.13.0
 ## explicit; go 1.22
 github.com/urfave/cli/v3
 # github.com/x448/float16 v0.8.4
@@ -1002,3 +1002,4 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/longhorn/backupstore => github.com/alliasgher/backupstore v0.0.0-20261003101151-224b449e9847
