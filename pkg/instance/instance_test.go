@@ -14,6 +14,8 @@ import (
 	"time"
 
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func buildTestTLSConfig(t *testing.T) *tls.Config {
@@ -84,7 +86,7 @@ func TestV1DataEngineInstanceOps_TLSConfigPropagation(t *testing.T) {
 	spdkServiceAddress := "localhost:8504"
 	tlsConfig := buildTestTLSConfig(t)
 
-	server, err := NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, tlsConfig, false)
+	server, err := NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, tlsConfig, false, false)
 
 	if err != nil {
 		t.Fatalf("NewServer should succeed, but got error: %v", err)
@@ -116,7 +118,7 @@ func TestV2DataEngineInstanceOps_TLSConfigPropagation(t *testing.T) {
 	spdkServiceAddress := "localhost:8504"
 	tlsConfig := buildTestTLSConfig(t)
 
-	server, err := NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, tlsConfig, true)
+	server, err := NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, tlsConfig, true, false)
 
 	if err != nil {
 		t.Fatalf("NewServer should succeed, but got error: %v", err)
@@ -147,7 +149,7 @@ func TestNewServer_WithoutTLS(t *testing.T) {
 	processManagerServiceAddress := "localhost:8500"
 	spdkServiceAddress := "localhost:8504"
 
-	server, err := NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, nil, false)
+	server, err := NewServer(ctx, logsDir, processManagerServiceAddress, spdkServiceAddress, nil, false, false)
 
 	if err != nil {
 		t.Fatalf("NewServer should succeed without TLS, but got error: %v", err)
@@ -172,5 +174,45 @@ func TestNewServer_WithoutTLS(t *testing.T) {
 
 	if v2Ops.spdkTLSConfig != nil {
 		t.Error("V2 ops spdkTLSConfig should be nil when TLS is not provided")
+	}
+}
+
+func TestLocalDataEngineInstanceCreateRequiresSpec(t *testing.T) {
+	server, err := NewServer(context.Background(), t.TempDir(), "localhost:8500", "localhost:8504", nil, false, true)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+
+	_, err = server.InstanceCreate(context.Background(), &rpc.InstanceCreateRequest{
+		Spec: &rpc.InstanceSpec{
+			Name:       "test-local-instance",
+			Type:       "replica",
+			DataEngine: rpc.DataEngine_DATA_ENGINE_LOCAL,
+		},
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("InstanceCreate local error code = %v, want %v: %v", status.Code(err), codes.InvalidArgument, err)
+	}
+}
+
+func TestLocalDataEngineOpsAreGated(t *testing.T) {
+	server, err := NewServer(context.Background(), t.TempDir(), "localhost:8500", "localhost:8504", nil, false, false)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+
+	if _, ok := server.ops[rpc.DataEngine_DATA_ENGINE_LOCAL]; ok {
+		t.Fatal("local ops should not be registered when the local data engine is disabled")
+	}
+
+	_, err = server.InstanceCreate(context.Background(), &rpc.InstanceCreateRequest{
+		Spec: &rpc.InstanceSpec{
+			Name:       "test-local-instance",
+			Type:       "replica",
+			DataEngine: rpc.DataEngine_DATA_ENGINE_LOCAL,
+		},
+	})
+	if status.Code(err) != codes.Unimplemented {
+		t.Fatalf("InstanceCreate local error code = %v, want %v: %v", status.Code(err), codes.Unimplemented, err)
 	}
 }
