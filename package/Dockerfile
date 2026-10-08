@@ -105,6 +105,7 @@ RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprog
     zypper -n install cifs-utils && \
     zypper -n install sg3_utils iproute2 && \
     zypper -n install util-linux-systemd nfs-client nfs4-acl-tools && \
+    zypper -n install rdma-core libibverbs librdmacm1 && \
     zypper clean -a && \
     find /usr/lib64 -depth -type f -name 'wininst-*.exe' -exec rm -f {} \;
 
