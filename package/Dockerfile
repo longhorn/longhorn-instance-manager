@@ -44,8 +44,12 @@ ARG SRC_TAG
 RUN zypper -n ref && \
     zypper update -y
 
+# longhorn/longhorn#11254: python311's distutils ships wininst-*.exe stubs that
+# cause false-positive vulnerability alarms. Remove them in this same layer so
+# they're never copied into the release stage via `COPY --from=cbuilder`.
 RUN zypper -n install cmake gcc gcc13 xsltproc docbook-xsl-stylesheets git python311 python311-pip fuse3-devel jq nasm && \
-    rm -rf /var/cache/zypp/*
+    rm -rf /var/cache/zypp/* && \
+    find /usr/lib64 -depth -type f -name 'wininst-*.exe' -exec rm -f {} \;
 
 RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
     ln -sf /usr/bin/python3.11 /usr/local/bin/python3 && \
@@ -94,11 +98,15 @@ ARG ARCH=amd64
 RUN zypper -n ref && \
     zypper update -y
 
+# longhorn/longhorn#11254: Remove wininst-*.exe (pulled in by python311-base's
+# distutils) in this same layer so it never ends up in an image layer, instead
+# of installing it and relying on a later layer to delete it.
 RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper netcat libfuse3-3 logrotate && \
     zypper -n install cifs-utils && \
     zypper -n install sg3_utils iproute2 && \
     zypper -n install util-linux-systemd nfs-client nfs4-acl-tools && \
-    zypper clean -a
+    zypper clean -a && \
+    find /usr/lib64 -depth -type f -name 'wininst-*.exe' -exec rm -f {} \;
 
 RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
     ln -sf /usr/bin/python3.11 /usr/local/bin/python3
@@ -106,15 +114,25 @@ RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
 # Install SPDK dependencies
 COPY --from=cbuilder /usr/src/spdk/scripts /usr/src/spdk/scripts
 COPY --from=cbuilder /usr/src/spdk/include /usr/src/spdk/include
-RUN for i in {1..10}; do \
-        bash /usr/src/spdk/scripts/pkgdep.sh && break || sleep 1; \
-    done
-
+#
 # pkgdep.sh (since SPDK longhorn-v26.05) sets up a Python venv with pip,
 # which is only needed at build time and carries known vulnerabilities
 # (including its vendored dependencies). Remove it from the runtime image.
 # https://github.com/longhorn/spdk/blob/efc102055ebb8123d1215089cb3f2c4693af629b/scripts/pkgdep/helpers.sh
-RUN /var/spdk/dependencies/pip/bin/python -m pip uninstall -y pip
+#
+# longhorn/longhorn#14135: spdk/scripts/pkgdep/sles.sh's "minimal install" 
+# also pulls in a full build toolchain and -devel headers/static-libs needed 
+# only to build SPDK from source. The SPDK/TGT/liblonghorn binaries are already 
+# prebuilt in the cbuilder stage, so strip all of this build tooling before it ships.
+RUN for i in {1..10}; do \
+        bash /usr/src/spdk/scripts/pkgdep.sh && break || sleep 1; \
+    done && \
+    /var/spdk/dependencies/pip/bin/python -m pip uninstall -y pip && \
+    devel_pkgs=$(rpm -qa --qf '%{NAME}\n' | grep -E -- '-devel$' || true) && \
+    zypper -n remove --clean-deps -y $devel_pkgs \
+        gcc gcc-c++ gcc13 cpp cpp13 make cmake ninja meson \
+        autoconf automake libtool help2man nasm binutils 2>/dev/null || true && \
+    zypper clean -a
 
 # Copy pre-built binaries from cbuilder and gobuilder
 COPY --from=gobuilder \
@@ -145,9 +163,6 @@ COPY --from=cbuilder \
 COPY --from=cbuilder \
    /usr/lib64 \
    /usr/lib64
-
-# longhorn/longhorn#11254: Clean up unnecessary *.exe that leads to a false alarm in vulnerability scanning
-RUN find /usr/lib64 -depth -type f -name 'wininst-*.exe' -exec rm -f {} \;
 
 RUN ldconfig
 
