@@ -129,3 +129,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/longhorn/backupstore => github.com/alliasgher/backupstore v0.0.0-20261003101151-224b449e9847
