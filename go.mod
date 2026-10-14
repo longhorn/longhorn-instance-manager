@@ -6,15 +6,15 @@ require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20260922010936-57b3845ad4ef
-	github.com/longhorn/go-common-libs v0.0.0-20260909075701-1a37e0e5083e
+	github.com/longhorn/go-common-libs v0.0.0-20261013144042-4de833c70b5f
 	github.com/longhorn/go-spdk-helper v0.11.0
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20261013054225-be4fd52fd495
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20261008065928-e90f05bcc702
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20261014105849-69c0288f77f6
 	github.com/longhorn/types v0.0.0-20260912171147-ce65698c8b35
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.23.0
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	k8s.io/mount-utils v0.36.4
@@ -56,7 +56,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
-	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gammazero/deque v1.0.0 // indirect
 	github.com/gammazero/workerpool v1.1.3 // indirect
@@ -107,7 +107,7 @@ require (
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
