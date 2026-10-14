@@ -10,7 +10,7 @@ replace (
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20260929125828-90c810cfa40d
+	github.com/longhorn/backupstore v0.0.0-20260929130031-0fe49ea4aac7
 	github.com/longhorn/go-common-libs v0.0.0-20260929125724-80fe6c1e3c2a
 	github.com/longhorn/go-spdk-helper v0.8.0
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20261004144741-3e9de6312116
