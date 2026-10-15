@@ -1,6 +1,7 @@
 package lvm
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	grpccodes "google.golang.org/grpc/codes"
@@ -56,10 +58,34 @@ func IsThinProvisioningMode(mode string) bool {
 type Disk struct {
 	executor       lhexec.ExecuteInterface
 	metricsSampler *KernelBlockMetricsSampler
+	deviceNumbers  deviceNumbersFunc
 }
 
 func NewDisk() Disk {
-	return Disk{executor: NewExecutor(), metricsSampler: NewKernelBlockMetricsSampler()}
+	return Disk{
+		executor:       NewExecutor(),
+		metricsSampler: NewKernelBlockMetricsSampler(),
+		deviceNumbers:  lookupDeviceNumbers,
+	}
+}
+
+// deviceNumbersFunc reports the major and minor numbers of the block device a
+// path names, following symlinks. found is false when nothing exists at the
+// path; a path that exists but is not a block device is an error.
+type deviceNumbersFunc func(devPath string) (major, minor int64, found bool, err error)
+
+func lookupDeviceNumbers(devPath string) (int64, int64, bool, error) {
+	var stat unix.Stat_t
+	if err := unix.Stat(devPath, &stat); err != nil {
+		if errors.Is(err, unix.ENOENT) || errors.Is(err, unix.ENOTDIR) {
+			return 0, 0, false, nil
+		}
+		return 0, 0, false, fmt.Errorf("failed to stat device %v: %w", devPath, err)
+	}
+	if stat.Mode&unix.S_IFMT != unix.S_IFBLK {
+		return 0, 0, false, fmt.Errorf("device path %v is not a block device", devPath)
+	}
+	return int64(unix.Major(uint64(stat.Rdev))), int64(unix.Minor(uint64(stat.Rdev))), true, nil
 }
 
 // InitializeDevicesFile creates the devices file when it does not already exist.
@@ -463,24 +489,47 @@ type lvmPV struct {
 	UUID           string
 	VGName         string
 	Representative bool
+	// Major and Minor are the device numbers LVM reports for the PV; -1 when
+	// the PV's device is missing.
+	Major int64
+	Minor int64
 }
 
+// lvmPVFields is the pvs report the PV helpers parse; parsePhysicalVolume
+// follows its order.
+const lvmPVFields = "pv_name,pv_uuid,vg_name,pv_tags,pv_major,pv_minor"
+
+// getPV returns the PV on the device devPath names, or nil when the device
+// carries none that Longhorn's devices file exposes.
+//
+// The caller's path may be an alias such as /dev/disk/by-id/... or
+// /dev/mapper/..., while LVM canonicalises names and reports pv_name as its
+// preferred one (usually the kernel name), so selecting on pv_name misses
+// every alias. The PVs are therefore listed and matched here by the device
+// numbers the path resolves to.
 func (ops Disk) getPV(devPath string) (*lvmPV, error) {
-	output, err := ops.executor.Execute(nil, "pvs", CommandArgs(
-		"--noheadings", "--separator", ";", "--select", "pv_name="+devPath,
-		"-o", "pv_name,pv_uuid,vg_name,pv_tags"), lhtypes.ExecuteDefaultTimeout)
+	major, minor, found, err := ops.deviceNumbers(devPath)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, nil
+	}
+	pvs, err := ops.queryPhysicalVolumes("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect physical volume %v: %w", devPath, err)
 	}
-	if strings.TrimSpace(output) == "" {
-		return nil, nil
+	for i := range pvs {
+		if pvs[i].Major == major && pvs[i].Minor == minor {
+			return &pvs[i], nil
+		}
 	}
-	return parsePhysicalVolume(output)
+	return nil, nil
 }
 
 func parsePhysicalVolume(output string) (*lvmPV, error) {
 	fields := strings.Split(strings.TrimSpace(output), ";")
-	if len(fields) != 4 {
+	if len(fields) != 6 {
 		return nil, fmt.Errorf("unexpected physical-volume output: %v", output)
 	}
 	tags := strings.TrimSpace(fields[3])
@@ -488,6 +537,8 @@ func parsePhysicalVolume(output string) (*lvmPV, error) {
 		Path:   strings.TrimSpace(fields[0]),
 		UUID:   strings.TrimSpace(fields[1]),
 		VGName: strings.TrimSpace(fields[2]),
+		Major:  parseDeviceNumber(fields[4]),
+		Minor:  parseDeviceNumber(fields[5]),
 	}
 	for _, tag := range strings.Split(tags, ",") {
 		if strings.TrimSpace(tag) == lvmRepresentativePVTag {
@@ -498,12 +549,27 @@ func parsePhysicalVolume(output string) (*lvmPV, error) {
 	return pv, nil
 }
 
-func (ops Disk) listVGPhysicalVolumes(vgName string) ([]lvmPV, error) {
-	output, err := ops.executor.Execute(nil, "pvs", CommandArgs(
-		"--noheadings", "--separator", ";", "--select", "vg_name="+vgName,
-		"-o", "pv_name,pv_uuid,vg_name,pv_tags"), lhtypes.ExecuteDefaultTimeout)
+// parseDeviceNumber returns -1 for the blank or negative number LVM reports
+// when a PV's device is missing, so such a PV never matches a real device.
+func parseDeviceNumber(field string) int64 {
+	number, err := strconv.ParseInt(strings.TrimSpace(field), 10, 64)
+	if err != nil || number < 0 {
+		return -1
+	}
+	return number
+}
+
+// queryPhysicalVolumes lists the PVs visible through the devices file, all of
+// them when selection is empty.
+func (ops Disk) queryPhysicalVolumes(selection string) ([]lvmPV, error) {
+	args := []string{"--noheadings", "--separator", ";"}
+	if selection != "" {
+		args = append(args, "--select", selection)
+	}
+	args = append(args, "-o", lvmPVFields)
+	output, err := ops.executor.Execute(nil, "pvs", CommandArgs(args...), lhtypes.ExecuteDefaultTimeout)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list physical volumes in volume group %v: %w", vgName, err)
+		return nil, err
 	}
 	pvs := []lvmPV{}
 	for _, line := range strings.Split(output, "\n") {
@@ -515,6 +581,14 @@ func (ops Disk) listVGPhysicalVolumes(vgName string) ([]lvmPV, error) {
 			return nil, err
 		}
 		pvs = append(pvs, *pv)
+	}
+	return pvs, nil
+}
+
+func (ops Disk) listVGPhysicalVolumes(vgName string) ([]lvmPV, error) {
+	pvs, err := ops.queryPhysicalVolumes("vg_name=" + vgName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list physical volumes in volume group %v: %w", vgName, err)
 	}
 	return pvs, nil
 }

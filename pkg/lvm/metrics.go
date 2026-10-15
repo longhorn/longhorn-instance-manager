@@ -10,7 +10,6 @@ import (
 
 	lhexec "github.com/longhorn/go-common-libs/exec"
 	enginerpc "github.com/longhorn/types/pkg/generated/enginerpc"
-	"golang.org/x/sys/unix"
 
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
@@ -152,15 +151,13 @@ func countersAtLeast(current, previous blockCounters) bool {
 }
 
 func readKernelBlockCounters(devicePath string) (blockCounters, error) {
-	var stat unix.Stat_t
-	if err := unix.Stat(devicePath, &stat); err != nil {
-		return blockCounters{}, fmt.Errorf("failed to stat block device %v: %w", devicePath, err)
+	major, minor, found, err := lookupDeviceNumbers(devicePath)
+	if err != nil {
+		return blockCounters{}, err
 	}
-	if stat.Mode&unix.S_IFMT != unix.S_IFBLK {
-		return blockCounters{}, fmt.Errorf("device path %v is not a block device", devicePath)
+	if !found {
+		return blockCounters{}, fmt.Errorf("block device %v does not exist", devicePath)
 	}
-	major := unix.Major(uint64(stat.Rdev))
-	minor := unix.Minor(uint64(stat.Rdev))
 	statPath := fmt.Sprintf("/sys/dev/block/%d:%d/stat", major, minor)
 	data, err := os.ReadFile(statPath)
 	if err != nil {

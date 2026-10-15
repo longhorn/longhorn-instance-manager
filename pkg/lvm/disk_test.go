@@ -122,12 +122,12 @@ func (e *fakeExecutor) ExecuteWithStdinPipe(binary string, args []string, stdinS
 func TestLVMDiskGet(t *testing.T) {
 	executor := &fakeExecutor{
 		outputs: map[string]string{
-			lvmPVGetPrefix("/dev/sdb"):              lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
+			lvmPVListAllPrefix():                    lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
 			lvmPVListPrefix("longhorn-vg-a7f3c921"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
 			lvmVGStatPrefix("longhorn-vg-a7f3c921"): "107374182400;53687091200;4194304\n",
 		},
 	}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	disk, err := ops.Get(&rpc.DiskGetRequest{DiskName: "disk-1", DiskPath: "/dev/sdb"})
 	if err != nil {
@@ -145,7 +145,7 @@ func TestLVMDiskGet(t *testing.T) {
 
 func TestLVMDiskGetNotFound(t *testing.T) {
 	executor := &fakeExecutor{}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Get(&rpc.DiskGetRequest{DiskName: "disk-1", DiskPath: "/dev/sdb"})
 	if status.Code(err) != codes.NotFound {
@@ -156,11 +156,11 @@ func TestLVMDiskGetNotFound(t *testing.T) {
 func TestLVMDiskDelete(t *testing.T) {
 	executor := &fakeExecutor{
 		outputs: map[string]string{
-			lvmPVGetPrefix("/dev/sdb"):              lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
+			lvmPVListAllPrefix():                    lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
 			lvmPVListPrefix("longhorn-vg-a7f3c921"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
 		},
 	}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	if _, err := ops.Delete(&rpc.DiskDeleteRequest{
 		DiskType: rpc.DiskType_lvm,
@@ -181,10 +181,10 @@ func TestLVMDiskDelete(t *testing.T) {
 func TestLVMDiskDeleteRefusesUUIDMismatch(t *testing.T) {
 	executor := &fakeExecutor{
 		outputs: map[string]string{
-			lvmPVGetPrefix("/dev/sdb"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
+			lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a7f3c921", true),
 		},
 	}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Delete(&rpc.DiskDeleteRequest{
 		DiskType: rpc.DiskType_lvm,
@@ -215,14 +215,14 @@ func lvmCommandPrefix(binary string, args ...string) string {
 
 func TestLVMDiskCreateAdoptsIndependentPerDiskVGs(t *testing.T) {
 	executor := &fakeExecutor{outputs: map[string]string{
-		lvmPVGetPrefix("/dev/sdb"):       lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
-		lvmPVGetPrefix("/dev/sdc"):       lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-b", true),
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
+			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-b", true),
 		lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
 		lvmPVListPrefix("longhorn-vg-b"): lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-b", true),
 		lvmVGStatPrefix("longhorn-vg-a"): "107374182400;53687091200;4194304\n",
 		lvmVGStatPrefix("longhorn-vg-b"): "214748364800;161061273600;4194304\n",
 	}}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	first, err := ops.Create(&rpc.DiskCreateRequest{
 		DiskName: "disk-1", DiskPath: "/dev/sdb",
@@ -254,7 +254,7 @@ func TestLVMDiskCreateAdoptsIndependentPerDiskVGs(t *testing.T) {
 }
 
 func TestLVMDiskCreateResumesAfterVGCreation(t *testing.T) {
-	getPV := lvmPVGetPrefix("/dev/sdb")
+	getPV := lvmPVListAllPrefix()
 	executor := &fakeExecutor{
 		outputs: map[string]string{
 			lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", false),
@@ -267,7 +267,7 @@ func TestLVMDiskCreateResumesAfterVGCreation(t *testing.T) {
 			},
 		},
 	}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	diskInfo, err := ops.Create(&rpc.DiskCreateRequest{
 		DiskName: "disk-1", DiskPath: "/dev/sdb",
@@ -289,9 +289,9 @@ func TestLVMDiskCreateResumesAfterVGCreation(t *testing.T) {
 
 func TestLVMDiskCreatePropagatesPVInspectionFailure(t *testing.T) {
 	executor := &fakeExecutor{errs: map[string]error{
-		lvmPVGetPrefix("/dev/sdb"): fmt.Errorf("devices file is unavailable"),
+		lvmPVListAllPrefix(): fmt.Errorf("devices file is unavailable"),
 	}}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Create(&rpc.DiskCreateRequest{
 		DiskName: "disk-1", DiskPath: "/dev/sdb",
@@ -306,7 +306,7 @@ func TestLVMDiskCreatePropagatesPVInspectionFailure(t *testing.T) {
 }
 
 func TestLVMDiskCreateExtendsPerNodeVG(t *testing.T) {
-	getSecondPV := lvmPVGetPrefix("/dev/sdc")
+	getSecondPV := lvmPVListAllPrefix()
 	executor := &fakeExecutor{
 		outputs: map[string]string{
 			lvmCommandPrefix("vgs", "--noheadings", "-o", "vg_name"):                  "longhorn-vg-a\n",
@@ -317,12 +317,12 @@ func TestLVMDiskCreateExtendsPerNodeVG(t *testing.T) {
 		},
 		outputSequences: map[string][]string{
 			getSecondPV: {
-				lvmPVLine("/dev/sdc", "PV-2", "", false),
-				lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
+				lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) + lvmPVLine("/dev/sdc", "PV-2", "", false),
+				lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) + lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 			},
 		},
 	}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	diskInfo, err := ops.Create(&rpc.DiskCreateRequest{
 		DiskName:      "disk-2",
@@ -345,12 +345,13 @@ func TestLVMDiskCreateExtendsPerNodeVG(t *testing.T) {
 
 func TestLVMDiskDeleteRefusesMemberWhenVGContainsLV(t *testing.T) {
 	executor := &fakeExecutor{outputs: map[string]string{
-		lvmPVGetPrefix("/dev/sdc"): lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
+			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 		lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
 			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 		lvmLVListPrefix("longhorn-vg-a"): lvmLVReport("longhorn-vg-a", "replica-1"),
 	}}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Delete(&rpc.DiskDeleteRequest{
 		DiskName: "disk-2", DiskUuid: "PV-2", DiskPath: "/dev/sdc",
@@ -365,11 +366,12 @@ func TestLVMDiskDeleteRefusesMemberWhenVGContainsLV(t *testing.T) {
 
 func TestLVMDiskDeleteRemovesEmptyMember(t *testing.T) {
 	executor := &fakeExecutor{outputs: map[string]string{
-		lvmPVGetPrefix("/dev/sdc"): lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
+			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 		lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
 			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 	}}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Delete(&rpc.DiskDeleteRequest{
 		DiskName: "disk-2", DiskUuid: "PV-2", DiskPath: "/dev/sdc",
@@ -385,11 +387,11 @@ func TestLVMDiskDeleteRemovesEmptyMember(t *testing.T) {
 
 func TestLVMDiskDeleteRefusesSinglePVWhenVGContainsLV(t *testing.T) {
 	executor := &fakeExecutor{outputs: map[string]string{
-		lvmPVGetPrefix("/dev/sdb"):       lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
+		lvmPVListAllPrefix():             lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
 		lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
 		lvmLVListPrefix("longhorn-vg-a"): lvmLVReport("longhorn-vg-a", "replica-1"),
 	}}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Delete(&rpc.DiskDeleteRequest{
 		DiskName: "disk-1", DiskUuid: "PV-1", DiskPath: "/dev/sdb",
@@ -404,11 +406,12 @@ func TestLVMDiskDeleteRefusesSinglePVWhenVGContainsLV(t *testing.T) {
 
 func TestLVMDiskDeleteRefusesRepresentativeWithMembers(t *testing.T) {
 	executor := &fakeExecutor{outputs: map[string]string{
-		lvmPVGetPrefix("/dev/sdb"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
+			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 		lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
 			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 	}}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Delete(&rpc.DiskDeleteRequest{
 		DiskName: "disk-1", DiskUuid: "PV-1", DiskPath: "/dev/sdb",
@@ -423,7 +426,7 @@ func TestLVMDiskDeleteRefusesRepresentativeWithMembers(t *testing.T) {
 
 func TestLVMDiskCreateRequiresStorageLayout(t *testing.T) {
 	executor := &fakeExecutor{}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 	_, err := ops.Create(&rpc.DiskCreateRequest{DiskName: "disk-1", DiskPath: "/dev/sdb"})
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("DiskCreate error code = %v, want %v: %v", status.Code(err), codes.InvalidArgument, err)
@@ -437,9 +440,9 @@ func TestLVMDiskCreateRequiresStorageLayout(t *testing.T) {
 
 func TestLVMDiskCreateRejectsForeignVG(t *testing.T) {
 	executor := &fakeExecutor{outputs: map[string]string{
-		lvmPVGetPrefix("/dev/sdb"): lvmPVLine("/dev/sdb", "PV-1", "rhel", false),
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "rhel", false),
 	}}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Create(&rpc.DiskCreateRequest{
 		DiskName: "disk-1", DiskPath: "/dev/sdb",
@@ -461,13 +464,13 @@ func TestLVMDiskCreateRejectsForeignVG(t *testing.T) {
 func TestLVMDiskCreateForgetsDeviceWhenVGCreationFails(t *testing.T) {
 	executor := &fakeExecutor{
 		outputs: map[string]string{
-			lvmPVGetPrefix("/dev/sdb"): lvmPVLine("/dev/sdb", "PV-1", "", false),
+			lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "", false),
 		},
 		errs: map[string]error{
 			lvmCommandPrefix("vgcreate"): fmt.Errorf("vgcreate exploded"),
 		},
 	}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	_, err := ops.Create(&rpc.DiskCreateRequest{
 		DiskName: "disk-1", DiskPath: "/dev/sdb",
@@ -490,13 +493,13 @@ func TestLVMDiskCreateKeepsDeviceAfterJoiningVG(t *testing.T) {
 			lvmLVListPrefix("longhorn-vg-a"): lvmLVReport("longhorn-vg-a", ThinPoolName),
 		},
 		outputSequences: map[string][]string{
-			lvmPVGetPrefix("/dev/sdc"): {
-				lvmPVLine("/dev/sdc", "PV-2", "", false),
-				lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
+			lvmPVListAllPrefix(): {
+				lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) + lvmPVLine("/dev/sdc", "PV-2", "", false),
+				lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) + lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-a", false),
 			},
 		},
 	}
-	ops := Disk{executor: executor}
+	ops := testDisk(executor)
 
 	// The VG got extended, then the thin pool inspection finds an unexpected LV
 	// under the pool name. The device is now a VG member, so it must stay in
@@ -516,12 +519,36 @@ func TestLVMDiskCreateKeepsDeviceAfterJoiningVG(t *testing.T) {
 	}
 }
 
-func lvmPVGetPrefix(path string) string {
-	return lvmCommandPrefix("pvs", "--noheadings", "--separator", ";", "--select", "pv_name="+path, "-o", "pv_name,pv_uuid,vg_name,pv_tags")
+// testDevices maps the paths the tests use to the device numbers a stat
+// would report on the host: two disks, each reachable through an alias.
+var testDevices = map[string][2]int64{
+	"/dev/sdb":                           {8, 16},
+	"/dev/disk/by-id/scsi-3600062b2":     {8, 16},
+	"/dev/sdc":                           {8, 32},
+	"/dev/disk/by-path/pci-0000:05:00.0": {8, 32},
+	"/dev/mapper/mpatha":                 {253, 3},
+	"/dev/dm-3":                          {253, 3},
+}
+
+func fakeDeviceNumbers(devPath string) (int64, int64, bool, error) {
+	numbers, ok := testDevices[devPath]
+	if !ok {
+		return 0, 0, false, nil
+	}
+	return numbers[0], numbers[1], true, nil
+}
+
+func testDisk(executor *fakeExecutor) Disk {
+	return Disk{executor: executor, deviceNumbers: fakeDeviceNumbers}
+}
+
+// lvmPVListAllPrefix is the pvs listing getPV matches devices against.
+func lvmPVListAllPrefix() string {
+	return lvmCommandPrefix("pvs", "--noheadings", "--separator", ";", "-o", lvmPVFields)
 }
 
 func lvmPVListPrefix(vgName string) string {
-	return lvmCommandPrefix("pvs", "--noheadings", "--separator", ";", "--select", "vg_name="+vgName, "-o", "pv_name,pv_uuid,vg_name,pv_tags")
+	return lvmCommandPrefix("pvs", "--noheadings", "--separator", ";", "--select", "vg_name="+vgName, "-o", lvmPVFields)
 }
 
 func lvmLVListPrefix(vgName string) string {
@@ -537,10 +564,165 @@ func lvmVGStatPrefix(vgName string) string {
 	return lvmCommandPrefix("vgs", "--noheadings", "--units", "b", "--nosuffix", "--separator", ";", "-o", "vg_size,vg_free,vg_extent_size", vgName)
 }
 
+// lvmPVLine renders one pvs report line for a PV on the kernel device path,
+// with the device numbers testDevices assigns to it.
 func lvmPVLine(path, pvUUID, vgName string, representative bool) string {
 	tags := ""
 	if representative {
 		tags += lvmRepresentativePVTag
 	}
-	return fmt.Sprintf("%s;%s;%s;%s\n", path, pvUUID, vgName, tags)
+	numbers, ok := testDevices[path]
+	if !ok {
+		panic("lvmPVLine: unknown test device " + path)
+	}
+	return fmt.Sprintf("  %s;%s;%s;%s;%d;%d\n", path, pvUUID, vgName, tags, numbers[0], numbers[1])
+}
+
+func TestLVMDiskGetPVResolvesDeviceAliases(t *testing.T) {
+	// LVM reports the kernel name; the manager registers the disk by whatever
+	// alias the operator chose. The two must meet on the device numbers.
+	executor := &fakeExecutor{outputs: map[string]string{
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
+			lvmPVLine("/dev/sdc", "PV-2", "longhorn-vg-b", true) +
+			lvmPVLine("/dev/mapper/mpatha", "PV-3", "longhorn-vg-c", true),
+	}}
+	ops := testDisk(executor)
+
+	for path, uuid := range map[string]string{
+		"/dev/sdb":                           "PV-1",
+		"/dev/disk/by-id/scsi-3600062b2":     "PV-1",
+		"/dev/disk/by-path/pci-0000:05:00.0": "PV-2",
+		"/dev/mapper/mpatha":                 "PV-3",
+		"/dev/dm-3":                          "PV-3",
+	} {
+		pv, err := ops.getPV(path)
+		if err != nil {
+			t.Fatalf("getPV(%v) failed: %v", path, err)
+		}
+		if pv == nil || pv.UUID != uuid {
+			t.Fatalf("getPV(%v) = %+v, want PV %v", path, pv, uuid)
+		}
+	}
+	if !slicesContainPrefix(executor.calls, lvmPVListAllPrefix()) || slicesContainPrefix(executor.calls, lvmCommandPrefix("pvs", "--noheadings", "--separator", ";", "--select", "pv_name=")) {
+		t.Fatalf("PVs must be listed and matched by device numbers, not selected by name: %v", executor.calls)
+	}
+}
+
+func TestLVMDiskGetPVIgnoresOtherAndMissingDevices(t *testing.T) {
+	executor := &fakeExecutor{outputs: map[string]string{
+		// The second line is a PV whose device disappeared: pvs reports it
+		// as [unknown] without device numbers.
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true) +
+			"  [unknown];PV-9;longhorn-vg-z;;-1;-1\n",
+	}}
+	ops := testDisk(executor)
+
+	pv, err := ops.getPV("/dev/sdc")
+	if err != nil || pv != nil {
+		t.Fatalf("getPV of a device without a PV = %+v, %v; want nil, nil", pv, err)
+	}
+	pv, err = ops.getPV("/dev/disk/by-id/gone")
+	if err != nil || pv != nil {
+		t.Fatalf("getPV of a missing path = %+v, %v; want nil, nil", pv, err)
+	}
+}
+
+func TestLVMDiskCreateByDeviceAlias(t *testing.T) {
+	// The reconcile after a failed first attempt: pvcreate and vgcreate ran on
+	// the kernel device while the request names the disk by its by-id path.
+	// The lookup must find the PV through the alias and adopt it instead of
+	// treating the device as new, and the disk must report the caller's path.
+	alias := "/dev/disk/by-id/scsi-3600062b2"
+	executor := &fakeExecutor{
+		outputs: map[string]string{
+			lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", false),
+			lvmVGStatPrefix("longhorn-vg-a"): "107374182400;53687091200;4194304\n",
+		},
+		outputSequences: map[string][]string{
+			lvmPVListAllPrefix(): {
+				lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", false),
+				lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
+			},
+		},
+	}
+	ops := testDisk(executor)
+
+	diskInfo, err := ops.Create(&rpc.DiskCreateRequest{
+		DiskName: "disk-1", DiskPath: alias,
+		StorageLayout: rpc.LVMStorageLayout_LVM_STORAGE_LAYOUT_PER_DISK,
+	})
+	if err != nil {
+		t.Fatalf("failed to create disk by alias: %v", err)
+	}
+	if diskInfo.Uuid != "PV-1" || diskInfo.Path != alias || diskInfo.TotalSize == 0 {
+		t.Fatalf("unexpected disk info: %+v", diskInfo)
+	}
+	if !slicesContainPrefix(executor.calls, lvmCommandPrefix("lvmdevices", "--adddev", alias)) {
+		t.Fatalf("expected the alias to be added to the devices file: %v", executor.calls)
+	}
+	if !slicesContainPrefix(executor.calls, lvmCommandPrefix("pvchange", "--addtag", lvmRepresentativePVTag, "/dev/sdb")) {
+		t.Fatalf("expected the representative marker on the PV LVM reports: %v", executor.calls)
+	}
+	for _, forbidden := range []string{"wipefs", "pvcreate", "vgcreate", "vgextend", "lvmdevices --deldev"} {
+		if slicesContainPrefix(executor.calls, forbidden) {
+			t.Fatalf("%v must not run when the alias resolves to an existing PV: %v", forbidden, executor.calls)
+		}
+	}
+}
+
+func TestLVMDiskDeleteByDeviceAlias(t *testing.T) {
+	alias := "/dev/disk/by-id/scsi-3600062b2"
+	executor := &fakeExecutor{outputs: map[string]string{
+		lvmPVListAllPrefix():             lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
+		lvmPVListPrefix("longhorn-vg-a"): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
+	}}
+	ops := testDisk(executor)
+
+	if _, err := ops.Delete(&rpc.DiskDeleteRequest{
+		DiskType: rpc.DiskType_lvm, DiskName: "disk-1", DiskUuid: "PV-1", DiskPath: alias,
+	}); err != nil {
+		t.Fatalf("DiskDelete by alias failed: %v", err)
+	}
+	for _, expected := range []string{
+		lvmCommandPrefix("vgremove", "-y", "longhorn-vg-a"),
+		lvmCommandPrefix("pvremove", "-y", alias),
+		lvmCommandPrefix("lvmdevices", "--deldev", alias),
+	} {
+		if !slicesContainPrefix(executor.calls, expected) {
+			t.Fatalf("expected %q, calls: %v", expected, executor.calls)
+		}
+	}
+}
+
+func TestLVMDiskDeleteByAliasRefusesUUIDMismatch(t *testing.T) {
+	// Before the device-number lookup, a by-id path made Delete miss the PV
+	// and return success, leaving the VG on the disk. The PV must be found and
+	// the UUID check must still guard it.
+	executor := &fakeExecutor{outputs: map[string]string{
+		lvmPVListAllPrefix(): lvmPVLine("/dev/sdb", "PV-1", "longhorn-vg-a", true),
+	}}
+	ops := testDisk(executor)
+
+	_, err := ops.Delete(&rpc.DiskDeleteRequest{
+		DiskName: "disk-1", DiskUuid: "PV-other", DiskPath: "/dev/disk/by-id/scsi-3600062b2",
+	})
+	if status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("DiskDelete error code = %v, want %v: %v", status.Code(err), codes.FailedPrecondition, err)
+	}
+	if slicesContainPrefix(executor.calls, "vgremove") || slicesContainPrefix(executor.calls, "lvmdevices --deldev") {
+		t.Fatalf("nothing may be removed on a UUID mismatch: %v", executor.calls)
+	}
+}
+
+func TestLookupDeviceNumbers(t *testing.T) {
+	if _, _, found, err := lookupDeviceNumbers(filepath.Join(t.TempDir(), "missing")); err != nil || found {
+		t.Fatalf("missing path: found=%v err=%v, want not found without error", found, err)
+	}
+	regular := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(regular, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := lookupDeviceNumbers(regular); err == nil {
+		t.Fatal("a regular file must be rejected as a device")
+	}
 }
