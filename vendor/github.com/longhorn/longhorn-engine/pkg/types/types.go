@@ -159,7 +159,6 @@ type Frontend interface {
 	FrontendName() string
 	Init(name string, size, sectorSize int64) error
 	Startup(rwu ReaderWriterUnmapperAt) error
-	StartInitiatorAndWaitForDeviceReady() error
 	Shutdown() error
 	State() State
 	Endpoint() string

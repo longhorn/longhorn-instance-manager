@@ -622,7 +622,7 @@ func (t *Task) getTransferClients(address, instanceName string) (toClient *repli
 
 		if r.Address == address {
 			if r.Mode != types.WO {
-				return nil, nil, types.ErrReplicaNotInWOMode(address, string(r.Mode))
+				return nil, nil, fmt.Errorf("replica %s is not in mode WO: %s", address, r.Mode)
 			}
 			if toClient, err = replicaClient.NewReplicaClient(r.Address, t.client.VolumeName, instanceName); err != nil {
 				return nil, nil, err
@@ -1047,9 +1047,6 @@ func (t *Task) HashSnapshotStatus(snapshotName string) (map[string]*SnapshotHash
 					}
 					return
 				}
-				if err == nil {
-					err = fmt.Errorf("BUG: no snapshot hashing status and no error for %v", r.Address)
-				}
 				hashStatusMap[r.Address] = &SnapshotHashStatus{
 					State: string(replica.ProgressStateError),
 					Error: err.Error(),
@@ -1071,13 +1068,11 @@ func (t *Task) HashSnapshotStatus(snapshotName string) (map[string]*SnapshotHash
 				return
 			}
 
-			isRebuilding, rebuildingErr := t.isRebuilding(r)
-			if rebuildingErr != nil {
-				err = errors.Wrapf(rebuildingErr, "cannot get snapshot hashing status of %v", r.Address)
+			if ok, err := t.isRebuilding(r); err != nil {
+				err = errors.Wrapf(err, "cannot get snapshot hashing status of %v", r.Address) // nolint: ineffassign,staticcheck
 				return
-			}
-			if isRebuilding {
-				err = fmt.Errorf("replica %v is rebuilding", r.Address)
+			} else if ok {
+				err = fmt.Errorf("replica %v is rebuilding", r.Address) // nolint: ineffassign,staticcheck
 				return
 			}
 
