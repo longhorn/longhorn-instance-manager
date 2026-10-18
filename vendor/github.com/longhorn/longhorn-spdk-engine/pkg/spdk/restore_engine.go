@@ -37,9 +37,6 @@ type EngineRestore struct {
 	LastRestored           string
 	CurrentRestoringBackup string
 
-	// backupstore ignores the CloseVolumeDev error, so a lost write is only caught here.
-	deviceSyncErr error
-
 	stopChan chan struct{}
 	stopOnce sync.Once
 
@@ -73,7 +70,6 @@ func (r *EngineRestore) StartNewRestore(backupURL string, currentRestoringBackup
 
 	r.Progress = 0
 	r.Error = ""
-	r.deviceSyncErr = nil
 	r.BackupURL = backupURL
 	r.State = btypes.ProgressStateInProgress
 
@@ -100,19 +96,6 @@ func (r *EngineRestore) DeepCopy() *EngineRestore {
 	}
 }
 
-// Revert restores the status fields that StartNewRestore resets.
-func (r *EngineRestore) Revert(prev *EngineRestore) {
-	r.Lock()
-	defer r.Unlock()
-
-	r.Progress = prev.Progress
-	r.Error = prev.Error
-	r.BackupURL = prev.BackupURL
-	r.State = prev.State
-	r.LastRestored = prev.LastRestored
-	r.CurrentRestoringBackup = prev.CurrentRestoringBackup
-}
-
 func (r *EngineRestore) OpenVolumeDev(_ string) (*os.File, string, error) {
 	endpoint := r.endpoint
 
@@ -125,20 +108,14 @@ func (r *EngineRestore) OpenVolumeDev(_ string) (*os.File, string, error) {
 }
 
 func (r *EngineRestore) CloseVolumeDev(volDev *os.File) error {
-	syncErr := volDev.Sync()
-	if syncErr != nil {
-		r.log.WithError(syncErr).Errorf("Failed to sync NVMe device %v before close", volDev.Name())
-		r.Lock()
-		r.deviceSyncErr = errors.Wrapf(syncErr, "failed to sync NVMe device %v", volDev.Name())
-		r.Unlock()
+	if err := volDev.Sync(); err != nil {
+		r.log.WithError(err).Errorf("Failed to sync NVMe device %v before close", volDev.Name())
 	}
 
 	r.log.Infof("Closing NVMe device %v", volDev.Name())
-	if closeErr := volDev.Close(); closeErr != nil {
-		return closeErr
-	}
+	closeErr := volDev.Close()
 
-	return syncErr
+	return closeErr
 }
 
 func (r *EngineRestore) UpdateRestoreStatus(snapshot string, progress int, err error) {
