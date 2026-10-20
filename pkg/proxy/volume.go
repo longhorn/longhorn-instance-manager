@@ -473,6 +473,51 @@ func (ops V2DataEngineProxyOps) VolumeSnapshotMaxSizeSet(ctx context.Context, re
 	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeSnapshotMaxSizeSet is not yet implemented for V2 engine")
 }
 
+func (p *Proxy) VolumeSnapshotRemoveOldestSet(ctx context.Context, req *rpc.EngineVolumeSnapshotRemoveOldestSetRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
+	})
+	log.Infof("Setting volume flag SnapshotRemoveOldest to %v", req.SnapshotRemoveOldest.Enabled)
+
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return ops.VolumeSnapshotRemoveOldestSet(ctx, req)
+}
+
+func (ops V1DataEngineProxyOps) VolumeSnapshotRemoveOldestSet(ctx context.Context, req *rpc.EngineVolumeSnapshotRemoveOldestSetRequest) (resp *emptypb.Empty, err error) {
+	c, err := eclient.NewControllerClient(req.ProxyEngineRequest.Address, req.ProxyEngineRequest.VolumeName,
+		req.ProxyEngineRequest.EngineName)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close Controller client")
+		}
+	}()
+
+	err = c.VolumeSnapshotRemoveOldestSet(req.SnapshotRemoveOldest.Enabled)
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (ops V2DataEngineProxyOps) VolumeSnapshotRemoveOldestSet(ctx context.Context, req *rpc.EngineVolumeSnapshotRemoveOldestSetRequest) (resp *emptypb.Empty, err error) {
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "VolumeSnapshotRemoveOldest is not yet implemented for V2 engine")
+}
+
 func (p *Proxy) RemountReadOnlyVolume(ctx context.Context, req *rpc.RemountVolumeRequest) (resp *emptypb.Empty, err error) {
 	volumeName := req.VolumeName
 	volumeNameSHA := sha256.Sum256([]byte(volumeName))

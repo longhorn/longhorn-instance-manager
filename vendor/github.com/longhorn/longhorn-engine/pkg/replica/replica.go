@@ -66,8 +66,9 @@ type Replica struct {
 
 	unmapMarkDiskChainRemoved bool
 
-	snapshotMaxCount int
-	snapshotMaxSize  int64
+	snapshotMaxCount     int
+	snapshotMaxSize      int64
+	snapshotRemoveOldest bool
 }
 
 type Info struct {
@@ -84,8 +85,13 @@ type Info struct {
 }
 
 type disk struct {
-	Name        string
-	Parent      string
+	Name   string
+	Parent string
+	// SourceHead is the name of the head this snapshot was taken from. It records the
+	// snapshot creation sequence so the chain can be reconstructed if the replica breaks.
+	// It is empty for heads and for snapshots created before this field existed, and omitted
+	// from the meta file in that case so that existing meta files keep their format.
+	SourceHead  string `json:",omitempty"`
 	Removed     bool
 	UserCreated bool
 	Created     string
@@ -1016,7 +1022,12 @@ func (r *Replica) createDisk(name string, userCreated bool, created string, labe
 	r.diskData[newHeadDisk.Name] = &newHeadDisk
 	if newSnapName != "" {
 		r.addChildDisk(newSnapName, newHeadDisk.Name)
+		// The old head's disk struct is reused for the new snapshot. Keep a copy so the rollback
+		// can restore the head if a later step fails.
+		oldHeadDisk := *r.diskData[oldHead]
 		r.diskData[newSnapName] = r.diskData[oldHead]
+		r.diskData[newSnapName].Name = newSnapName
+		r.diskData[newSnapName].SourceHead = oldHead
 		r.diskData[newSnapName].UserCreated = userCreated
 		r.diskData[newSnapName].Created = created
 		r.diskData[newSnapName].Labels = labels
@@ -1024,6 +1035,7 @@ func (r *Replica) createDisk(name string, userCreated bool, created string, labe
 			delete(r.diskData, newHeadDisk.Name)
 			delete(r.diskData, newSnapName)
 			delete(r.diskChildrenMap, newSnapName)
+			*r.diskData[oldHead] = oldHeadDisk
 			return nil
 		})
 
@@ -1034,7 +1046,6 @@ func (r *Replica) createDisk(name string, userCreated bool, created string, labe
 		rollbackFuncList = append(rollbackFuncList, snapMetaEncodeRollbackFunc)
 
 		r.updateChildDisk(oldHead, newSnapName)
-		r.activeDiskData[len(r.activeDiskData)-1].Name = newSnapName
 	}
 	delete(r.diskData, oldHead)
 
@@ -1299,6 +1310,15 @@ func (r *Replica) SetSnapshotMaxSize(size int64) {
 	r.snapshotMaxSize = size
 
 	logrus.Infof("Set replica flag SnapshotMaxSize to %d", size)
+}
+
+func (r *Replica) SetSnapshotRemoveOldest(enabled bool) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.snapshotRemoveOldest = enabled
+
+	logrus.Infof("Set replica flag SnapshotRemoveOldest to %v", enabled)
 }
 
 func (r *Replica) Expand(size int64) (err error) {
