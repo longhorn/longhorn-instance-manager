@@ -5,15 +5,15 @@ go 1.26.0
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20261020110232-e14d5880bb6f
-	github.com/longhorn/go-common-libs v0.0.0-20261020101655-9488a43de04c
+	github.com/longhorn/backupstore v0.0.0-20261023052728-3d3f7521be06
+	github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9
 	github.com/longhorn/go-spdk-helper v0.12.0
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20261022031020-51a6a5d56812
 	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20261020145444-d14787cb70d6
-	github.com/longhorn/types v0.0.0-20260930155107-5849431731c3
+	github.com/longhorn/types v0.0.0-20261023101212-edea52fc05df
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli v1.22.17
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
@@ -22,8 +22,8 @@ require (
 
 require (
 	github.com/0xPolygon/polygon-edge v1.3.3 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.13.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/internal v0.1.0 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
@@ -48,7 +48,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.33.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.7 // indirect
-	github.com/aws/smithy-go v1.28.2 // indirect
+	github.com/aws/smithy-go v1.28.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.16.0 // indirect
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 // indirect
@@ -109,11 +109,11 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/term v0.46.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/term v0.47.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
