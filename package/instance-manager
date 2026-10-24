@@ -102,6 +102,7 @@ function enable_spdk_tgt() {
 }
 
 enable_spdk=0
+enable_local=0
 iobuf_large_pool_size=0
 iobuf_small_pool_size=0
 spdk_options=()
@@ -139,6 +140,12 @@ while [[ $# -gt 0 ]]; do
         --spdk-interrupt-mode)
             spdk_options+=("--interrupt-mode")
             ;;
+        --local-data-engine-enabled)
+            # A local data engine instance manager hosts no v1 instances, so
+            # tgtd (the v1 iSCSI target daemon) is not started.
+            enable_local=1
+            instance_manager_options+=("$1")
+            ;;
         -h|--help)
             show_help
             ;;
@@ -160,7 +167,7 @@ fi
 bind_dev
 bind_sys
 bind_lib_modules
-[ "$enable_spdk" -eq 0 ] && enable_tgtd
+[ "$enable_spdk" -eq 0 ] && [ "$enable_local" -eq 0 ] && enable_tgtd
 [ "$enable_spdk" -eq 1 ] && generate_nvme_hostid_and_hostnqn
 
 # Feed pool sizes set above their SPDK default (large 1024, small 8192) to spdk_tgt via a
