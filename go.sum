@@ -187,12 +187,12 @@ github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9 h1:aN4oUNv
 github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9/go.mod h1:jhyUe7xn1ZnTC1WVCcZSNRe02U/zj0ayTYxY1Xipn1c=
 github.com/longhorn/go-iscsi-helper v0.0.0-20261012034506-35fee3c307ac h1:OtddAH5PD1ts3SdtMNgQWAfOMgg5xE9TQ+twe0/DDEw=
 github.com/longhorn/go-iscsi-helper v0.0.0-20261012034506-35fee3c307ac/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.12.0 h1:3GHk9TDw6g3rCvHjvITQG7h/M1Tul7uHx0nT5aDdRcg=
-github.com/longhorn/go-spdk-helper v0.12.0/go.mod h1:KxXzHI40G+6YPVBwVTVAQSvX8pohnQFIM0ALgCQYh7c=
+github.com/longhorn/go-spdk-helper v0.12.1-0.20261026130450-139ac08f9e69 h1:xI7hiVbCpVt19io9S7VCYmfbK/30UL8uJ+sMDUmPcys=
+github.com/longhorn/go-spdk-helper v0.12.1-0.20261026130450-139ac08f9e69/go.mod h1:DJlhXNSPIupYTGRrRKyyiSxb2Viurf2KHl69s4t/FXU=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261004.0.20261022020249-032fb18c0f00 h1:IGWJGbRX9LcsFk+vJhlDMsWH+eutW1jnEWw1D7Vu9rQ=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261004.0.20261022020249-032fb18c0f00/go.mod h1:6DxplsNSGqYYUA9px6dAlfROYLblFzbKXnj44BvsaXU=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261020145414-6392878e98bb h1:QI1cvJze+fc/HY7UxxzVpyCAwZZO2TGR9sHJlE5Dfbk=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261020145414-6392878e98bb/go.mod h1:MwvqoX8pLoSHK1bRc57oe5O4rYx6K/6EQ1n6pgEcG/Y=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261026234231-9217e50cc786 h1:YQlNoze+ddxDxYnFR1u9a6975eV9OdM2KrzzeRnCk24=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261026234231-9217e50cc786/go.mod h1:VLx6eIVp3uWlZcac9ZaV+ciLIJwriS/zIqx7rW0o9tQ=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965 h1:082mjqY6STBnO4SEN7DBG+NubfUeyMlgwEQhOxC6T1o=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20261023101212-edea52fc05df h1:cNg59HHjR3r9rGBffU26wCigsN+Bw7QhwwPiTbr2PoM=
