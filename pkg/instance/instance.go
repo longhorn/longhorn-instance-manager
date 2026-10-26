@@ -198,7 +198,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
 			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
 			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType),
-			convertIMTransportTypeToSPDKTransportType(req.Spec.SpdkInstanceSpec.TransportType))
+			req.Spec.SpdkInstanceSpec.TransportType)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +212,7 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		return engineFrontendResponseToInstanceResponse(engineFrontend), nil
 	case types.InstanceTypeReplica:
 		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName,
-			convertIMTransportTypeToSPDKTransportType(req.Spec.SpdkInstanceSpec.TransportType))
+			req.Spec.SpdkInstanceSpec.TransportType)
 		if err != nil {
 			return nil, err
 		}
@@ -1351,20 +1351,6 @@ func convertIMDataLayoutTypeToSPDKDataLayoutType(layout rpc.DataLayoutType) spdk
 		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED
 	default:
 		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_REPLICATED
-	}
-}
-
-// convertIMTransportTypeToSPDKTransportType maps the imrpc
-// NVMe-oF transport selector to its spdkrpc equivalent. The zero value
-// (TRANSPORT_TYPE_TCP) maps to TCP so instances created by an older
-// control plane - which never sets the field - keep their historical TCP
-// behavior.
-func convertIMTransportTypeToSPDKTransportType(transport rpc.TransportType) spdkrpc.TransportType {
-	switch transport {
-	case rpc.TransportType_TRANSPORT_TYPE_RDMA:
-		return spdkrpc.TransportType_TRANSPORT_TYPE_RDMA
-	default:
-		return spdkrpc.TransportType_TRANSPORT_TYPE_TCP
 	}
 }
 

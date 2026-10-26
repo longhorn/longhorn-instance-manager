@@ -11,6 +11,7 @@ import (
 
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/longhorn/types/pkg/generated/enginerpc"
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 
 	"github.com/longhorn/longhorn-instance-manager/pkg/api"
@@ -152,7 +153,7 @@ type InstanceCreateRequest struct {
 	// TransportType selects the NVMe-oF transport for the internal
 	// engine<->replica connections of a v2 (SPDK) volume (TCP or RDMA). The
 	// zero value is TCP, preserving the pre-existing default behavior.
-	TransportType rpc.TransportType
+	TransportType enginerpc.TransportType
 
 	// Deprecated: replaced by DataEngine.
 	BackendStoreDriver string
