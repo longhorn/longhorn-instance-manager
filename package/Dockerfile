@@ -114,11 +114,6 @@ RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
 # Install SPDK dependencies
 COPY --from=cbuilder /usr/src/spdk/scripts /usr/src/spdk/scripts
 COPY --from=cbuilder /usr/src/spdk/include /usr/src/spdk/include
-<<<<<<< HEAD
-RUN for i in {1..10}; do \
-        bash /usr/src/spdk/scripts/pkgdep.sh && break || sleep 1; \
-    done
-=======
 #
 # pkgdep.sh (since SPDK longhorn-v26.05) sets up a Python venv with pip,
 # which is only needed at build time and carries known vulnerabilities
@@ -138,7 +133,6 @@ RUN for i in {1..10}; do \
         gcc gcc-c++ gcc13 cpp cpp13 make cmake ninja meson \
         autoconf automake libtool help2man nasm binutils 2>/dev/null || true && \
     zypper clean -a
->>>>>>> 318de07 (fix(docker): optimize runtime image by removing unnecessary build dependencies)
 
 # Copy pre-built binaries from cbuilder and gobuilder
 COPY --from=gobuilder \
