@@ -163,12 +163,12 @@ github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9 h1:aN4oUNv
 github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9/go.mod h1:jhyUe7xn1ZnTC1WVCcZSNRe02U/zj0ayTYxY1Xipn1c=
 github.com/longhorn/go-iscsi-helper v0.0.0-20261012034506-35fee3c307ac h1:OtddAH5PD1ts3SdtMNgQWAfOMgg5xE9TQ+twe0/DDEw=
 github.com/longhorn/go-iscsi-helper v0.0.0-20261012034506-35fee3c307ac/go.mod h1:tx8IHeQXisTCpcg9gB4S+P8rPifC1D98qpWcDwI19tU=
-github.com/longhorn/go-spdk-helper v0.12.0 h1:3GHk9TDw6g3rCvHjvITQG7h/M1Tul7uHx0nT5aDdRcg=
-github.com/longhorn/go-spdk-helper v0.12.0/go.mod h1:KxXzHI40G+6YPVBwVTVAQSvX8pohnQFIM0ALgCQYh7c=
+github.com/longhorn/go-spdk-helper v0.13.0 h1:bgnR4R2N7hrgz8jBBlDCNJEDyHqbkxb8kt1VWotTKYg=
+github.com/longhorn/go-spdk-helper v0.13.0/go.mod h1:Q91JPmaAOi9p+y7Mj5j7qC+hSXxkcY4vMwWQ9N0PhYE=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20260823.0.20261022032333-9d9ec498d885 h1:XyPXnEYe+4lNaDY21qVjRVgpzSSnLp79bSNtNJpRnwY=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20260823.0.20261022032333-9d9ec498d885/go.mod h1:1++vhApp3/5N2nEGgHi+NjqAyalx55oPuKv8va08vvQ=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20261020151245-268d871df94b h1:CEeivEHg8OHuJhfTj+GWZqxYXkkTEzs/b1Xfi6Qekho=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20261020151245-268d871df94b/go.mod h1:rKUxaaW4NL/D4pqXy++Oi+qeI8wSqSX7PaZ1q1Pivy8=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20261027034812-1c3857a813f6 h1:IKdkJ3+ZZcVNPbBho04LOCbxxh198kEZRk31Otea6qg=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20261027034812-1c3857a813f6/go.mod h1:KdMtnPWlIq4snJ40DNS4A5a8jWifcVlJBN0NcA0fkow=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965 h1:082mjqY6STBnO4SEN7DBG+NubfUeyMlgwEQhOxC6T1o=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
 github.com/longhorn/types v0.0.0-20261023101212-edea52fc05df h1:cNg59HHjR3r9rGBffU26wCigsN+Bw7QhwwPiTbr2PoM=
