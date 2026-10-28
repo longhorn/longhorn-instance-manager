@@ -101,7 +101,7 @@ RUN zypper -n ref && \
 # longhorn/longhorn#11254: Remove wininst-*.exe (pulled in by python311-base's
 # distutils) in this same layer so it never ends up in an image layer, instead
 # of installing it and relying on a later layer to delete it.
-RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper netcat libfuse3-3 logrotate && \
+RUN zypper -n install kmod jq util-linux procps awk qemu-tools e2fsprogs xfsprogs python311-base device-mapper lvm2 netcat libfuse3-3 logrotate && \
     zypper -n install cifs-utils && \
     zypper -n install sg3_utils iproute2 && \
     zypper -n install util-linux-systemd nfs-client nfs4-acl-tools && \
