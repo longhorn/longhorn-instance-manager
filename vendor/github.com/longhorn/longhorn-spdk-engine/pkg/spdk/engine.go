@@ -315,7 +315,7 @@ func (e *Engine) Create(spdkClient *spdkclient.Client, replicaAddressMap map[str
 		}
 	case types.FrontendUBLK:
 		e.log.Infof("Creating UBLK target for engine %v", e.Name)
-		if err := spdkClient.UblkCreateTarget("", true); err != nil {
+		if err := createUblkTarget(spdkClient); err != nil {
 			return nil, err
 		}
 	}
