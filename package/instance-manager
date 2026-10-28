@@ -46,14 +46,23 @@ function generate_nvme_hostid_and_hostnqn() {
     cat /sys/class/dmi/id/product_uuid > /etc/nvme/hostid
 }
 
-# split_spdk_cpumask prints "<main core id> <poller cpumask>" for the given SPDK CPU mask (hex).
+# split_spdk_cpumask prints "<main core id> <poller cpumask>" for the given SPDK CPU mask, either
+# hexadecimal with or without the 0x prefix (e.g. 0x3) or a bracketed CPU list (e.g. [2-3] or [0,2,4-6]).
 # The main core is the lowest core of the mask. It hosts the SPDK admin (main) reactor, which runs the
 # app thread that serves the JSON-RPC and management work. The poller cpumask holds every other core
 # of the mask and is empty when the mask has a single core. Fails if the mask cannot be parsed.
 function split_spdk_cpumask() {
     python3 -c '
 import sys
-mask = int(sys.argv[1], 16)
+s = sys.argv[1].strip()
+if s.startswith("["):
+    mask = 0
+    for part in s.strip("[]").split(","):
+        lo, _, hi = part.partition("-")
+        for core in range(int(lo), int(hi or lo) + 1):
+            mask |= 1 << core
+else:
+    mask = int(s, 16)
 if mask <= 0:
     sys.exit(1)
 low = mask & -mask
