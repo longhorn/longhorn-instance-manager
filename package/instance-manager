@@ -8,7 +8,8 @@ Options:
     -s, --enable-spdk          Enable SPDK
         --spdk-interrupt-mode  Enable SPDK interrupt mode
         --spdk-memory-size     SPDK memory size in MB
-        --spdk-cpumask         SPDK CPU mask
+        --spdk-cpumask         SPDK CPU mask. The first (lowest) core runs the admin reactor only,
+                               the other cores run the pollers (a single-core mask shares the core)
         --spdk-iobuf-large-pool-size  SPDK iobuf large_pool_count (0 = SPDK default)
         --spdk-iobuf-small-pool-size  SPDK iobuf small_pool_count (0 = SPDK default)
         --spdk-no-hugepage     Disable SPDK hugepage usage
@@ -45,32 +46,67 @@ function generate_nvme_hostid_and_hostnqn() {
     cat /sys/class/dmi/id/product_uuid > /etc/nvme/hostid
 }
 
-# prepare_spdk_startup_config writes an SPDK startup JSON config that sets the
-# iobuf buffer pool sizes (large_pool_count / small_pool_count). The iobuf pools
-# can ONLY be sized during spdk_tgt startup (iobuf_set_options is a startup-only
-# RPC), which is why this is fed via --json instead of a runtime RPC. The
-# NVMe-oF TCP transport is created later at runtime by the engine and draws
-# from these pools;
+# split_spdk_cpumask prints "<main core id> <poller cpumask>" for the given SPDK CPU mask (hex).
+# The main core is the lowest core of the mask. It hosts the SPDK admin (main) reactor, which runs the
+# app thread that serves the JSON-RPC and management work. The poller cpumask holds every other core
+# of the mask and is empty when the mask has a single core. Fails if the mask cannot be parsed.
+function split_spdk_cpumask() {
+    python3 -c '
+import sys
+mask = int(sys.argv[1], 16)
+if mask <= 0:
+    sys.exit(1)
+low = mask & -mask
+rest = mask & ~low
+print(low.bit_length() - 1, "0x{:x}".format(rest) if rest else "")
+' "$1" 2>/dev/null
+}
+
+# prepare_spdk_startup_config writes an SPDK startup JSON config. Everything in it can ONLY be set
+# during spdk_tgt startup, which is why it is fed via --json instead of a runtime RPC:
+#   - iobuf_set_options sets the iobuf buffer pool sizes (large_pool_count / small_pool_count). The
+#     NVMe-oF TCP transport is created later at runtime by the engine and draws from these pools.
+#   - nvmf_set_config sets poll_groups_mask, the cores that get an NVMe-oF target poll group. Without
+#     it SPDK creates one on every core, including the one that runs the admin reactor.
 #   $1: output config path
-#   $2..: iobuf_set_options params, each a JSON member (e.g. '"large_pool_count": 4096')
+#   $2: NVMe-oF poll groups cpumask, empty to keep the SPDK default
+#   $3..: iobuf_set_options params, each a JSON member (e.g. '"large_pool_count": 4096')
 function prepare_spdk_startup_config() {
     local config_path="$1"
-    shift
-    local params
-    params=$(IFS=,; echo "$*")
+    local poll_groups_mask="$2"
+    shift 2
+    local iobuf_params
+    iobuf_params=$(IFS=,; echo "$*")
+
+    local body=""
+    if [ -n "$iobuf_params" ]; then
+        body+="    {
+      \"subsystem\": \"iobuf\",
+      \"config\": [
+        {
+          \"method\": \"iobuf_set_options\",
+          \"params\": { ${iobuf_params} }
+        }
+      ]
+    }"
+    fi
+    if [ -n "$poll_groups_mask" ]; then
+        [ -n "$body" ] && body+=$',\n'
+        body+="    {
+      \"subsystem\": \"nvmf\",
+      \"config\": [
+        {
+          \"method\": \"nvmf_set_config\",
+          \"params\": { \"poll_groups_mask\": \"${poll_groups_mask}\" }
+        }
+      ]
+    }"
+    fi
 
     cat > "$config_path" <<EOF
 {
   "subsystems": [
-    {
-      "subsystem": "iobuf",
-      "config": [
-        {
-          "method": "iobuf_set_options",
-          "params": { ${params} }
-        }
-      ]
-    }
+${body}
   ]
 }
 EOF
@@ -102,6 +138,7 @@ function enable_spdk_tgt() {
 }
 
 enable_spdk=0
+spdk_cpumask=""
 iobuf_large_pool_size=0
 iobuf_small_pool_size=0
 spdk_options=()
@@ -114,6 +151,7 @@ while [[ $# -gt 0 ]]; do
             enable_spdk=1
             ;;
         -m|--spdk-cpumask)
+            spdk_cpumask="$2"
             spdk_options+=("-m" "$2")
             shift
             ;;
@@ -163,13 +201,32 @@ bind_lib_modules
 [ "$enable_spdk" -eq 0 ] && enable_tgtd
 [ "$enable_spdk" -eq 1 ] && generate_nvme_hostid_and_hostnqn
 
-# Feed pool sizes set above their SPDK default (large 1024, small 8192) to spdk_tgt via a
-# startup JSON config; at or below it nothing is generated and the launch is unchanged.
+# Keep the SPDK admin (main) reactor on the first core of the CPU mask and use the other cores for
+# everything else (NVMe-oF target poll groups here, the ublk target in longhorn-spdk-engine, which
+# reads SPDK_POLLER_CPUMASK). A single-core mask leaves nothing to separate, so SPDK keeps its default.
+spdk_poller_cpumask=""
+if [ "$enable_spdk" -eq 1 ] && [ -n "$spdk_cpumask" ]; then
+    if cpumask_split=$(split_spdk_cpumask "$spdk_cpumask"); then
+        read -r spdk_main_core spdk_poller_cpumask <<< "$cpumask_split"
+        spdk_options+=("--main-core" "$spdk_main_core")
+        if [ -n "$spdk_poller_cpumask" ]; then
+            export SPDK_POLLER_CPUMASK="$spdk_poller_cpumask"
+            echo "SPDK admin reactor on core ${spdk_main_core}, pollers on cpumask ${spdk_poller_cpumask}"
+        else
+            echo "SPDK cpumask ${spdk_cpumask} has a single core, the admin reactor and the pollers share core ${spdk_main_core}"
+        fi
+    else
+        echo "WARNING: Failed to parse SPDK cpumask ${spdk_cpumask}, not separating the admin reactor from the pollers"
+    fi
+fi
+
+# Feed pool sizes set above their SPDK default (large 1024, small 8192) and the poller cpumask to
+# spdk_tgt via a startup JSON config; with neither nothing is generated and the launch is unchanged.
 iobuf_params=()
 [ "$iobuf_large_pool_size" -gt 1024 ] && iobuf_params+=("\"large_pool_count\": ${iobuf_large_pool_size}")
 [ "$iobuf_small_pool_size" -gt 8192 ] && iobuf_params+=("\"small_pool_count\": ${iobuf_small_pool_size}")
-if [ "$enable_spdk" -eq 1 ] && [ "${#iobuf_params[@]}" -gt 0 ]; then
-    prepare_spdk_startup_config "/tmp/spdk-startup.json" "${iobuf_params[@]}"
+if [ "$enable_spdk" -eq 1 ] && { [ "${#iobuf_params[@]}" -gt 0 ] || [ -n "$spdk_poller_cpumask" ]; }; then
+    prepare_spdk_startup_config "/tmp/spdk-startup.json" "$spdk_poller_cpumask" "${iobuf_params[@]}"
     spdk_options+=("--json" "/tmp/spdk-startup.json")
 fi
 
