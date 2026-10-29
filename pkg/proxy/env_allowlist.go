@@ -32,6 +32,11 @@ var backupEnvAllowlist = map[string]struct{}{
 	// signing option, not a credential, and carries no secret.
 	btypes.AWSSignAcceptEncoding: {},
 
+	// S3 retry tuning. Counts and a duration, not credentials.
+	btypes.AWSRetryMaxAttempts:     {},
+	btypes.AWSRetryMaximumAttempts: {},
+	btypes.AWSRetryMaximumBackoff:  {},
+
 	// CIFS
 	btypes.CIFSUsername: {},
 	btypes.CIFSPassword: {},
