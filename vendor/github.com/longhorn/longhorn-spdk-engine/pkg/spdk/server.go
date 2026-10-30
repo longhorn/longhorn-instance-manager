@@ -770,6 +770,12 @@ func (s *Server) getBackingImage(backingImageName, lvsUUID string) (backingImage
 }
 
 func toSwitchOverGRPCError(err error, format string, args ...interface{}) error {
+	// Check this first so a downstream gRPC code from a failed ANA rollback
+	// does not hide that the caller must restart the switchover from preparing.
+	if errors.Is(err, ErrSwitchOverRestartRequired) {
+		return grpcstatus.Error(grpccodes.Aborted, errors.Wrapf(err, format, args...).Error())
+	}
+
 	code := grpccodes.Internal
 
 	// Preserve downstream gRPC code when available.

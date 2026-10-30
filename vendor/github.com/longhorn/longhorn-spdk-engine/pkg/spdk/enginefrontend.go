@@ -2174,7 +2174,7 @@ func (ef *EngineFrontend) switchOverTargetBlockdevPhased(phase SwitchoverPhase, 
 		// Step 2: Reload NVMe device info.
 		transportServiceID := strconv.Itoa(int(newTargetPort))
 		if reloadErr := ef.loadInitiatorNVMeDeviceInfo(newTargetIP, transportServiceID, newNQN); reloadErr != nil {
-			promoteErr := errors.Wrapf(ErrSwitchOverTargetInternal,
+			promoteErr := errors.Wrapf(ErrSwitchOverRestartRequired,
 				"failed to reload NVMe device info during promoting phase for %s: %v",
 				ef.Name, reloadErr)
 			// Revert ANA states so the old path becomes functional again.
