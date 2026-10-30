@@ -191,12 +191,12 @@ github.com/longhorn/go-spdk-helper v0.13.1-0.20261029031309-fbec96a41518 h1:PhHN
 github.com/longhorn/go-spdk-helper v0.13.1-0.20261029031309-fbec96a41518/go.mod h1:Q91JPmaAOi9p+y7Mj5j7qC+hSXxkcY4vMwWQ9N0PhYE=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261004.0.20261022020249-032fb18c0f00 h1:IGWJGbRX9LcsFk+vJhlDMsWH+eutW1jnEWw1D7Vu9rQ=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261004.0.20261022020249-032fb18c0f00/go.mod h1:6DxplsNSGqYYUA9px6dAlfROYLblFzbKXnj44BvsaXU=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261029034236-597ca4b80152 h1:UO2OvXa7DAngTabT7TBuNyN3xaLlR+UyTq4rn9qj+rs=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261029034236-597ca4b80152/go.mod h1:nzi5jFtQrYqlN38qZGEAezKzirp9z50jeq6eK8iN0Yo=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261030052713-bc464ef5ccef h1:GUN3SbJaB2ts2eKe0wqftOVT3szpvnrZ3LXddQUwu2c=
+github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261030052713-bc464ef5ccef/go.mod h1:h28EDS0FO9bA+lcXNfyB2iMaQaNEc3rfgzUf+NNRG78=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965 h1:082mjqY6STBnO4SEN7DBG+NubfUeyMlgwEQhOxC6T1o=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
-github.com/longhorn/types v0.0.0-20261023101212-edea52fc05df h1:cNg59HHjR3r9rGBffU26wCigsN+Bw7QhwwPiTbr2PoM=
-github.com/longhorn/types v0.0.0-20261023101212-edea52fc05df/go.mod h1:BK7TFo75ZRJ6uhtE0uk78i/yHYKc+C6xcK3IdZ6PjSY=
+github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf h1:yY4WuDKME+/QCn2YL+k32A+z0jQl0GClYQUOdGH5NZk=
+github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf/go.mod h1:/B7OfEhPyhWGNjtfuJr7/zUT9GUArLzIo2u8SvM/pIg=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/mitchellh/go-ps v1.0.0 h1:i6ampVEEF4wQFF+bkYfwYgY+F/uYJDktmvLPf7qIgjc=
 github.com/mitchellh/go-ps v1.0.0/go.mod h1:J4lOc8z8yJs6vUwklHw2XEIiT4z4C40KtWVN3nvg8Pg=

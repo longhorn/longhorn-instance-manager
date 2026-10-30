@@ -825,8 +825,13 @@ func buildGRPCReplicaAddFrontendSuspendResumeWrapper(efName, efAddress string, l
 			}
 		}()
 
+		// The suspension only needs to block new I/O and drain the in-flight I/O, which the
+		// kernel does regardless of these options. Skip syncing and freezing the
+		// filesystem: neither the rebuild snapshot, which is internal, nor the parent
+		// switch needs a consistent filesystem, and the sync can exceed the dmsetup
+		// timeout under heavy writes.
 		suspended := false
-		if err := efClient.EngineFrontendSuspend(efName); err != nil {
+		if err := efClient.EngineFrontendSuspendWithOptions(efName, true, true); err != nil {
 			if suspendRequired && grpcstatus.Code(errors.UnwrapAll(err)) != grpccodes.Unimplemented {
 				return errors.Wrapf(err, "failed to suspend engine frontend %s before replica add work", efName)
 			}
