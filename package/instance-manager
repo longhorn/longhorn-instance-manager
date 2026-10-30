@@ -125,6 +125,10 @@ EOF
 
 function enable_spdk_tgt() {
     local options=("$@")
+    # Use only the pod's own hugepages volume so hugetlbfs mounts of other pods exposed via /host are never used.
+    if [[ ! " ${options[*]} " =~ " --no-huge " ]]; then
+        options+=("--huge-dir" "/hugepages")
+    fi
     echo "Enabling spdk_tgt with options: ${options[*]}"
     spdk_tgt "${options[@]}" 2>&1 | tee -a /log/spdk_tgt.log &
 
