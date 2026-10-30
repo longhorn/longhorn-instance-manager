@@ -9,8 +9,8 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9
 	github.com/longhorn/go-spdk-helper v0.13.1-0.20261029031309-fbec96a41518
 	github.com/longhorn/longhorn-engine v1.13.0-dev-20260503.0.20261022031020-51a6a5d56812
-	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20261029034602-5819bbb64b0a
-	github.com/longhorn/types v0.0.0-20261023101212-edea52fc05df
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20261030055437-b0669ede9288
+	github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.24.0
@@ -109,7 +109,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297 // indirect
-	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect

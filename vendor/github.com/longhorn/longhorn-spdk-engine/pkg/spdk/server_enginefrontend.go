@@ -40,7 +40,7 @@ func (s *Server) EngineFrontendSuspend(ctx context.Context, req *spdkrpc.EngineF
 	spdkClient := s.spdkClient
 	s.RUnlock()
 
-	err = ef.Suspend(spdkClient)
+	err = ef.SuspendWithOptions(spdkClient, req.NoFlush, req.NoLockFs)
 	if err != nil {
 		return nil, toEngineFrontendLifecycleGRPCError(err, "failed to suspend engine frontend %v", req.Name)
 	}
