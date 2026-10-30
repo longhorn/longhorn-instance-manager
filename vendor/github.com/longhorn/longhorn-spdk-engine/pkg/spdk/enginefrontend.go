@@ -1396,11 +1396,12 @@ func (ef *EngineFrontend) syncDmDeviceSizeForExpansion(size uint64) (err error) 
 
 	if ef.Endpoint != "" {
 		ef.log.Infof("Suspending engine frontend for dm resize to %v", size)
-		// noflush+nolockfs: the reload only grows the existing target's length, the
-		// underlying device is unchanged, so there is no need to wait for in-flight
-		// I/O to drain or freeze a mounted fs before swapping the table. A flushing
-		// suspend can block past DmsetupTimeout under sustained write throughput.
-		if err := ef.initiator.Suspend(true, true, helpertypes.DmsetupTimeout); err != nil {
+		// noflush+nolockfs: skip syncing and freezing a mounted fs. The reload only grows
+		// the existing target's length on the same underlying device, so the filesystem
+		// does not need to be quiesced, and a filesystem sync can block past
+		// DmsetupTimeout under sustained write throughput. The kernel still waits for the
+		// I/O that is already in flight to complete before the suspend returns.
+		if err := ef.suspend(true, true); err != nil {
 			return errors.Wrapf(err, "failed to suspend engine frontend %s for dm resize to %v", ef.Name, size)
 		}
 
@@ -1421,8 +1422,18 @@ func (ef *EngineFrontend) syncDmDeviceSizeForExpansion(size uint64) (err error) 
 	return nil
 }
 
-// SuspendFrontend suspends the engine frontend. IO operations will be suspended.
-func (ef *EngineFrontend) Suspend(_ *spdkclient.Client) (err error) {
+// Suspend suspends the engine frontend. IO operations will be suspended. The suspension
+// also syncs and freezes the mounted filesystem.
+func (ef *EngineFrontend) Suspend(spdkClient *spdkclient.Client) error {
+	return ef.SuspendWithOptions(spdkClient, false, false)
+}
+
+// SuspendWithOptions suspends the engine frontend. noFlush and noLockFS correspond to
+// `dmsetup suspend --noflush` and `--nolockfs`. For the linear dm device, either of them
+// skips syncing and freezing the mounted filesystem, which can take longer than the
+// dmsetup timeout under heavy writes. The kernel always waits for the IO that is already
+// in flight to complete before the suspend returns.
+func (ef *EngineFrontend) SuspendWithOptions(_ *spdkclient.Client, noFlush, noLockFS bool) (err error) {
 	ef.Lock()
 	defer func() {
 		if err != nil {
@@ -1464,7 +1475,7 @@ func (ef *EngineFrontend) Suspend(_ *spdkclient.Client) (err error) {
 			return errors.Wrapf(err, "failed to create initiator for suspending engine %s", ef.Name)
 		}
 
-		return i.Suspend(false, false, helpertypes.DmsetupTimeout)
+		return ef.suspendWithInitiator(i, noFlush, noLockFS)
 	default:
 		// TODO: support ublk frontend suspend
 		return errors.Wrapf(ErrEngineFrontendLifecycleUnimplemented, "suspend frontend %s is unimplemented", ef.Frontend)
@@ -2498,7 +2509,27 @@ func (ef *EngineFrontend) suspend(noflush, nolockfs bool) error {
 	if ef.initiator == nil {
 		return fmt.Errorf("initiator is not initialized for engine frontend %s", ef.Name)
 	}
-	return ef.initiator.Suspend(noflush, nolockfs, helpertypes.DmsetupTimeout)
+	return ef.suspendWithInitiator(ef.initiator, noflush, nolockfs)
+}
+
+// suspendWithInitiator suspends the dm device and logs the duration and the result, so that
+// slow or timed-out suspends can be identified.
+func (ef *EngineFrontend) suspendWithInitiator(i *initiator.Initiator, noflush, nolockfs bool) error {
+	start := time.Now()
+	err := i.Suspend(noflush, nolockfs, helpertypes.DmsetupTimeout)
+
+	log := ef.log.WithFields(logrus.Fields{
+		"noflush":   noflush,
+		"nolockfs":  nolockfs,
+		"timeout":   helpertypes.DmsetupTimeout,
+		"elapsedMs": time.Since(start).Milliseconds(),
+	})
+	if err != nil {
+		log.WithError(err).Warn("Failed to suspend the dm device")
+		return err
+	}
+	log.Info("Suspended the dm device")
+	return nil
 }
 
 func (ef *EngineFrontend) resume() error {

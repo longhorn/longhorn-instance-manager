@@ -9,8 +9,8 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9
 	github.com/longhorn/go-spdk-helper v0.13.1-0.20261029031309-fbec96a41518
 	github.com/longhorn/longhorn-engine v1.14.0-dev-20261004.0.20261022020249-032fb18c0f00
-	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261029034236-597ca4b80152
-	github.com/longhorn/types v0.0.0-20261023101212-edea52fc05df
+	github.com/longhorn/longhorn-spdk-engine v1.13.0-dev-20260503.0.20261030055437-b0669ede9288
+	github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v3 v3.14.0
 	golang.org/x/sync v0.24.0
@@ -29,7 +29,6 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
 	github.com/apache/arrow-go/v18 v18.7.0 // indirect
 	github.com/avast/retry-go/v4 v4.7.0 // indirect
-	github.com/avast/retry-go/v5 v5.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.43.7 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.38 // indirect

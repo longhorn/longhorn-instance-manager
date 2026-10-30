@@ -12,7 +12,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
 
-	retrygo "github.com/avast/retry-go/v5"
+	retrygo "github.com/avast/retry-go/v4"
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
@@ -1845,15 +1845,14 @@ func (e *Engine) snapshotOperationWithoutLock(spdkClient *spdkclient.Client, sna
 			replicaBdevList = append(replicaBdevList, replicaStatus.BdevName())
 		}
 
-		engineErr = retrygo.New(
-			retrygo.Attempts(uint(maxRetries)),
-			retrygo.Delay(retryInterval),
-			retrygo.LastErrorOnly(true),
-		).Do(
+		engineErr = retrygo.Do(
 			func() error {
 				_, err := spdkClient.BdevRaidCreate(e.Name, spdktypes.BdevRaidLevel1, 0, replicaBdevList, "")
 				return err
 			},
+			retrygo.Attempts(uint(maxRetries)),
+			retrygo.Delay(retryInterval),
+			retrygo.LastErrorOnly(true),
 		)
 	}
 
@@ -2658,22 +2657,12 @@ func (e *Engine) completeBackupRestore(spdkClient *spdkclient.Client, backupSnap
 	e.Unlock()
 
 	if waitErr != nil {
-		updateRequired := false
 		e.Lock()
 		e.IsRestoring = false
-		// Restore writes go through the raid bdev, so losing it is an engine failure rather than a replica one.
-		if bdevMap, err := GetBdevMap(spdkClient); err != nil {
-			e.log.WithError(err).Warn("Failed to get bdev map after backup restore failure")
-		} else if _, raidErr := e.getRaidBdevNoLock(bdevMap); raidErr != nil {
-			e.applyValidateAndUpdateErrorNoLock(raidErr, &updateRequired)
-		}
 		if e.restore != nil {
 			e.restore.UpdateRestoreStatus(e.restore.SnapshotName, 0, waitErr)
 		}
 		e.Unlock()
-		if updateRequired {
-			e.UpdateCh <- nil
-		}
 		return errors.Wrapf(waitErr, "failed to wait for engine restore complete")
 	}
 
@@ -2775,28 +2764,18 @@ func (e *Engine) waitForRestoreComplete() error {
 		"snapshotName": e.RestoringSnapshotName,
 	}).Info("Waiting for restore to complete")
 
-	err := retrygo.New(
-		retrygo.Delay(restorePeriodicRefreshInterval),
-		retrygo.MaxDelay(restorePeriodicRefreshInterval),
-		retrygo.DelayType(retrygo.FixedDelay),
-		retrygo.Attempts(0), // retry forever until success or unrecoverable error
-	).Do(
+	err := retrygo.Do(
 		func() error {
 			e.restore.RLock()
 			restoreProgress := e.restore.Progress
 			restoreError := e.restore.Error
 			restoreState := e.restore.State
-			deviceSyncErr := e.restore.deviceSyncErr
 			e.restore.RUnlock()
 
 			if restoreState == btypes.ProgressStateCanceled {
 				return retrygo.Unrecoverable(fmt.Errorf("%v", btypes.ErrorMsgRestoreCancelled))
 			}
 			if restoreProgress == 100 {
-				if deviceSyncErr != nil {
-					e.log.WithError(deviceSyncErr).Error("Backup restore wrote all blocks but failed to persist them")
-					return retrygo.Unrecoverable(deviceSyncErr)
-				}
 				e.log.Infof("Backup restore is done: %v%%", restoreProgress)
 				return nil
 			}
@@ -2815,6 +2794,10 @@ func (e *Engine) waitForRestoreComplete() error {
 
 			return fmt.Errorf("restore is still in progress")
 		},
+		retrygo.Delay(restorePeriodicRefreshInterval),
+		retrygo.MaxDelay(restorePeriodicRefreshInterval),
+		retrygo.DelayType(retrygo.FixedDelay),
+		retrygo.Attempts(0), // retry forever until success or unrecoverable error
 	)
 
 	if err != nil {
@@ -2831,11 +2814,6 @@ func (e *Engine) RestoreStatus() (*spdkrpc.RestoreStatusResponse, error) {
 
 	e.RLock()
 	defer e.RUnlock()
-
-	// Otherwise an engine failure would be reported as a restore error on every replica.
-	if e.State == types.InstanceStateError {
-		return nil, fmt.Errorf("cannot get restore status for engine %v in state %v: %v", e.Name, e.State, e.ErrorMsg)
-	}
 
 	if e.restore == nil {
 		for replicaName, replicaStatus := range e.backends {
