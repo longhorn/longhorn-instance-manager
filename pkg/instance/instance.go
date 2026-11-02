@@ -49,6 +49,11 @@ type InstanceOps interface {
 	LogGetFlags(context.Context, *rpc.LogGetFlagsRequest) (*rpc.LogGetFlagsResponse, error)
 }
 
+// Context-aware creation is optional to preserve the exported InstanceOps API.
+type contextualInstanceCreator interface {
+	instanceCreate(context.Context, *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error)
+}
+
 type V1DataEngineInstanceOps struct {
 	processManagerServiceAddress string
 	clientTLSConfig              *tls.Config
@@ -125,6 +130,9 @@ func (s *Server) VersionGet(ctx context.Context, req *emptypb.Empty) (*rpc.Versi
 }
 
 func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, grpcstatus.FromContextError(err).Err()
+	}
 	logrus.WithFields(logrus.Fields{
 		"name":            req.Spec.Name,
 		"type":            req.Spec.Type,
@@ -136,10 +144,17 @@ func (s *Server) InstanceCreate(ctx context.Context, req *rpc.InstanceCreateRequ
 	if !ok {
 		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.Spec.DataEngine)
 	}
+	if creator, ok := ops.(contextualInstanceCreator); ok {
+		return creator.instanceCreate(ctx, req)
+	}
 	return ops.InstanceCreate(req)
 }
 
 func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
+	return ops.instanceCreate(context.Background(), req)
+}
+
+func (ops V1DataEngineInstanceOps) instanceCreate(ctx context.Context, req *rpc.InstanceCreateRequest) (*rpc.InstanceResponse, error) {
 	if req.DataLayoutType == rpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "data_layout_type SHARDED is not supported on the V1 data engine")
 	}
@@ -147,7 +162,7 @@ func (ops V1DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "ProcessInstanceSpec is required for longhorn data engine")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	pmClient, err := ops.newProcessManagerClient(ctx, cancel)
 	if err != nil {
