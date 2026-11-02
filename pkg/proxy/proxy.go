@@ -28,6 +28,7 @@ type ProxyOps interface {
 	VolumeFrontendStart(context.Context, *rpc.EngineVolumeFrontendStartRequest) (*emptypb.Empty, error)
 	VolumeFrontendShutdown(context.Context, *rpc.ProxyEngineRequest) (*emptypb.Empty, error)
 	VolumeUnmapMarkSnapChainRemovedSet(context.Context, *rpc.EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (*emptypb.Empty, error)
+	VolumeQosLimitSet(context.Context, *rpc.EngineVolumeQosLimitSetRequest) (*emptypb.Empty, error)
 
 	ReplicaAdd(context.Context, *rpc.EngineReplicaAddRequest) (*emptypb.Empty, error)
 	ReplicaList(context.Context, *rpc.ProxyEngineRequest) (*rpc.EngineReplicaListProxyResponse, error)

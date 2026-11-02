@@ -273,6 +273,51 @@ func (c *ProxyClient) VolumeSnapshotMaxCountSet(dataEngine, engineName, volumeNa
 	return nil
 }
 
+// VolumeQosLimitSet sets the volume IO limit on a v2 engine. 0 means unlimited.
+func (c *ProxyClient) VolumeQosLimitSet(dataEngine, engineName, volumeName,
+	serviceAddress string, rwIOsPerSec, rwMBPerSec int64) (err error) {
+	input := map[string]string{
+		"engineName":     engineName,
+		"volumeName":     volumeName,
+		"serviceAddress": serviceAddress,
+	}
+	if err := validateProxyMethodParameters(input); err != nil {
+		return errors.Wrap(err, "failed to set volume QoS limit")
+	}
+
+	driver, ok := rpc.DataEngine_value[getDataEngine(dataEngine)]
+	if !ok {
+		return fmt.Errorf("failed to set volume QoS limit: invalid data engine %v", dataEngine)
+	}
+
+	defer func() {
+		err = errors.Wrapf(err, "%v failed to set volume QoS limit", c.getProxyErrorPrefix(serviceAddress))
+	}()
+
+	req := &rpc.EngineVolumeQosLimitSetRequest{
+		ProxyEngineRequest: &rpc.ProxyEngineRequest{
+			Address:    serviceAddress,
+			EngineName: engineName,
+			// nolint:all replaced with DataEngine
+			BackendStoreDriver: rpc.BackendStoreDriver(driver),
+			DataEngine:         rpc.DataEngine(driver),
+			VolumeName:         volumeName,
+		},
+		QosLimit: &rpc.VolumeQosLimit{
+			RwIosPerSec:    rwIOsPerSec,
+			RwMbytesPerSec: rwMBPerSec,
+		},
+	}
+	ctx, cancel := getContextWithGRPCTimeout(c.ctx)
+	defer cancel()
+	_, err = c.service.VolumeQosLimitSet(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *ProxyClient) VolumeSnapshotMaxSizeSet(dataEngine, engineName, volumeName,
 	serviceAddress string, size int64) (err error) {
 	input := map[string]string{

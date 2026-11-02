@@ -14,6 +14,8 @@ import (
 	"time"
 
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
+
+	spdkapi "github.com/longhorn/longhorn-spdk-engine/pkg/api"
 )
 
 func buildTestTLSConfig(t *testing.T) *tls.Config {
@@ -172,5 +174,28 @@ func TestNewServer_WithoutTLS(t *testing.T) {
 
 	if v2Ops.spdkTLSConfig != nil {
 		t.Error("V2 ops spdkTLSConfig should be nil when TLS is not provided")
+	}
+}
+
+func TestConvertIMQosLimitToSPDKQosLimit(t *testing.T) {
+	if got := convertIMQosLimitToSPDKQosLimit(nil); got != nil {
+		t.Fatalf("expected nil for unlimited, got %v", got)
+	}
+
+	got := convertIMQosLimitToSPDKQosLimit(&rpc.VolumeQosLimit{RwIosPerSec: 1000, RwMbytesPerSec: 100})
+	if got.RwIosPerSec != 1000 || got.RwMbytesPerSec != 100 {
+		t.Fatalf("expected 1000 IOPS and 100 MB/s, got %v", got)
+	}
+}
+
+func TestEngineResponseToInstanceResponseReportsQosLimit(t *testing.T) {
+	resp := engineResponseToInstanceResponse(&spdkapi.Engine{
+		Name:     "vol-e",
+		State:    "running",
+		QosLimit: spdkapi.QosLimit{RwIOsPerSec: 1000, RwMBPerSec: 100},
+	})
+
+	if resp.Status.QosLimit.RwIosPerSec != 1000 || resp.Status.QosLimit.RwMbytesPerSec != 100 {
+		t.Fatalf("expected 1000 IOPS and 100 MB/s, got %v", resp.Status.QosLimit)
 	}
 }
