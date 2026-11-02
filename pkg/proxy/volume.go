@@ -108,42 +108,42 @@ func (ops V2DataEngineProxyOps) VolumeGet(ctx context.Context, req *rpc.ProxyEng
 	lastExpansionError := engine.LastExpansionError
 	lastExpansionFailedAt := engine.LastExpansionFailedAt
 	if req.EngineFrontendName != "" {
+		// The caller explicitly asks for the EngineFrontend view, so fail
+		// instead of falling back to the engine-only view. Otherwise the
+		// backend size could be reported as the frontend size before the
+		// frontend device is resized.
+		//
 		// The EngineFrontend may be on a remote IM. Use req.Address
 		// (the EF IM address) and derive its SPDK service endpoint.
 		efClient, err := getSPDKClientFromAddress(req.Address, ops.spdkTLSConfig)
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"serviceURL":         req.Address,
-				"engineFrontendName": req.EngineFrontendName,
-			}).WithError(err).Warn("Failed to get SPDK client for engine frontend, returning engine-only info")
-		} else {
-			defer func() {
-				if closeErr := efClient.Close(); closeErr != nil {
-					logrus.WithFields(logrus.Fields{
-						"serviceURL":         req.Address,
-						"engineFrontendName": req.EngineFrontendName,
-					}).WithError(closeErr).Warn("Failed to close EF SPDK client")
-				}
-			}()
-			engineFrontend, err := efClient.EngineFrontendGet(req.EngineFrontendName)
-			if err != nil {
+			return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client for engine frontend %v from address %v: %v", req.EngineFrontendName, req.Address, err)
+		}
+		defer func() {
+			if closeErr := efClient.Close(); closeErr != nil {
 				logrus.WithFields(logrus.Fields{
-					"engineName":         req.EngineName,
-					"volumeName":         req.VolumeName,
-					"dataEngine":         req.DataEngine,
 					"serviceURL":         req.Address,
 					"engineFrontendName": req.EngineFrontendName,
-				}).WithError(err).Warn("Failed to get engine frontend, returning engine-only info")
-			} else {
-				size = int64(engineFrontend.SpecSize)
-				endpoint = engineFrontend.Endpoint
-				frontend = engineFrontend.Frontend
-				isExpanding = engine.IsExpanding || engineFrontend.IsExpanding
-				if engineFrontend.LastExpansionError != "" {
-					lastExpansionError = engineFrontend.LastExpansionError
-					lastExpansionFailedAt = engineFrontend.LastExpansionFailedAt
-				}
+				}).WithError(closeErr).Warn("Failed to close EF SPDK client")
 			}
+		}()
+
+		engineFrontend, err := efClient.EngineFrontendGet(req.EngineFrontendName)
+		if err != nil {
+			code := grpccodes.Internal
+			if st, ok := grpcstatus.FromError(err); ok && st.Code() != grpccodes.OK && st.Code() != grpccodes.Unknown {
+				code = st.Code()
+			}
+			return nil, grpcstatus.Errorf(code, "failed to get engine frontend %v: %v", req.EngineFrontendName, err)
+		}
+
+		size = int64(engineFrontend.SpecSize)
+		endpoint = engineFrontend.Endpoint
+		frontend = engineFrontend.Frontend
+		isExpanding = engine.IsExpanding || engineFrontend.IsExpanding
+		if engineFrontend.LastExpansionError != "" {
+			lastExpansionError = engineFrontend.LastExpansionError
+			lastExpansionFailedAt = engineFrontend.LastExpansionFailedAt
 		}
 	}
 
