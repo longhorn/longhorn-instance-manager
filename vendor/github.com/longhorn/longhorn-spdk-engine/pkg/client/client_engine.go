@@ -20,7 +20,7 @@ import (
 // DATA_LAYOUT_TYPE_SHARDED constructs a single shardGroupBackend (EC).
 // Without forwarding this field, callers would default to the proto3 zero
 // value (REPLICATED), and EC volumes would be silently miscreated as RAID1.
-func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string, portCount int32, salvageRequested bool, snapshotMaxCount int32, dataLayoutType spdkrpc.DataLayoutType) (*api.Engine, error) {
+func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize uint64, replicaAddressMap map[string]string, portCount int32, salvageRequested bool, snapshotMaxCount int32, dataLayoutType spdkrpc.DataLayoutType, qosLimit *spdkrpc.VolumeQosLimit) (*api.Engine, error) {
 	if name == "" {
 		return nil, fmt.Errorf("failed to start engine: missing required parameter name")
 	}
@@ -45,6 +45,7 @@ func (c *SPDKClient) EngineCreate(name, volumeName, frontend string, specSize ui
 		SalvageRequested:  salvageRequested,
 		SnapshotMaxCount:  snapshotMaxCount,
 		DataLayoutType:    dataLayoutType,
+		QosLimit:          qosLimit,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start engine")
@@ -68,6 +69,27 @@ func (c *SPDKClient) EngineSnapshotMaxCountSet(name string, count int32) error {
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to set snapshot max count %d for engine %v", count, name)
+	}
+
+	return nil
+}
+
+// EngineSetQosLimit sets the volume IO limit on the engine. A nil or zero fields mean unlimited.
+func (c *SPDKClient) EngineSetQosLimit(name string, qosLimit *spdkrpc.VolumeQosLimit) error {
+	if name == "" {
+		return fmt.Errorf("failed to set QoS limit for engine: missing required parameter name")
+	}
+
+	client := c.getSPDKServiceClient()
+	ctx, cancel := context.WithTimeout(context.Background(), GRPCServiceTimeout)
+	defer cancel()
+
+	_, err := client.EngineSetQosLimit(ctx, &spdkrpc.EngineSetQosLimitRequest{
+		Name:     name,
+		QosLimit: qosLimit,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to set QoS limit %+v for engine %v", qosLimit, name)
 	}
 
 	return nil

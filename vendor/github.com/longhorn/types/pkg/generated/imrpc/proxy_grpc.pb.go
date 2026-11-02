@@ -28,6 +28,7 @@ const (
 	ProxyEngineService_VolumeUnmapMarkSnapChainRemovedSet_FullMethodName   = "/imrpc.ProxyEngineService/VolumeUnmapMarkSnapChainRemovedSet"
 	ProxyEngineService_VolumeSnapshotMaxCountSet_FullMethodName            = "/imrpc.ProxyEngineService/VolumeSnapshotMaxCountSet"
 	ProxyEngineService_VolumeSnapshotMaxSizeSet_FullMethodName             = "/imrpc.ProxyEngineService/VolumeSnapshotMaxSizeSet"
+	ProxyEngineService_VolumeQosLimitSet_FullMethodName                    = "/imrpc.ProxyEngineService/VolumeQosLimitSet"
 	ProxyEngineService_VolumeSnapshot_FullMethodName                       = "/imrpc.ProxyEngineService/VolumeSnapshot"
 	ProxyEngineService_SnapshotList_FullMethodName                         = "/imrpc.ProxyEngineService/SnapshotList"
 	ProxyEngineService_SnapshotRevert_FullMethodName                       = "/imrpc.ProxyEngineService/SnapshotRevert"
@@ -74,6 +75,7 @@ type ProxyEngineServiceClient interface {
 	VolumeUnmapMarkSnapChainRemovedSet(ctx context.Context, in *EngineVolumeUnmapMarkSnapChainRemovedSetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	VolumeSnapshotMaxCountSet(ctx context.Context, in *EngineVolumeSnapshotMaxCountSetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	VolumeSnapshotMaxSizeSet(ctx context.Context, in *EngineVolumeSnapshotMaxSizeSetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	VolumeQosLimitSet(ctx context.Context, in *EngineVolumeQosLimitSetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	VolumeSnapshot(ctx context.Context, in *EngineVolumeSnapshotRequest, opts ...grpc.CallOption) (*EngineVolumeSnapshotProxyResponse, error)
 	SnapshotList(ctx context.Context, in *ProxyEngineRequest, opts ...grpc.CallOption) (*EngineSnapshotListProxyResponse, error)
 	SnapshotRevert(ctx context.Context, in *EngineSnapshotRevertRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -182,6 +184,15 @@ func (c *proxyEngineServiceClient) VolumeSnapshotMaxCountSet(ctx context.Context
 func (c *proxyEngineServiceClient) VolumeSnapshotMaxSizeSet(ctx context.Context, in *EngineVolumeSnapshotMaxSizeSetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, ProxyEngineService_VolumeSnapshotMaxSizeSet_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *proxyEngineServiceClient) VolumeQosLimitSet(ctx context.Context, in *EngineVolumeQosLimitSetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ProxyEngineService_VolumeQosLimitSet_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -511,6 +522,7 @@ type ProxyEngineServiceServer interface {
 	VolumeUnmapMarkSnapChainRemovedSet(context.Context, *EngineVolumeUnmapMarkSnapChainRemovedSetRequest) (*emptypb.Empty, error)
 	VolumeSnapshotMaxCountSet(context.Context, *EngineVolumeSnapshotMaxCountSetRequest) (*emptypb.Empty, error)
 	VolumeSnapshotMaxSizeSet(context.Context, *EngineVolumeSnapshotMaxSizeSetRequest) (*emptypb.Empty, error)
+	VolumeQosLimitSet(context.Context, *EngineVolumeQosLimitSetRequest) (*emptypb.Empty, error)
 	VolumeSnapshot(context.Context, *EngineVolumeSnapshotRequest) (*EngineVolumeSnapshotProxyResponse, error)
 	SnapshotList(context.Context, *ProxyEngineRequest) (*EngineSnapshotListProxyResponse, error)
 	SnapshotRevert(context.Context, *EngineSnapshotRevertRequest) (*emptypb.Empty, error)
@@ -573,6 +585,9 @@ func (UnimplementedProxyEngineServiceServer) VolumeSnapshotMaxCountSet(context.C
 }
 func (UnimplementedProxyEngineServiceServer) VolumeSnapshotMaxSizeSet(context.Context, *EngineVolumeSnapshotMaxSizeSetRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VolumeSnapshotMaxSizeSet not implemented")
+}
+func (UnimplementedProxyEngineServiceServer) VolumeQosLimitSet(context.Context, *EngineVolumeQosLimitSetRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VolumeQosLimitSet not implemented")
 }
 func (UnimplementedProxyEngineServiceServer) VolumeSnapshot(context.Context, *EngineVolumeSnapshotRequest) (*EngineVolumeSnapshotProxyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VolumeSnapshot not implemented")
@@ -823,6 +838,24 @@ func _ProxyEngineService_VolumeSnapshotMaxSizeSet_Handler(srv interface{}, ctx c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProxyEngineServiceServer).VolumeSnapshotMaxSizeSet(ctx, req.(*EngineVolumeSnapshotMaxSizeSetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProxyEngineService_VolumeQosLimitSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EngineVolumeQosLimitSetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProxyEngineServiceServer).VolumeQosLimitSet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProxyEngineService_VolumeQosLimitSet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProxyEngineServiceServer).VolumeQosLimitSet(ctx, req.(*EngineVolumeQosLimitSetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1444,6 +1477,10 @@ var ProxyEngineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VolumeSnapshotMaxSizeSet",
 			Handler:    _ProxyEngineService_VolumeSnapshotMaxSizeSet_Handler,
+		},
+		{
+			MethodName: "VolumeQosLimitSet",
+			Handler:    _ProxyEngineService_VolumeQosLimitSet_Handler,
 		},
 		{
 			MethodName: "VolumeSnapshot",

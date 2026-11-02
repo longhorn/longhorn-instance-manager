@@ -41,6 +41,11 @@ const (
 	maxRetries    = 30
 	retryInterval = 1 * time.Second
 
+	// qosLimitSetMaxRetries and qosLimitSetRetryInterval bound how long the
+	// engine lock is held while SPDK finishes a previous QoS change.
+	qosLimitSetMaxRetries    = 10
+	qosLimitSetRetryInterval = 100 * time.Millisecond
+
 	disconnectMaxRetries    = 5
 	disconnectRetryInterval = 1 * time.Second
 
@@ -134,9 +139,6 @@ var (
 	ErrSwitchOverTargetEngineNotFound = errors.New("cannot find target engine for switchover")
 	// ErrSwitchOverTargetInternal indicates switchover execution failed due to runtime/internal reasons.
 	ErrSwitchOverTargetInternal = errors.New("failed to switch over target")
-	// ErrSwitchOverRestartRequired indicates a failed phase rolled back the switchover,
-	// so the caller must restart it from preparing instead of retrying the phase.
-	ErrSwitchOverRestartRequired = errors.New("switchover restart required")
 )
 
 var (
@@ -150,6 +152,30 @@ var (
 	// ErrAlreadyRestored indicates the requested backup has already been restored.
 	ErrAlreadyRestored = errors.New("already restored backup")
 )
+
+// qosLimit is a volume IO limit on the raid bdev. 0 means unlimited.
+type qosLimit struct {
+	rwIOsPerSec int64
+	rwMBPerSec  int64
+}
+
+func qosLimitFromProto(l *spdkrpc.VolumeQosLimit) qosLimit {
+	if l == nil {
+		return qosLimit{}
+	}
+	return qosLimit{rwIOsPerSec: l.RwIosPerSec, rwMBPerSec: l.RwMbytesPerSec}
+}
+
+func (l qosLimit) toProto() *spdkrpc.VolumeQosLimit {
+	return &spdkrpc.VolumeQosLimit{RwIosPerSec: l.rwIOsPerSec, RwMbytesPerSec: l.rwMBPerSec}
+}
+
+// isQosLimitChangeInProgressError reports whether SPDK rejected
+// bdev_set_qos_limit with EAGAIN because a previous QoS change on the bdev is
+// still in progress.
+func isQosLimitChangeInProgressError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Resource temporarily unavailable")
+}
 
 type Lvol struct {
 	sync.RWMutex
