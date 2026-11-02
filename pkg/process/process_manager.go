@@ -182,6 +182,9 @@ func (pm *Manager) getProcessesToUpdateConditions(volumeMountPointMap map[string
 // ProcessCreate will create a process according to the request.
 // If the specified process name exists already, the creation will fail.
 func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequest) (ret *rpc.ProcessResponse, err error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.FromContextError(err).Err()
+	}
 	if req.Spec.Name == "" || req.Spec.Binary == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "missing required argument")
 	}
@@ -190,6 +193,12 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 	logger, err := util.NewLonghornWriter(req.Spec.Name, pm.logsDir)
 	if err != nil {
 		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		if closeErr := logger.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warnf("Process Manager: failed to close logger for canceled creation of process %v", req.Spec.Name)
+		}
+		return nil, status.FromContextError(err).Err()
 	}
 
 	p := &Process{
@@ -212,7 +221,7 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 		healthChecker: pm.HealthChecker,
 	}
 
-	if err := pm.registerProcess(p); err != nil {
+	if err := pm.registerProcess(ctx, p); err != nil {
 		if closeErr := logger.Close(); closeErr != nil {
 			logrus.WithError(closeErr).Warnf("Process Manager: failed to close logger for process %v after registration failure", req.Spec.Name)
 		}
@@ -257,9 +266,12 @@ func (pm *Manager) ProcessDelete(ctx context.Context, req *rpc.ProcessDeleteRequ
 	return resp, nil
 }
 
-func (pm *Manager) registerProcess(p *Process) error {
+func (pm *Manager) registerProcess(ctx context.Context, p *Process) error {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
+	if err := ctx.Err(); err != nil {
+		return status.FromContextError(err).Err()
+	}
 
 	_, exists := pm.processes[p.Name]
 	if exists {
@@ -268,6 +280,10 @@ func (pm *Manager) registerProcess(p *Process) error {
 
 	if err := pm.allocateProcessPorts(p); err != nil {
 		return err
+	}
+	if err := ctx.Err(); err != nil {
+		pm.releaseProcessPorts(p)
+		return status.FromContextError(err).Err()
 	}
 
 	p.UpdateCh = pm.processUpdateCh
