@@ -72,8 +72,6 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bits-and-blooms/bitset v1.12.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/bits-and-blooms/bitset v1.16.0 h1:G3lirLlhFTcW/7ym/SLtYYLHQS0hBOcC8fPNJxbTYm4=
 github.com/bits-and-blooms/bitset v1.16.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
-github.com/c3y1huang/backupstore v0.0.0-20261104003827-f04c8d3405eb h1:AKZk6Hxx0I1u9PcR5O+5N0v0wMhgKgC+u+xd/UJWnLQ=
-github.com/c3y1huang/backupstore v0.0.0-20261104003827-f04c8d3405eb/go.mod h1:6RnkUIaLhvWhiboCtjN+2tD7x8gkXbBpYtUfjjFqopQ=
 github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 h1:SjZ2GvvOononHOpK84APFuMvxqsk3tEIaKH/z4Rpu3g=
 github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8/go.mod h1:uEyr4WpAH4hio6LFriaPkL938XnrvLpNPmQHBdrmbIE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
@@ -183,6 +181,8 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
+github.com/longhorn/backupstore v0.0.0-20261106055638-bcc51f569085 h1:tYVn2BxfDOHnsNAh2BY2ZKrSiquOkxQZVttN2k/E0Gs=
+github.com/longhorn/backupstore v0.0.0-20261106055638-bcc51f569085/go.mod h1:5f43cRHjlgz+qzR0d9pVUNeW0vMY3ZzF+bq4l9Ndwrw=
 github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9 h1:aN4oUNvsC4vXLzKFwPIrtqABvDwxcrzrpkFFLbb4L7o=
 github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9/go.mod h1:jhyUe7xn1ZnTC1WVCcZSNRe02U/zj0ayTYxY1Xipn1c=
 github.com/longhorn/go-iscsi-helper v0.0.0-20261012034506-35fee3c307ac h1:OtddAH5PD1ts3SdtMNgQWAfOMgg5xE9TQ+twe0/DDEw=
