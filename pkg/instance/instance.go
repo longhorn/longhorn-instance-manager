@@ -197,7 +197,8 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
 			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
 			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
-			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType))
+			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType),
+			req.Spec.SpdkInstanceSpec.TransportType)
 		if err != nil {
 			return nil, err
 		}
@@ -210,7 +211,8 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		}
 		return engineFrontendResponseToInstanceResponse(engineFrontend), nil
 	case types.InstanceTypeReplica:
-		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName)
+		replica, err := c.ReplicaCreate(req.Spec.Name, req.Spec.SpdkInstanceSpec.DiskName, req.Spec.SpdkInstanceSpec.DiskUuid, req.Spec.SpdkInstanceSpec.Size, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.BackingImageName,
+			req.Spec.SpdkInstanceSpec.TransportType)
 		if err != nil {
 			return nil, err
 		}
