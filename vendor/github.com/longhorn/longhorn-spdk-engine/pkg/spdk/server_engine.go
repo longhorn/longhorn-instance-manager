@@ -29,6 +29,9 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	if req.SpecSize == 0 {
 		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine spec size is required")
 	}
+	if err := validateQosLimit(req.QosLimit); err != nil {
+		return nil, err
+	}
 
 	s.Lock()
 
@@ -49,6 +52,12 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	backendFactory, err := selectBackendFactory(req.DataLayoutType, s.newServiceClient)
 	if err != nil {
 		return nil, err
+	}
+
+	// The engine is still pending, so this only records the limit for Create
+	// to apply before exposing the raid bdev.
+	if err := e.SetQosLimit(spdkClient, req.QosLimit); err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to set QoS limit for engine %v: %v", req.Name, err)
 	}
 
 	return e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator, req.SalvageRequested, backendFactory)
@@ -88,6 +97,46 @@ func (s *Server) EngineSnapshotMaxCountSet(ctx context.Context, req *spdkrpc.Eng
 
 	e.SetSnapshotMaxCount(req.Count)
 	return &emptypb.Empty{}, nil
+}
+
+// EngineSetQosLimit sets the volume IO limit on the engine raid bdev
+func (s *Server) EngineSetQosLimit(ctx context.Context, req *spdkrpc.EngineSetQosLimitRequest) (ret *emptypb.Empty, err error) {
+	if req.Name == "" {
+		return nil, grpcstatus.Error(grpccodes.InvalidArgument, "engine name is required")
+	}
+	if err := validateQosLimit(req.QosLimit); err != nil {
+		return nil, err
+	}
+
+	s.RLock()
+	e := s.engineMap[req.Name]
+	spdkClient := s.spdkClient
+	s.RUnlock()
+
+	if e == nil {
+		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine %v for QoS limit setting", req.Name)
+	}
+
+	if err := e.SetQosLimit(spdkClient, req.QosLimit); err != nil {
+		errCode := grpccodes.Internal
+		if isQosLimitChangeInProgressError(err) {
+			// A previous QoS change is still in progress, so the caller can retry.
+			errCode = grpccodes.Unavailable
+		}
+		return nil, grpcstatus.Errorf(errCode, "failed to set QoS limit for engine %v: %v", req.Name, err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func validateQosLimit(limit *spdkrpc.VolumeQosLimit) error {
+	if limit == nil {
+		return nil
+	}
+	if limit.RwIosPerSec < 0 || limit.RwMbytesPerSec < 0 {
+		return grpcstatus.Errorf(grpccodes.InvalidArgument, "QoS limit must not be negative, got %d IOPS and %d MB/s", limit.RwIosPerSec, limit.RwMbytesPerSec)
+	}
+	return nil
 }
 
 // EngineDelete deletes an engine

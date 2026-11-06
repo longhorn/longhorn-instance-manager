@@ -478,7 +478,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261030113344-28a7a8e50542
+# github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261004.0.20261030113344-28a7a8e50542 => github.com/apoorvajagtap/longhorn-spdk-engine v0.0.0-20261102025804-71d52cf0b82f
 ## explicit; go 1.26.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -497,7 +497,7 @@ github.com/longhorn/longhorn-spdk-engine/pkg/util/broadcaster
 github.com/longhorn/sparse-tools/sparse
 github.com/longhorn/sparse-tools/types
 github.com/longhorn/sparse-tools/util
-# github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
+# github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf => github.com/apoorvajagtap/longhorn-types v0.0.0-20261031145929-2a5c2781dce4
 ## explicit; go 1.26.0
 github.com/longhorn/types/pkg/generated/enginerpc
 github.com/longhorn/types/pkg/generated/imrpc
@@ -1067,3 +1067,5 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/longhorn/types => github.com/apoorvajagtap/longhorn-types v0.0.0-20261031145929-2a5c2781dce4
+# github.com/longhorn/longhorn-spdk-engine => github.com/apoorvajagtap/longhorn-spdk-engine v0.0.0-20261102025804-71d52cf0b82f

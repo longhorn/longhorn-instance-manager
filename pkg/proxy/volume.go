@@ -12,6 +12,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/longhorn/types/pkg/generated/enginerpc"
+	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	lhns "github.com/longhorn/go-common-libs/ns"
 	lhtypes "github.com/longhorn/go-common-libs/types"
@@ -421,6 +422,58 @@ func (ops V2DataEngineProxyOps) VolumeSnapshotMaxCountSet(ctx context.Context, r
 	}()
 
 	err = c.EngineSnapshotMaxCountSet(req.ProxyEngineRequest.EngineName, req.Count.Count)
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (p *Proxy) VolumeQosLimitSet(ctx context.Context, req *rpc.EngineVolumeQosLimitSetRequest) (resp *emptypb.Empty, err error) {
+	log := logrus.WithFields(logrus.Fields{
+		"serviceURL": req.ProxyEngineRequest.Address,
+		"engineName": req.ProxyEngineRequest.EngineName,
+		"volumeName": req.ProxyEngineRequest.VolumeName,
+		"dataEngine": req.ProxyEngineRequest.DataEngine,
+	})
+	log.Infof("Setting volume QoS limit to %d IOPS, %d MB/s", req.QosLimit.GetRwIosPerSec(), req.QosLimit.GetRwMbytesPerSec())
+
+	ops, ok := p.ops[req.ProxyEngineRequest.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+	}
+	return ops.VolumeQosLimitSet(ctx, req)
+}
+
+func (ops V1DataEngineProxyOps) VolumeQosLimitSet(ctx context.Context, req *rpc.EngineVolumeQosLimitSetRequest) (resp *emptypb.Empty, err error) {
+	return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.ProxyEngineRequest.DataEngine)
+}
+
+func (ops V2DataEngineProxyOps) VolumeQosLimitSet(ctx context.Context, req *rpc.EngineVolumeQosLimitSetRequest) (resp *emptypb.Empty, err error) {
+	c, err := getSPDKClientFromAddress(req.ProxyEngineRequest.Address, ops.spdkTLSConfig)
+	if err != nil {
+		return nil, grpcstatus.Errorf(grpccodes.Internal, "failed to get SPDK client from engine address %v: %v", req.ProxyEngineRequest.Address, err)
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithFields(logrus.Fields{
+				"serviceURL": req.ProxyEngineRequest.Address,
+				"engineName": req.ProxyEngineRequest.EngineName,
+				"volumeName": req.ProxyEngineRequest.VolumeName,
+				"dataEngine": req.ProxyEngineRequest.DataEngine,
+			}).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	var qosLimit *spdkrpc.VolumeQosLimit
+	if req.QosLimit != nil {
+		qosLimit = &spdkrpc.VolumeQosLimit{
+			RwIosPerSec:    req.QosLimit.RwIosPerSec,
+			RwMbytesPerSec: req.QosLimit.RwMbytesPerSec,
+		}
+	}
+
+	err = c.EngineSetQosLimit(req.ProxyEngineRequest.EngineName, qosLimit)
 	if err != nil {
 		return nil, err
 	}

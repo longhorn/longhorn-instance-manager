@@ -184,6 +184,23 @@ type Engine struct {
 	LastExpansionError    string                `json:"last_expansion_error"`
 	LastExpansionFailedAt string                `json:"last_expansion_failed_at"`
 	SnapshotMaxCount      int32                 `json:"snapshot_max_count"`
+	QosLimit              QosLimit              `json:"qos_limit"`
+}
+
+// QosLimit is the volume IO limit applied to an engine. 0 means unlimited.
+type QosLimit struct {
+	RwIOsPerSec int64 `json:"rw_ios_per_sec"`
+	RwMBPerSec  int64 `json:"rw_mbytes_per_sec"`
+}
+
+func ProtoQosLimitToQosLimit(l *spdkrpc.VolumeQosLimit) QosLimit {
+	if l == nil {
+		return QosLimit{}
+	}
+	return QosLimit{
+		RwIOsPerSec: l.RwIosPerSec,
+		RwMBPerSec:  l.RwMbytesPerSec,
+	}
 }
 
 func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
@@ -207,6 +224,7 @@ func ProtoEngineToEngine(e *spdkrpc.Engine) *Engine {
 		LastExpansionError:    e.LastExpansionError,
 		LastExpansionFailedAt: e.LastExpansionFailedAt,
 		SnapshotMaxCount:      e.SnapshotMaxCount,
+		QosLimit:              ProtoQosLimitToQosLimit(e.QosLimit),
 	}
 	for rName, mode := range e.ReplicaModeMap {
 		res.ReplicaModeMap[rName] = types.GRPCReplicaModeToReplicaMode(mode)

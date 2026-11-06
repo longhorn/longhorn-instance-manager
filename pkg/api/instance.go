@@ -80,6 +80,13 @@ type InstanceStatus struct {
 	ActivePath             string                      `json:"activePath"`
 	PreferredPath          string                      `json:"preferredPath"`
 	Paths                  []EngineFrontendNvmeTCPPath `json:"paths"`
+	QosLimit               VolumeQosLimit              `json:"qosLimit"`
+}
+
+// VolumeQosLimit is the volume IO limit applied to a v2 engine. 0 means unlimited.
+type VolumeQosLimit struct {
+	RwIOsPerSec int64 `json:"rwIOsPerSec"`
+	RwMBPerSec  int64 `json:"rwMBPerSec"`
 }
 
 type EngineFrontendNvmeTCPPath struct {
@@ -124,6 +131,10 @@ func RPCToInstanceStatus(obj *rpc.InstanceStatus) InstanceStatus {
 		ActivePath:             obj.ActivePath,
 		PreferredPath:          obj.PreferredPath,
 		Paths:                  paths,
+		QosLimit: VolumeQosLimit{
+			RwIOsPerSec: obj.QosLimit.GetRwIosPerSec(),
+			RwMBPerSec:  obj.QosLimit.GetRwMbytesPerSec(),
+		},
 	}
 }
 

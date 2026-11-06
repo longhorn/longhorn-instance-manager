@@ -197,7 +197,8 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
 			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
 			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
-			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType))
+			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType),
+			convertIMQosLimitToSPDKQosLimit(req.Spec.SpdkInstanceSpec.QosLimit))
 		if err != nil {
 			return nil, err
 		}
@@ -1092,6 +1093,10 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			Conditions:             make(map[string]bool),
 			UblkId:                 0,
 			Uuid:                   e.UUID,
+			QosLimit: &rpc.VolumeQosLimit{
+				RwIosPerSec:    e.QosLimit.RwIOsPerSec,
+				RwMbytesPerSec: e.QosLimit.RwMBPerSec,
+			},
 		},
 	}
 }
@@ -1349,6 +1354,18 @@ func convertIMDataLayoutTypeToSPDKDataLayoutType(layout rpc.DataLayoutType) spdk
 		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED
 	default:
 		return spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_REPLICATED
+	}
+}
+
+// convertIMQosLimitToSPDKQosLimit forwards the volume IO limit to the engine.
+// A nil limit means unlimited.
+func convertIMQosLimitToSPDKQosLimit(limit *rpc.VolumeQosLimit) *spdkrpc.VolumeQosLimit {
+	if limit == nil {
+		return nil
+	}
+	return &spdkrpc.VolumeQosLimit{
+		RwIosPerSec:    limit.RwIosPerSec,
+		RwMbytesPerSec: limit.RwMbytesPerSec,
 	}
 }
 

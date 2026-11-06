@@ -97,6 +97,7 @@ type EngineCreateRequest struct {
 	UpgradeRequired   bool
 	SalvageRequested  bool
 	SnapshotMaxCount  int
+	QosLimit          *rpc.VolumeQosLimit
 }
 
 type EngineFrontendCreateRequest struct {
@@ -186,6 +187,7 @@ func (c *InstanceServiceClient) InstanceCreate(req *InstanceCreateRequest) (*api
 				SnapshotMaxCount:  int32(req.Engine.SnapshotMaxCount),
 				UblkQueueDepth:    int32(req.Engine.UblkQueueDepth),
 				UblkNumberOfQueue: int32(req.Engine.UblkNumberOfQueue),
+				QosLimit:          req.Engine.QosLimit,
 			}
 		case types.InstanceTypeEngineFrontend:
 			spdkInstanceSpec = &rpc.SpdkInstanceSpec{
