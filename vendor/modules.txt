@@ -420,7 +420,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20261023052728-3d3f7521be06 => github.com/c3y1huang/backupstore v0.0.0-20261104003827-f04c8d3405eb
+# github.com/longhorn/backupstore v0.0.0-20261106055638-bcc51f569085
 ## explicit; go 1.26.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -1067,4 +1067,3 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
-# github.com/longhorn/backupstore => github.com/c3y1huang/backupstore v0.0.0-20261104003827-f04c8d3405eb

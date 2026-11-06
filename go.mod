@@ -2,12 +2,10 @@ module github.com/longhorn/longhorn-instance-manager
 
 go 1.26.0
 
-replace github.com/longhorn/backupstore => github.com/c3y1huang/backupstore v0.0.0-20261104003827-f04c8d3405eb
-
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20261023052728-3d3f7521be06
+	github.com/longhorn/backupstore v0.0.0-20261106055638-bcc51f569085
 	github.com/longhorn/go-common-libs v0.0.0-20261023023359-4e90b601fcb9
 	github.com/longhorn/go-spdk-helper v0.14.1-0.20261105073243-fc901c166c71
 	github.com/longhorn/longhorn-engine v1.14.0-dev-20261004.0.20261022020249-032fb18c0f00
