@@ -4,9 +4,12 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -29,7 +32,33 @@ const (
 	TestBinary        = "/engine-binaries/test/longhorn"
 	TestBinaryMissing = "/engine-binaries/test-missing/longhorn"
 	TestBinaryReplace = "/engine-binaries/test-replacement/longhorn"
+
+	// testChildModeArg selects the behaviour of TestHelperProcessChild. It is a
+	// positional argument because the test binary stops parsing flags at the
+	// first non-flag argument.
+	testChildModeArg      = "child-process-mode="
+	testChildIgnoreSIGINT = "ignore-sigint"
 )
+
+// TestHelperProcessChild is not a test: it is the child process the tests below
+// start, re-executed through os.Args[0] so that they need no extra binaries.
+func TestHelperProcessChild(t *testing.T) {
+	mode := ""
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, testChildModeArg) {
+			mode = strings.TrimPrefix(arg, testChildModeArg)
+		}
+	}
+	if mode != testChildIgnoreSIGINT {
+		return
+	}
+
+	// A replica that needs its whole graceful stop window to exit: it ignores
+	// SIGINT and only goes away when the manager kills it afterwards.
+	signal.Ignore(syscall.SIGINT)
+	time.Sleep(30 * time.Second)
+	os.Exit(0)
+}
 
 func Test(t *testing.T) { TestingT(t) }
 
@@ -498,4 +527,93 @@ func countOpenFileDescriptors(targetPath string) (int, error) {
 	}
 
 	return count, nil
+}
+
+// TestProcessStoppedAfterGracefulStopWindow covers longhorn/longhorn#14508: a
+// process whose graceful stop takes the whole window (the child here ignores
+// SIGINT and is killed afterwards) used to stay in the process table forever, in
+// state=error with the error message of the log file that was closed underneath
+// the output copier:
+//
+//	Process update: <name>: state error: errorMsg: sync <log>: file already closed
+//
+// The entry also kept its ports, and RPCResponse() re-logged the error on every
+// poll. The test asserts the three things that must hold now: the entry is
+// removed, its ports are handed out again, and the final state is stopped
+// (without an error message) even though the child only exited after the kill.
+func (s *TestSuite) TestProcessStoppedAfterGracefulStopWindow(c *C) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Exactly one port: a second process can only start if the removed process
+	// released its ports (the bitmap avoids quick reuse, so a wider range would
+	// hand out the next port instead of the freed one).
+	pm, err := NewManager(ctx, "23000-23000", s.logDir)
+	c.Assert(err, IsNil)
+	// A real child process cannot be stopped in a test-sized graceful window.
+	pm.waitCount = 3
+	pm.waitInterval = 100 * time.Millisecond
+	pm.Executor = &BinaryExecutor{}
+	pm.HealthChecker = &MockHealthChecker{}
+
+	newSpec := func(name string) *rpc.ProcessSpec {
+		return &rpc.ProcessSpec{
+			Name:      name,
+			Binary:    os.Args[0],
+			Args:      []string{"-test.run=TestHelperProcessChild", testChildModeArg + testChildIgnoreSIGINT},
+			PortCount: 1,
+			PortArgs:  []string{"--listen="},
+		}
+	}
+
+	name := "test_process_graceful_stop_window"
+	createResp, err := pm.ProcessCreate(context.TODO(), &rpc.ProcessCreateRequest{Spec: newSpec(name)})
+	c.Assert(err, IsNil)
+	c.Assert(createResp.Status.PortStart, Not(Equals), int32(0))
+	portStart := createResp.Status.PortStart
+
+	process := pm.findProcess(name)
+	c.Assert(process, NotNil)
+
+	running, err := waitForProcessState(pm, name, func(process *rpc.ProcessResponse) bool {
+		return process.Status.State == types.ProcessStateRunning
+	})
+	c.Assert(err, IsNil)
+	c.Assert(running, Equals, true)
+
+	// The SIGINT is ignored by the child, so the delete response comes back
+	// immediately and the manager kills the child after the graceful window.
+	_, err = pm.ProcessDelete(context.TODO(), &rpc.ProcessDeleteRequest{Name: name})
+	c.Assert(err, IsNil)
+
+	gone, err := waitForProcessListState(pm, func(processes map[string]*rpc.ProcessResponse) bool {
+		_, exists := processes[name]
+		return !exists
+	})
+	c.Assert(err, IsNil)
+	c.Assert(gone, Equals, true)
+
+	// Killed after our own stop request is a stop, not an error.
+	status := process.RPCResponse().Status
+	c.Assert(status.State, Equals, string(StateStopped))
+	c.Assert(status.ErrorMsg, Equals, "")
+
+	// The log file must be closed once the process is gone, and it must not be
+	// closed while the copier could still write into it.
+	logPath := filepath.Join(s.logDir, name+".log")
+	openFiles, err := countOpenFileDescriptors(logPath)
+	c.Assert(err, IsNil)
+	c.Assert(openFiles, Equals, 0)
+	logContent, err := os.ReadFile(logPath)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(string(logContent), "file already closed"), Equals, false)
+
+	// The ports of the removed process are released: this manager only has that
+	// one port and can therefore hand it out again.
+	secondName := name + "-second"
+	secondResp, err := pm.ProcessCreate(context.TODO(), &rpc.ProcessCreateRequest{Spec: newSpec(secondName)})
+	c.Assert(err, IsNil)
+	c.Assert(secondResp.Status.PortStart, Equals, portStart)
+	_, err = pm.ProcessDelete(context.TODO(), &rpc.ProcessDeleteRequest{Name: secondName})
+	c.Assert(err, IsNil)
 }

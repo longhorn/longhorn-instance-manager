@@ -32,6 +32,13 @@ func (be *BinaryExecutor) NewCommand(name string, arg ...string) (Command, error
 type BinaryCommand struct {
 	*sync.RWMutex
 	*exec.Cmd
+
+	// running is the state of the process this command owns. exec.Cmd.Start()
+	// writes Cmd.Process without taking our lock, so the process state has to be
+	// tracked here: reading Cmd.Process / Cmd.ProcessState under the lock while
+	// Start()/Wait() write them is a data race (caught by go test -race as soon
+	// as a real child process is started and stopped concurrently).
+	running bool
 }
 
 func NewBinaryCommand(binary string, arg ...string) (*BinaryCommand, error) {
@@ -64,16 +71,38 @@ func (bc *BinaryCommand) SetOutput(writer io.Writer) {
 	bc.Stderr = writer
 }
 
+// Run starts the process and waits for it to exit. It replaces the promoted
+// exec.Cmd.Run so that the started state is only written under the lock.
+func (bc *BinaryCommand) Run() error {
+	bc.Lock()
+	err := bc.Cmd.Start()
+	if err == nil {
+		bc.running = true
+	}
+	bc.Unlock()
+	if err != nil {
+		return err
+	}
+
+	waitErr := bc.Cmd.Wait()
+
+	bc.Lock()
+	bc.running = false
+	bc.Unlock()
+
+	return waitErr
+}
+
 func (bc *BinaryCommand) IsRunning() bool {
 	bc.RLock()
 	defer bc.RUnlock()
-	return bc.Process != nil && bc.ProcessState == nil
+	return bc.running
 }
 
 func (bc *BinaryCommand) StopWithSignal(signal syscall.Signal) {
 	bc.RLock()
 	defer bc.RUnlock()
-	if bc.Process != nil {
+	if bc.running && bc.Process != nil {
 		if err := bc.Process.Signal(signal); err != nil {
 			logrus.WithError(err).Error("failed to send signal to process")
 		}
@@ -83,7 +112,7 @@ func (bc *BinaryCommand) StopWithSignal(signal syscall.Signal) {
 func (bc *BinaryCommand) Stop() {
 	bc.RLock()
 	defer bc.RUnlock()
-	if bc.Process != nil {
+	if bc.running && bc.Process != nil {
 		if err := bc.Process.Signal(syscall.SIGINT); err != nil {
 			logrus.WithError(err).Error("failed to send signal to process")
 		}
@@ -93,7 +122,7 @@ func (bc *BinaryCommand) Stop() {
 func (bc *BinaryCommand) Kill() {
 	bc.RLock()
 	defer bc.RUnlock()
-	if bc.Process != nil {
+	if bc.running && bc.Process != nil {
 		if err := bc.Process.Signal(syscall.SIGKILL); err != nil {
 			logrus.WithError(err).Error("failed to send signal to process")
 		}
