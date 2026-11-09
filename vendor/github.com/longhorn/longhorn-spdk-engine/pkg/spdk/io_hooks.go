@@ -90,6 +90,12 @@ var (
 	expansionBdevRaidResize = func(cli *spdkclient.Client, name string, expectedSizeInMib uint64) (spdktypes.BdevRaidResizeResponse, error) {
 		return cli.BdevRaidResize(name, expectedSizeInMib)
 	}
+	sharedBlockNvmfSubsystemGetControllers = func(cli *spdkclient.Client, nqn string) ([]spdktypes.NvmfSubsystemController, error) {
+		return cli.NvmfSubsystemGetControllers(nqn, "")
+	}
+	sharedBlockNvmfSubsystemAllowAnyHost = func(cli *spdkclient.Client, nqn string, allowAnyHost bool) (bool, error) {
+		return cli.NvmfSubsystemAllowAnyHost(nqn, allowAnyHost)
+	}
 )
 
 var _ backingImageServiceClient = (*lhclient.SPDKClient)(nil)

@@ -1342,6 +1342,27 @@ func (c *Client) NvmfSubsystemAddHost(nqn, hostNQN string) (added bool, err erro
 	return added, json.Unmarshal(cmdOutput, &added)
 }
 
+// NvmfSubsystemAllowAnyHost sets whether any host can connect to an NVMe-oF target subsystem.
+// If false, only host NQNs added via NvmfSubsystemAddHost can establish new connections,
+// while the existing connections are not affected.
+//
+//	"nqn": Required. Subsystem NQN.
+//
+//	"allowAnyHost": Required. Whether any host can connect to the subsystem.
+func (c *Client) NvmfSubsystemAllowAnyHost(nqn string, allowAnyHost bool) (set bool, err error) {
+	req := spdktypes.NvmfSubsystemAllowAnyHostRequest{
+		Nqn:          nqn,
+		AllowAnyHost: allowAnyHost,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("nvmf_subsystem_allow_any_host", req)
+	if err != nil {
+		return false, err
+	}
+
+	return set, json.Unmarshal(cmdOutput, &set)
+}
+
 // NvmfDeleteSubsystem constructs an NVMe over Fabrics target subsystem..
 //
 //	"nqn": Required. Subsystem NQN.
@@ -1394,12 +1415,25 @@ func (c *Client) NvmfSubsystemAddNs(nqn, bdevName, nguid string) (nsid uint32, e
 // NvmfSubsystemAddNsWithUUID adds a namespace with an optional stable UUID for
 // NVMe multipath aggregation.
 func (c *Client) NvmfSubsystemAddNsWithUUID(nqn, bdevName, nguid, nsUUID string) (nsid uint32, err error) {
+	return c.NvmfSubsystemAddNsWithPtplFile(nqn, bdevName, nguid, nsUUID, "")
+}
+
+// NvmfSubsystemAddNsWithPtplFile adds a namespace with an optional stable UUID
+// and an optional ptpl file.
+//
+//	"ptplFile": Optional. File path that makes the namespace capable of NVMe
+//	  reservation Persist Through Power Loss. SPDK persists the reservation state
+//	  in the file only after a host activates it (Reservation Register with
+//	  CPTPL=3), and restores the persisted state when the namespace is added
+//	  again. Empty disables it.
+func (c *Client) NvmfSubsystemAddNsWithPtplFile(nqn, bdevName, nguid, nsUUID, ptplFile string) (nsid uint32, err error) {
 	req := spdktypes.NvmfSubsystemAddNsRequest{
 		Nqn: nqn,
 		Namespace: spdktypes.NvmfSubsystemNamespace{
 			BdevName: bdevName,
 			Nguid:    nguid,
 			UUID:     nsUUID,
+			PtplFile: ptplFile,
 		},
 	}
 
@@ -1590,6 +1624,29 @@ func (c *Client) NvmfSubsystemGetListeners(nqn, tgtName string) (listenerList []
 	}
 
 	return listenerList, json.Unmarshal(cmdOutput, &listenerList)
+}
+
+// NvmfSubsystemGetControllers lists all controllers, i.e., the connected hosts, of the specified NVMe-oF target subsystem.
+//
+//	"nqn": Required. Subsystem NQN.
+//
+//	"tgtName": Optional. Parent NVMe-oF target name.
+//
+// Note:
+//
+//  1. Trying to get controllers of a non-existing subsystem will return error: {"code": -32602, "message": "Invalid parameters"}
+func (c *Client) NvmfSubsystemGetControllers(nqn, tgtName string) (controllerList []spdktypes.NvmfSubsystemController, err error) {
+	req := spdktypes.NvmfSubsystemGetControllersRequest{
+		Nqn:     nqn,
+		TgtName: tgtName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("nvmf_subsystem_get_controllers", req)
+	if err != nil {
+		return nil, err
+	}
+
+	return controllerList, json.Unmarshal(cmdOutput, &controllerList)
 }
 
 // LogSetFlag sets the log flag.
