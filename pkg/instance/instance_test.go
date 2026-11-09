@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	rpc "github.com/longhorn/types/pkg/generated/imrpc"
 )
 
@@ -172,5 +174,26 @@ func TestNewServer_WithoutTLS(t *testing.T) {
 
 	if v2Ops.spdkTLSConfig != nil {
 		t.Error("V2 ops spdkTLSConfig should be nil when TLS is not provided")
+	}
+}
+
+func TestReservationStateConversionBetweenIMAndSPDK(t *testing.T) {
+	if imReservationToSPDKReservation(nil) != nil || spdkReservationToIMReservation(nil) != nil {
+		t.Fatal("expected a nil state to stay nil")
+	}
+
+	state := &rpc.InstanceReservationState{
+		Epoch:        2,
+		Type:         1,
+		HolderKey:    0xBB,
+		HolderHostId: "11111111-2222-3333-4444-555555555555",
+		Registrants: []*rpc.InstanceReservationRegistrant{
+			{Key: 0xBB, HostId: "11111111-2222-3333-4444-555555555555"},
+		},
+		VolumeUid: "6b1f3c2a-9d8e-4f7a-b6c5-1a2b3c4d5e6f",
+	}
+	got := spdkReservationToIMReservation(imReservationToSPDKReservation(state))
+	if !proto.Equal(got, state) {
+		t.Fatalf("got %v, want %v", got, state)
 	}
 }
