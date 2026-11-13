@@ -57,6 +57,11 @@ type Manager struct {
 
 	logsDir string
 
+	// waitCount and waitInterval bound the graceful stop window of the processes
+	// this manager creates. They default to types.WaitCount / types.WaitInterval.
+	waitCount    int
+	waitInterval time.Duration
+
 	Executor      Executor
 	HealthChecker HealthChecker
 }
@@ -85,6 +90,9 @@ func NewManager(ctx context.Context, portRange string, logsDir string) (*Manager
 		availablePorts:  bitmap,
 
 		logsDir: logsDir,
+
+		waitCount:    types.WaitCount,
+		waitInterval: types.WaitInterval,
 
 		Executor:      &BinaryExecutor{},
 		HealthChecker: &GRPCHealthChecker{},
@@ -208,6 +216,10 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 
 		logger: logger,
 
+		done:         make(chan struct{}),
+		waitCount:    pm.waitCount,
+		waitInterval: pm.waitInterval,
+
 		executor:      pm.Executor,
 		healthChecker: pm.HealthChecker,
 	}
@@ -286,17 +298,17 @@ func (pm *Manager) unregisterProcess(p *Process) {
 	}
 
 	go func() {
-		for i := 0; i < types.WaitCount; i++ {
-			if p.IsStopped() {
-				break
-			}
-			logrus.Debugf("Process Manager: wait for process %v to shutdown before unregistering process", p.Name)
-			time.Sleep(types.WaitInterval)
-		}
-
-		if !p.IsStopped() {
-			logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", p.Name, p.State)
-			return
+		// Wait until the process really reached a terminal state instead of giving
+		// up after a fixed window. A process that needs its whole graceful stop
+		// window to exit (busy disk, rebuild in flight) used to still be in
+		// "stopping" when the window ran out, so it was never removed from the
+		// table and its ports were never released. The manager context ends the
+		// wait on shutdown.
+		waiting := true
+		select {
+		case <-p.done:
+		case <-pm.ctx.Done():
+			waiting = false
 		}
 
 		func() {
@@ -311,7 +323,9 @@ func (pm *Manager) unregisterProcess(p *Process) {
 		}()
 
 		logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
-		p.UpdateCh <- p
+		if waiting {
+			p.UpdateCh <- p
+		}
 	}()
 }
 
@@ -476,6 +490,10 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		lock: &sync.RWMutex{},
 
 		logger: logger,
+
+		done:         make(chan struct{}),
+		waitCount:    pm.waitCount,
+		waitInterval: pm.waitInterval,
 
 		executor:      pm.Executor,
 		healthChecker: pm.HealthChecker,
