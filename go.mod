@@ -4,7 +4,7 @@ go 1.26.0
 
 replace (
 	github.com/longhorn/longhorn-spdk-engine => github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
-	github.com/longhorn/types => github.com/longhorn/types v0.0.0-20260327130848-66f6de8a2fb3
+	github.com/longhorn/types => github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
 )
 
 require (
@@ -15,7 +15,7 @@ require (
 	github.com/longhorn/go-spdk-helper v0.8.0
 	github.com/longhorn/longhorn-engine v1.12.0-dev-20251228.0.20261004144741-3e9de6312116
 	github.com/longhorn/longhorn-spdk-engine v0.0.0-20260304090835-8b93a5453dcd
-	github.com/longhorn/types v0.0.0-20260930155107-5849431731c3
+	github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sync v0.24.0
