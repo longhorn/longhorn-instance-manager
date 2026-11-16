@@ -27,6 +27,29 @@ type Backend interface {
 	// Identity (immutable for the life of the backend).
 	Name() string
 	Address() string
+	// LocalBdevName is the lvol alias (<lvs>/<lvol>) of the backend's head
+	// bdev when the backend runs in this SPDK process. The engine can then
+	// use that lvol directly as a raid1 base bdev instead of attaching it
+	// over NVMe-oF.
+	//
+	// It is "" when the backend runs on another node, and the engine
+	// attaches it over NVMe-oF.
+	//
+	// The value is set when the backend is created and never changes, so
+	// detach can rely on it to undo exactly what attach did.
+	LocalBdevName() string
+
+	// Behavior of the backend type (fixed, no RPC).
+
+	// ResizedBeforeEngineExpand reports whether the backend is resized
+	// before EngineExpand is called.
+	//
+	//   - true: the raid bdev may already be larger than the size the
+	//     engine has recorded. This is expected, and the engine records
+	//     the new size.
+	//   - false: the engine resizes the backend itself during EngineExpand.
+	//     A raid bdev larger than the recorded size is an error.
+	ResizedBeforeEngineExpand() bool
 
 	// Mutable state. The engine reads/writes these directly during its
 	// reconciliation loop (e.g., marking ERR on RPC failure during

@@ -101,6 +101,31 @@ func bdevEcState(info *spdktypes.BdevEcInfo) spdktypes.BdevEcState {
 	return spdktypes.BdevEcStateOnline
 }
 
+// BdevEcFailBaseBdev tells the EC bdev that the base bdev in the given slot
+// has failed. Use it when the base bdev is a local lvol, which has no NVMe
+// controller to detach.
+//
+// Failing a slot that has already failed has no effect and returns success.
+// Failing a slot that is being replaced returns -EBUSY.
+//
+// After a slot fails, SPDK releases the old base bdev in the background.
+// Until that completes, the response reports CleanupPending as true and
+// BdevEcReplaceBaseBdev rejects the slot with -EBUSY. Poll BdevEcGetBdevs
+// until CleanupPending is false before replacing the slot.
+func (c *Client) BdevEcFailBaseBdev(name string, slot uint32) (resp spdktypes.BdevEcFailBaseBdevResponse, err error) {
+	req := spdktypes.BdevEcFailBaseBdevRequest{
+		Name: name,
+		Slot: slot,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_ec_fail_base_bdev", req)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, json.Unmarshal(cmdOutput, &resp)
+}
+
 // BdevEcReplaceBaseBdev hot-swaps a failed base bdev slot with a new bdev.
 // The slot is identified by its index. The slot transitions FAILED -> REPLACING
 // immediately and the new bdev starts receiving foreground writes. A subsequent

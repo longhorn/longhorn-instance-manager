@@ -9,6 +9,7 @@ import (
 	commonns "github.com/longhorn/go-common-libs/ns"
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 	helperutil "github.com/longhorn/go-spdk-helper/pkg/util"
 
 	lhclient "github.com/longhorn/longhorn-spdk-engine/pkg/client"
@@ -55,6 +56,28 @@ var (
 
 	restoreExposeSnapshotLvolBdev = exposeSnapshotLvolBdev
 	restoreStopExposeBdev         = func(cli *spdkclient.Client, nqn string) error { return cli.StopExposeBdev(nqn) }
+
+	shardStartExposeBdev = func(cli *spdkclient.Client, nqn, bdevUUID, nguid, ip, port string) error {
+		return cli.StartExposeBdev(nqn, bdevUUID, nguid, ip, port, helpertypes.InternalHostNQN)
+	}
+	shardStopExposeBdev = func(cli *spdkclient.Client, nqn string) error { return cli.StopExposeBdev(nqn) }
+
+	shardGroupStartExposeBdev = func(cli *spdkclient.Client, nqn, bdevUUID, nguid, ip, port string) error {
+		return cli.StartExposeBdev(nqn, bdevUUID, nguid, ip, port, helpertypes.InternalHostNQN)
+	}
+	shardGroupStopExposeBdev = func(cli *spdkclient.Client, nqn string) error { return cli.StopExposeBdev(nqn) }
+
+	shardGroupGetEcBdevs = func(cli *spdkclient.Client, name string) ([]spdktypes.BdevEcInfo, error) {
+		return cli.BdevEcGetBdevs(name)
+	}
+	shardGroupFailEcBaseBdev = func(cli *spdkclient.Client, name string, slot uint32) error {
+		_, err := cli.BdevEcFailBaseBdev(name, slot)
+		return err
+	}
+	shardGroupDetachNvmeController = func(cli *spdkclient.Client, name string) error {
+		_, err := cli.BdevNvmeDetachController(name)
+		return err
+	}
 
 	// nolint: staticcheck // Keep legacy IP selection until callers migrate to the new helpers.
 	backingImageGetIPForPod = commonnet.GetIPForPod
