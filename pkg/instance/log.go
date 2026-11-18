@@ -74,6 +74,10 @@ func (ops V2DataEngineInstanceOps) LogSetLevel(ctx context.Context, req *rpc.Log
 	return &emptypb.Empty{}, nil
 }
 
+func (ops LocalDataEngineInstanceOps) LogSetLevel(_ context.Context, _ *rpc.LogSetLevelRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine log set level is not supported")
+}
+
 func (s *Server) LogSetFlags(ctx context.Context, req *rpc.LogSetFlagsRequest) (resp *emptypb.Empty, err error) {
 	ops, ok := s.ops[req.DataEngine]
 	if !ok {
@@ -105,6 +109,10 @@ func (ops V2DataEngineInstanceOps) LogSetFlags(ctx context.Context, req *rpc.Log
 	return &emptypb.Empty{}, nil
 }
 
+func (ops LocalDataEngineInstanceOps) LogSetFlags(_ context.Context, _ *rpc.LogSetFlagsRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine log set flags is not supported")
+}
+
 func (s *Server) LogGetLevel(ctx context.Context, req *rpc.LogGetLevelRequest) (resp *rpc.LogGetLevelResponse, err error) {
 	ops, ok := s.ops[req.DataEngine]
 	if !ok {
@@ -123,6 +131,10 @@ func (ops V2DataEngineInstanceOps) LogGetLevel(ctx context.Context, req *rpc.Log
 	return &rpc.LogGetLevelResponse{
 		Level: logrus.GetLevel().String(),
 	}, nil
+}
+
+func (ops LocalDataEngineInstanceOps) LogGetLevel(_ context.Context, _ *rpc.LogGetLevelRequest) (*rpc.LogGetLevelResponse, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine log get level is not supported")
 }
 
 func (s *Server) LogGetFlags(ctx context.Context, req *rpc.LogGetFlagsRequest) (resp *rpc.LogGetFlagsResponse, err error) {
@@ -156,4 +168,8 @@ func (ops V2DataEngineInstanceOps) LogGetFlags(ctx context.Context, req *rpc.Log
 	return &rpc.LogGetFlagsResponse{
 		Flags: flags,
 	}, nil
+}
+
+func (ops LocalDataEngineInstanceOps) LogGetFlags(_ context.Context, _ *rpc.LogGetFlagsRequest) (*rpc.LogGetFlagsResponse, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "local data engine log get flags is not supported")
 }
