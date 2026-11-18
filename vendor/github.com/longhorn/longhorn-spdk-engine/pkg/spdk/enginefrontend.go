@@ -15,6 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.uber.org/multierr"
 
+	retrygo "github.com/avast/retry-go/v5"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
 	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
@@ -22,6 +26,7 @@ import (
 	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 
+	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/client"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
 	"github.com/longhorn/longhorn-spdk-engine/pkg/util"
@@ -1265,17 +1270,23 @@ func (ef *EngineFrontend) Expand(ctx context.Context, spdkClient *spdkclient.Cli
 		return errors.Wrapf(err, "failed to expand engine %v", engineName)
 	}
 
-	engine, err := engineSpdkClient.EngineGet(engineName)
+	// Like the V1 engine controller, a RAID1 engine expands in the background once the
+	// expansion has started. Wait for it, and take the result from the engine.
+	engine, err := waitForEngineExpansion(engineSpdkClient, engineName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get engine %v after expansion", engineName)
+		return errors.Wrapf(err, "failed to wait for engine %v to expand", engineName)
 	}
 	engineActualSize = engine.ActualSize
+	// A failed expansion puts the engine in the error state. Its size alone does not show
+	// the failure: an engine created for an offline expansion can already have size.
+	if engine.State == string(types.InstanceStateError) || engine.SpecSize < size {
+		return fmt.Errorf("failed to expand engine %v to size %v, current size %v: %v",
+			engineName, size, engine.SpecSize, engine.LastExpansionError)
+	}
+	// Like the V1 engine, the engine reaches size although some replicas failed: they were
+	// removed from its RAID bdev, and the failure is only a warning.
 	if engine.LastExpansionError != "" {
-		backendExpansionError = engine.LastExpansionError
-		backendExpansionFailedAt = engine.LastExpansionFailedAt
-		ef.log.Warnf("Engine %s partially failed to expand to %v; keeping engine frontend size at %v: %v",
-			engineName, size, originalSize, backendExpansionError)
-		return nil
+		ef.log.Warnf("Engine %s expanded to %v, but some replicas failed: %v", engineName, size, engine.LastExpansionError)
 	}
 
 	// From here on the backend has already grown to size. A failure below means the
@@ -1308,8 +1319,68 @@ func (ef *EngineFrontend) Expand(ctx context.Context, spdkClient *spdkclient.Cli
 
 	ef.log.Info("Expanding engine completed")
 	expanded = true
+	backendExpansionError = engine.LastExpansionError
+	backendExpansionFailedAt = engine.LastExpansionFailedAt
 
 	return nil
+}
+
+// The wait holds the volume host lock, which blocks the other frontend operations of the
+// volume, such as Delete, so it is bounded. A RAID1 engine expands its replicas one at a
+// time, each bounded by the replica request timeout, so engineExpansionWaitTimeout covers
+// three replicas whose requests time out. An engine that cannot be reached for
+// engineExpansionUnavailableTimeout is considered gone, and the wait fails early.
+// Variables so that tests can shorten them.
+var (
+	engineExpansionWaitTimeout        = 15 * time.Minute
+	engineExpansionUnavailableTimeout = time.Minute
+	engineExpansionWaitInterval       = 2 * time.Second
+)
+
+// waitForEngineExpansion waits until the engine no longer expands, and returns it. The
+// engine holds its lock while it expands, so EngineGet can time out until it completes.
+func waitForEngineExpansion(engineSpdkClient *client.SPDKClient, engineName string) (*api.Engine, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), engineExpansionWaitTimeout)
+	defer cancel()
+
+	var unavailableSince time.Time
+	engine, err := retrygo.NewWithData[*api.Engine](
+		retrygo.Context(ctx),
+		retrygo.UntilSucceeded(),
+		retrygo.Delay(engineExpansionWaitInterval),
+		retrygo.DelayType(retrygo.FixedDelay),
+		retrygo.LastErrorOnly(true),
+		retrygo.WrapContextErrorWithLastError(true),
+	).Do(func() (*api.Engine, error) {
+		engine, err := engineSpdkClient.EngineGet(engineName)
+		switch grpcstatus.Code(err) {
+		case grpccodes.OK:
+			unavailableSince = time.Time{}
+			if engine.IsExpanding {
+				return nil, fmt.Errorf("engine %v is still expanding", engineName)
+			}
+			return engine, nil
+		case grpccodes.NotFound:
+			return nil, retrygo.Unrecoverable(err)
+		case grpccodes.Unavailable:
+			if unavailableSince.IsZero() {
+				unavailableSince = time.Now()
+			}
+			if time.Since(unavailableSince) >= engineExpansionUnavailableTimeout {
+				return nil, retrygo.Unrecoverable(errors.Wrapf(err, "engine %v has been unavailable for %v", engineName, engineExpansionUnavailableTimeout))
+			}
+			return nil, err
+		default:
+			unavailableSince = time.Time{}
+			return nil, err
+		}
+	})
+	// An unrecoverable error, such as NotFound, can return after the deadline has passed,
+	// so only an error that wraps the context error is a timeout.
+	if errors.Is(err, context.DeadlineExceeded) {
+		return nil, errors.Wrapf(retryLastError(err), "timed out after %v", engineExpansionWaitTimeout)
+	}
+	return engine, err
 }
 
 func (ef *EngineFrontend) requireExpansion(ctx context.Context, engineSpdkClient *client.SPDKClient, size uint64) (requireExpansion bool, err error) {
@@ -1401,8 +1472,18 @@ func (ef *EngineFrontend) finishExpansion(fromSize uint64, expanded bool, size u
 		} else {
 			ef.lastExpansionFailedAt = time.Now().UTC().Format(time.RFC3339Nano)
 		}
-		ef.log.Warnf("Partially failed to expand from size %v to %v; keeping engine frontend size at %v: %v",
-			fromSize, size, fromSize, backendExpansionError)
+		if expanded {
+			// The engine reached the new size although some replicas failed; the
+			// failure stays as a warning.
+			ef.SpecSize = size
+			ef.log.Warnf("Expanded from size %v to %v, but some replicas failed: %v", fromSize, size, backendExpansionError)
+			if err := saveEngineFrontendRecord(ef.metadataDir, ef); err != nil {
+				ef.log.WithError(err).Warn("Failed to persist engine frontend record after expansion")
+			}
+		} else {
+			ef.log.Warnf("Partially failed to expand from size %v to %v; keeping engine frontend size at %v: %v",
+				fromSize, size, fromSize, backendExpansionError)
+		}
 		ef.isExpanding = false
 		return
 	}
