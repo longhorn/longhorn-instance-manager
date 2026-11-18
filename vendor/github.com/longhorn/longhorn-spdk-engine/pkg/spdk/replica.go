@@ -1769,16 +1769,8 @@ func (r *Replica) Expand(spdkClient *spdkclient.Client, size uint64) error {
 		return nil
 	}
 
-	// If the bdev is exposed, we must stop exposing it before the resize.
-	reExposeBdev := false
-	if r.IsExposed {
-		if err := spdkClient.StopExposeBdev(helpertypes.GetNQN(r.Name)); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-			return errors.Wrapf(err, "failed to stop expose replica %v before expansion", r.Name)
-		}
-		r.IsExposed = false
-		reExposeBdev = true
-	}
-
+	// The lvol grows while it stays exposed: the NVMe-oF target notifies the engine of the
+	// new namespace size, so the engine NVMe bdev in the RAID bdev keeps serving I/O.
 	resized, err := spdkClient.BdevLvolResize(r.Alias, util.BytesToMiB(size))
 	if !resized || err != nil {
 		r.log.Warn("Failed to expand replica or returned false; verifying lvol size")
@@ -1804,15 +1796,6 @@ func (r *Replica) Expand(spdkClient *spdkclient.Client, size uint64) error {
 		}
 
 		r.log.Info("Replica expansion succeeded despite earlier error")
-	}
-
-	// If we had previously exposed the bdev, we must re-expose it after the resize.
-	if reExposeBdev {
-		if err := spdkClient.StartExposeBdev(helpertypes.GetNQN(r.Name), r.Head.UUID, generateNGUID(r.Name), r.IP, strconv.Itoa(int(r.PortStart)),
-			helpertypes.InternalHostNQN); err != nil {
-			return errors.Wrapf(err, "failed to start expose replica %v after expansion", r.Name)
-		}
-		r.IsExposed = true
 	}
 
 	// Blindly clean up then update the caches for the head

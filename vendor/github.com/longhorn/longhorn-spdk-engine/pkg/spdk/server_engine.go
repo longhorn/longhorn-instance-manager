@@ -192,17 +192,18 @@ func (s *Server) EngineExpand(ctx context.Context, req *spdkrpc.EngineExpandRequ
 
 	// EC volumes take the backend-reset path because ShardGroupExpand has
 	// already driven the backend resize against the ShardGroup process;
-	// RAID1 keeps its tear-down/expand-replicas/reconstruct cycle. The
-	// engine itself remains layout-blind - the dispatch is decided here
-	// by inspecting which Backend implementation EngineCreate's factory
-	// populated. EngineExpandRequest does not currently carry
-	// DataLayoutType, so this inference is the substitute for
-	// req.data_layout_type until both topologies converge on
-	// ExpandViaBackendReset and the dispatch is removed.
+	// RAID1 expands its replicas and grows its RAID bdev in place, without
+	// tearing it down. Like the V1 engine controller, RAID1 returns once the
+	// expansion has started, and the caller waits until the engine no longer
+	// reports IsExpanding. The engine itself remains layout-blind - the
+	// dispatch is decided here by inspecting which Backend implementation
+	// EngineCreate's factory populated. EngineExpandRequest does not
+	// currently carry DataLayoutType, so this inference is the substitute
+	// for req.data_layout_type.
 	if isShardedEngine(e) {
 		err = e.ExpandViaBackendReset(spdkClient, req.Size)
 	} else {
-		err = e.Expand(spdkClient, req.Size)
+		err = e.StartExpand(spdkClient, req.Size)
 	}
 	if err != nil {
 		return nil, toExpansionGRPCError(err, "failed to expand engine %v", req.Name)
