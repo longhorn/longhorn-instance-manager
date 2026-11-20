@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/longhorn/backupstore v0.0.0-20261106055638-bcc51f569085
 	github.com/longhorn/go-common-libs v0.0.0-20261028232656-6805a1f65080
+	github.com/longhorn/go-lvm-helper v0.0.0
 	github.com/longhorn/go-spdk-helper v0.14.1-0.20261117055102-2128d458b38c
 	github.com/longhorn/longhorn-engine v1.14.0-dev-20261116
 	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261118072114-917ab805f756
@@ -137,3 +138,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/longhorn/go-lvm-helper => github.com/bachmanity1/go-lvm-helper v0.0.0-20261118034403-30d67d93b513
