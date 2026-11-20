@@ -102,7 +102,7 @@ func (c *ProcessManagerClient) ProcessCreate(name, binary string, portCount int,
 	}
 
 	client := c.getControllerServiceClient()
-	ctx, cancel := context.WithTimeout(context.Background(), types.GRPCServiceTimeout)
+	ctx, cancel := context.WithTimeout(c.ctx, types.GRPCServiceTimeout)
 	defer cancel()
 
 	return client.ProcessCreate(ctx, &rpc.ProcessCreateRequest{
