@@ -1,6 +1,7 @@
 package process
 
 import (
+	"fmt"
 	"maps"
 	"sync"
 	"syscall"
@@ -51,6 +52,9 @@ type Process struct {
 func (p *Process) Start() error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	if p.State != StateStarting {
+		return fmt.Errorf("cannot start process %v in state %v", p.Name, p.State)
+	}
 
 	cmd, err := p.executor.NewCommand(p.Binary, p.Args...)
 	if err != nil {
@@ -88,7 +92,9 @@ func (p *Process) Start() error {
 			address := util.GetURL("localhost", int(p.PortStart))
 			if p.healthChecker.WaitForRunning(address, p.Name, probeStopCh) {
 				p.lock.Lock()
-				p.State = StateRunning
+				if p.State == StateStarting {
+					p.State = StateRunning
+				}
 				p.lock.Unlock()
 				p.UpdateCh <- p
 				return
@@ -100,7 +106,9 @@ func (p *Process) Start() error {
 		} else {
 			// Process Manager doesn't know the grpc address. directly set running state
 			p.lock.Lock()
-			p.State = StateRunning
+			if p.State == StateStarting {
+				p.State = StateRunning
+			}
 			p.lock.Unlock()
 			p.UpdateCh <- p
 		}
@@ -191,18 +199,28 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 			}
 		}()
 
+		// Close the command's pending-start gate before treating a not-yet-running
+		// command as stopped. The asynchronous Run may not have begun yet.
+		if cmd != nil {
+			if needStop {
+				cmd.StopWithSignal(signal)
+			} else if needTimeoutKill {
+				cmd.Kill()
+			}
+		}
 		if cmd == nil || !cmd.IsRunning() {
 			logrus.Errorf("Process Manager: cmd of %v is not running anymore, no need to stop", p.Name)
+			p.lock.Lock()
 			if p.State != StateStopped && p.State != StateError {
 				p.State = StateStopped
 			}
+			p.lock.Unlock()
 			return
 		}
 
 		// no need for lock
 		if needStop {
 			logrus.Infof("Process Manager: trying to stop process %v", p.Name)
-			cmd.StopWithSignal(signal)
 			for i := 0; i < types.WaitCount; i++ {
 				if p.IsStopped() {
 					return

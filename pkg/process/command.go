@@ -1,6 +1,7 @@
 package process
 
 import (
+	"errors"
 	"io"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +33,9 @@ func (be *BinaryExecutor) NewCommand(name string, arg ...string) (Command, error
 type BinaryCommand struct {
 	*sync.RWMutex
 	*exec.Cmd
+	started bool
+	stopped bool
+	running bool
 }
 
 func NewBinaryCommand(binary string, arg ...string) (*BinaryCommand, error) {
@@ -64,16 +68,43 @@ func (bc *BinaryCommand) SetOutput(writer io.Writer) {
 	bc.Stderr = writer
 }
 
+// Run serializes the OS startup decision with every terminal stop request.
+// Waiting is outside the lock so a running command can still be signaled.
+func (bc *BinaryCommand) Run() error {
+	bc.Lock()
+	if bc.started {
+		bc.Unlock()
+		return errors.New("command has already started")
+	}
+	if bc.stopped {
+		bc.Unlock()
+		return nil
+	}
+	if err := bc.Start(); err != nil {
+		bc.Unlock()
+		return err
+	}
+	bc.started, bc.running = true, true
+	bc.Unlock()
+
+	err := bc.Wait()
+	bc.Lock()
+	bc.running = false
+	bc.Unlock()
+	return err
+}
+
 func (bc *BinaryCommand) IsRunning() bool {
 	bc.RLock()
 	defer bc.RUnlock()
-	return bc.Process != nil && bc.ProcessState == nil
+	return bc.running
 }
 
 func (bc *BinaryCommand) StopWithSignal(signal syscall.Signal) {
-	bc.RLock()
-	defer bc.RUnlock()
-	if bc.Process != nil {
+	bc.Lock()
+	defer bc.Unlock()
+	bc.stopped = true
+	if bc.Process != nil && bc.running {
 		if err := bc.Process.Signal(signal); err != nil {
 			logrus.WithError(err).Error("failed to send signal to process")
 		}
@@ -81,23 +112,11 @@ func (bc *BinaryCommand) StopWithSignal(signal syscall.Signal) {
 }
 
 func (bc *BinaryCommand) Stop() {
-	bc.RLock()
-	defer bc.RUnlock()
-	if bc.Process != nil {
-		if err := bc.Process.Signal(syscall.SIGINT); err != nil {
-			logrus.WithError(err).Error("failed to send signal to process")
-		}
-	}
+	bc.StopWithSignal(syscall.SIGINT)
 }
 
 func (bc *BinaryCommand) Kill() {
-	bc.RLock()
-	defer bc.RUnlock()
-	if bc.Process != nil {
-		if err := bc.Process.Signal(syscall.SIGKILL); err != nil {
-			logrus.WithError(err).Error("failed to send signal to process")
-		}
-	}
+	bc.StopWithSignal(syscall.SIGKILL)
 }
 
 type MockExecutor struct {
@@ -140,10 +159,18 @@ func NewMockCommand(name string, arg ...string) *MockCommand {
 
 func (mc *MockCommand) Run() error {
 	mc.Lock()
+	if mc.stopped {
+		mc.Unlock()
+		return nil
+	}
 	mc.isRunning = true
 	mc.Unlock()
 
-	return <-mc.stopCh
+	err := <-mc.stopCh
+	mc.Lock()
+	mc.isRunning = false
+	mc.Unlock()
+	return err
 }
 
 func (mc *MockCommand) SetOutput(writer io.Writer) {
@@ -157,10 +184,11 @@ func (mc *MockCommand) IsRunning() bool {
 
 func (mc *MockCommand) Stop() {
 	mc.Lock()
-	mc.stopped = true
-	mc.Unlock()
-
-	mc.stopCh <- nil
+	defer mc.Unlock()
+	if !mc.stopped {
+		mc.stopped = true
+		close(mc.stopCh)
+	}
 }
 
 func (mc *MockCommand) StopWithSignal(signal syscall.Signal) {
@@ -168,4 +196,5 @@ func (mc *MockCommand) StopWithSignal(signal syscall.Signal) {
 }
 
 func (mc *MockCommand) Kill() {
+	mc.Stop()
 }
