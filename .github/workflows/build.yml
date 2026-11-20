@@ -76,11 +76,7 @@ jobs:
 
   build-arm64-binaries:
     name: Build ARM64 binaries
-<<<<<<< HEAD
-    runs-on: longhorn-infra-oracle-arm64-runners
-=======
     runs-on: ubuntu-26.04-arm
->>>>>>> a5d94b5 (chore(deps): update dependency ubuntu to v26)
     steps:
     - name: Install make curl git
       run: |
@@ -140,11 +136,7 @@ jobs:
 
   build-push-arm64-images:
     name: Build and push ARM64 images
-<<<<<<< HEAD
-    runs-on: longhorn-infra-oracle-arm64-runners
-=======
     runs-on: ubuntu-26.04-arm
->>>>>>> a5d94b5 (chore(deps): update dependency ubuntu to v26)
     if: ${{ startsWith(github.ref, 'refs/heads/') || startsWith(github.ref, 'refs/tags/') }}
     needs: [build_info, build-arm64-binaries]
     steps:
