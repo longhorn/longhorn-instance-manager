@@ -10,6 +10,8 @@ Options:
         --spdk-memory-size     SPDK memory size in MB
         --spdk-cpumask         SPDK CPU mask. The first (lowest) core runs the admin reactor only,
                                the other cores run the pollers (a single-core mask shares the core)
+        --spdk-no-dedicated-main-core  Run the pollers on every core of the CPU mask, sharing the
+                               first core with the admin reactor
         --spdk-iobuf-large-pool-size  SPDK iobuf large_pool_count (0 = SPDK default)
         --spdk-iobuf-small-pool-size  SPDK iobuf small_pool_count (0 = SPDK default)
         --spdk-no-hugepage     Disable SPDK hugepage usage
@@ -152,6 +154,7 @@ function enable_spdk_tgt() {
 
 enable_spdk=0
 spdk_cpumask=""
+dedicated_main_core=1
 iobuf_large_pool_size=0
 iobuf_small_pool_size=0
 spdk_options=()
@@ -167,6 +170,9 @@ while [[ $# -gt 0 ]]; do
             spdk_cpumask="$2"
             spdk_options+=("-m" "$2")
             shift
+            ;;
+        --spdk-no-dedicated-main-core)
+            dedicated_main_core=0
             ;;
         -s|--spdk-memory-size)
             spdk_options+=("--mem-size" "$2")
@@ -218,7 +224,9 @@ bind_lib_modules
 # everything else (NVMe-oF target poll groups here, the ublk target in longhorn-spdk-engine, which
 # reads SPDK_POLLER_CPUMASK). A single-core mask leaves nothing to separate, so SPDK keeps its default.
 spdk_poller_cpumask=""
-if [ "$enable_spdk" -eq 1 ] && [ -n "$spdk_cpumask" ]; then
+if [ "$enable_spdk" -eq 1 ] && [ -n "$spdk_cpumask" ] && [ "$dedicated_main_core" -eq 0 ]; then
+    echo "Dedicated main core disabled, the admin reactor and the pollers share the cores of SPDK cpumask ${spdk_cpumask}"
+elif [ "$enable_spdk" -eq 1 ] && [ -n "$spdk_cpumask" ]; then
     if cpumask_split=$(split_spdk_cpumask "$spdk_cpumask"); then
         read -r spdk_main_core spdk_poller_cpumask <<< "$cpumask_split"
         spdk_options+=("--main-core" "$spdk_main_core")
