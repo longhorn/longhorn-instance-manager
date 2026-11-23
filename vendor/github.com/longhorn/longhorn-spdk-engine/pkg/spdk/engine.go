@@ -114,6 +114,10 @@ func (m *MockReplicaAdder) ReplicaAddFinish(srcReplicaServiceCli, dstReplicaServ
 type Engine struct {
 	sync.RWMutex
 
+	// replicaAddLock serializes the replica add steps that suspend and resume the
+	// frontend outside the Engine lock. It must be acquired before the Engine lock.
+	replicaAddLock sync.Mutex
+
 	ctx       context.Context
 	cancelCtx context.CancelFunc
 
@@ -788,15 +792,19 @@ type replicaAddFrontendSuspendResumeWrapper func(work func() error, suspendRequi
 
 // ReplicaAdd performs the full replica-add flow consisting of three phases:
 //
-// Phase 0 - Synchronous Setup (under Engine lock, returns on completion):
-//  1. Validate engine state is Running, dst replica doesn't exist, no other WO replica.
-//  2. Obtain replica gRPC clients for all existing replicas, plus src/dst rebuild clients.
-//  3. Pick an RW replica as the rebuild source.
-//  4. Call replicaAddStart (optionally wrapped by frontendSuspendResumeWrapper for EF suspend/resume).
+// Phase 0 - Synchronous Setup (returns on completion):
+//  0. Suspend the frontend via frontendSuspendResumeWrapper (if present) before taking
+//     the Engine lock, and resume it after Phase 0 releases the Engine lock. An engine
+//     frontend snapshot operation holds the frontend lock while it calls into the
+//     Engine, so the opposite lock order deadlocks.
 //     The suspension is required: an SPDK snapshot taken while writes allocate
 //     clusters in a replica head can abort spdk_tgt or corrupt the lvstore
 //     metadata (spdk/spdk#3113). If the frontend cannot be suspended, the replica
-//     add fails, and longhorn-manager retries it:
+//     add fails, and longhorn-manager retries it.
+//  1. Under the Engine lock, validate engine state is Running, dst replica doesn't exist, no other WO replica.
+//  2. Obtain replica gRPC clients for all existing replicas, plus src/dst rebuild clients.
+//  3. Pick an RW replica as the rebuild source.
+//  4. Call replicaAddStart:
 //     a. Create rebuild snapshot across all replicas.
 //     b. Get rebuilding snapshot list from src replica.
 //     c. ReplicaRebuildingSrcStart: src replica exposes snapshot as NVMe-oF target.
@@ -827,7 +835,23 @@ type replicaAddFrontendSuspendResumeWrapper func(work func() error, suspendRequi
 //	 11. If finish returns error: mark dst replica ERR. SPDK resource cleanup is NOT retried -
 //	     it is the responsibility of the ReplicaAdder (mock should call Real.ReplicaAddFinish()
 //	     before returning error) or r.Delete() when the replica is subsequently removed.
-func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstReplicaAddress string, fastSync bool, linkedCloneSrcReplicaName, linkedCloneSrcEngineName, linkedCloneSrcEngineAddress string, frontendSuspendResumeWrapper replicaAddFrontendSuspendResumeWrapper) (err error) {
+func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstReplicaAddress string, fastSync bool, linkedCloneSrcReplicaName, linkedCloneSrcEngineName, linkedCloneSrcEngineAddress string, frontendSuspendResumeWrapper replicaAddFrontendSuspendResumeWrapper) error {
+	// The frontend suspension is not reference counted: without this lock, a
+	// concurrent replica add or finish step could resume the frontend before
+	// this one takes the rebuild snapshot.
+	e.replicaAddLock.Lock()
+	defer e.replicaAddLock.Unlock()
+
+	addFn := func() error {
+		return e.replicaAdd(spdkClient, dstReplicaName, dstReplicaAddress, fastSync, linkedCloneSrcReplicaName, linkedCloneSrcEngineName, linkedCloneSrcEngineAddress, frontendSuspendResumeWrapper)
+	}
+	if frontendSuspendResumeWrapper == nil {
+		return addFn()
+	}
+	return frontendSuspendResumeWrapper(addFn, true)
+}
+
+func (e *Engine) replicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstReplicaAddress string, fastSync bool, linkedCloneSrcReplicaName, linkedCloneSrcEngineName, linkedCloneSrcEngineAddress string, frontendSuspendResumeWrapper replicaAddFrontendSuspendResumeWrapper) (err error) {
 	updateRequired := false
 
 	e.Lock()
@@ -937,7 +961,7 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 		return err
 	}
 
-	// Perform the synchronous setup phase (optionally wrapped for EF suspend/resume).
+	// Perform the synchronous setup phase. ReplicaAdd has suspended the frontend.
 	var rebuildingSnapshotList []*api.Lvol
 	var setupErr error
 	startFn := func() error {
@@ -955,19 +979,15 @@ func (e *Engine) ReplicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 		return startEngineErr
 	}
 
-	if frontendSuspendResumeWrapper != nil {
-		if wrapErr := frontendSuspendResumeWrapper(startFn, true); wrapErr != nil {
-			// startFn captures fatal engine errors in engineErr. The wrapper
-			// returns the work error, so keep setup failures replica-scoped.
-			setupErr = wrapErr
-		}
-	} else {
-		if fnErr := startFn(); fnErr != nil {
-			setupErr = fnErr
-		}
+	// startFn captures fatal engine errors in engineErr, so keep setup
+	// failures replica-scoped.
+	if fnErr := startFn(); fnErr != nil {
+		setupErr = fnErr
 	}
 
 	// Launch the async phase: shallow copy followed by cleanup or finish.
+	// The finish step waits for ReplicaAdd to resume the frontend, as both
+	// hold replicaAddLock.
 	// Even on setup failure, the goroutine handles SPDK resource cleanup
 	// (exposed snapshot, NVMe connections) via replicaAddCleanupOrFinish.
 	go e.replicaAddAsync(srcReplicaServiceCli, dstReplicaServiceCli, srcReplicaName, srcReplicaAddress, dstReplicaName, dstReplicaAddress, rebuildingSnapshotList, fastSync, frontendSuspendResumeWrapper, setupErr)
@@ -1161,7 +1181,11 @@ func (e *Engine) replicaAddCleanupOrFinish(
 
 	var finishErr error
 	if frontendSuspendResumeWrapper != nil {
-		finishErr = frontendSuspendResumeWrapper(finishFn, false)
+		finishErr = func() error {
+			e.replicaAddLock.Lock()
+			defer e.replicaAddLock.Unlock()
+			return frontendSuspendResumeWrapper(finishFn, false)
+		}()
 	} else {
 		finishErr = finishFn()
 	}
