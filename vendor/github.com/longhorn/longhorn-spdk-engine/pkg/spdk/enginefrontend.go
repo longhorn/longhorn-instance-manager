@@ -1204,6 +1204,12 @@ func (ef *EngineFrontend) Expand(ctx context.Context, spdkClient *spdkclient.Cli
 		ef.Unlock()
 		return errors.Wrapf(ErrSwitchOverTargetPrecondition, "engine frontend %s is switching over target", ef.Name)
 	}
+	// The dm resize resumes the frontend, which would let I/O flow while the
+	// suspender (e.g. a replica add) still relies on the suspension.
+	if ef.State == types.InstanceStateSuspended {
+		ef.Unlock()
+		return fmt.Errorf("engine frontend %s is suspended", ef.Name)
+	}
 
 	originalSize := ef.SpecSize
 	engineName := ef.EngineName
@@ -2558,6 +2564,14 @@ func (ef *EngineFrontend) snapshotOperation(inputSnapshotName string, snapshotOp
 	if ef.isSwitchingOver {
 		ef.Unlock()
 		return "", errors.Wrapf(ErrSwitchOverTargetPrecondition, "engine frontend %s is switching over target", ef.Name)
+	}
+
+	// A frontend suspended by another operation (e.g. a replica add) may skip the
+	// filesystem sync and freeze. Reject the creation so the caller retries after it
+	// resumes, rather than resuming the frontend under that operation.
+	if snapshotOp == SnapshotOperationCreate && ef.isSuspendSupported() && ef.State == types.InstanceStateSuspended {
+		ef.Unlock()
+		return "", fmt.Errorf("cannot create snapshot %q while engine frontend %s is suspended", inputSnapshotName, ef.Name)
 	}
 
 	defer func() {

@@ -1452,6 +1452,11 @@ func (r *Replica) Create(spdkClient *spdkclient.Client, portCount int32, superio
 		return nil, grpcstatus.Errorf(grpccodes.FailedPrecondition, "invalid state %s for replica %s creation", r.State, r.Name)
 	}
 
+	// A stopped replica keeps the clone error of its last run. This new run must not report it.
+	if staleErr, cleared := r.clearStaleSnapshotCloneDstError(); cleared {
+		r.log.Infof("Cleared the snapshot clone error left by an earlier attempt: %v", staleErr)
+	}
+
 	defer func() {
 		if err != nil {
 			r.log.WithError(err).Errorf("Failed to create replica %s", r.Name)
@@ -2850,6 +2855,22 @@ func (r *Replica) doCleanupForSnapshotCloneDst(spdkClient *spdkclient.Client, cl
 	}
 
 	return util.CombineErrors(aggregatedErrors...)
+}
+
+// clearStaleSnapshotCloneDstError drops the error left by a finished clone attempt and returns it.
+// Otherwise longhorn-manager reads this error as the result of the next attempt and never starts it.
+// A "complete" state is kept so a finished clone is not run again. The caller must hold the replica lock.
+func (r *Replica) clearStaleSnapshotCloneDstError() (staleErr string, cleared bool) {
+	if r.isSnapshotCloning || r.snapshotCloningDstCache.cloningState != types.ProgressStateError {
+		return "", false
+	}
+
+	staleErr = r.snapshotCloningDstCache.cloningError
+	r.snapshotCloningDstCache.processedClusters = 0
+	r.snapshotCloningDstCache.totalClusters = 0
+	r.snapshotCloningDstCache.cloningError = ""
+	r.snapshotCloningDstCache.cloningState = ""
+	return staleErr, true
 }
 
 func (r *Replica) snapshotLinkedCloneSrcStart(spdkClient *spdkclient.Client, snapshotName, dstReplicaName string) (err error) {

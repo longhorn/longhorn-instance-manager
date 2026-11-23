@@ -81,7 +81,7 @@ github.com/apache/arrow-go/v18/internal/utils/maphash
 # github.com/avast/retry-go/v4 v4.7.0
 ## explicit; go 1.20
 github.com/avast/retry-go/v4
-# github.com/avast/retry-go/v5 v5.0.0
+# github.com/avast/retry-go/v5 v5.1.1
 ## explicit; go 1.20
 github.com/avast/retry-go/v5
 # github.com/aws/aws-sdk-go-v2 v1.43.7
@@ -478,7 +478,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261118072114-917ab805f756
+# github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261123041135-b77400e6860e
 ## explicit; go 1.26.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
@@ -611,7 +611,7 @@ golang.org/x/oauth2/internal
 # golang.org/x/sync v0.25.0
 ## explicit; go 1.26.0
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.49.0
+# golang.org/x/sys v0.50.0
 ## explicit; go 1.26.0
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
