@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20261106055638-bcc51f569085
+	github.com/longhorn/backupstore v0.0.0-20261126014319-1a59e1ebb9d9
 	github.com/longhorn/go-common-libs v0.0.0-20261028232656-6805a1f65080
 	github.com/longhorn/go-spdk-helper v0.14.1-0.20261117055102-2128d458b38c
-	github.com/longhorn/longhorn-engine v1.14.0-dev-20261116
-	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261123041135-b77400e6860e
+	github.com/longhorn/longhorn-engine v1.14.0-dev-20261116.0.20261126021152-abb9f588a936
+	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261126025430-6866938be969
 	github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v3 v3.14.0
@@ -49,7 +49,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.33.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.7 // indirect
-	github.com/aws/smithy-go v1.28.5 // indirect
+	github.com/aws/smithy-go v1.28.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.16.0 // indirect
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
 	github.com/gammazero/deque v1.2.2 // indirect
-	github.com/gammazero/workerpool v1.2.2 // indirect
+	github.com/gammazero/workerpool v1.3.0 // indirect
 	github.com/getsentry/sentry-go v0.46.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/go-openapi/swag/typeutils v0.27.1 // indirect
 	github.com/go-openapi/swag/yamlutils v0.27.1 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
-	github.com/gofrs/flock v0.13.1 // indirect
+	github.com/gofrs/flock v0.13.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect

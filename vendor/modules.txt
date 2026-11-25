@@ -192,7 +192,7 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc/types
 github.com/aws/aws-sdk-go-v2/service/sts
 github.com/aws/aws-sdk-go-v2/service/sts/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/sts/types
-# github.com/aws/smithy-go v1.28.5
+# github.com/aws/smithy-go v1.28.6
 ## explicit; go 1.24
 github.com/aws/smithy-go
 github.com/aws/smithy-go/auth
@@ -287,7 +287,7 @@ github.com/fxamacker/cbor/v2
 # github.com/gammazero/deque v1.2.2
 ## explicit; go 1.26
 github.com/gammazero/deque
-# github.com/gammazero/workerpool v1.2.2
+# github.com/gammazero/workerpool v1.3.0
 ## explicit; go 1.26
 github.com/gammazero/workerpool
 # github.com/getsentry/sentry-go v0.46.0
@@ -369,8 +369,8 @@ github.com/goccy/go-json/internal/encoder/vm_color_indent
 github.com/goccy/go-json/internal/encoder/vm_indent
 github.com/goccy/go-json/internal/errors
 github.com/goccy/go-json/internal/runtime
-# github.com/gofrs/flock v0.13.1
-## explicit; go 1.25.0
+# github.com/gofrs/flock v0.13.2
+## explicit; go 1.26.0
 github.com/gofrs/flock
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
@@ -420,7 +420,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/backupstore v0.0.0-20261106055638-bcc51f569085
+# github.com/longhorn/backupstore v0.0.0-20261126014319-1a59e1ebb9d9
 ## explicit; go 1.26.0
 github.com/longhorn/backupstore
 github.com/longhorn/backupstore/azblob
@@ -465,7 +465,7 @@ github.com/longhorn/go-spdk-helper/pkg/spdk/setup
 github.com/longhorn/go-spdk-helper/pkg/spdk/types
 github.com/longhorn/go-spdk-helper/pkg/types
 github.com/longhorn/go-spdk-helper/pkg/util
-# github.com/longhorn/longhorn-engine v1.14.0-dev-20261116
+# github.com/longhorn/longhorn-engine v1.14.0-dev-20261116.0.20261126021152-abb9f588a936
 ## explicit; go 1.26.0
 github.com/longhorn/longhorn-engine/pkg/backingfile
 github.com/longhorn/longhorn-engine/pkg/controller/client
@@ -478,7 +478,7 @@ github.com/longhorn/longhorn-engine/pkg/sync
 github.com/longhorn/longhorn-engine/pkg/types
 github.com/longhorn/longhorn-engine/pkg/util
 github.com/longhorn/longhorn-engine/pkg/util/disk
-# github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261123041135-b77400e6860e
+# github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261126025430-6866938be969
 ## explicit; go 1.26.0
 github.com/longhorn/longhorn-spdk-engine/pkg/api
 github.com/longhorn/longhorn-spdk-engine/pkg/client
