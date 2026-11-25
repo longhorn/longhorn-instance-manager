@@ -33,8 +33,9 @@ import (
 type shardGroupBackend struct {
 	mu sync.RWMutex
 
-	name    string // immutable; ShardGroup name (= backend key in Engine.backends)
-	address string // ip:port of the ShardGroup process's NVMe-oF target
+	name          string // immutable; ShardGroup name (= backend key in Engine.backends)
+	address       string // ip:port of the ShardGroup process's NVMe-oF target
+	localBdevName string // immutable; lvol alias when the ShardGroup runs in this SPDK process, "" otherwise
 
 	mode     types.Mode
 	bdevName string
@@ -45,16 +46,31 @@ type shardGroupBackend struct {
 // newShardGroupBackend constructs a shardGroupBackend. Mode defaults to WO
 // until the engine flips it to RW after connectNVMfBdev succeeds, mirroring
 // replicaBackend's lifecycle.
-func newShardGroupBackend(name, address string, newServiceClient ServiceClientFactory) *shardGroupBackend {
+func newShardGroupBackend(name, address, localBdevName string, newServiceClient ServiceClientFactory) *shardGroupBackend {
 	return &shardGroupBackend{
 		name:             name,
 		address:          address,
+		localBdevName:    localBdevName,
 		mode:             types.ModeWO,
 		newServiceClient: newServiceClient,
 	}
 }
 
 func (u *shardGroupBackend) Name() string { return u.name }
+
+func (u *shardGroupBackend) LocalBdevName() string { return u.localBdevName }
+
+// ResizedBeforeEngineExpand returns true. The manager resizes the ShardGroup
+// before it calls EngineExpand. For a ShardGroup in the engine's SPDK
+// process, the order is:
+//  1. ShardGroupExpand resizes the head lvol.
+//  2. SPDK passes the resize event to the raid bdev, and the raid bdev
+//     grows. No Engine method is called.
+//  3. The manager calls EngineExpand.
+//
+// Between steps 2 and 3, the raid bdev is larger than the size the engine
+// has recorded.
+func (u *shardGroupBackend) ResizedBeforeEngineExpand() bool { return true }
 
 func (u *shardGroupBackend) Address() string {
 	u.mu.RLock()
@@ -91,7 +107,7 @@ func (u *shardGroupBackend) SetBdevName(name string) {
 func (u *shardGroupBackend) String() string {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	return fmt.Sprintf("{Name:%s Address:%s Mode:%s BdevName:%s}", u.name, u.address, u.mode, u.bdevName)
+	return fmt.Sprintf("{Name:%s Address:%s LocalBdevName:%s Mode:%s BdevName:%s}", u.name, u.address, u.localBdevName, u.mode, u.bdevName)
 }
 
 // Get issues a single ShardGroupGet against the ShardGroup process and adapts

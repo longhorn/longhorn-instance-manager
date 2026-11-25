@@ -2,6 +2,8 @@ package spdk
 
 import (
 	"context"
+	"net"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
+	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	helpertypes "github.com/longhorn/go-spdk-helper/pkg/types"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/types"
@@ -217,12 +220,13 @@ func (s *Server) ShardGroupShardReplace(ctx context.Context, req *spdkrpc.ShardG
 	s.RLock()
 	shardGroup := s.shardGroupMap[req.ShardGroupName]
 	spdkClient := s.spdkClient
+	newLocalShard := s.resolveLocalShard(req.ShardName, req.ShardAddress)
 	s.RUnlock()
 
 	if shardGroup == nil {
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find shardgroup %v", req.ShardGroupName)
 	}
-	state, err := shardGroup.ShardReplace(spdkClient, req.ShardName, req.ShardAddress)
+	state, err := shardGroup.ShardReplace(spdkClient, req.ShardName, req.ShardAddress, newLocalShard)
 	if err != nil {
 		return nil, err
 	}
@@ -425,13 +429,32 @@ func bdevEcSlotStateToProto(state string) spdkrpc.EcSlotState {
 	}
 }
 
+func bdevEcStateToProto(state spdktypes.BdevEcState) spdkrpc.EcState {
+	switch state {
+	case spdktypes.BdevEcStateDegraded:
+		return spdkrpc.EcState_EC_STATE_DEGRADED
+	case spdktypes.BdevEcStateOffline:
+		return spdkrpc.EcState_EC_STATE_OFFLINE
+	default:
+		return spdkrpc.EcState_EC_STATE_ONLINE
+	}
+}
+
+func bdevEcSlotRoleToProto(role spdktypes.BdevEcSlotRole) spdkrpc.EcSlotRole {
+	if role == spdktypes.BdevEcSlotRoleParity {
+		return spdkrpc.EcSlotRole_EC_SLOT_ROLE_PARITY
+	}
+	return spdkrpc.EcSlotRole_EC_SLOT_ROLE_DATA
+}
+
 // getOrCreateShardGroup returns the existing in-memory ShardGroup keyed by
 // req.Name, or constructs a fresh one in InstanceStatePending. Subsequent
 // Create on the returned ShardGroup materializes the SPDK stack.
 //
 // When an existing entry is reused (the same-node re-attach path, where Delete
 // kept the record with cleanupRequired=false), request-bound fields that can
-// legitimately change across a detach/re-attach cycle are refreshed:
+// legitimately change across a detach/re-attach cycle are refreshed. This
+// happens only for a Pending or Stopped entry:
 //
 //   - SalvageRequested: re-attach passes true; the cached value is whatever the
 //     last Create observed.
@@ -481,26 +504,68 @@ func (s *Server) getOrCreateShardGroup(req *spdkrpc.ShardGroupCreateRequest) (*S
 			shardGroup.SpecSize = req.SpecSize
 		}
 
-		shardGroup.SalvageRequested = req.Spec.SalvageRequested
-		shardGroup.Shards = make(map[string]*ShardEndpoint, len(req.Spec.Shards))
-		for shardName, endpoint := range req.Spec.Shards {
-			shardGroup.Shards[shardName] = &ShardEndpoint{
-				Address:   endpoint.Address,
-				SlotIndex: endpoint.SlotIndex,
-			}
+		// A Pending or Stopped ShardGroup is about to be created, so it
+		// takes its shards and salvage flag from the request. In any other
+		// state it keeps its own, because it may still be attached to
+		// those shards.
+		if shardGroup.State == types.InstanceStatePending || shardGroup.State == types.InstanceStateStopped {
+			shardGroup.SalvageRequested = req.Spec.SalvageRequested
+			shardGroup.Shards = s.resolveShardEndpoints(req.Spec.Shards)
 		}
 		return shardGroup, nil
 	}
 
-	shards := map[string]*ShardEndpoint{}
-	for shardName, endpoint := range req.Spec.Shards {
+	return NewShardGroup(s.ctx, req.Name, req.VolumeName, req.SpecSize,
+		req.Spec.DataChunks, req.Spec.ParityChunks, req.Spec.StripSizeKb,
+		s.resolveShardEndpoints(req.Spec.Shards),
+		req.Spec.SalvageRequested, s.updateChs[types.InstanceTypeShardGroup]), nil
+}
+
+// resolveShardEndpoints builds the ShardGroup's endpoint map from the request
+// spec. Caller must hold s.Lock or s.RLock.
+func (s *Server) resolveShardEndpoints(spec map[string]*spdkrpc.ShardEndpoint) map[string]*ShardEndpoint {
+	shards := make(map[string]*ShardEndpoint, len(spec))
+	for shardName, endpoint := range spec {
 		shards[shardName] = &ShardEndpoint{
-			Address:   endpoint.Address,
-			SlotIndex: endpoint.SlotIndex,
+			Address:    endpoint.Address,
+			SlotIndex:  endpoint.SlotIndex,
+			LocalShard: s.resolveLocalShard(shardName, endpoint.Address),
 		}
 	}
+	return shards
+}
 
-	return NewShardGroup(s.ctx, req.Name, req.VolumeName, req.SpecSize,
-		req.Spec.DataChunks, req.Spec.ParityChunks, req.Spec.StripSizeKb, shards,
-		req.Spec.SalvageRequested, s.updateChs[types.InstanceTypeShardGroup]), nil
+// resolveLocalShard returns the shard when it runs in this Server at
+// shardAddress and is Running. The ShardGroup can then attach its lvol
+// directly instead of over NVMe-oF.
+//
+// It returns nil in these cases, and the ShardGroup attaches over NVMe-oF:
+//   - The shard runs on another node.
+//   - A shard with this name runs in this Server, but shardAddress points
+//     to a different one. A replacement shard keeps the name of the shard
+//     it replaces, so the name alone does not identify the shard.
+//   - The local shard is not Running. The NVMe-oF attach then fails with a
+//     connect error if the shard is not ready.
+//
+// Lock order: the caller holds the Server lock, and this function takes the
+// shard lock. Always take the Server lock before an instance lock to avoid
+// goroutine deadlock.
+func (s *Server) resolveLocalShard(shardName, shardAddress string) *Shard {
+	shard := s.shardMap[shardName]
+	if shard == nil {
+		return nil
+	}
+	shard.RLock()
+	defer shard.RUnlock()
+	if localAddress := net.JoinHostPort(shard.IP, strconv.Itoa(int(shard.Port))); localAddress != shardAddress {
+		logrus.Warnf("Using NVMe-oF for shard %s: the requested address %s is not the address %s of the shard in this process",
+			shardName, shardAddress, localAddress)
+		return nil
+	}
+	if shard.State != types.InstanceStateRunning {
+		logrus.Warnf("Falling back to NVMe-oF for local shard %s because it is not running (state %s)",
+			shardName, shard.State)
+		return nil
+	}
+	return shard
 }

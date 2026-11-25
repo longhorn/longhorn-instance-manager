@@ -384,6 +384,28 @@ func (e *Engine) startExposeNVMeTCPTarget(spdkClient *spdkclient.Client, anaStat
 		e.NvmeTcpTarget.IP, strconv.Itoa(int(e.NvmeTcpTarget.Port)), spdkANAState, cntlid, cntlid)
 }
 
+// attachBackendBdev returns the name of the bdev to add to the raid1 as a
+// base bdev. When the backend runs in the same SPDK process as the engine,
+// the engine uses the backend's head lvol directly and returns its alias.
+// When the backend runs elsewhere, the engine first connects to the backend's
+// head bdev over NVMe-oF and returns the name of the resulting nvme bdev.
+func (e *Engine) attachBackendBdev(spdkClient *spdkclient.Client, u Backend) (string, error) {
+	if u.LocalBdevName() != "" {
+		return u.LocalBdevName(), nil
+	}
+	return connectNVMfBdev(spdkClient, u.Name(), u.Address(), e.ctrlrLossTimeout, e.fastIOFailTimeoutSec, maxRetries, retryInterval)
+}
+
+// detachBackendBdev disconnects the bdev that attachBackendBdev connected.
+// It does nothing for a local backend, or when the backend has no bdev
+// recorded.
+func (e *Engine) detachBackendBdev(spdkClient *spdkclient.Client, u Backend) error {
+	if u.LocalBdevName() != "" {
+		return nil
+	}
+	return disconnectNVMfBdev(spdkClient, u.BdevName(), disconnectMaxRetries, disconnectRetryInterval)
+}
+
 // connectReplicas connects to each backend's NVMf bdev and populates
 // backends. The backendFactory builds the layout-specific Backend
 // implementation (replicaBackend or shardGroupBackend) - connectReplicas
@@ -394,7 +416,7 @@ func (e *Engine) connectReplicas(spdkClient *spdkclient.Client, replicaAddressMa
 	for replicaName, replicaAddr := range replicaAddressMap {
 		e.backends[replicaName] = backendFactory(replicaName, replicaAddr)
 
-		bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaAddr, e.ctrlrLossTimeout, e.fastIOFailTimeoutSec, maxRetries, retryInterval)
+		bdevName, err := e.attachBackendBdev(spdkClient, e.backends[replicaName])
 		if err != nil {
 			e.log.WithError(err).Warnf("Failed to get bdev from replica %s with address %s during engine creation, will mark the mode to ERR and continue", replicaName, replicaAddr)
 			e.backends[replicaName].SetMode(types.ModeERR)
@@ -403,6 +425,11 @@ func (e *Engine) connectReplicas(spdkClient *spdkclient.Client, replicaAddressMa
 			e.backends[replicaName].SetMode(types.ModeRW)
 			e.backends[replicaName].SetBdevName(bdevName)
 			replicaBdevList = append(replicaBdevList, bdevName)
+			if e.backends[replicaName].LocalBdevName() != "" {
+				e.log.Infof("Attached backend %s as local lvol base bdev %s", replicaName, bdevName)
+			} else {
+				e.log.Infof("Attached backend %s at %s as NVMe-oF base bdev %s", replicaName, replicaAddr, bdevName)
+			}
 		}
 	}
 	return replicaBdevList
@@ -681,7 +708,7 @@ func (e *Engine) Delete(spdkClient *spdkclient.Client, superiorPortAllocator *co
 
 func (e *Engine) disconnectReplicas(spdkClient *spdkclient.Client) (requireUpdate bool, err error) {
 	for replicaName, replicaStatus := range e.backends {
-		if err := disconnectNVMfBdev(spdkClient, replicaStatus.BdevName(), disconnectMaxRetries, disconnectRetryInterval); err != nil {
+		if err := e.detachBackendBdev(spdkClient, replicaStatus); err != nil {
 			if replicaStatus.Mode() != types.ModeERR {
 				e.log.WithError(err).Errorf("Engine failed to disconnect replica %s with bdev %s during deletion, will update the mode from %v to ERR", replicaName, replicaStatus.BdevName(), replicaStatus.Mode())
 				replicaStatus.SetMode(types.ModeERR)
@@ -935,7 +962,7 @@ func (e *Engine) replicaAdd(spdkClient *spdkclient.Client, dstReplicaName, dstRe
 					e.log.Warnf("Engine backend %s is not a replicaBackend (%T); skipping SetAddress on rebuild failure path", dstReplicaName, e.backends[dstReplicaName])
 				}
 			} else {
-				u := newReplicaBackend(dstReplicaName, dstReplicaAddress, e.newServiceClient)
+				u := newReplicaBackend(dstReplicaName, dstReplicaAddress, "", e.newServiceClient)
 				u.SetMode(types.ModeERR)
 				e.backends[dstReplicaName] = u
 			}
@@ -1093,7 +1120,7 @@ func (e *Engine) replicaAddStart(spdkClient *spdkclient.Client,
 		return nil, startUpdateRequired, nil, errors.Wrapf(err, "failed to adding the rebuilding replica %s head bdev %s to the base bdev list for engine %s", dstReplicaName, dstHeadLvolBdevName, e.Name)
 	}
 
-	u := newReplicaBackend(dstReplicaName, dstReplicaAddress, e.newServiceClient)
+	u := newReplicaBackend(dstReplicaName, dstReplicaAddress, "", e.newServiceClient)
 	// Dst replica is WO until the shallow copy finishes. The constructor
 	// defaults to WO already, but set it here so the rebuild contract is
 	// visible at the call site instead of relying on the default.
@@ -1592,16 +1619,18 @@ func (e *Engine) ReplicaDelete(spdkClient *spdkclient.Client, replicaName, repli
 		return errors.Wrapf(err, "failed to remove base bdev %s for deleting replica %s", replicaStatus.BdevName(), replicaName)
 	}
 
-	controllerName := helperutil.GetNvmeControllerNameFromNamespaceName(replicaStatus.BdevName())
-	// Fallback to use replica name. Make sure there won't be a leftover controller even if somehow `replicaStatus.BdevName()` has no record
-	if controllerName == "" {
-		e.log.Infof("No NVMf controller found for replica %s, so fallback to use replica name %s", replicaName, replicaName)
-		controllerName = replicaName
-	}
-	// Detaching the corresponding NVMf controller to remote replica
-	e.log.Infof("Detaching the corresponding NVMf controller %v during remote replica %s delete", controllerName, replicaName)
-	if _, err := spdkClient.BdevNvmeDetachController(controllerName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
-		return errors.Wrapf(err, "failed to detach controller %s for deleting replica %s", controllerName, replicaName)
+	if replicaStatus.LocalBdevName() == "" {
+		controllerName := helperutil.GetNvmeControllerNameFromNamespaceName(replicaStatus.BdevName())
+		// Fallback to use replica name. Make sure there won't be a leftover controller even if somehow `replicaStatus.BdevName()` has no record
+		if controllerName == "" {
+			e.log.Infof("No NVMf controller found for replica %s, so fallback to use replica name %s", replicaName, replicaName)
+			controllerName = replicaName
+		}
+		// Detaching the corresponding NVMf controller to remote replica
+		e.log.Infof("Detaching the corresponding NVMf controller %v during remote replica %s delete", controllerName, replicaName)
+		if _, err := spdkClient.BdevNvmeDetachController(controllerName); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+			return errors.Wrapf(err, "failed to detach controller %s for deleting replica %s", controllerName, replicaName)
+		}
 	}
 
 	delete(e.backends, replicaName)
@@ -1926,7 +1955,7 @@ func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replica
 	case SnapshotOperationDelete:
 		return replicaStatus.SnapshotDelete(snapshotName)
 	case SnapshotOperationRevert:
-		if err := disconnectNVMfBdev(spdkClient, replicaStatus.BdevName(), disconnectMaxRetries, disconnectRetryInterval); err != nil {
+		if err := e.detachBackendBdev(spdkClient, replicaStatus); err != nil {
 			return err
 		}
 		replicaStatus.SetBdevName("")
@@ -1934,7 +1963,7 @@ func (e *Engine) replicaSnapshotOperation(spdkClient *spdkclient.Client, replica
 		if err := replicaStatus.SnapshotRevert(snapshotName); err != nil {
 			return err
 		}
-		bdevName, err := connectNVMfBdev(spdkClient, replicaName, replicaStatus.Address(), e.ctrlrLossTimeout, e.fastIOFailTimeoutSec, maxRetries, retryInterval)
+		bdevName, err := e.attachBackendBdev(spdkClient, replicaStatus)
 		if err != nil {
 			return err
 		}
@@ -3007,6 +3036,10 @@ func (e *Engine) findReplicaWithoutUsableIOPath(spdkClient *spdkclient.Client) (
 		if backend.Mode() == types.ModeERR || backend.BdevName() == "" {
 			continue
 		}
+		// A local lvol has no NVMe I/O path to check.
+		if backend.LocalBdevName() != "" {
+			continue
+		}
 		candidates = append(candidates, replicaBdev{replicaName: replicaName, bdevName: backend.BdevName()})
 	}
 	e.RUnlock()
@@ -3329,24 +3362,25 @@ func (e *Engine) startExpansion(spdkClient *spdkclient.Client, size uint64) (exp
 	}, nil
 }
 
-// ExpandViaBackendReset expands the engine by resetting each backend
-// bdev_nvme controller so the SPDK reset-refresh patch propagates the new
-// namespace size to the local nvme bdev, then polling the engine's
-// bdev_raid1 until it grows in response. raid1 resizes automatically on the
-// resulting BDEV_EVENT_RESIZE (see module/bdev/raid/raid1.c:504); the engine
-// issues no other SPDK call.
+// ExpandViaBackendReset expands the engine to size.
 //
-// The reset is load-bearing, not the AER chain. ShardGroup.Expand resizes
-// the head lvol via a Stop/Resize/Start dance (required to avoid a loopback
-// resize hang on the engine's own bdev_nvme initiator), which severs the
-// AER that would otherwise carry the size change to this initiator. The
-// explicit controller reset is the compensation.
+// The backends must already be at the new size. This function does not
+// resize them.
 //
-// This is the path used for EC volumes: ShardGroupController already drove
-// ShardExpand + ShardGroupExpand against the ShardGroup process, so by the
-// time EngineExpand arrives the backend lvol has been resized. RAID1 uses
-// Engine.Expand, which expands the replicas itself and grows its RAID bdev,
-// created with disable_auto_resize, with an explicit bdev_raid_resize.
+// The raid bdev expands automatically when its base bdevs report the new
+// size:
+//   - Local backend: the lvol reports the new size as soon as it is
+//     resized. No action is needed.
+//   - NVMe-oF backend: the nvme bdev caches the old size. The function
+//     resets the controller so that the bdev reads the size again. The
+//     reset requires the SPDK reset-refresh patch.
+//
+// The function returns when the raid bdev reaches size. It returns an
+// error if the raid bdev does not reach size before the timeout.
+//
+// Only EC volumes use this function. RAID1 uses Engine.Expand, which
+// expands the replicas itself. Its raid bdev is created with
+// disable_auto_resize and grows only through bdev_raid_resize.
 func (e *Engine) ExpandViaBackendReset(spdkClient *spdkclient.Client, size uint64) (err error) {
 	const (
 		pollInterval = 500 * time.Millisecond
@@ -3395,14 +3429,18 @@ func (e *Engine) ExpandViaBackendReset(spdkClient *spdkclient.Client, size uint6
 		e.finishExpansion(originalSize, size, err)
 	}()
 
-	// Refresh each backend bdev's cached blockcnt by resetting its controller;
-	// the reset, not the AER chain, is what propagates the new size. The backend
-	// map key equals the bdev_nvme controller name, so iterating the map keys
-	// gives the correct controller names directly.
+	// Reset each NVMe-oF backend's controller so its bdev re-reads the
+	// namespace size and the raid1 grows. The backend map key is the
+	// bdev_nvme controller name, so the map keys can be used directly.
 	for backendName, u := range e.backends {
 		// Skip non-dispatchable backends: resetting a dead or address-less
 		// controller would fail the whole expand.
 		if !isBackendDispatchable(u) {
+			continue
+		}
+		// A local lvol notifies the raid of its new size when it is
+		// resized; only an NVMe-oF bdev needs a controller reset.
+		if u.LocalBdevName() != "" {
 			continue
 		}
 		if _, err := spdkClient.BdevNvmeResetController(backendName); err != nil {
@@ -3784,7 +3822,7 @@ func (e *Engine) ValidateAndUpdate(spdkClient *spdkclient.Client) (err error) {
 		return err
 	}
 
-	if err := e.validateAndMaybeAdjustSpecSizeNoLock(bdevRaid); err != nil {
+	if err := e.validateAndMaybeAdjustSpecSizeNoLock(bdevRaid, &updateRequired); err != nil {
 		return err
 	}
 
@@ -3855,7 +3893,7 @@ func (e *Engine) getRaidBdevNoLock(bdevMap map[string]*spdktypes.BdevInfo) (*spd
 	return bdevRaid, nil
 }
 
-func (e *Engine) validateAndMaybeAdjustSpecSizeNoLock(bdevRaid *spdktypes.BdevInfo) error {
+func (e *Engine) validateAndMaybeAdjustSpecSizeNoLock(bdevRaid *spdktypes.BdevInfo, updateRequired *bool) error {
 	bdevRaidSize := bdevRaid.NumBlocks * uint64(bdevRaid.BlockSize)
 
 	if e.SpecSize > bdevRaidSize {
@@ -3875,11 +3913,38 @@ func (e *Engine) validateAndMaybeAdjustSpecSizeNoLock(bdevRaid *spdktypes.BdevIn
 	}
 
 	if e.SpecSize < bdevRaidSize {
-		// should not happen
-		return fmt.Errorf("engine spec size %d is smaller than actual raid bdev size %d for engine %s", e.SpecSize, bdevRaidSize, e.Name)
+		// The engine resizes these backends itself, so nothing else should
+		// have grown the raid bdev.
+		if !e.backendsResizedBeforeEngineExpandNoLock() {
+			return fmt.Errorf("engine spec size %d is smaller than actual raid bdev size %d for engine %s", e.SpecSize, bdevRaidSize, e.Name)
+		}
+
+		// The backends were resized before EngineExpand was called, and the
+		// raid bdev grew with them. Record the new size. EngineExpand then
+		// finds the engine at the requested size and returns without an
+		// update, so the update for the new size is sent from here.
+		e.log.Infof("Raid bdev of engine %s grew from spec size %d to %d before EngineExpand was called, recording the new size", e.Name, e.SpecSize, bdevRaidSize)
+		e.SpecSize = bdevRaidSize
+		*updateRequired = true
+		return nil
 	}
 
 	return nil
+}
+
+// backendsResizedBeforeEngineExpandNoLock reports whether every backend is
+// resized before EngineExpand is called. The caller must hold the engine
+// lock.
+func (e *Engine) backendsResizedBeforeEngineExpandNoLock() bool {
+	if len(e.backends) == 0 {
+		return false
+	}
+	for _, u := range e.backends {
+		if !u.ResizedBeforeEngineExpand() {
+			return false
+		}
+	}
+	return true
 }
 
 func (e *Engine) validateReplicaStatusMapNoLock(bdevMap map[string]*spdktypes.BdevInfo, updateRequired *bool) bool {
@@ -3902,7 +3967,7 @@ func (e *Engine) validateReplicaStatusMapNoLock(bdevMap map[string]*spdktypes.Bd
 
 		if replicaStatus.Mode() != types.ModeERR {
 			e.log.Debugf("Engine validating replica %s with bdev name %s and address %s during ValidateAndUpdate", replicaName, replicaStatus.BdevName(), replicaStatus.Address())
-			mode, err := e.validateAndUpdateReplicaNvme(replicaName, bdevMap[replicaStatus.BdevName()])
+			mode, err := e.validateAndUpdateReplicaBdev(replicaName, bdevMap[replicaStatus.BdevName()])
 			if err != nil {
 				e.log.WithError(err).Errorf("Engine found valid NVMe for replica %v, will update the mode from %s to ERR during ValidateAndUpdate", replicaName, replicaStatus.Mode())
 				replicaStatus.SetMode(types.ModeERR)
@@ -4188,13 +4253,23 @@ func normalizeAncestorNameForLog(e *Engine, name string) string {
 	return backingImageName
 }
 
-func (e *Engine) validateAndUpdateReplicaNvme(replicaName string, bdev *spdktypes.BdevInfo) (types.Mode, error) {
+func (e *Engine) validateAndUpdateReplicaBdev(replicaName string, bdev *spdktypes.BdevInfo) (types.Mode, error) {
 	if bdev == nil {
 		return types.ModeERR, fmt.Errorf("cannot find a bdev for replica %s", replicaName)
 	}
 
 	if err := validateReplicaBdevSize(e, replicaName, bdev); err != nil {
 		return types.ModeERR, err
+	}
+
+	replicaStatus := e.backends[replicaName]
+	// A local base bdev is the head lvol itself, so there is no NVMe
+	// controller for the checks below to look at.
+	if replicaStatus.LocalBdevName() != "" {
+		if err := validateLocalLvolBdev(replicaName, replicaStatus.LocalBdevName(), bdev); err != nil {
+			return types.ModeERR, err
+		}
+		return replicaStatus.Mode(), nil
 	}
 
 	nvmeInfo, err := validateAndGetSingleNvmeInfo(replicaName, bdev)
@@ -4205,7 +4280,6 @@ func (e *Engine) validateAndUpdateReplicaNvme(replicaName string, bdev *spdktype
 		return types.ModeERR, err
 	}
 
-	replicaStatus := e.backends[replicaName]
 	if err := validateReplicaAddress(replicaName, bdev.Name, replicaStatus.Address(), nvmeInfo); err != nil {
 		return types.ModeERR, err
 	}
@@ -4248,6 +4322,24 @@ func validateReplicaBdevSize(e *Engine, replicaName string, bdev *spdktypes.Bdev
 		return fmt.Errorf(
 			"found mismatching between replica bdev %s spec size %d and the engine %s spec size %d during replica %s mode validation",
 			bdev.Name, bdevSpecSize, e.Name, e.SpecSize, replicaName,
+		)
+	}
+	return nil
+}
+
+// validateLocalLvolBdev checks that a local base bdev is an lvol and that
+// it carries the alias the backend was attached with.
+func validateLocalLvolBdev(replicaName, localBdevName string, bdev *spdktypes.BdevInfo) error {
+	if spdktypes.GetBdevType(bdev) != spdktypes.BdevTypeLvol {
+		return fmt.Errorf(
+			"found bdev type %v rather than %v for local base bdev %s during replica %s mode validation",
+			spdktypes.GetBdevType(bdev), spdktypes.BdevTypeLvol, localBdevName, replicaName,
+		)
+	}
+	if bdev.Name != localBdevName && !slices.Contains(bdev.Aliases, localBdevName) {
+		return fmt.Errorf(
+			"found lvol bdev %s (aliases %v) rather than the expected local base bdev %s during replica %s mode validation",
+			bdev.Name, bdev.Aliases, localBdevName, replicaName,
 		)
 	}
 	return nil

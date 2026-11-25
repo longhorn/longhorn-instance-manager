@@ -23,8 +23,9 @@ import (
 type replicaBackend struct {
 	mu sync.RWMutex
 
-	name    string // immutable; replica name (= backend key in Engine.backends)
-	address string // mutable: ip:port of the replica's NVMe-oF target; engine writes this on rebuild (replica gets a new port)
+	name          string // immutable; replica name (= backend key in Engine.backends)
+	address       string // mutable: ip:port of the replica's NVMe-oF target; engine writes this on rebuild (replica gets a new port)
+	localBdevName string // immutable; lvol alias when the replica runs in this SPDK process, "" otherwise
 
 	mode     types.Mode
 	bdevName string
@@ -34,16 +35,23 @@ type replicaBackend struct {
 
 // newReplicaBackend constructs a replicaBackend. Initial mode/bdevName are
 // the engine's responsibility to populate after connectNVMfBdev succeeds.
-func newReplicaBackend(name, address string, newServiceClient ServiceClientFactory) *replicaBackend {
+func newReplicaBackend(name, address, localBdevName string, newServiceClient ServiceClientFactory) *replicaBackend {
 	return &replicaBackend{
 		name:             name,
 		address:          address,
+		localBdevName:    localBdevName,
 		mode:             types.ModeWO, // default until validated; engine flips to RW after connectNVMfBdev
 		newServiceClient: newServiceClient,
 	}
 }
 
 func (u *replicaBackend) Name() string { return u.name }
+
+func (u *replicaBackend) LocalBdevName() string { return u.localBdevName }
+
+// ResizedBeforeEngineExpand returns false. The engine resizes each replica
+// as part of EngineExpand.
+func (u *replicaBackend) ResizedBeforeEngineExpand() bool { return false }
 
 func (u *replicaBackend) Address() string {
 	u.mu.RLock()
@@ -91,7 +99,7 @@ func (u *replicaBackend) SetBdevName(name string) {
 func (u *replicaBackend) String() string {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	return fmt.Sprintf("{Name:%s Address:%s Mode:%s BdevName:%s}", u.name, u.address, u.mode, u.bdevName)
+	return fmt.Sprintf("{Name:%s Address:%s LocalBdevName:%s Mode:%s BdevName:%s}", u.name, u.address, u.localBdevName, u.mode, u.bdevName)
 }
 
 // Get issues ReplicaGet against the replica's SPDK service and adapts the

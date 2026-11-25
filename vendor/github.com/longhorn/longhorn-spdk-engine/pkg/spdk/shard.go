@@ -432,6 +432,74 @@ func (s *Shard) Expand(spdkClient *spdkclient.Client, newSize uint64) (err error
 	return nil
 }
 
+// StopExposeForLocalAttach stops exposing the shard over NVMe-oF and returns
+// its lvol alias. A ShardGroup in the same SPDK process can then use the lvol
+// directly as a base bdev.
+//
+// The shard has to be unexposed before the ShardGroup opens the lvol. While
+// the shard is exposed, the NVMe-oF target holds an exclusive write claim on
+// the lvol, and SPDK rejects every other attempt to open it for writing.
+//
+// The shard keeps its IP and port, so StartExposeAfterLocalDetach can expose
+// it again at the same address. The shard stays Running, and only IsExposed
+// changes.
+func (s *Shard) StopExposeForLocalAttach(spdkClient *spdkclient.Client) (string, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.State != types.InstanceStateRunning {
+		return "", grpcstatus.Errorf(grpccodes.FailedPrecondition,
+			"cannot attach shard %s locally in state %s (local attach requires a running shard)", s.Name, s.State)
+	}
+
+	if s.IsExposed {
+		if err := shardStopExposeBdev(spdkClient, s.Nqn); err != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err) {
+			return "", errors.Wrapf(err, "failed to stop exposing shard %s for local attach", s.Name)
+		}
+		s.IsExposed = false
+		s.log.Info("Stopped exposing shard for local attach")
+	}
+
+	return s.Alias, nil
+}
+
+// StartExposeAfterLocalDetach exposes the shard over NVMe-oF again, undoing
+// StopExposeForLocalAttach. Call it only after the local ShardGroup has
+// closed the lvol.
+//
+// If the shard cannot be exposed, it moves to the Error state. This prevents
+// the shard from reporting Running while other nodes cannot reach it.
+func (s *Shard) StartExposeAfterLocalDetach(spdkClient *spdkclient.Client) (err error) {
+	s.Lock()
+	defer func() {
+		if err != nil {
+			s.State = types.InstanceStateError
+			s.ErrorMsg = err.Error()
+		}
+		s.Unlock()
+		if err != nil {
+			s.UpdateCh <- nil
+		}
+	}()
+
+	if s.State != types.InstanceStateRunning || s.IsExposed {
+		return nil
+	}
+
+	if err := shardStartExposeBdev(spdkClient, s.Nqn, s.UUID, generateNGUID(s.LvolName), s.IP, strconv.Itoa(int(s.Port))); err != nil {
+		// A failed expose can leave the subsystem behind. Remove it, or
+		// the next expose fails because the subsystem already exists.
+		if stopErr := shardStopExposeBdev(spdkClient, s.Nqn); stopErr != nil && !jsonrpc.IsJSONRPCRespErrorNoSuchDevice(stopErr) {
+			s.log.WithError(stopErr).Warn("Failed to remove the NVMe-oF subsystem after a failed expose")
+		}
+		return errors.Wrapf(err, "failed to expose shard %s after local detach", s.Name)
+	}
+	s.IsExposed = true
+	s.log.Info("Exposed shard again after local detach")
+
+	return nil
+}
+
 func (s *Shard) validateAndSyncLvstore(spdkClient *spdkclient.Client) error {
 	var (
 		lvsList []spdktypes.LvstoreInfo

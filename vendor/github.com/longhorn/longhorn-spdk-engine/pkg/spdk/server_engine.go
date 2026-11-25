@@ -3,6 +3,9 @@ package spdk
 import (
 	"context"
 	"fmt"
+	"net"
+	"slices"
+	"strconv"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -12,6 +15,7 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+	spdkclient "github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/types/pkg/generated/spdkrpc"
 
 	"github.com/longhorn/longhorn-spdk-engine/pkg/api"
@@ -47,31 +51,131 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	spdkClient := s.spdkClient
 	s.Unlock()
 
-	backendFactory, err := selectBackendFactory(req.DataLayoutType, s.newServiceClient)
+	localBdevNames := map[string]string{}
+	localShardGroupNames := []string{}
+	if req.DataLayoutType == spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED {
+		for shardGroupName, shardGroupAddress := range req.ReplicaAddressMap {
+			localBdevNames[shardGroupName] = s.stopExposeLocalShardGroup(spdkClient, shardGroupName, shardGroupAddress)
+			if localBdevNames[shardGroupName] != "" {
+				localShardGroupNames = append(localShardGroupNames, shardGroupName)
+			}
+		}
+	}
+
+	backendFactory, err := selectBackendFactory(req.DataLayoutType, localBdevNames, s.newServiceClient)
 	if err != nil {
 		return nil, err
 	}
 
-	return e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator, req.SalvageRequested, backendFactory)
+	ret, err = e.Create(spdkClient, req.ReplicaAddressMap, req.PortCount, s.portAllocator, req.SalvageRequested, backendFactory)
+
+	// The head lvols were unexposed for the engine to use. Expose the ones
+	// the engine did not take, or they would stay unexposed: EngineDelete
+	// only exposes the ones the engine took.
+	usedShardGroupNames := getLocalShardGroupNames(e)
+	unusedShardGroupNames := []string{}
+	for _, shardGroupName := range localShardGroupNames {
+		if !slices.Contains(usedShardGroupNames, shardGroupName) {
+			unusedShardGroupNames = append(unusedShardGroupNames, shardGroupName)
+		}
+	}
+	s.startExposeLocalShardGroups(spdkClient, unusedShardGroupNames)
+
+	return ret, err
 }
 
-// selectBackendFactory is the only place the server-layer translates the
-// EngineCreateRequest.DataLayoutType discriminator into an Backend
-// implementation. Once Engine.backends is populated, the engine never
-// re-reads the layout.
-func selectBackendFactory(layout spdkrpc.DataLayoutType, newServiceClient ServiceClientFactory) (BackendFactory, error) {
+// selectBackendFactory is the only place where the server layer turns the
+// EngineCreateRequest.DataLayoutType value into a Backend implementation.
+// Once Engine.backends is populated, the engine never reads the layout again.
+//
+// localBdevNames identifies the backends that run in the same SPDK process as
+// the engine. It maps each such backend to the alias of its head lvol. For
+// any backend that is not in the map, or whose alias is empty, the engine
+// connects over NVMe-oF instead.
+func selectBackendFactory(layout spdkrpc.DataLayoutType, localBdevNames map[string]string, newServiceClient ServiceClientFactory) (BackendFactory, error) {
 	switch layout {
 	case spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_REPLICATED:
 		return func(name, address string) Backend {
-			return newReplicaBackend(name, address, newServiceClient)
+			return newReplicaBackend(name, address, "", newServiceClient)
 		}, nil
 	case spdkrpc.DataLayoutType_DATA_LAYOUT_TYPE_SHARDED:
 		return func(name, address string) Backend {
-			return newShardGroupBackend(name, address, newServiceClient)
+			return newShardGroupBackend(name, address, localBdevNames[name], newServiceClient)
 		}, nil
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unsupported data_layout_type %v", layout)
 	}
+}
+
+// stopExposeLocalShardGroup prepares the named ShardGroup for an engine in
+// this SPDK process. It stops exposing the head lvol over NVMe-oF and
+// returns the head lvol alias, which the engine uses as a base bdev.
+//
+// It returns "" when the engine has to connect over NVMe-oF instead:
+//   - The ShardGroup runs on another node.
+//   - A ShardGroup with this name runs in this process, but
+//     shardGroupAddress points to a different one. The engine sends its
+//     ShardGroup RPCs to shardGroupAddress, so its I/O must go there too.
+//   - The ShardGroup is not Running.
+//   - The expose cannot be stopped.
+func (s *Server) stopExposeLocalShardGroup(spdkClient *spdkclient.Client, shardGroupName, shardGroupAddress string) string {
+	s.RLock()
+	shardGroup := s.shardGroupMap[shardGroupName]
+	s.RUnlock()
+	if shardGroup == nil {
+		return ""
+	}
+
+	shardGroup.RLock()
+	localAddress := net.JoinHostPort(shardGroup.IP, strconv.Itoa(int(shardGroup.Port)))
+	shardGroup.RUnlock()
+	if localAddress != shardGroupAddress {
+		logrus.Warnf("Using NVMe-oF for ShardGroup %s: the requested address %s is not the address %s of the ShardGroup in this process",
+			shardGroupName, shardGroupAddress, localAddress)
+		return ""
+	}
+
+	headAlias, err := shardGroup.StopExposeForLocalAttach(spdkClient)
+	if err != nil {
+		logrus.WithError(err).Warnf("Falling back to NVMe-oF for local ShardGroup %s", shardGroupName)
+		return ""
+	}
+	return headAlias
+}
+
+// startExposeLocalShardGroups exposes the head lvols of the named
+// ShardGroups over NVMe-oF again.
+//
+// Call it only when the head lvols are not part of a raid bdev. A head lvol
+// that a raid bdev uses cannot be exposed.
+func (s *Server) startExposeLocalShardGroups(spdkClient *spdkclient.Client, shardGroupNames []string) {
+	for _, shardGroupName := range shardGroupNames {
+		s.RLock()
+		shardGroup := s.shardGroupMap[shardGroupName]
+		s.RUnlock()
+		if shardGroup == nil {
+			// The ShardGroup was deleted before the engine.
+			continue
+		}
+		if err := shardGroup.StartExposeAfterLocalDetach(spdkClient); err != nil {
+			logrus.WithError(err).Warnf("Failed to expose the head lvol of ShardGroup %s again", shardGroupName)
+		}
+	}
+}
+
+// getLocalShardGroupNames returns the names of the ShardGroups whose head
+// lvol the engine uses directly as a base bdev.
+func getLocalShardGroupNames(e *Engine) []string {
+	e.RLock()
+	defer e.RUnlock()
+
+	shardGroupNames := []string{}
+	for name, u := range e.backends {
+		if _, ok := u.(*shardGroupBackend); ok && u.LocalBdevName() != "" {
+			shardGroupNames = append(shardGroupNames, name)
+		}
+	}
+	return shardGroupNames
 }
 
 func (s *Server) EngineSnapshotMaxCountSet(ctx context.Context, req *spdkrpc.EngineSnapshotMaxCountSetRequest) (ret *emptypb.Empty, err error) {
@@ -119,34 +223,42 @@ func (s *Server) EngineDelete(ctx context.Context, req *spdkrpc.EngineDeleteRequ
 	}()
 
 	if e != nil {
-		if err := e.Delete(spdkClient, s.portAllocator); err != nil {
-			return nil, err
+		// Get the names of the ShardGroups that the engine uses directly
+		// before Delete. Delete removes them from the engine, and they are
+		// needed afterwards to expose the head lvols again.
+		localShardGroupNames := getLocalShardGroupNames(e)
+		deleteErr := e.Delete(spdkClient, s.portAllocator)
+
+		// Expose the head lvol of each ShardGroup that Delete removed.
+		// Delete removes a ShardGroup only after the raid bdev is gone.
+		// A ShardGroup it did not remove stays unexposed until the next
+		// EngineDelete.
+		remainingShardGroupNames := getLocalShardGroupNames(e)
+		removedShardGroupNames := slices.DeleteFunc(localShardGroupNames, func(name string) bool {
+			return slices.Contains(remainingShardGroupNames, name)
+		})
+		s.startExposeLocalShardGroups(spdkClient, removedShardGroupNames)
+
+		if deleteErr != nil {
+			return nil, deleteErr
 		}
 	}
 
 	return &emptypb.Empty{}, nil
 }
 
-// waitForRestoreTeardown waits, bounded by restoreTeardownWaitTimeout, for
-// the restore data path teardown of a deleted engine to end, then drops the
-// restore frontend entry so a recreated engine can restore again.
+// waitForRestoreTeardown waits for the restore frontend of a deleted engine
+// to finish disconnecting from the host. The wait ends after
+// restoreTeardownWaitTimeout at the latest.
 //
-// The wait is needed because signalStop cannot interrupt an attempt that is
-// already inside the disconnect. That disconnect targets the volume NQN and
-// the dm device named after the volume, both of which a recreated engine's
-// restore or frontend would reuse. The restore frontend entry must therefore
-// stay registered, blocking new restores and frontend creates for the volume,
-// until the attempt has ended.
+//   - The disconnect ends in time: the frontend is removed from
+//     restoreFrontendMap, so a recreated engine can restore again.
+//   - The wait times out: the frontend stays registered and keeps blocking
+//     new restores and frontend creates for the volume. The disconnect
+//     still works on the volume NQN and dm device that a recreated engine
+//     uses. The teardown goroutine removes the frontend when it ends.
 //
-// If the wait expires, the entry is left registered on purpose. The teardown
-// goroutine unregisters it when its running operation ends (see the engine
-// deleted bullet of teardownRestoreFrontend's doc), so the entry blocks new
-// restores and frontend creates for exactly as long as the stale disconnect
-// can still reach them. Removing it here on expiry would reopen the window in
-// the one case this wait exists for, a disconnect stuck in the kernel.
-//
-// The caller must not hold the server lock: unregisterRestoreFrontend takes
-// it before restoreTeardownDone is closed.
+// The caller must not hold the server lock. The teardown goroutine needs it.
 func (s *Server) waitForRestoreTeardown(engineName string, restoreEF *EngineFrontend) {
 	select {
 	case <-restoreEF.restoreTeardownDone:
