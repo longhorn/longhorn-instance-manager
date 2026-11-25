@@ -42,6 +42,7 @@ type InstanceOps interface {
 	InstanceResume(*rpc.InstanceResumeRequest) (*emptypb.Empty, error)
 	InstanceSwitchOverTarget(*rpc.InstanceSwitchOverTargetRequest) (*emptypb.Empty, error)
 	InstanceDeleteTarget(*rpc.InstanceDeleteTargetRequest) (*emptypb.Empty, error)
+	InstanceReservationCleanup(*rpc.InstanceReservationCleanupRequest) (*emptypb.Empty, error)
 
 	LogSetLevel(context.Context, *rpc.LogSetLevelRequest) (*emptypb.Empty, error)
 	LogSetFlags(context.Context, *rpc.LogSetFlagsRequest) (*emptypb.Empty, error)
@@ -197,14 +198,16 @@ func (ops V2DataEngineInstanceOps) InstanceCreate(req *rpc.InstanceCreateRequest
 		engine, err := c.EngineCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
 			req.Spec.SpdkInstanceSpec.ReplicaAddressMap, req.Spec.PortCount, req.Spec.SpdkInstanceSpec.SalvageRequested,
 			req.Spec.SpdkInstanceSpec.SnapshotMaxCount,
-			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType))
+			convertIMDataLayoutTypeToSPDKDataLayoutType(req.DataLayoutType),
+			req.Spec.SpdkInstanceSpec.SharedBlock, imReservationToSPDKReservation(req.Spec.SpdkInstanceSpec.Reservation))
 		if err != nil {
 			return nil, err
 		}
 		return engineResponseToInstanceResponse(engine), nil
 	case types.InstanceTypeEngineFrontend:
 		engineFrontend, err := c.EngineFrontendCreate(req.Spec.Name, req.Spec.VolumeName, req.Spec.EngineName, req.Spec.SpdkInstanceSpec.Frontend, req.Spec.SpdkInstanceSpec.Size,
-			req.Spec.TargetAddress, int32(req.Spec.SpdkInstanceSpec.UblkQueueDepth), int32(req.Spec.SpdkInstanceSpec.UblkNumberOfQueue), int32(req.Spec.SpdkInstanceSpec.NvmeTcpNrIoQueues))
+			req.Spec.TargetAddress, int32(req.Spec.SpdkInstanceSpec.UblkQueueDepth), int32(req.Spec.SpdkInstanceSpec.UblkNumberOfQueue), int32(req.Spec.SpdkInstanceSpec.NvmeTcpNrIoQueues),
+			req.Spec.SpdkInstanceSpec.SharedBlock)
 		if err != nil {
 			return nil, err
 		}
@@ -1092,8 +1095,45 @@ func engineResponseToInstanceResponse(e *spdkapi.Engine) *rpc.InstanceResponse {
 			Conditions:             make(map[string]bool),
 			UblkId:                 0,
 			Uuid:                   e.UUID,
+			Reservation:            spdkReservationToIMReservation(e.Reservation),
 		},
 	}
+}
+
+func imReservationToSPDKReservation(r *rpc.InstanceReservationState) *spdkrpc.ReservationState {
+	if r == nil {
+		return nil
+	}
+	res := &spdkrpc.ReservationState{
+		Epoch:        r.Epoch,
+		Type:         r.Type,
+		HolderKey:    r.HolderKey,
+		HolderHostId: r.HolderHostId,
+		Registrants:  make([]*spdkrpc.ReservationRegistrant, 0, len(r.Registrants)),
+		VolumeUid:    r.VolumeUid,
+	}
+	for _, reg := range r.Registrants {
+		res.Registrants = append(res.Registrants, &spdkrpc.ReservationRegistrant{Key: reg.Key, HostId: reg.HostId})
+	}
+	return res
+}
+
+func spdkReservationToIMReservation(r *spdkrpc.ReservationState) *rpc.InstanceReservationState {
+	if r == nil {
+		return nil
+	}
+	res := &rpc.InstanceReservationState{
+		Epoch:        r.Epoch,
+		Type:         r.Type,
+		HolderKey:    r.HolderKey,
+		HolderHostId: r.HolderHostId,
+		Registrants:  make([]*rpc.InstanceReservationRegistrant, 0, len(r.Registrants)),
+		VolumeUid:    r.VolumeUid,
+	}
+	for _, reg := range r.Registrants {
+		res.Registrants = append(res.Registrants, &rpc.InstanceReservationRegistrant{Key: reg.Key, HostId: reg.HostId})
+	}
+	return res
 }
 
 func engineFrontendResponseToInstanceResponse(e *spdkapi.EngineFrontend) *rpc.InstanceResponse {
@@ -1397,4 +1437,41 @@ func (ops V2DataEngineInstanceOps) InstanceDeleteTarget(req *rpc.InstanceDeleteT
 	default:
 		return nil, grpcstatus.Errorf(grpccodes.InvalidArgument, "unknown instance type %v", req.Type)
 	}
+}
+
+// InstanceReservationCleanup removes the persisted NVMe reservation state of a
+// shared block volume on the node. It is required only when the volume is
+// deleted.
+func (s *Server) InstanceReservationCleanup(ctx context.Context, req *rpc.InstanceReservationCleanupRequest) (*emptypb.Empty, error) {
+	logrus.WithFields(logrus.Fields{
+		"volumeName": req.VolumeName,
+		"dataEngine": req.DataEngine,
+	}).Info("Cleaning up reservation")
+
+	ops, ok := s.ops[req.DataEngine]
+	if !ok {
+		return nil, grpcstatus.Errorf(grpccodes.Unimplemented, "unsupported data engine %v", req.DataEngine)
+	}
+	return ops.InstanceReservationCleanup(req)
+}
+
+func (ops V1DataEngineInstanceOps) InstanceReservationCleanup(req *rpc.InstanceReservationCleanupRequest) (*emptypb.Empty, error) {
+	return nil, grpcstatus.Error(grpccodes.Unimplemented, "v1 data engine reservation cleanup is not supported")
+}
+
+func (ops V2DataEngineInstanceOps) InstanceReservationCleanup(req *rpc.InstanceReservationCleanupRequest) (*emptypb.Empty, error) {
+	c, err := ops.newSPDKClient()
+	if err != nil {
+		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to create SPDK client")
+	}
+	defer func() {
+		if closeErr := c.Close(); closeErr != nil {
+			logrus.WithField("volumeName", req.VolumeName).WithError(closeErr).Warn("Failed to close SPDK client")
+		}
+	}()
+
+	if err := c.EngineReservationCleanup(req.VolumeName); err != nil {
+		return nil, toSPDKGRPCError(err, grpccodes.Internal, "failed to clean up reservation of volume %v", req.VolumeName)
+	}
+	return &emptypb.Empty{}, nil
 }

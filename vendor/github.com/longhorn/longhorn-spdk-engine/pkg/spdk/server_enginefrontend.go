@@ -27,10 +27,24 @@ func (s *Server) EngineFrontendSuspend(ctx context.Context, req *spdkrpc.EngineF
 
 	s.RLock()
 	ef := s.engineFrontendMap[req.Name]
+	creating := s.creatingSharedBlockFrontends[req.Name] > 0
 	s.RUnlock()
 
 	if ef == nil {
+		// The shared block engine frontend may connect to the engine target
+		// after the suspension, so it must not be treated as nonexistent.
+		if creating {
+			return nil, grpcstatus.Errorf(grpccodes.FailedPrecondition, "engine frontend %v is creating", req.Name)
+		}
 		return nil, grpcstatus.Errorf(grpccodes.NotFound, "cannot find engine frontend %v for suspension", req.Name)
+	}
+
+	// A recovering shared block engine frontend may reconnect to the engine
+	// target after the suspension, and its recovery holds the volume host lock
+	// while it waits for the engine to finish suspending the engine frontends.
+	// Fail before taking the lock, so the engine stops instead of waiting.
+	if ef.SharedBlock && ef.isPending() {
+		return nil, grpcstatus.Errorf(grpccodes.FailedPrecondition, "engine frontend %v is recovering", req.Name)
 	}
 
 	unlockVolumeHost := s.acquireVolumeHostLock(ef.VolumeName)
@@ -347,9 +361,24 @@ func (s *Server) EngineFrontendCreate(ctx context.Context, req *spdkrpc.EngineFr
 	}
 
 	ef := NewEngineFrontend(req.Name, req.EngineName, req.VolumeName, req.Frontend, req.SpecSize,
-		req.UblkQueueDepth, req.UblkNumberOfQueue, s.updateChs[types.InstanceTypeEngineFrontend], s.newServiceClient)
+		req.UblkQueueDepth, req.UblkNumberOfQueue, s.updateChs[types.InstanceTypeEngineFrontend], s.newServiceClient, req.SharedBlock)
 	ef.NvmeTcpFrontend.NrIoQueues = req.NvmeTcpNrIoQueues
 	ef.metadataDir = s.metadataDir
+
+	if req.SharedBlock {
+		if s.creatingSharedBlockFrontends == nil {
+			s.creatingSharedBlockFrontends = map[string]int{}
+		}
+		s.creatingSharedBlockFrontends[req.Name]++
+		defer func() {
+			s.Lock()
+			defer s.Unlock()
+			s.creatingSharedBlockFrontends[req.Name]--
+			if s.creatingSharedBlockFrontends[req.Name] == 0 {
+				delete(s.creatingSharedBlockFrontends, req.Name)
+			}
+		}()
+	}
 
 	s.Unlock()
 
@@ -389,6 +418,9 @@ func (s *Server) EngineFrontendCreate(ctx context.Context, req *spdkrpc.EngineFr
 	if createErr != nil &&
 		(errors.Is(createErr, ErrEngineFrontendCreateInvalidArgument) ||
 			errors.Is(createErr, ErrEngineFrontendCreatePrecondition)) {
+		// The frontend is dropped without Delete, so stop its background
+		// goroutines here.
+		close(ef.stopCh)
 		// Hard error - Create did not mutate anything.  Restore the
 		// evicted efs so valid ongoing recoveries are not permanently lost.
 		if len(evictedEfs) > 0 {

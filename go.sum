@@ -187,16 +187,10 @@ github.com/longhorn/go-common-libs v0.0.0-20261028232656-6805a1f65080 h1:3/mTEBy
 github.com/longhorn/go-common-libs v0.0.0-20261028232656-6805a1f65080/go.mod h1:p/tORH/wsecXDDjHy+JxCyBnu4n1utbByxh/o51SVz0=
 github.com/longhorn/go-iscsi-helper v0.0.0-20261111091915-a9bc4284e8cf h1:yc32uQG2aLr/SVlPwlCAcMG9BX3SHvGVYooUak5cIQ0=
 github.com/longhorn/go-iscsi-helper v0.0.0-20261111091915-a9bc4284e8cf/go.mod h1:3BEiRrrNXUWmHxuiw+ZPkDFja5OVBm1n8BYidb2hQYs=
-github.com/longhorn/go-spdk-helper v0.14.1-0.20261117055102-2128d458b38c h1:GjnVAY4Lop/xiVwx8GWJj0q1WvnWW41yy8uwk5Uw4pE=
-github.com/longhorn/go-spdk-helper v0.14.1-0.20261117055102-2128d458b38c/go.mod h1:ylU9MDQ8ELBH5SoVxSx7qj11GQ7pUmnHs0fKnm9Rnd0=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261116 h1:d5xembg9HrCWcENbqEQLVfqmMWnzh0ak2uOh7PMn3a8=
 github.com/longhorn/longhorn-engine v1.14.0-dev-20261116/go.mod h1:1meBpczOoin47FbQXZghmujZuTRGzCKa/lE0dT42SKY=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261123041135-b77400e6860e h1:TfRIApsfZ8T3S64Zpm5TCFRizwXHtPEaHCS8W2H32M0=
-github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20261116.0.20261123041135-b77400e6860e/go.mod h1:URD7ldx4lM7KekM8wUsn+00lP5iPi/VRZsy+ZMLTiRo=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965 h1:082mjqY6STBnO4SEN7DBG+NubfUeyMlgwEQhOxC6T1o=
 github.com/longhorn/sparse-tools v0.0.0-20261022004111-a7caacc40965/go.mod h1:d8l9nyC8No3PIfYHwZunnBj88y5M4sDM+h6uZyTtaNk=
-github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf h1:yY4WuDKME+/QCn2YL+k32A+z0jQl0GClYQUOdGH5NZk=
-github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf/go.mod h1:/B7OfEhPyhWGNjtfuJr7/zUT9GUArLzIo2u8SvM/pIg=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/mitchellh/go-ps v1.0.0 h1:i6ampVEEF4wQFF+bkYfwYgY+F/uYJDktmvLPf7qIgjc=
 github.com/mitchellh/go-ps v1.0.0/go.mod h1:J4lOc8z8yJs6vUwklHw2XEIiT4z4C40KtWVN3nvg8Pg=
