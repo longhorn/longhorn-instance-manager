@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/google/uuid v1.6.0
-	github.com/longhorn/backupstore v0.0.0-20261115022522-4616963a7437
+	github.com/longhorn/backupstore v0.0.0-20261126014319-1a59e1ebb9d9
 	github.com/longhorn/go-common-libs v0.0.0-20261114062950-d3ec8b4403d1
 	github.com/longhorn/go-spdk-helper v0.14.1-0.20261117055102-2128d458b38c
-	github.com/longhorn/longhorn-engine v1.14.0-dev-20260823.0.20261113023301-8bca1abafd1f
-	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20261123044410-8dfaa26eb4fc
+	github.com/longhorn/longhorn-engine v1.14.0-dev-20260823.0.20261126030507-a848df9264c9
+	github.com/longhorn/longhorn-spdk-engine v1.14.0-dev-20260823.0.20261126024941-4bf47ed7f690
 	github.com/longhorn/types v0.0.0-20261030035820-c6ac902022cf
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v3 v3.14.0
@@ -80,7 +80,7 @@ require (
 	github.com/go-openapi/swag/typeutils v0.27.1 // indirect
 	github.com/go-openapi/swag/yamlutils v0.27.1 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
-	github.com/gofrs/flock v0.13.1 // indirect
+	github.com/gofrs/flock v0.13.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
