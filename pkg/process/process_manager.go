@@ -57,6 +57,10 @@ type Manager struct {
 
 	logsDir string
 
+	// waitCount * waitInterval is the graceful stop window of the processes.
+	waitCount    int
+	waitInterval time.Duration
+
 	Executor      Executor
 	HealthChecker HealthChecker
 }
@@ -85,6 +89,9 @@ func NewManager(ctx context.Context, portRange string, logsDir string) (*Manager
 		availablePorts:  bitmap,
 
 		logsDir: logsDir,
+
+		waitCount:    types.WaitCount,
+		waitInterval: types.WaitInterval,
 
 		Executor:      &BinaryExecutor{},
 		HealthChecker: &GRPCHealthChecker{},
@@ -208,6 +215,9 @@ func (pm *Manager) ProcessCreate(ctx context.Context, req *rpc.ProcessCreateRequ
 
 		logger: logger,
 
+		waitCount:    pm.waitCount,
+		waitInterval: pm.waitInterval,
+
 		executor:      pm.Executor,
 		healthChecker: pm.HealthChecker,
 	}
@@ -285,34 +295,38 @@ func (pm *Manager) unregisterProcess(p *Process) {
 		return
 	}
 
-	go func() {
-		for i := 0; i < types.WaitCount; i++ {
-			if p.IsStopped() {
-				break
-			}
-			logrus.Debugf("Process Manager: wait for process %v to shutdown before unregistering process", p.Name)
-			time.Sleep(types.WaitInterval)
+	// A process can take longer than the graceful stop window to stop, or not
+	// stop at all while it is in uninterruptible sleep. It keeps its ports until
+	// it stopped, so remove it only then, but without a goroutine waiting for it.
+	p.lock.Lock()
+	stopped := p.State == StateStopped || p.State == StateError
+	if !stopped {
+		p.onStopped = func() { pm.removeProcess(p) }
+	}
+	p.lock.Unlock()
+	if stopped {
+		go pm.removeProcess(p)
+	}
+}
+
+func (pm *Manager) removeProcess(p *Process) {
+	removed := func() bool {
+		pm.lock.Lock()
+		defer pm.lock.Unlock()
+		if existingProcess, exists := pm.processes[p.Name]; !exists || existingProcess.UUID != p.UUID {
+			return false
 		}
 
-		if !p.IsStopped() {
-			logrus.Errorf("Process Manager: failed to unregister process %v since it is state %v rather than stopped", p.Name, p.State)
-			return
-		}
-
-		func() {
-			pm.lock.Lock()
-			defer pm.lock.Unlock()
-			if existingProcess, exists := pm.processes[p.Name]; !exists || existingProcess.UUID != p.UUID {
-				return
-			}
-
-			delete(pm.processes, p.Name)
-			pm.releaseProcessPorts(p)
-		}()
-
-		logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
-		p.UpdateCh <- p
+		delete(pm.processes, p.Name)
+		pm.releaseProcessPorts(p)
+		return true
 	}()
+	if !removed {
+		return
+	}
+
+	logrus.Infof("Process Manager: successfully unregistered process %v", p.Name)
+	p.UpdateCh <- p
 }
 
 func (pm *Manager) findProcess(name string) *Process {
@@ -476,6 +490,9 @@ func (pm *Manager) ProcessReplace(ctx context.Context, req *rpc.ProcessReplaceRe
 		lock: &sync.RWMutex{},
 
 		logger: logger,
+
+		waitCount:    pm.waitCount,
+		waitInterval: pm.waitInterval,
 
 		executor:      pm.Executor,
 		healthChecker: pm.HealthChecker,

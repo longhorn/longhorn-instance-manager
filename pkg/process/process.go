@@ -44,6 +44,13 @@ type Process struct {
 
 	logger *util.LonghornWriter
 
+	// waitCount * waitInterval is the graceful stop window before the process is killed.
+	waitCount    int
+	waitInterval time.Duration
+	// onStopped is set by the manager when the process is deleted, and called
+	// once the process stopped. It is guarded by lock.
+	onStopped func()
+
 	executor      Executor
 	healthChecker HealthChecker
 }
@@ -56,6 +63,10 @@ func (p *Process) Start() error {
 	if err != nil {
 		p.State = StateError
 		p.ErrorMsg = err.Error()
+		// There is no cmd.Run() to close the logger.
+		if closeErr := p.logger.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warnf("Process Manager: failed to close process %v logger", p.Name)
+		}
 		return err
 	}
 	cmd.SetOutput(p.logger)
@@ -63,24 +74,39 @@ func (p *Process) Start() error {
 
 	probeStopCh := make(chan struct{})
 	go func() {
-		if err := cmd.Run(); err != nil {
+		err := cmd.Run()
+		// cmd.Run() returns only after the output copier stopped writing to the
+		// log file. Closing it earlier makes cmd.Run() of a process exiting with
+		// 0 fail with "file already closed".
+		if closeErr := p.logger.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warnf("Process Manager: failed to close process %v logger", p.Name)
+		}
+		if err != nil {
 			close(probeStopCh)
 			p.lock.Lock()
 			p.State = StateError
 			p.ErrorMsg = err.Error()
 			logrus.Infof("Process Manager: process %v error out, error msg: %v", p.Name, p.ErrorMsg)
+			onStopped := p.onStopped
 			p.lock.Unlock()
 
 			p.UpdateCh <- p
+			if onStopped != nil {
+				onStopped()
+			}
 			return
 		}
 		close(probeStopCh)
 		p.lock.Lock()
 		p.State = StateStopped
 		logrus.Infof("Process Manager: process %v stopped", p.Name)
+		onStopped := p.onStopped
 		p.lock.Unlock()
 
 		p.UpdateCh <- p
+		if onStopped != nil {
+			onStopped()
+		}
 	}()
 
 	go func() {
@@ -144,7 +170,6 @@ func (p *Process) Stop() {
 
 func (p *Process) StopWithSignal(signal syscall.Signal) {
 	needStop, needTimeoutKill := false, false
-	needCloseLogger := false
 	now := time.Now()
 
 	p.lock.Lock()
@@ -153,29 +178,17 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 		p.DeletionTimestamp = &now
 		needStop = true
 	}
-	// Retry the deletion if the process is not stopped in 60 seconds
+	// Retry the deletion if the process is not stopped within the graceful window
 	if p.DeletionTimestamp != nil && !needStop {
-		deleteTimeout := time.Duration(int64(types.WaitInterval) * int64(types.WaitCount))
+		deleteTimeout := time.Duration(int64(p.waitInterval) * int64(p.waitCount))
 		if p.DeletionTimestamp.Add(deleteTimeout).Before(now) {
 			logrus.Infof("Process Manager: process %v deletion takes more than %vs, will retry it", p.Name, deleteTimeout.Seconds())
 			needTimeoutKill = true
 		}
 	}
-	// If the process stopped or errored on its own (no prior Stop call spawned
-	// a goroutine to close the logger), close it here so callers that observe a
-	// terminal state and then call Stop() do not leave the log file descriptor open.
-	if !needStop && !needTimeoutKill && p.DeletionTimestamp == nil &&
-		(p.State == StateStopped || p.State == StateError) {
-		needCloseLogger = true
-	}
 	p.lock.Unlock()
 
 	if !needStop && !needTimeoutKill {
-		if needCloseLogger {
-			if err := p.logger.Close(); err != nil {
-				logrus.WithError(err).Warnf("Process Manager: failed to close logger for process %v in state %v", p.Name, p.State)
-			}
-		}
 		return
 	}
 	p.UpdateCh <- p
@@ -185,16 +198,16 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 	p.lock.RUnlock()
 
 	go func() {
-		defer func() {
-			if err := p.logger.Close(); err != nil {
-				logrus.WithError(err).Warnf("Process Manager: failed to close process %v logger", p.Name)
-			}
-		}()
-
 		if cmd == nil || !cmd.IsRunning() {
 			logrus.Errorf("Process Manager: cmd of %v is not running anymore, no need to stop", p.Name)
+			p.lock.Lock()
 			if p.State != StateStopped && p.State != StateError {
 				p.State = StateStopped
+			}
+			onStopped := p.onStopped
+			p.lock.Unlock()
+			if onStopped != nil {
+				onStopped()
 			}
 			return
 		}
@@ -203,14 +216,14 @@ func (p *Process) StopWithSignal(signal syscall.Signal) {
 		if needStop {
 			logrus.Infof("Process Manager: trying to stop process %v", p.Name)
 			cmd.StopWithSignal(signal)
-			for i := 0; i < types.WaitCount; i++ {
+			for i := 0; i < p.waitCount; i++ {
 				if p.IsStopped() {
 					return
 				}
 				logrus.Infof("Wait for process %v to shutdown", p.Name)
-				time.Sleep(types.WaitInterval)
+				time.Sleep(p.waitInterval)
 			}
-			logrus.Warnf("Process Manager: cannot graceful stop process %v in %v, will kill the process", p.Name, time.Duration(types.WaitCount)*types.WaitInterval)
+			logrus.Warnf("Process Manager: cannot graceful stop process %v in %v, will kill the process", p.Name, time.Duration(p.waitCount)*p.waitInterval)
 		} else if needTimeoutKill {
 			logrus.Warnf("Process Manager: somehow timeout stopping process %v, will retry killing the process", p.Name)
 		}

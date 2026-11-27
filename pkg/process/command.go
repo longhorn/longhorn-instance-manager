@@ -32,6 +32,10 @@ func (be *BinaryExecutor) NewCommand(name string, arg ...string) (Command, error
 type BinaryCommand struct {
 	*sync.RWMutex
 	*exec.Cmd
+
+	// running is guarded by RWMutex. exec.Cmd.Wait() writes Cmd.ProcessState
+	// without holding our lock, so it cannot be read to tell if the process runs.
+	running bool
 }
 
 func NewBinaryCommand(binary string, arg ...string) (*BinaryCommand, error) {
@@ -64,10 +68,29 @@ func (bc *BinaryCommand) SetOutput(writer io.Writer) {
 	bc.Stderr = writer
 }
 
+// Run starts the process under the lock, so that Cmd.Process is never written
+// concurrently with the readers below, and waits for it to exit.
+func (bc *BinaryCommand) Run() error {
+	bc.Lock()
+	err := bc.Start()
+	bc.running = err == nil
+	bc.Unlock()
+	if err != nil {
+		return err
+	}
+
+	err = bc.Wait()
+
+	bc.Lock()
+	bc.running = false
+	bc.Unlock()
+	return err
+}
+
 func (bc *BinaryCommand) IsRunning() bool {
 	bc.RLock()
 	defer bc.RUnlock()
-	return bc.Process != nil && bc.ProcessState == nil
+	return bc.running
 }
 
 func (bc *BinaryCommand) StopWithSignal(signal syscall.Signal) {
