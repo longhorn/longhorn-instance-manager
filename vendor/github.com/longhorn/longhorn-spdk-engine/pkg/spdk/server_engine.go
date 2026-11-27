@@ -40,7 +40,8 @@ func (s *Server) EngineCreate(ctx context.Context, req *spdkrpc.EngineCreateRequ
 	}
 
 	if e == nil {
-		s.engineMap[req.Name] = NewEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize, s.updateChs[types.InstanceTypeEngine], req.SnapshotMaxCount, s.newServiceClient)
+		s.engineMap[req.Name] = newEngine(req.Name, req.VolumeName, req.Frontend, req.SpecSize,
+			s.updateChs[types.InstanceTypeEngine], req.SnapshotMaxCount, s.ipFamily, s.newServiceClient)
 		e = s.engineMap[req.Name]
 	}
 
@@ -855,7 +856,7 @@ func (s *Server) registerRestoreFrontend(e *Engine, volumeName string, specSize 
 	// would block both senders permanently. The buffer absorbs both sends and
 	// the channel is GC'd with tempEF.
 	throwawayUpdateCh := make(chan interface{}, 2)
-	tempEF := NewEngineFrontend(
+	tempEF := newEngineFrontend(
 		e.Name+"-restore",
 		e.Name,
 		volumeName,
@@ -863,6 +864,7 @@ func (s *Server) registerRestoreFrontend(e *Engine, volumeName string, specSize 
 		specSize,
 		types.DefaultUblkQueueDepth,
 		types.DefaultUblkNumberOfQueue,
+		s.ipFamily,
 		throwawayUpdateCh,
 		s.newServiceClient,
 	)
