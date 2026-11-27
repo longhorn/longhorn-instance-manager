@@ -2,11 +2,15 @@ package process
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -29,7 +33,57 @@ const (
 	TestBinary        = "/engine-binaries/test/longhorn"
 	TestBinaryMissing = "/engine-binaries/test-missing/longhorn"
 	TestBinaryReplace = "/engine-binaries/test-replacement/longhorn"
+
+	testChildModeArg     = "child-process-mode="
+	testChildParentArg   = "child-process-parent="
+	testChildModeReplica = "replica"
+	testChildModeOutput  = "output-holder"
+	testChildReadyLine   = "child process is ready"
+	testChildLastLine    = "last output line of the stopped child process"
 )
+
+// TestHelperProcessChild is not a test. It is the child process started by
+// TestProcessUnregisteredAfterGracefulStopWindow through os.Args[0].
+func TestHelperProcessChild(t *testing.T) {
+	mode, parent := "", ""
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, testChildModeArg) {
+			mode = strings.TrimPrefix(arg, testChildModeArg)
+		}
+		if strings.HasPrefix(arg, testChildParentArg) {
+			parent = strings.TrimPrefix(arg, testChildParentArg)
+		}
+	}
+
+	switch mode {
+	case testChildModeReplica:
+		// Like a replica: exit 0 on SIGINT. The output holder inherits stdout and
+		// stderr, like the sync agent does, and outlives this process.
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT)
+		holder := exec.Command(os.Args[0], "-test.run=^TestHelperProcessChild$", testChildModeArg+testChildModeOutput,
+			testChildParentArg+strconv.Itoa(os.Getpid()))
+		holder.Stdout = os.Stdout
+		holder.Stderr = os.Stderr
+		if err := holder.Start(); err != nil {
+			syscall.Exit(1)
+		}
+		_, _ = fmt.Fprintln(os.Stdout, testChildReadyLine)
+		<-sigCh
+		// Not os.Exit(), which sleeps for a second in binaries built with -race.
+		syscall.Exit(0)
+	case testChildModeOutput:
+		// Keep the output pipe open for longer than the graceful stop window after
+		// the parent exited, then write to it. The parent pid is passed in, since
+		// this process may only start after the parent exited.
+		for strconv.Itoa(os.Getppid()) == parent {
+			time.Sleep(10 * time.Millisecond)
+		}
+		time.Sleep(time.Second)
+		_, _ = fmt.Fprintln(os.Stderr, testChildLastLine)
+		syscall.Exit(0)
+	}
+}
 
 func Test(t *testing.T) { TestingT(t) }
 
@@ -498,4 +552,87 @@ func countOpenFileDescriptors(targetPath string) (int, error) {
 	}
 
 	return count, nil
+}
+
+// https://github.com/longhorn/longhorn/issues/14509
+// A process whose output is still written after the graceful stop window has to
+// be unregistered, its ports released and its last output logged.
+func (s *TestSuite) TestProcessUnregisteredAfterGracefulStopWindow(c *C) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	logDir := c.MkDir()
+	// A single port, so that a new process only starts if the port is released.
+	pm, err := NewManager(ctx, "23000-23000", logDir)
+	c.Assert(err, IsNil)
+	pm.waitCount = 5
+	pm.waitInterval = 100 * time.Millisecond
+	pm.Executor = &BinaryExecutor{}
+	pm.HealthChecker = &MockHealthChecker{}
+
+	spec := func(name string) *rpc.ProcessSpec {
+		return &rpc.ProcessSpec{
+			Name:      name,
+			Binary:    os.Args[0],
+			Args:      []string{"-test.run=^TestHelperProcessChild$", testChildModeArg + testChildModeReplica},
+			PortCount: 1,
+		}
+	}
+	// Wait for the child to handle SIGINT before deleting the process.
+	waitForChildReady := func(name string) bool {
+		for i := 0; i < RetryCount; i++ {
+			content, _ := os.ReadFile(filepath.Join(logDir, name+".log"))
+			if strings.Contains(string(content), testChildReadyLine) {
+				return true
+			}
+			time.Sleep(RetryInterval)
+		}
+		return false
+	}
+
+	name := "test_process_unregistered_after_graceful_stop_window"
+	logPath := filepath.Join(logDir, name+".log")
+	_, err = pm.ProcessCreate(context.TODO(), &rpc.ProcessCreateRequest{Spec: spec(name)})
+	c.Assert(err, IsNil)
+	p := pm.findProcess(name)
+	c.Assert(p, NotNil)
+	c.Assert(waitForChildReady(name), Equals, true)
+
+	// longhorn-manager keeps deleting an instance until it is gone.
+	for i := 0; i < 2; i++ {
+		_, err = pm.ProcessDelete(context.TODO(), &rpc.ProcessDeleteRequest{Name: name})
+		c.Assert(err, IsNil)
+	}
+	deleted, err := waitForProcessListState(pm, func(processes map[string]*rpc.ProcessResponse) bool {
+		_, exists := processes[name]
+		return !exists
+	})
+	c.Assert(err, IsNil)
+	c.Assert(deleted, Equals, true)
+
+	// The process exited with 0, so it must not be in error state because its
+	// last output could not be written into a closed log file.
+	status := p.RPCResponse().Status
+	c.Assert(status.State, Equals, types.ProcessStateStopped)
+	c.Assert(status.ErrorMsg, Equals, "")
+	content, err := os.ReadFile(logPath)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(string(content), testChildLastLine), Equals, true)
+	openFiles, err := countOpenFileDescriptors(logPath)
+	c.Assert(err, IsNil)
+	c.Assert(openFiles, Equals, 0)
+
+	secondName := name + "-second"
+	resp, err := pm.ProcessCreate(context.TODO(), &rpc.ProcessCreateRequest{Spec: spec(secondName)})
+	c.Assert(err, IsNil)
+	c.Assert(resp.Status.PortStart, Equals, int32(23000))
+	c.Assert(waitForChildReady(secondName), Equals, true)
+	_, err = pm.ProcessDelete(context.TODO(), &rpc.ProcessDeleteRequest{Name: secondName})
+	c.Assert(err, IsNil)
+	deleted, err = waitForProcessListState(pm, func(processes map[string]*rpc.ProcessResponse) bool {
+		_, exists := processes[secondName]
+		return !exists
+	})
+	c.Assert(err, IsNil)
+	c.Assert(deleted, Equals, true)
 }
